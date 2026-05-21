@@ -154,6 +154,9 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
           <span class="lang-sep">|</span>
           <a href={locale === 'en' ? currentPath : enPath} class={`lang-btn ${locale === 'en' ? 'active' : ''}`} aria-label="English" data-lang-choice="en">EN</a>
         </div>
+        <a href="/admin" class="admin-link" aria-label={t(locale, 'navAdmin')} title={t(locale, 'navAdmin')}>
+          <i data-lucide="lock" style="width:14px;height:14px;"></i>
+        </a>
         </div>
 
         <button class="nav-hamburger" aria-label={t(locale, 'navOpenMenu')}>
@@ -172,6 +175,9 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
         <a href={locale === 'de' ? currentPath : dePath} class={`lang-btn-mobile ${locale === 'de' ? 'active' : ''}`} aria-label="Deutsch" data-lang-choice="de">DE</a>
         <span class="lang-sep">|</span>
         <a href={locale === 'en' ? currentPath : enPath} class={`lang-btn-mobile ${locale === 'en' ? 'active' : ''}`} aria-label="English" data-lang-choice="en">EN</a>
+        <a href="/admin" class="admin-link admin-link--mobile" aria-label={t(locale, 'navAdmin')} title={t(locale, 'navAdmin')}>
+          <i data-lucide="lock" style="width:14px;height:14px;"></i>
+        </a>
       </div>
 
       <div class="mobile-nav-item">

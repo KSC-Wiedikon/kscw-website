@@ -2222,6 +2222,11 @@ tr:hover td {
   .sport-btn--bb:hover {
     animation: none;
   }
+  .sport-btn,
+  .sport-btn:hover .sport-btn-icon {
+    transform: none;
+    transition: none;
+  }
   .hero h1 {
     background: none;
     color: var(--text-on-blue);
@@ -2447,72 +2452,76 @@ tr:hover td {
 
 /* ── Sport Buttons (Hero) ──────────────────────────────────── */
 .sport-btn {
-  min-width: 180px;
-  padding: 0.85rem 2.5rem;
+  --sport-shadow: 0 6px 18px rgba(0,0,0,0.22);
+  min-width: 200px;
+  padding: 0.85rem 1.75rem 0.85rem 1.4rem;
   font-size: var(--text-base);
-  font-weight: 800;
-  border: 2px solid rgba(0,0,0,0.3);
-  position: relative;
-  z-index: 0;
-  isolation: isolate;
-}
-/* Volleyball: Mikasa V200W yellow/blue with curved divider */
-.sport-btn--vb {
-  background: #2255AA;
-  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid rgba(0,0,0,0.18);
+  border-radius: var(--radius-md, 10px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
   position: relative;
   overflow: hidden;
-  z-index: 0;
-  text-shadow: 0 0 6px rgba(0,0,0,0.6), 0 0 12px rgba(0,0,0,0.3);
+  isolation: isolate;
+  box-shadow: var(--sport-shadow), inset 0 1px 0 rgba(255,255,255,0.22);
+  transition: transform 0.25s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+.sport-btn:hover {
+  transform: translateY(-2px);
+}
+.sport-btn-icon {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+  transition: transform 0.45s cubic-bezier(.34,1.56,.64,1);
+}
+.sport-btn:hover .sport-btn-icon {
+  transform: rotate(-14deg) scale(1.08);
+}
+
+/* Volleyball: deep KSCW blue with Mikasa-gold accent */
+.sport-btn--vb {
+  background: linear-gradient(135deg, #2A5BC0 0%, #1F4795 55%, #17387A 100%);
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.45);
 }
 .sport-btn--vb::before {
+  /* Subtle Mikasa-style gold sweep, kept low-contrast so the icon stays the focal point */
   content: '';
   position: absolute;
   inset: 0;
-  background: #FFE14D;
-  clip-path: polygon(
-    0 0, 60% 0,
-    62% 10%, 63% 20%, 63% 30%, 62% 40%,
-    60% 50%,
-    57% 60%, 54% 70%, 48% 80%, 43% 90%,
-    40% 100%, 0 100%
-  );
-  z-index: -1;
-}
-.sport-btn--vb:hover {
-  box-shadow: 0 6px 24px rgba(255, 225, 77, 0.45);
-}
-/* Basketball: orange with single curved black seam */
-.sport-btn--bb {
-  background: linear-gradient(135deg, #F08030 0%, #E87121 40%, #D06018 100%);
-  color: #ffffff;
-  position: relative;
-  overflow: hidden;
-  text-shadow: 0 0 6px rgba(0,0,0,0.4), 0 0 12px rgba(0,0,0,0.2);
-}
-.sport-btn--bb::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  /* Same 60%→40% curve as VB, thicker dark seam */
-  background: rgba(0,0,0,0.2);
-  clip-path: polygon(
-    59% 0, 61% 0,
-    63% 10%, 64% 20%, 64% 30%, 63% 40%,
-    61% 50%,
-    58% 60%, 55% 70%, 49% 80%, 44% 90%,
-    41% 100%, 39% 100%,
-    42% 90%, 47% 80%, 53% 70%, 56% 60%,
-    59% 50%,
-    61% 40%, 62% 30%, 62% 20%, 61% 10%
-  );
+  background: linear-gradient(115deg,
+    rgba(255, 225, 77, 0.55) 0%,
+    rgba(255, 225, 77, 0.32) 18%,
+    rgba(255, 225, 77, 0) 38%);
   z-index: -1;
   pointer-events: none;
 }
-.sport-btn--bb:hover {
-  box-shadow: 0 6px 24px rgba(232, 113, 33, 0.45);
-  background: linear-gradient(135deg, #F89040 0%, #F08030 40%, #E07020 100%);
+.sport-btn--vb .sport-btn-icon { color: #FFE14D; }
+
+/* Basketball: warm orange ball gradient with quiet inner seam highlight */
+.sport-btn--bb {
+  background: linear-gradient(135deg, #F58A2E 0%, #E87121 45%, #C95B16 100%);
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
+.sport-btn--bb::before {
+  /* Soft top highlight to give the ball-leather feel */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 0%,
+    rgba(255,255,255,0.28) 0%,
+    rgba(255,255,255,0) 55%);
+  z-index: -1;
+  pointer-events: none;
+}
+.sport-btn--bb .sport-btn-icon { color: #FFF1E0; }
 
 /* ── Language Toggle ───────────────────────────────────────── */
 .lang-toggle {
@@ -2540,6 +2549,30 @@ tr:hover td {
   padding: 0.75rem 0;
   border-bottom: 1px solid var(--border-color);
   margin-bottom: 0.5rem;
+}
+
+/* ── Admin lock link (next to language toggle) ─────────────── */
+.admin-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-left: 0.4rem;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  opacity: 0.55;
+  transition: opacity 0.2s ease, color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+.admin-link:hover,
+.admin-link:focus-visible {
+  opacity: 1;
+  color: var(--kscw-gold);
+  background-color: rgba(255, 200, 50, 0.12);
+  transform: translateY(-1px);
+}
+.admin-link--mobile {
+  margin-left: 0.6rem;
 }
 
 /* ── Focus States ──────────────────────────────────────────── */
@@ -3779,20 +3812,20 @@ button:focus-visible {
   50%      { background-position: 100% 50%; }
 }
 
-/* Sport buttons: pulsating glow on hover (preserves existing designs) */
+/* Sport buttons: pulsating glow on hover */
 .sport-btn--vb:hover {
-  animation: sport-btn-pulse-vb 1.6s ease-in-out infinite;
+  animation: sport-btn-pulse-vb 1.8s ease-in-out infinite;
 }
 .sport-btn--bb:hover {
-  animation: sport-btn-pulse-bb 1.6s ease-in-out infinite;
+  animation: sport-btn-pulse-bb 1.8s ease-in-out infinite;
 }
 @keyframes sport-btn-pulse-vb {
-  0%, 100% { box-shadow: 0 6px 24px rgba(255, 225, 77, 0.45); }
-  50%      { box-shadow: 0 10px 36px rgba(255, 225, 77, 0.75); }
+  0%, 100% { box-shadow: 0 6px 22px rgba(255, 225, 77, 0.38), inset 0 1px 0 rgba(255,255,255,0.22); }
+  50%      { box-shadow: 0 10px 34px rgba(255, 225, 77, 0.65), inset 0 1px 0 rgba(255,255,255,0.22); }
 }
 @keyframes sport-btn-pulse-bb {
-  0%, 100% { box-shadow: 0 6px 24px rgba(232, 113, 33, 0.45); }
-  50%      { box-shadow: 0 10px 36px rgba(232, 113, 33, 0.75); }
+  0%, 100% { box-shadow: 0 6px 22px rgba(232, 113, 33, 0.42), inset 0 1px 0 rgba(255,255,255,0.22); }
+  50%      { box-shadow: 0 10px 34px rgba(232, 113, 33, 0.72), inset 0 1px 0 rgba(255,255,255,0.22); }
 }
 
 /* ─────────────────────────────────────────────────────────── */

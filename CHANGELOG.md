@@ -2,6 +2,13 @@
 
 All notable changes to the KSC Wiedikon website are documented in this file.
 
+## [3.11.0] — 2026-05-21
+
+### Added
+- **Admin quick-access lock**: small padlock icon next to the language toggle (desktop and mobile) that links directly to `/admin` — replaces the hidden footer link as the primary entry point
+- **Hero sport buttons refresh**: rebuilt the Volleyball and Basketball buttons on the homepage with inline sport icons (`fill="currentColor"` ball SVGs), cleaner gradients (volleyball: KSCW blue with low-contrast Mikasa-gold sweep; basketball: warm orange with a top radial highlight), inset top highlight, and a 14° icon rotate on hover. Pulsating glow on hover preserved
+- `prefers-reduced-motion` honored: icon rotation + hover pulse both disabled when the user opts out
+
 ## [3.10.0] — 2026-05-20
 
 ### Added

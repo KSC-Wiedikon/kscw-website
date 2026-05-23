@@ -12,12 +12,13 @@ import { getUpcomingScorerCourses, localeSlug, normalizeFormSlug, type ScorerCou
 import { formatDate } from '../lib/utils';
 import { getDirectusUrl } from '../lib/directus';
 
-// All KSCW scorer courses take place at the clubhouse. The collection has
-// no location/end-time fields, so these are fixed: in-person courses use
-// the clubhouse address, and a course runs DEFAULT_HOURS from its start
-// time (the published courses are 18:00–21:00 = 3h). Defaults only — if
-// the Directus schema later gains real fields, prefer those.
-const KSCW_LOCATION = 'KSC Wiedikon, Goldbrunnenstrasse 80, 8055 Zürich, Switzerland';
+// Scorer courses take place at Sportanlage Irchel, hosted by VBC Spada.
+// The collection has no location/end-time fields, so these are fixed:
+// in-person courses use the venue address, and a course runs DEFAULT_HOURS
+// from its start time (the published courses are 18:00–21:00 = 3h).
+// Defaults only — if the Directus schema later gains real fields, prefer those.
+const KSCW_LOCATION = 'Sportanlage Irchel, Winterthurerstrasse 190, 8057 Zürich';
+const HOST_NOTE = 'Hosted by VBC Spada';
 const DEFAULT_TIME = '18:00';
 const DEFAULT_HOURS = 3;
 
@@ -106,11 +107,12 @@ if (container) {
     const start = zurichToUTC(course.dateISO as string, course.time || DEFAULT_TIME);
     const end = new Date(start.getTime() + DEFAULT_HOURS * 3600_000);
     const withLocation = course.mode === 'in_person' || course.mode === 'both';
+    const detailsBase = withLocation ? `${title}\n\n${HOST_NOTE}` : title;
     const params = new URLSearchParams({
       action: 'TEMPLATE',
       text: title,
       dates: `${gcalStamp(start)}/${gcalStamp(end)}`,
-      details: signupUrl ? `${title}\n\n${signupUrl}` : title,
+      details: signupUrl ? `${detailsBase}\n\n${signupUrl}` : detailsBase,
     });
     if (withLocation) params.set('location', KSCW_LOCATION);
     return `https://www.google.com/calendar/render?${params.toString()}`;
@@ -149,6 +151,7 @@ if (container) {
 
       if ((course.mode === 'in_person' || course.mode === 'both')) {
         body.appendChild(el('p', { class: 'scorer-location' }, KSCW_LOCATION));
+        body.appendChild(el('p', { class: 'scorer-host' }, HOST_NOTE));
       }
 
       if (slug || course.dateISO) {

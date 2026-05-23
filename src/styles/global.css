@@ -2408,6 +2408,21 @@ tr:hover td {
   font-size: var(--text-sm);
   margin: 0;
 }
+.scorer-host {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-style: italic;
+  margin: calc(var(--space-xs) * -1) 0 0;
+}
+/* Mobile: long sign-up/calendar/doc labels must wrap inside the card
+   instead of overflowing (.btn is white-space: nowrap by default). */
+@media (max-width: 768px) {
+  [data-scorer-courses] .btn {
+    width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
+}
 @media (max-width: 768px) {
   .accordion-header {
     padding: var(--space-md) var(--space-lg);

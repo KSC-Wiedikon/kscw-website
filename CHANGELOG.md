@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website are documented in this file.
 
+## [3.11.1] — 2026-05-23
+
+### Fixed
+- **Scorer course start time**: the English course on 08.07.2026 now starts at **19:00** (was 19:30); end stays 21:30, so the "add to calendar" event is a 2.5h block
+- **German scorer course**: time cleared back to blank — both date and time now show as to-be-announced (TBD) until confirmed
+
 ## [3.11.0] — 2026-05-21
 
 ### Added

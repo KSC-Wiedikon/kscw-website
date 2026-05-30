@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website are documented in this file.
 
+## [3.11.2] — 2026-05-30
+
+### Fixed
+- **Admin tabs unreachable on mobile**: the section tabs (news, events, registrations, sponsors, scorer courses, mixed turnier, …) overflowed off-screen with no way to reach them on phones. The tab bar is now a horizontally-scrollable sticky navbar — swipe sideways to reach every section, and it stays pinned to the top while you scroll
+
 ## [3.11.1] — 2026-05-23
 
 ### Fixed

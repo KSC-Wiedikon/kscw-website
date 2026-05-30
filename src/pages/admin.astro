@@ -2951,13 +2951,25 @@ import '../styles/global.css';
 
   /* ── Tabs ──────────────────────────────────────────────────── */
   .admin-tabs {
+    position: sticky;
+    top: 0;
+    z-index: 20;
     max-width: 960px;
     margin: 0 auto;
-    padding: var(--space-md) var(--space-lg) 0;
+    background: var(--bg-light);
+    border-bottom: 1px solid var(--border);
     display: flex;
+    flex-wrap: nowrap;
     gap: var(--space-xs);
+    padding: var(--space-md) var(--space-lg) 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
   }
+  .admin-tabs::-webkit-scrollbar { display: none; } /* WebKit */
   .admin-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
     padding: var(--space-sm) var(--space-lg);
     background: none;
     border: none;

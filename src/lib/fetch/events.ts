@@ -1,4 +1,4 @@
-import { fetchItems, fetchAllItems } from '../directus'
+import { kscwApi } from '../directus'
 import { todayISO } from '../utils'
 
 interface DirectusEvent {
@@ -13,8 +13,6 @@ export interface CalendarEvent {
   signupUrl: string | null;
 }
 
-const EVENT_FIELDS = ['id', 'title', 'event_type', 'start_date', 'end_date', 'all_day', 'location', 'description', 'signup_url']
-
 function mapEvent(e: DirectusEvent): CalendarEvent {
   return {
     id: String(e.id), title: e.title, eventType: e.event_type,
@@ -24,20 +22,17 @@ function mapEvent(e: DirectusEvent): CalendarEvent {
   }
 }
 
+// Club-wide events only — the /kscw/public/events endpoint filters out
+// team-/member-scoped events (e.g. a tournament limited to one team) server-side,
+// since the public Directus policy can't read the team/member junctions.
 export async function getUpcomingEvents(limit = 3): Promise<CalendarEvent[]> {
-  const items = await fetchItems<DirectusEvent>('events', {
-    filter: { start_date: { _gte: todayISO() } },
-    sort: ['start_date'],
-    fields: EVENT_FIELDS,
-    limit,
-  })
-  return items.map(mapEvent)
+  const { data } = await kscwApi<{ data: DirectusEvent[] }>(
+    `/public/events?from=${encodeURIComponent(todayISO())}&limit=${limit}`,
+  )
+  return data.map(mapEvent)
 }
 
 export async function getAllEvents(): Promise<CalendarEvent[]> {
-  const items = await fetchAllItems<DirectusEvent>('events', {
-    sort: ['start_date'],
-    fields: EVENT_FIELDS,
-  })
-  return items.map(mapEvent)
+  const { data } = await kscwApi<{ data: DirectusEvent[] }>('/public/events')
+  return data.map(mapEvent)
 }

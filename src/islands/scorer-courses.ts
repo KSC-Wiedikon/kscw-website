@@ -15,12 +15,12 @@ import { getDirectusUrl } from '../lib/directus';
 // Scorer courses take place at Sportanlage Irchel, hosted by VBC Spada.
 // The collection has no location/end-time fields, so these are fixed:
 // in-person courses use the venue address, and a course runs DEFAULT_HOURS
-// from its start time (the published courses are 19:00–21:30 = 2.5h).
+// from its start time (the EN course runs 17:45–21:45 = 4h).
 // Defaults only — if the Directus schema later gains real fields, prefer those.
 const KSCW_LOCATION = 'Sportanlage Irchel (Theory Room), Winterthurerstrasse 190, 8057 Zürich';
 const HOST_NOTE = 'Hosted by VBC Spada, Powered by KSC Wiedikon';
-const DEFAULT_TIME = '19:00';
-const DEFAULT_HOURS = 2.5;
+const DEFAULT_TIME = '17:45';
+const DEFAULT_HOURS = 4;
 
 const container = document.querySelector<HTMLElement>('[data-scorer-courses]');
 

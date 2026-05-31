@@ -37,7 +37,7 @@ export const scorerCourses: ScorerCourse[] = [
     titleDe: 'Volleyball-Schreiberkurs (Englisch)',
     titleEn: 'Volleyball scorer course (English)',
     dateISO: '2026-07-08',
-    time: '19:00',
+    time: '17:45',
     mode: 'in_person',
     formSlugDe: null,
     formSlugEn: null, // ← set to the real OpnForm slug in Task 8

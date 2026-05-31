@@ -7,11 +7,18 @@ export async function GET() {
   } catch { /* empty feed on failure */ }
 
   const siteUrl = 'https://kscw.ch';
+  const escXml = (s: string) => s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
   const items = articles.map(a => {
-    const link = `${siteUrl}/de/news/?article=${a.slug}`;
+    // Slug is admin-authored — URL-encode it for the link and XML-escape the
+    // final URL so it cannot break the feed or inject markup into RSS readers.
+    const link = escXml(`${siteUrl}/de/news/?article=${encodeURIComponent(a.slug || '')}`);
     const pubDate = new Date(a.publishedAt || a.dateCreated).toUTCString();
-    const category = a.category || 'club';
-    const escXml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const category = escXml(a.category || 'club');
     return `    <item>
       <title>${escXml(a.title)}</title>
       <link>${link}</link>

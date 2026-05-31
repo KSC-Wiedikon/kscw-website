@@ -4,17 +4,6 @@
 const DIRECTUS_URL = (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
   ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch'
 
-/** Lightweight HTML sanitizer — strips script tags and event handlers (defense-in-depth) */
-function sanitizeHtml(html: string): string {
-  return html
-    .replace(/<script[\s>][\s\S]*?<\/script>/gi, '')
-    .replace(/<script[\s>]/gi, '&lt;script')
-    .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
-    .replace(/<object[\s\S]*?<\/object>/gi, '')
-    .replace(/<embed[\s\S]*?>/gi, '')
-    .replace(/\bon\w+\s*=/gi, 'data-removed=')
-}
-
 interface DirectusTeam {
   id: number
   name: string
@@ -447,8 +436,9 @@ if (container) {
     if (ev.body) {
       const desc = document.createElement('div')
       desc.className = 'cal-modal-desc'
-      // Admin-authored content, sanitized at save time + runtime defense-in-depth
-      desc.innerHTML = sanitizeHtml(ev.body)
+      // Event bodies come from the lower-trust WiediSync members app. Render as
+      // plain text (textContent) — never innerHTML — so no markup can execute.
+      desc.textContent = ev.body
       modal.appendChild(desc)
     }
 
@@ -942,8 +932,9 @@ if (container) {
       if (ev.body) {
         const desc = document.createElement('div')
         desc.className = 'cal-modal-desc'
-        // Admin-authored content, sanitized at save time + runtime defense-in-depth
-        desc.innerHTML = sanitizeHtml(ev.body)
+        // Event bodies come from the lower-trust WiediSync members app. Render as
+        // plain text (textContent) — never innerHTML — so no markup can execute.
+        desc.textContent = ev.body
         row.appendChild(desc)
       }
 

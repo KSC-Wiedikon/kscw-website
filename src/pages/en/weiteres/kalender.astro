@@ -38,7 +38,9 @@ try {
     </div>
   </section>
 
-  <script id="events-data" type="application/json" set:html={JSON.stringify(allEvents)} />
+  <!-- Escape <, > and & to \uXXXX so an event field containing "</script>" cannot
+       break out of the data island. JSON.parse decodes them back transparently. -->
+  <script id="events-data" type="application/json" set:html={JSON.stringify(allEvents).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')} />
   <script src="../../../islands/calendar-grid.ts"></script>
   <script src="../../../islands/scroll-animations.ts"></script>
 </PageLayout>

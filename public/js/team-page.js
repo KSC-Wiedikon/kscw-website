@@ -50,7 +50,7 @@
   }
 
   // ── Render hero section dynamically ──────────────────────────────
-  function renderHero(teamData) {
+  function renderHero(teamData, raw) {
     var container = document.getElementById('team-hero-container');
     if (!container) return;
 
@@ -73,9 +73,29 @@
     chip.textContent = TEAM;
     inner.appendChild(chip);
 
+    // Title + recruiting badge share a flex row: the badge sits to the right of
+    // the title on desktop and wraps to right below it on mobile (flex-wrap).
+    var titleRow = document.createElement('div');
+    titleRow.className = 'team-hero-title-row';
+
     var h1 = document.createElement('h1');
     h1.textContent = teamData.full_name || teamData.name || TEAM;
-    inner.appendChild(h1);
+    titleRow.appendChild(h1);
+
+    // Team-level recruiting positions — only when open for players + populated.
+    var recruitText = (raw && raw.open_for_players)
+      ? positionText(Array.isArray(raw.recruiting_positions) ? raw.recruiting_positions : [])
+      : '';
+    if (recruitText) {
+      var recruitBadge = document.createElement('span');
+      recruitBadge.className = 'hero-looking-for';
+      var recruitLabel = document.createElement('strong');
+      recruitLabel.textContent = i18n.t('teamTrialLookingFor') + ': ';
+      recruitBadge.appendChild(recruitLabel);
+      recruitBadge.appendChild(document.createTextNode(recruitText));
+      titleRow.appendChild(recruitBadge);
+    }
+    inner.appendChild(titleRow);
 
     var league = document.createElement('p');
     league.className = 'team-league';
@@ -142,31 +162,26 @@
     var inner = document.createElement('div');
     inner.className = 'container';
 
-    // Title + recruiting badge share a flex header: the badge sits next to the
-    // title on desktop and wraps to right below it on mobile (cta-header CSS).
-    var header = document.createElement('div');
-    header.className = 'cta-header';
-
     var h2 = document.createElement('h2');
     h2.textContent = i18n.t('teamCTA', { team: teamData.name || TEAM });
-    header.appendChild(h2);
-
-    // Team-level recruiting positions — the positions the team is looking for.
-    var recruitText = positionText(Array.isArray(raw.recruiting_positions) ? raw.recruiting_positions : []);
-    if (recruitText) {
-      var recruitBadge = document.createElement('span');
-      recruitBadge.className = 'cta-recruiting-positions';
-      var recruitLabel = document.createElement('strong');
-      recruitLabel.textContent = i18n.t('teamTrialLookingFor') + ': ';
-      recruitBadge.appendChild(recruitLabel);
-      recruitBadge.appendChild(document.createTextNode(recruitText));
-      header.appendChild(recruitBadge);
-    }
-    inner.appendChild(header);
+    inner.appendChild(h2);
 
     var p = document.createElement('p');
     p.textContent = i18n.t('teamCTAText');
     inner.appendChild(p);
+
+    // Team-level recruiting positions — the positions the team is looking for.
+    // Shown as plain text below the subtitle (the badge lives in the hero).
+    var recruitText = positionText(Array.isArray(raw.recruiting_positions) ? raw.recruiting_positions : []);
+    if (recruitText) {
+      var recruitP = document.createElement('p');
+      recruitP.className = 'cta-recruiting-positions';
+      var recruitLabel = document.createElement('strong');
+      recruitLabel.textContent = i18n.t('teamTrialLookingFor') + ': ';
+      recruitP.appendChild(recruitLabel);
+      recruitP.appendChild(document.createTextNode(recruitText));
+      inner.appendChild(recruitP);
+    }
 
     // Upcoming trial trainings (Probetrainings) — only show when populated.
     // Dates render dd.mm.yyyy per Swiss convention regardless of UI locale.
@@ -293,7 +308,7 @@
         document.title = (teamData.full_name || teamData.name || 'Team') + ' — KSC Wiedikon';
 
         // Render hero, photo, Instagram, CTA
-        renderHero(teamData);
+        renderHero(teamData, raw);
         renderTeamPhoto(teamData);
         renderInstagramEmbed(teamData);
         renderCTA(teamData, raw);

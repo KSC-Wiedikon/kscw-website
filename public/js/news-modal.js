@@ -92,20 +92,17 @@
     // SECURITY: Sanitize with DOMPurify before insertion. Admin panel already
     // DOMPurifies on save, but Directus Studio / REST writes bypass that, so the
     // public renderer sanitizes again as the enforcing boundary.
-    // EDITORIAL: Unwrap all <a> tags — public site shows no links; ticket and
-    // action links live on Wiedisync (members platform) only.
-    var hadLinks = false;
+    // LINKS: <a> tags are allowed. DOMPurify's default URI filter already blocks
+    // javascript:/vbscript:/data: hrefs; the post-pass below additionally keeps
+    // only http(s)/mailto hrefs and opens external links in a new tab safely.
     if (data.body) {
       var body = el('div', 'nm-body');
       var raw = String(data.body);
-      // Detect external links in the raw input to decide whether to surface the
-      // Wiedisync CTA; DOMPurify will strip <a> tags (see FORBID_TAGS below).
-      if (/<a\b[^>]*href\s*=\s*["']?(?:https?:)?\/\//i.test(raw)) hadLinks = true;
       var clean;
       if (typeof window.DOMPurify !== 'undefined') {
         clean = window.DOMPurify.sanitize(raw, {
-          FORBID_TAGS: ['a', 'script', 'iframe', 'object', 'embed', 'form', 'style', 'link', 'meta', 'base'],
-          FORBID_ATTR: ['style', 'formaction', 'action', 'href', 'xlink:href'],
+          FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'style', 'link', 'meta', 'base'],
+          FORBID_ATTR: ['style', 'formaction', 'action', 'xlink:href'],
           KEEP_CONTENT: true,
         });
       } else {
@@ -114,25 +111,19 @@
         clean = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       }
       body.innerHTML = clean; // eslint-disable-line no-unsanitized/property -- DOMPurify-sanitized above
+      // Keep only http(s)/mailto hrefs; open external links in a new tab safely.
+      var anchors = body.querySelectorAll('a');
+      for (var ai = 0; ai < anchors.length; ai++) {
+        var a = anchors[ai];
+        var href = a.getAttribute('href') || '';
+        if (/^https?:/i.test(href)) {
+          a.setAttribute('target', '_blank');
+          a.setAttribute('rel', 'noopener noreferrer');
+        } else if (!/^mailto:/i.test(href)) {
+          a.removeAttribute('href');
+        }
+      }
       modal.appendChild(body);
-    }
-
-    // ── Wiedisync CTA (only when body contained external links)
-    if (hadLinks) {
-      var cta = el('div', 'nm-wiedisync-cta');
-      var ctaIcon = el('span', 'nm-cta-icon', '🔗');
-      var ctaText = el('span', 'nm-cta-text', isDE
-        ? 'Für Mitglieder: Alle Links & Tickets findest du im Login-Bereich auf '
-        : 'For members: all links & tickets are in the members area on ');
-      var ctaLink = document.createElement('a');
-      ctaLink.href = 'https://wiedisync.kscw.ch';
-      ctaLink.target = '_blank';
-      ctaLink.rel = 'noopener';
-      ctaLink.textContent = 'wiedisync.kscw.ch';
-      ctaText.appendChild(ctaLink);
-      cta.appendChild(ctaIcon);
-      cta.appendChild(ctaText);
-      modal.appendChild(cta);
     }
 
     // ── Share buttons

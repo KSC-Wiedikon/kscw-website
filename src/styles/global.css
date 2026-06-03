@@ -1647,31 +1647,6 @@ tr:hover td {
 .nm-body p {
   margin-bottom: var(--space-md);
 }
-/* ── News Modal — Wiedisync CTA ──────────────────────────── */
-.nm-wiedisync-cta {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-sm);
-  margin: 0 var(--space-lg) var(--space-lg);
-  padding: var(--space-md) var(--space-lg);
-  border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--kscw-blue) 10%, transparent);
-  border-left: 3px solid var(--kscw-blue);
-  font-size: var(--text-sm);
-  color: var(--text-secondary);
-  line-height: 1.55;
-}
-.nm-cta-icon {
-  font-size: var(--text-base);
-  line-height: 1;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.nm-wiedisync-cta a {
-  color: var(--kscw-blue);
-  font-weight: 600;
-  text-decoration: underline;
-}
 .nm-body img {
   max-width: 100%;
   height: auto;
@@ -1680,6 +1655,11 @@ tr:hover td {
 }
 .nm-body a {
   color: var(--kscw-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.nm-body a:hover {
+  text-decoration: none;
 }
 .nm-body blockquote {
   border-left: 3px solid var(--kscw-gold);

@@ -150,6 +150,19 @@
     p.textContent = i18n.t('teamCTAText');
     inner.appendChild(p);
 
+    // Team-level recruiting positions — the positions the team is looking for.
+    // Shown once next to the CTA (moved out of the per-trial-training list).
+    var recruitText = positionText(Array.isArray(raw.recruiting_positions) ? raw.recruiting_positions : []);
+    if (recruitText) {
+      var recruitP = document.createElement('p');
+      recruitP.className = 'cta-recruiting-positions';
+      var recruitLabel = document.createElement('strong');
+      recruitLabel.textContent = i18n.t('teamTrialLookingFor') + ': ';
+      recruitP.appendChild(recruitLabel);
+      recruitP.appendChild(document.createTextNode(recruitText));
+      inner.appendChild(recruitP);
+    }
+
     // Upcoming trial trainings (Probetrainings) — only show when populated.
     // Dates render dd.mm.yyyy per Swiss convention regardless of UI locale.
     var trials = Array.isArray(raw.trial_trainings) ? raw.trial_trainings : [];
@@ -187,14 +200,6 @@
           notesSpan.className = 'cta-trial-notes';
           notesSpan.textContent = ' — ' + t.notes;
           li.appendChild(notesSpan);
-        }
-        var recruit = Array.isArray(t.recruiting_positions) ? t.recruiting_positions : [];
-        var recruitText = positionText(recruit);
-        if (recruitText) {
-          var posSpan = document.createElement('span');
-          posSpan.className = 'cta-trial-positions';
-          posSpan.textContent = ' · ' + i18n.t('teamTrialLookingFor') + ': ' + recruitText;
-          li.appendChild(posSpan);
         }
         trialList.appendChild(li);
       });

@@ -142,26 +142,31 @@
     var inner = document.createElement('div');
     inner.className = 'container';
 
+    // Title + recruiting badge share a flex header: the badge sits next to the
+    // title on desktop and wraps to right below it on mobile (cta-header CSS).
+    var header = document.createElement('div');
+    header.className = 'cta-header';
+
     var h2 = document.createElement('h2');
     h2.textContent = i18n.t('teamCTA', { team: teamData.name || TEAM });
-    inner.appendChild(h2);
+    header.appendChild(h2);
+
+    // Team-level recruiting positions — the positions the team is looking for.
+    var recruitText = positionText(Array.isArray(raw.recruiting_positions) ? raw.recruiting_positions : []);
+    if (recruitText) {
+      var recruitBadge = document.createElement('span');
+      recruitBadge.className = 'cta-recruiting-positions';
+      var recruitLabel = document.createElement('strong');
+      recruitLabel.textContent = i18n.t('teamTrialLookingFor') + ': ';
+      recruitBadge.appendChild(recruitLabel);
+      recruitBadge.appendChild(document.createTextNode(recruitText));
+      header.appendChild(recruitBadge);
+    }
+    inner.appendChild(header);
 
     var p = document.createElement('p');
     p.textContent = i18n.t('teamCTAText');
     inner.appendChild(p);
-
-    // Team-level recruiting positions — the positions the team is looking for.
-    // Shown once next to the CTA (moved out of the per-trial-training list).
-    var recruitText = positionText(Array.isArray(raw.recruiting_positions) ? raw.recruiting_positions : []);
-    if (recruitText) {
-      var recruitP = document.createElement('p');
-      recruitP.className = 'cta-recruiting-positions';
-      var recruitLabel = document.createElement('strong');
-      recruitLabel.textContent = i18n.t('teamTrialLookingFor') + ': ';
-      recruitP.appendChild(recruitLabel);
-      recruitP.appendChild(document.createTextNode(recruitText));
-      inner.appendChild(recruitP);
-    }
 
     // Upcoming trial trainings (Probetrainings) — only show when populated.
     // Dates render dd.mm.yyyy per Swiss convention regardless of UI locale.

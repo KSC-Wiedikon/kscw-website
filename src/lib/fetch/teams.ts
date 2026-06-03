@@ -22,15 +22,33 @@ export function getActiveTeams(): Promise<Team[]> {
   return _activeTeams
 }
 
+// Retry the live fetch a few times before giving up. A single transient blip
+// during the build otherwise drops every caller to the static fallback and
+// silently ships stale leagues (happened in prod 2026-06-03). Retrying absorbs
+// the blip so the build self-heals; a genuine outage still falls back (logged).
+async function fetchActiveTeamsRaw(attempts = 3): Promise<DirectusTeam[]> {
+  let lastErr: unknown
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      // NOTE: do NOT request `slug` — it's a website-only concept, not a `teams`
+      // column. Querying it 400s (FORBIDDEN), which silently sent every caller
+      // to the static fallback (stale leagues everywhere). slug comes from the def.
+      return await fetchAllItems<DirectusTeam>('teams', {
+        filter: { active: { _eq: true } },
+        sort: ['sport', 'name'],
+        fields: ['id', 'name', 'sport', 'league', 'color', 'team_picture', 'full_name', 'season'],
+      })
+    } catch (err) {
+      lastErr = err
+      if (i < attempts) await new Promise((r) => setTimeout(r, 400 * i))
+    }
+  }
+  console.warn(`[teams] live fetch failed after ${attempts} attempts — falling back to static defs:`, lastErr)
+  throw lastErr
+}
+
 async function fetchActiveTeams(): Promise<Team[]> {
-  // NOTE: do NOT request `slug` — it's a website-only concept, not a `teams`
-  // column. Querying it 400s (FORBIDDEN), which silently sent every caller to
-  // the static fallback (stale leagues everywhere). slug comes from the def.
-  const items = await fetchAllItems<DirectusTeam>('teams', {
-    filter: { active: { _eq: true } },
-    sort: ['sport', 'name'],
-    fields: ['id', 'name', 'sport', 'league', 'color', 'team_picture', 'full_name', 'season'],
-  })
+  const items = await fetchActiveTeamsRaw()
   return items
     .map(t => {
       // Volleyball defs match the live Directus short name — season-robust and

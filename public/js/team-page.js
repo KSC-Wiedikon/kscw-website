@@ -271,8 +271,10 @@
         var league = (teamData.league || '').toLowerCase();
         IS_WOMEN = /^d\d|^du\d|damen|frauen/.test(name) || /damen|frauen/.test(league);
 
-        // Derive TEAM short name from API if not set
-        if (!TEAM && teamData.name) {
+        // Chip + short name ALWAYS follow the live team name so they can never
+        // drift from the title/league — e.g. after a D1/D2 league swap the route
+        // may carry a stale short, but the live name is authoritative.
+        if (teamData.name) {
           TEAM = teamData.name;
           CFG.short = TEAM;
         }

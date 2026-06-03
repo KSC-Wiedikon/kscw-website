@@ -19,6 +19,12 @@ export interface Training {
 
 export interface TeamDef {
   directusId: string;
+  /** Stable Directus short name (e.g. "D1", "HU23-1", "Legends"). When set,
+   *  the team is matched to live Directus data by this name instead of
+   *  directusId — survives season rollover AND the D1/D2 league swap, since
+   *  the live league/id follow whichever team currently holds the name.
+   *  Volleyball only; basketball stays directusId-matched. */
+  teamName?: string;
   slug: string;
   sport: Sport;
   category: TeamCategory;
@@ -66,35 +72,51 @@ export function getBadgeText(league: string, teamName: string): string {
   // Main teams: extract Liga level (e.g., "2. Liga" from "Herren 2. Liga")
   const ligaMatch = league.match(/(\d+)\.\s*Liga/);
   if (ligaMatch) return `${ligaMatch[1]}. Liga`;
+  // Volleymanager terse code ("2L", "5L") → "2. Liga" until the Swiss Volley
+  // API publishes the long-form league for the season.
+  const terse = league.match(/^(\d+)L$/);
+  if (terse) return `${terse[1]}. Liga`;
   return league;
+}
+
+/** Expand a Directus short name into the website's display name.
+ *  D1 → "Damen 1", H2 → "Herren 2", DU23-1 → "Damen U23-1", HU20 → "Herren U20".
+ *  Names without a D/H gender prefix (Legends, MiniVB) pass through unchanged. */
+export function expandDisplayName(name: string): string {
+  const gender = (c: string) => (c === 'D' ? 'Damen' : 'Herren');
+  const youth = name.match(/^([DH])U(\d+)(?:-(\d+))?$/);
+  if (youth) return `${gender(youth[1])} U${youth[2]}${youth[3] ? `-${youth[3]}` : ''}`;
+  const senior = name.match(/^([DH])(\d+)$/);
+  if (senior) return `${gender(senior[1])} ${senior[2]}`;
+  return name;
 }
 
 // ─── Volleyball Teams ──────────────────────────────────────────────
 
 const volleyballMen: TeamDef[] = [
   {
-    directusId: '1', slug: 'h1', sport: 'volleyball', category: 'men',
+    directusId: '1', teamName: 'H1', slug: 'h1', sport: 'volleyball', category: 'men',
     chipLabel: 'H1', displayName: 'Herren 1', order: 1,
     chipBg: '#1e40af', chipText: '#ffffff',
     trainings: [{ day: 'di', start: '20:00', end: '21:30' }, { day: 'do', start: '19:30', end: '21:30' }],
     hasDetailPage: true, fallbackLeague: 'Herren 2. Liga',
   },
   {
-    directusId: '2', slug: 'h2', sport: 'volleyball', category: 'men',
+    directusId: '2', teamName: 'H2', slug: 'h2', sport: 'volleyball', category: 'men',
     chipLabel: 'H2', displayName: 'Herren 2', order: 2,
     chipBg: '#2563eb', chipText: '#ffffff',
     trainings: [{ day: 'mo', start: '20:00', end: '21:30' }, { day: 'mi', start: '20:00', end: '21:30' }],
     hasDetailPage: true, fallbackLeague: 'Herren 3. Liga Gruppe A',
   },
   {
-    directusId: '3', slug: 'h3', sport: 'volleyball', category: 'men',
+    directusId: '3', teamName: 'H3', slug: 'h3', sport: 'volleyball', category: 'men',
     chipLabel: 'H3', displayName: 'Herren 3', order: 3,
     chipBg: '#3b82f6', chipText: '#ffffff',
     trainings: [{ day: 'di', start: '20:00', end: '21:30' }, { day: 'do', start: '20:00', end: '21:30' }],
     hasDetailPage: true, fallbackLeague: 'Herren 3. Liga Gruppe B',
   },
   {
-    directusId: '11', slug: 'legends', sport: 'volleyball', category: 'men',
+    directusId: '11', teamName: 'Legends', slug: 'legends', sport: 'volleyball', category: 'men',
     chipLabel: 'Legends', displayName: 'Legends', order: 4,
     chipBg: '#1e3a5f', chipText: '#ffffff',
     trainings: [{ day: 'mi', start: '20:30', end: '22:00' }],
@@ -104,28 +126,28 @@ const volleyballMen: TeamDef[] = [
 
 const volleyballWomen: TeamDef[] = [
   {
-    directusId: '4', slug: 'd1', sport: 'volleyball', category: 'women',
+    directusId: '4', teamName: 'D1', slug: 'd1', sport: 'volleyball', category: 'women',
     chipLabel: 'D1', displayName: 'Damen 1', order: 1,
     chipBg: '#be123c', chipText: '#ffffff',
     trainings: [{ day: 'di', start: '20:00', end: '21:30' }, { day: 'do', start: '19:30', end: '21:30' }],
     hasDetailPage: true, fallbackLeague: 'Frauen 3. Liga Gruppe A',
   },
   {
-    directusId: '5', slug: 'd2', sport: 'volleyball', category: 'women',
+    directusId: '5', teamName: 'D2', slug: 'd2', sport: 'volleyball', category: 'women',
     chipLabel: 'D2', displayName: 'Damen 2', order: 2,
     chipBg: '#e11d48', chipText: '#ffffff',
     trainings: [{ day: 'di', start: '20:00', end: '21:30' }, { day: 'do', start: '20:00', end: '21:30' }],
     hasDetailPage: true, fallbackLeague: 'Frauen 3. Liga Gruppe B',
   },
   {
-    directusId: '6', slug: 'd3', sport: 'volleyball', category: 'women',
+    directusId: '6', teamName: 'D3', slug: 'd3', sport: 'volleyball', category: 'women',
     chipLabel: 'D3', displayName: 'Damen 3', order: 3,
     chipBg: '#f43f5e', chipText: '#881337',
     trainings: [{ day: 'mo', start: '20:00', end: '21:30' }, { day: 'mi', start: '20:00', end: '21:30' }],
     hasDetailPage: true, fallbackLeague: 'Frauen 5. Liga Gruppe A',
   },
   {
-    directusId: '7', slug: 'd4', sport: 'volleyball', category: 'women',
+    directusId: '7', teamName: 'D4', slug: 'd4', sport: 'volleyball', category: 'women',
     chipLabel: 'D4', displayName: 'Damen 4', order: 4,
     chipBg: '#fb7185', chipText: '#881337',
     trainings: [{ day: 'di', start: '20:00', end: '21:30' }],
@@ -135,28 +157,28 @@ const volleyballWomen: TeamDef[] = [
 
 const volleyballYouth: TeamDef[] = [
   {
-    directusId: '9', slug: 'du23-1', sport: 'volleyball', category: 'youth',
+    directusId: '9', teamName: 'DU23-1', slug: 'du23-1', sport: 'volleyball', category: 'youth',
     chipLabel: 'DU23-1', displayName: 'Damen U23-1', order: 1,
     chipBg: '#fda4af', chipText: '#881337',
     trainings: [{ day: 'mo', start: '19:00', end: '20:30' }],
     hasDetailPage: true, fallbackLeague: 'Frauen U23 1. Liga',
   },
   {
-    directusId: '10', slug: 'du23-2', sport: 'volleyball', category: 'youth',
+    directusId: '10', teamName: 'DU23-2', slug: 'du23-2', sport: 'volleyball', category: 'youth',
     chipLabel: 'DU23-2', displayName: 'Damen U23-2', order: 2,
     chipBg: '#fda4af', chipText: '#881337',
     trainings: [{ day: 'mo', start: '19:00', end: '20:30' }],
     hasDetailPage: true, fallbackLeague: 'Frauen U23 2. Liga',
   },
   {
-    directusId: '8', slug: 'hu23', sport: 'volleyball', category: 'youth',
+    directusId: '8', teamName: 'HU23-1', slug: 'hu23', sport: 'volleyball', category: 'youth',
     chipLabel: 'HU23', displayName: 'Herren U23', order: 3,
     chipBg: '#60a5fa', chipText: '#1e3a8a',
     trainings: [{ day: 'di', start: '18:00', end: '19:30' }],
     hasDetailPage: true, fallbackLeague: 'Männer U23 Gruppe A',
   },
   {
-    directusId: '12', slug: 'hu20', sport: 'volleyball', category: 'youth',
+    directusId: '12', teamName: 'HU20', slug: 'hu20', sport: 'volleyball', category: 'youth',
     chipLabel: 'HU20', displayName: 'Herren U20', order: 4,
     chipBg: '#93c5fd', chipText: '#1e3a8a',
     trainings: [{ day: 'mi', start: '18:00', end: '19:30' }],

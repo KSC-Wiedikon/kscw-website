@@ -88,7 +88,7 @@ const l = (path: string) => `/${locale}${path}`;
         </div>
       </div>
       <div class="footer-bottom" style="display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap;">
-        <button class="theme-toggle" aria-label={t(locale, 'themeToggle')}><i data-lucide="sun" style="width:16px;height:16px;"></i> <span class="theme-label">{t(locale, 'themeLight')}</span></button>
+        <button class="theme-toggle" aria-label={t(locale, 'themeToggle')} data-label-light={t(locale, 'themeLight')} data-label-dark={t(locale, 'themeDark')}><i data-lucide="sun" style="width:16px;height:16px;"></i> <span class="theme-label">{t(locale, 'themeLight')}</span></button>
         <p><a href="/admin" style="color:inherit;text-decoration:none;">{t(locale, 'footerCopyright')}</a></p>
       </div>
     </div>

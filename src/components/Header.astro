@@ -1,6 +1,8 @@
 ---
 import { t, getAlternateUrl } from '../lib/i18n';
 import type { Locale } from '../lib/i18n';
+import { getActiveTeams } from '../lib/fetch/teams';
+import { getBadgeText, getTeamDefs, type TeamCategory } from '../data/teams';
 
 interface Props {
   locale: Locale;
@@ -12,6 +14,27 @@ const altUrl = getAlternateUrl(Astro.url);
 
 // Helper to prefix locale
 const l = (path: string) => `/${locale}${path}`;
+
+// Volleyball nav — live leagues/labels from Directus (Volleymanager is the
+// source of truth), so the dropdown follows the D1/D2 swap automatically.
+// Falls back to the static defs if Directus is unreachable at build time.
+type NavTeam = { slug: string; displayName: string; league: string; chipLabel: string; category: string; order: number };
+let vbNav: NavTeam[] = [];
+try {
+  vbNav = (await getActiveTeams())
+    .filter((tm) => tm.sport === 'volleyball' && tm.hasDetailPage)
+    .map((tm) => ({ slug: tm.slug, displayName: tm.displayName, league: tm.league, chipLabel: tm.chipLabel, category: tm.category, order: tm.order }));
+} catch { /* fall back below */ }
+if (!vbNav.length) {
+  vbNav = (['women', 'men', 'youth'] as TeamCategory[])
+    .flatMap((c) => getTeamDefs('volleyball', c))
+    .filter((d) => d.hasDetailPage)
+    .map((d) => ({ slug: d.slug, displayName: d.displayName, league: d.fallbackLeague || '', chipLabel: d.chipLabel, category: d.category, order: d.order }));
+}
+const vbBy = (cat: string) => vbNav.filter((tm) => tm.category === cat).sort((a, b) => a.order - b.order);
+const vbWomen = vbBy('women');
+const vbMen = vbBy('men');
+const vbYouth = vbBy('youth');
 
 // Build the alternate path for language toggle
 const currentPath = Astro.url.pathname;
@@ -56,10 +79,9 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
                   <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="dropdown-group-items">
-                  <a href={l('/volleyball/d1')} class="dropdown-link">Damen 1 — 3. Liga</a>
-                  <a href={l('/volleyball/d2')} class="dropdown-link">Damen 2 — 3. Liga</a>
-                  <a href={l('/volleyball/d3')} class="dropdown-link">Damen 3 — 4. Liga</a>
-                  <a href={l('/volleyball/d4')} class="dropdown-link">Damen 4 — 5. Liga</a>
+                  {vbWomen.map((tm) => (
+                    <a href={l(`/volleyball/${tm.slug}`)} class="dropdown-link">{tm.displayName} — {getBadgeText(tm.league, tm.chipLabel)}</a>
+                  ))}
                 </div>
               </div>
               <div class="dropdown-group">
@@ -68,10 +90,9 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
                   <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="dropdown-group-items">
-                  <a href={l('/volleyball/h1')} class="dropdown-link">Herren 1 — 2. Liga</a>
-                  <a href={l('/volleyball/h2')} class="dropdown-link">Herren 2 — 3. Liga</a>
-                  <a href={l('/volleyball/h3')} class="dropdown-link">Herren 3 — 3. Liga</a>
-                  <a href={l('/volleyball/legends')} class="dropdown-link">Legends — 4. Liga</a>
+                  {vbMen.map((tm) => (
+                    <a href={l(`/volleyball/${tm.slug}`)} class="dropdown-link">{tm.displayName} — {getBadgeText(tm.league, tm.chipLabel)}</a>
+                  ))}
                 </div>
               </div>
               <div class="dropdown-group">
@@ -80,10 +101,9 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
                   <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="dropdown-group-items">
-                  <a href={l('/volleyball/du23-1')} class="dropdown-link">Damen U23-1</a>
-                  <a href={l('/volleyball/du23-2')} class="dropdown-link">Damen U23-2</a>
-                  <a href={l('/volleyball/hu23')} class="dropdown-link">Herren U23</a>
-                  <a href={l('/volleyball/hu20')} class="dropdown-link">Herren U20</a>
+                  {vbYouth.map((tm) => (
+                    <a href={l(`/volleyball/${tm.slug}`)} class="dropdown-link">{tm.displayName}</a>
+                  ))}
                 </div>
               </div>
               <div class="dropdown-divider"></div>
@@ -206,10 +226,9 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
               <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="dropdown-group-items">
-              <a href={l('/volleyball/d1')} class="mobile-sublink">Damen 1 — 3. Liga</a>
-              <a href={l('/volleyball/d2')} class="mobile-sublink">Damen 2 — 3. Liga</a>
-              <a href={l('/volleyball/d3')} class="mobile-sublink">Damen 3 — 4. Liga</a>
-              <a href={l('/volleyball/d4')} class="mobile-sublink">Damen 4 — 5. Liga</a>
+              {vbWomen.map((tm) => (
+                <a href={l(`/volleyball/${tm.slug}`)} class="mobile-sublink">{tm.displayName} — {getBadgeText(tm.league, tm.chipLabel)}</a>
+              ))}
             </div>
           </div>
           <div class="dropdown-group">
@@ -218,10 +237,9 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
               <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="dropdown-group-items">
-              <a href={l('/volleyball/h1')} class="mobile-sublink">Herren 1 — 2. Liga</a>
-              <a href={l('/volleyball/h2')} class="mobile-sublink">Herren 2 — 3. Liga</a>
-              <a href={l('/volleyball/h3')} class="mobile-sublink">Herren 3 — 3. Liga</a>
-              <a href={l('/volleyball/legends')} class="mobile-sublink">Legends — 4. Liga</a>
+              {vbMen.map((tm) => (
+                <a href={l(`/volleyball/${tm.slug}`)} class="mobile-sublink">{tm.displayName} — {getBadgeText(tm.league, tm.chipLabel)}</a>
+              ))}
             </div>
           </div>
           <div class="dropdown-group">
@@ -230,10 +248,9 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
               <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="dropdown-group-items">
-              <a href={l('/volleyball/du23-1')} class="mobile-sublink">Damen U23-1</a>
-              <a href={l('/volleyball/du23-2')} class="mobile-sublink">Damen U23-2</a>
-              <a href={l('/volleyball/hu23')} class="mobile-sublink">Herren U23</a>
-              <a href={l('/volleyball/hu20')} class="mobile-sublink">Herren U20</a>
+              {vbYouth.map((tm) => (
+                <a href={l(`/volleyball/${tm.slug}`)} class="mobile-sublink">{tm.displayName}</a>
+              ))}
             </div>
           </div>
           <a href={l(locale === 'de' ? '/volleyball/reglemente' : '/volleyball/regulations')} class="mobile-sublink">{t(locale, 'navRegulations')}</a>

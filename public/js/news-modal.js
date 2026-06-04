@@ -6,6 +6,8 @@
   'use strict';
 
   var overlay = null;
+  var historyPushed = false; // did we add a history entry for the open modal?
+  var basePath = '';         // URL to restore to when the modal closes
 
   function el(tag, cls, text) {
     var e = document.createElement(tag);
@@ -29,17 +31,37 @@
     return svg;
   }
 
-  function close() {
+  // DOM-only teardown — never touches history. Idempotent.
+  function teardown() {
     if (overlay && overlay.parentNode) {
       overlay.parentNode.removeChild(overlay);
-      overlay = null;
       document.body.style.overflow = '';
+    }
+    overlay = null;
+  }
+
+  // User-initiated close (X / overlay / Esc). Keeps the URL in sync so a shared
+  // ?article= link doesn't immediately re-open the modal after it's dismissed.
+  function close() {
+    if (historyPushed) {
+      historyPushed = false;
+      window.history.back(); // fires popstate → teardown()
+    } else {
+      teardown();
+      if (basePath) window.history.replaceState({}, '', basePath);
     }
   }
 
-  function showNewsModal(data, locale) {
-    if (overlay) close();
+  // Browser back/forward closes the modal visually without re-popping history.
+  window.addEventListener('popstate', function () {
+    historyPushed = false;
+    teardown();
+  });
+
+  function showNewsModal(data, locale, opts) {
+    if (overlay) teardown();
     var isDE = locale !== 'en';
+    var deepLink = !!(opts && opts.deepLink);
 
     document.body.style.overflow = 'hidden';
     overlay = el('div', 'news-modal-overlay');
@@ -131,8 +153,27 @@
     var shareLabel = el('span', 'nm-share-label', isDE ? 'Teilen' : 'Share');
     shareBar.appendChild(shareLabel);
 
-    var pageUrl = window.location.origin + '/' + (isDE ? 'de' : 'en') + '/news/#' + encodeURIComponent(data.title);
+    var shareBase = window.location.origin + '/' + (isDE ? 'de' : 'en') + '/news/';
+    var pageUrl = data.slug ? shareBase + '?article=' + encodeURIComponent(data.slug) : shareBase;
     var shareText = data.title + ' — KSC Wiedikon';
+
+    // Reflect the article in the address bar so the page URL is itself shareable
+    // and refresh/back behave sensibly — but only on the news listing page, so a
+    // card opened from e.g. the homepage doesn't rewrite that page's URL.
+    var onNewsPage = window.location.pathname.indexOf('/news') !== -1;
+    if (data.slug && onNewsPage) {
+      basePath = shareBase;
+      if (deepLink) {
+        window.history.replaceState({ kscwNews: 1 }, '', pageUrl);
+        historyPushed = false;
+      } else {
+        window.history.pushState({ kscwNews: 1 }, '', pageUrl);
+        historyPushed = true;
+      }
+    } else {
+      basePath = '';
+      historyPushed = false;
+    }
 
     // WhatsApp
     var waBtn = el('a', 'nm-share-btn nm-share-whatsapp');
@@ -212,4 +253,46 @@
       console.warn('[KSCW] Failed to parse news data:', err);
     }
   });
+
+  // ── Deep link: /xx/news/?article=<slug> opens that article directly ────────
+  // Works even for older/paginated articles not in the initial list render, by
+  // fetching the single article from Directus by slug. Static site, runtime data.
+  function directusBase() {
+    var h = window.location.hostname;
+    return (h === 'localhost' || h === '127.0.0.1')
+      ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  }
+
+  function openArticleBySlug(slug) {
+    var locale = document.documentElement.lang || 'de';
+    var isEN = locale === 'en';
+    var base = directusBase();
+    var fields = 'id,title,title_en,slug,excerpt,body,category,author,published_at,image,date_created';
+    var url = base + '/items/news?fields=' + encodeURIComponent(fields)
+      + '&filter=' + encodeURIComponent(JSON.stringify({ slug: { _eq: slug } }))
+      + '&limit=1';
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        var n = res && res.data && res.data[0];
+        if (!n) return; // unknown or unpublished slug → leave the listing as-is
+        showNewsModal({
+          title: (isEN && n.title_en) ? n.title_en : n.title,
+          body: n.body,
+          date: n.published_at || n.date_created,
+          category: n.category,
+          image: n.image ? (base + '/assets/' + n.image + '?width=800&quality=80') : '',
+          author: n.author,
+          slug: n.slug
+        }, locale, { deepLink: true });
+      })
+      .catch(function () {});
+  }
+
+  (function bootstrapDeepLink() {
+    var slug;
+    try { slug = new URLSearchParams(window.location.search).get('article'); }
+    catch (e) { slug = null; }
+    if (slug) openArticleBySlug(slug);
+  })();
 })();

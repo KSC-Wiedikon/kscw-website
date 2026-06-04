@@ -154,7 +154,7 @@ const locale = 'en';
               var script = document.createElement('script');
               script.type = 'application/json';
               script.className = 'news-data';
-              script.textContent = JSON.stringify({ title: title, body: n.body, date: date, category: n.category, image: imageUrl, author: n.author });
+              script.textContent = JSON.stringify({ title: title, body: n.body, date: date, category: n.category, image: imageUrl, author: n.author, slug: n.slug });
               article.appendChild(script);
 
               frag.appendChild(article);

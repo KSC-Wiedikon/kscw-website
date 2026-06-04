@@ -8,6 +8,12 @@ import { getUpcomingEvents } from '../../lib/fetch/events';
 
 const locale = 'de';
 
+// Event descriptions are authored in the lower-trust WiediSync members app and
+// reach this public page unsanitised. Strip all HTML to plain text at build time
+// so a coach cannot store `<img onerror=...>` that runs in every visitor's browser.
+const stripHtml = (s: string): string =>
+  s.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim();
+
 let upcomingEvents: any[] = [];
 try {
   const events = await getUpcomingEvents(3);
@@ -17,7 +23,7 @@ try {
     time: '',
     location: ev.location || '',
     category: ev.eventType || 'other',
-    description: ev.description || '',
+    description: stripHtml(ev.description || ''),
   }));
 } catch (e) {
   console.warn('Failed to fetch events:', e);
@@ -118,7 +124,7 @@ try {
                 {ev.location && <p class="event-location">{ev.location}</p>}
               </div>
               {ev.description && (
-                <div class="event-description" set:html={ev.description} />
+                <div class="event-description">{ev.description}</div>
               )}
             </article>
           ))}
@@ -517,7 +523,7 @@ try {
               var script = document.createElement('script');
               script.type = 'application/json';
               script.className = 'news-data';
-              script.textContent = JSON.stringify({ title: title, body: n.body, date: date, category: n.category, image: imageUrl, author: n.author });
+              script.textContent = JSON.stringify({ title: title, body: n.body, date: date, category: n.category, image: imageUrl, author: n.author, slug: n.slug });
               article.appendChild(script);
 
               frag.appendChild(article);

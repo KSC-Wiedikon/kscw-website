@@ -6,6 +6,8 @@
   'use strict';
 
   var overlay = null;
+  var historyPushed = false; // did we add a history entry for the open modal?
+  var basePath = '';         // URL to restore to when the modal closes
 
   function el(tag, cls, text) {
     var e = document.createElement(tag);
@@ -29,17 +31,37 @@
     return svg;
   }
 
-  function close() {
+  // DOM-only teardown — never touches history. Idempotent.
+  function teardown() {
     if (overlay && overlay.parentNode) {
       overlay.parentNode.removeChild(overlay);
-      overlay = null;
       document.body.style.overflow = '';
+    }
+    overlay = null;
+  }
+
+  // User-initiated close (X / overlay / Esc). Keeps the URL in sync so a shared
+  // ?article= link doesn't immediately re-open the modal after it's dismissed.
+  function close() {
+    if (historyPushed) {
+      historyPushed = false;
+      window.history.back(); // fires popstate → teardown()
+    } else {
+      teardown();
+      if (basePath) window.history.replaceState({}, '', basePath);
     }
   }
 
-  function showNewsModal(data, locale) {
-    if (overlay) close();
+  // Browser back/forward closes the modal visually without re-popping history.
+  window.addEventListener('popstate', function () {
+    historyPushed = false;
+    teardown();
+  });
+
+  function showNewsModal(data, locale, opts) {
+    if (overlay) teardown();
     var isDE = locale !== 'en';
+    var deepLink = !!(opts && opts.deepLink);
 
     document.body.style.overflow = 'hidden';
     overlay = el('div', 'news-modal-overlay');
@@ -92,20 +114,17 @@
     // SECURITY: Sanitize with DOMPurify before insertion. Admin panel already
     // DOMPurifies on save, but Directus Studio / REST writes bypass that, so the
     // public renderer sanitizes again as the enforcing boundary.
-    // EDITORIAL: Unwrap all <a> tags — public site shows no links; ticket and
-    // action links live on Wiedisync (members platform) only.
-    var hadLinks = false;
+    // LINKS: <a> tags are allowed. DOMPurify's default URI filter already blocks
+    // javascript:/vbscript:/data: hrefs; the post-pass below additionally keeps
+    // only http(s)/mailto hrefs and opens external links in a new tab safely.
     if (data.body) {
       var body = el('div', 'nm-body');
       var raw = String(data.body);
-      // Detect external links in the raw input to decide whether to surface the
-      // Wiedisync CTA; DOMPurify will strip <a> tags (see FORBID_TAGS below).
-      if (/<a\b[^>]*href\s*=\s*["']?(?:https?:)?\/\//i.test(raw)) hadLinks = true;
       var clean;
       if (typeof window.DOMPurify !== 'undefined') {
         clean = window.DOMPurify.sanitize(raw, {
-          FORBID_TAGS: ['a', 'script', 'iframe', 'object', 'embed', 'form', 'style', 'link', 'meta', 'base'],
-          FORBID_ATTR: ['style', 'formaction', 'action', 'href', 'xlink:href'],
+          FORBID_TAGS: ['script', 'iframe', 'object', 'embed', 'form', 'style', 'link', 'meta', 'base'],
+          FORBID_ATTR: ['style', 'formaction', 'action', 'xlink:href'],
           KEEP_CONTENT: true,
         });
       } else {
@@ -114,25 +133,19 @@
         clean = raw.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       }
       body.innerHTML = clean; // eslint-disable-line no-unsanitized/property -- DOMPurify-sanitized above
+      // Keep only http(s)/mailto hrefs; open external links in a new tab safely.
+      var anchors = body.querySelectorAll('a');
+      for (var ai = 0; ai < anchors.length; ai++) {
+        var a = anchors[ai];
+        var href = a.getAttribute('href') || '';
+        if (/^https?:/i.test(href)) {
+          a.setAttribute('target', '_blank');
+          a.setAttribute('rel', 'noopener noreferrer');
+        } else if (!/^mailto:/i.test(href)) {
+          a.removeAttribute('href');
+        }
+      }
       modal.appendChild(body);
-    }
-
-    // ── Wiedisync CTA (only when body contained external links)
-    if (hadLinks) {
-      var cta = el('div', 'nm-wiedisync-cta');
-      var ctaIcon = el('span', 'nm-cta-icon', '🔗');
-      var ctaText = el('span', 'nm-cta-text', isDE
-        ? 'Für Mitglieder: Alle Links & Tickets findest du im Login-Bereich auf '
-        : 'For members: all links & tickets are in the members area on ');
-      var ctaLink = document.createElement('a');
-      ctaLink.href = 'https://wiedisync.kscw.ch';
-      ctaLink.target = '_blank';
-      ctaLink.rel = 'noopener';
-      ctaLink.textContent = 'wiedisync.kscw.ch';
-      ctaText.appendChild(ctaLink);
-      cta.appendChild(ctaIcon);
-      cta.appendChild(ctaText);
-      modal.appendChild(cta);
     }
 
     // ── Share buttons
@@ -140,8 +153,27 @@
     var shareLabel = el('span', 'nm-share-label', isDE ? 'Teilen' : 'Share');
     shareBar.appendChild(shareLabel);
 
-    var pageUrl = window.location.origin + '/' + (isDE ? 'de' : 'en') + '/news/#' + encodeURIComponent(data.title);
+    var shareBase = window.location.origin + '/' + (isDE ? 'de' : 'en') + '/news/';
+    var pageUrl = data.slug ? shareBase + '?article=' + encodeURIComponent(data.slug) : shareBase;
     var shareText = data.title + ' — KSC Wiedikon';
+
+    // Reflect the article in the address bar so the page URL is itself shareable
+    // and refresh/back behave sensibly — but only on the news listing page, so a
+    // card opened from e.g. the homepage doesn't rewrite that page's URL.
+    var onNewsPage = window.location.pathname.indexOf('/news') !== -1;
+    if (data.slug && onNewsPage) {
+      basePath = shareBase;
+      if (deepLink) {
+        window.history.replaceState({ kscwNews: 1 }, '', pageUrl);
+        historyPushed = false;
+      } else {
+        window.history.pushState({ kscwNews: 1 }, '', pageUrl);
+        historyPushed = true;
+      }
+    } else {
+      basePath = '';
+      historyPushed = false;
+    }
 
     // WhatsApp
     var waBtn = el('a', 'nm-share-btn nm-share-whatsapp');
@@ -221,4 +253,46 @@
       console.warn('[KSCW] Failed to parse news data:', err);
     }
   });
+
+  // ── Deep link: /xx/news/?article=<slug> opens that article directly ────────
+  // Works even for older/paginated articles not in the initial list render, by
+  // fetching the single article from Directus by slug. Static site, runtime data.
+  function directusBase() {
+    var h = window.location.hostname;
+    return (h === 'localhost' || h === '127.0.0.1')
+      ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  }
+
+  function openArticleBySlug(slug) {
+    var locale = document.documentElement.lang || 'de';
+    var isEN = locale === 'en';
+    var base = directusBase();
+    var fields = 'id,title,title_en,slug,excerpt,body,category,author,published_at,image,date_created';
+    var url = base + '/items/news?fields=' + encodeURIComponent(fields)
+      + '&filter=' + encodeURIComponent(JSON.stringify({ slug: { _eq: slug } }))
+      + '&limit=1';
+    fetch(url)
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        var n = res && res.data && res.data[0];
+        if (!n) return; // unknown or unpublished slug → leave the listing as-is
+        showNewsModal({
+          title: (isEN && n.title_en) ? n.title_en : n.title,
+          body: n.body,
+          date: n.published_at || n.date_created,
+          category: n.category,
+          image: n.image ? (base + '/assets/' + n.image + '?width=800&quality=80') : '',
+          author: n.author,
+          slug: n.slug
+        }, locale, { deepLink: true });
+      })
+      .catch(function () {});
+  }
+
+  (function bootstrapDeepLink() {
+    var slug;
+    try { slug = new URLSearchParams(window.location.search).get('article'); }
+    catch (e) { slug = null; }
+    if (slug) openArticleBySlug(slug);
+  })();
 })();

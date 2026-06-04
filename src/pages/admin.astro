@@ -3591,10 +3591,30 @@ import '../styles/global.css';
     font-size: var(--text-sm);
     color: var(--text-primary);
     background: var(--bg-white);
+    /* Let the editor stretch to the container's min-height so the box reads
+       as one unit — otherwise the 150px editor sat inside the 200px container. */
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  /* Focus the whole control like the other admin inputs. Without this the
+     global :focus-visible rule (3px outline + offset + radius) drew a smaller
+     rounded box around just the contenteditable, mismatching the container. */
+  .ql-container.ql-snow:focus-within {
+    border-color: var(--kscw-blue) !important;
+    box-shadow: 0 0 0 3px rgba(74, 85, 162, 0.15);
+  }
+  .admin-field:has(.ql-container.ql-snow:focus-within) .ql-toolbar.ql-snow {
+    border-color: var(--kscw-blue) !important;
   }
   .ql-editor {
+    flex: 1 1 auto;
     min-height: 150px;
-    color: #fff !important;
+    color: var(--text-primary) !important;
+  }
+  .ql-editor:focus,
+  .ql-editor:focus-visible {
+    outline: none;
   }
   .ql-editor.ql-blank::before {
     color: var(--text-muted) !important;

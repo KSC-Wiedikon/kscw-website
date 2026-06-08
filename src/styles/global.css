@@ -229,6 +229,65 @@
 .light .sponsor-overflow::after {
   background: linear-gradient(to left, #f5f6fa, transparent);
 }
+
+/* Team-page sponsors tab — each sponsor in its own equal square box.
+   Logos sit inside on a white field (sponsor logos assume light bg); teams
+   without a logo fall back to the KSC Wiedikon shield. */
+.sponsors-page-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-lg);
+}
+@media (max-width: 1024px) {
+  .sponsors-page-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 640px) {
+  .sponsors-page-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.sponsors-page-grid .sponsor-page-card {
+  aspect-ratio: 1 / 1;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  text-align: center;
+  text-decoration: none;
+  color: #1e293b;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+a.sponsor-page-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+}
+.sponsors-page-grid .sponsor-logo {
+  max-width: 100%;
+  max-height: 70%;
+  object-fit: contain;
+}
+.sponsors-page-grid .sponsor-logo--fallback {
+  max-height: 60%;
+  opacity: 0.9;
+}
+.sponsors-page-grid .sponsor-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+/* Contact form — note shown when the chosen team isn't recruiting. */
+.team-recruiting-note {
+  margin-top: var(--space-sm);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--text-muted, #94a3b8);
+}
 :root .nav-logo span {
   color: #e2e8f0;
 }
@@ -2723,6 +2782,13 @@ button:focus-visible {
 .cta-trial-notes {
   opacity: 0.7;
   font-style: italic;
+}
+/* Note on a closed team's CTA — team isn't currently recruiting. */
+.cta-section .cta-not-recruiting {
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0.95;
 }
 
 /* ── Newsletter Section ────────────────────────────────────── */

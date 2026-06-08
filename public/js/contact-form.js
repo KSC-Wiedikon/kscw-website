@@ -53,18 +53,20 @@
 
   // ── Team cache ────────────────────────────────────────────────────
   var teamCache = {};
+  // Selected-team lookup, keyed by the <option> value (the Directus team id —
+  // the discriminator). Used to show the "not recruiting" note on change.
+  var currentTeamsById = {};
 
   function fetchTeams(sport, callback) {
     if (teamCache[sport]) return callback(teamCache[sport]);
 
-    // Only list teams currently recruiting (open_for_players === true).
-    // Closed teams are hidden from the dropdown — if a stale ?teamId points
-    // to a closed team, the pre-select silently no-ops.
+    // List all active teams for the sport. Teams not currently recruiting
+    // (open_for_players === false) stay selectable, but show an info note so
+    // the visitor knows the team is full / not looking for players.
     var url = DIRECTUS_URL + '/items/teams'
       + '?filter[sport][_eq]=' + sport
       + '&filter[active][_eq]=true'
-      + '&filter[open_for_players][_eq]=true'
-      + '&fields=id,name,league'
+      + '&fields=id,name,league,open_for_players'
       + '&sort=name'
       + '&limit=-1';
 
@@ -105,19 +107,23 @@
     // "Allgemein" option for the sport
     teamSelect.appendChild(makeOption('', i18n.t('generalTeamGeneral') + ' (' + sportLabel + ')', false, false));
 
-    // Each team
+    // Each team. Keep a lookup so the change handler can read open_for_players.
+    currentTeamsById = {};
     for (var i = 0; i < teams.length; i++) {
       var t = teams[i];
       var label = t.name + (t.league ? ' — ' + t.league : '');
       teamSelect.appendChild(makeOption(t.id, label, false, false));
+      currentTeamsById[t.id] = t;
     }
 
     teamGroup.style.display = '';
+    updateRecruitingNote();
 
     // Pre-select if teamId from URL matches
     if (prefillTeamId) {
       teamSelect.value = prefillTeamId;
       prefillTeamId = null; // only apply once
+      updateRecruitingNote();
     }
   }
 
@@ -125,6 +131,39 @@
     if (!teamGroup || !teamSelect) return;
     teamGroup.style.display = 'none';
     teamSelect.value = '';
+    updateRecruitingNote();
+  }
+
+  // ── "Not recruiting" note ─────────────────────────────────────────
+  // Shown under the team dropdown when the selected team isn't open for new
+  // players. Created lazily so we don't have to touch the kontakt markup.
+  var recruitingNote = null;
+
+  function ensureRecruitingNote() {
+    if (recruitingNote || !teamGroup) return recruitingNote;
+    recruitingNote = document.createElement('p');
+    recruitingNote.id = 'team-recruiting-note';
+    recruitingNote.className = 'team-recruiting-note';
+    recruitingNote.style.display = 'none';
+    teamGroup.appendChild(recruitingNote);
+    return recruitingNote;
+  }
+
+  function updateRecruitingNote() {
+    var note = ensureRecruitingNote();
+    if (!note) return;
+    var team = teamSelect ? currentTeamsById[teamSelect.value] : null;
+    if (team && team.open_for_players === false) {
+      note.textContent = i18n.t('contactTeamNotRecruiting', { team: team.name });
+      note.style.display = '';
+    } else {
+      note.textContent = '';
+      note.style.display = 'none';
+    }
+  }
+
+  if (teamSelect) {
+    teamSelect.addEventListener('change', updateRecruitingNote);
   }
 
   // ── Betreff change handler ────────────────────────────────────────
@@ -246,6 +285,7 @@
       // Update dynamically generated select option placeholders
       var teamPlaceholder = document.querySelector('#team-select option[value=""]');
       if (teamPlaceholder) teamPlaceholder.textContent = i18n.t('contactTeamPlaceholder');
+      updateRecruitingNote();
     }
   });
 })();

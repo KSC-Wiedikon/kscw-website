@@ -141,11 +141,13 @@
     var container = document.getElementById('cta-container');
     if (!container) return;
 
-    // Only show CTA if team is open for new players
-    if (!raw.open_for_players) return;
-
     var sport = raw.sport || '';
     if (sport !== 'volleyball' && sport !== 'basketball') return;
+
+    // Open teams get the recruiting CTA (positions + trial trainings). Closed
+    // teams still get a contact button, but with a note next to it that the
+    // team is full / not currently looking for players.
+    var isOpen = !!raw.open_for_players;
 
     // Route to the central contact form, prefilled with sport + team.
     // The Directus /kscw/contact endpoint resolves the team's coaches + TR
@@ -163,17 +165,26 @@
     inner.className = 'container';
 
     var h2 = document.createElement('h2');
-    h2.textContent = i18n.t('teamCTA', { team: teamData.name || TEAM });
+    h2.textContent = isOpen
+      ? i18n.t('teamCTA', { team: teamData.name || TEAM })
+      : i18n.t('teamContactTitle', { team: teamData.name || TEAM });
     inner.appendChild(h2);
 
-    var p = document.createElement('p');
-    p.textContent = i18n.t('teamCTAText');
-    inner.appendChild(p);
+    if (isOpen) {
+      var p = document.createElement('p');
+      p.textContent = i18n.t('teamCTAText');
+      inner.appendChild(p);
+    } else {
+      var closedNote = document.createElement('p');
+      closedNote.className = 'cta-not-recruiting';
+      closedNote.textContent = i18n.t('contactTeamNotRecruiting', { team: teamData.name || TEAM });
+      inner.appendChild(closedNote);
+    }
 
     // Team-level recruiting positions — the positions the team is looking for.
     // Shown as plain text below the subtitle (the badge lives in the hero).
     var recruitText = positionText(Array.isArray(raw.recruiting_positions) ? raw.recruiting_positions : []);
-    if (recruitText) {
+    if (isOpen && recruitText) {
       var recruitP = document.createElement('p');
       recruitP.className = 'cta-recruiting-positions';
       var recruitLabel = document.createElement('strong');
@@ -186,7 +197,7 @@
     // Upcoming trial trainings (Probetrainings) — only show when populated.
     // Dates render dd.mm.yyyy per Swiss convention regardless of UI locale.
     var trials = Array.isArray(raw.trial_trainings) ? raw.trial_trainings : [];
-    if (trials.length) {
+    if (isOpen && trials.length) {
       var trialBox = document.createElement('div');
       trialBox.className = 'cta-trial-trainings';
       var trialHeading = document.createElement('h3');
@@ -452,14 +463,19 @@
       }
 
       var logoRef = sp.logo_url || sp.logo;
+      var img = document.createElement('img');
       if (logoRef) {
-        var img = document.createElement('img');
         img.src = logoRef.indexOf('http') === 0 ? logoRef : DIRECTUS_URL + '/assets/' + logoRef + '?width=200&quality=80';
         img.alt = sp.name;
         img.className = 'sponsor-logo';
-        img.loading = 'lazy';
-        wrapper.appendChild(img);
+      } else {
+        // No sponsor logo — fall back to the KSC Wiedikon shield.
+        img.src = '/images/kscw_blau.png';
+        img.alt = sp.name || 'KSC Wiedikon';
+        img.className = 'sponsor-logo sponsor-logo--fallback';
       }
+      img.loading = 'lazy';
+      wrapper.appendChild(img);
 
       if (sp.name) {
         var nameEl = document.createElement('div');

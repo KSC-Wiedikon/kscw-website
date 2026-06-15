@@ -21,13 +21,16 @@
 
   function detectLang() {
     // Single-URL site: language lives in localStorage (set by the header
-    // toggle), not in the URL path. KSCW is German-first — default to German
-    // for everyone and only switch to English on an explicit prior choice
-    // (matches the site's long-standing "German unless you pick EN" behavior).
+    // toggle), not in the URL path. An explicit prior choice always wins;
+    // otherwise default to the browser language — German or English — and fall
+    // back to German when the browser is neither.
     try {
       var stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === 'en') return 'en';
+      if (stored === 'en' || stored === 'de') return stored;
     } catch (e) { /* private mode */ }
+    var nav = (navigator.language || navigator.userLanguage || '').toLowerCase();
+    if (nav.indexOf('en') === 0) return 'en';
+    if (nav.indexOf('de') === 0) return 'de';
     return 'de';
   }
 

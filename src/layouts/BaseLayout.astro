@@ -58,16 +58,21 @@ const { title, titleKey, description, descriptionKey, locale = 'de' } = Astro.pr
   <script is:inline src="/js/error-logger.js"></script>
   <script is:inline>
     // Pre-paint: apply saved theme + language before first paint.
-    // Page HTML is server-rendered in German; the i18n engine swaps to
-    // English in place when that's the saved choice.
+    // Page HTML is server-rendered in German; the i18n engine swaps to English
+    // in place. Mirror detectLang() here: an explicit saved choice wins, else
+    // the browser language (en/de) decides, else German — so an English-browser
+    // visitor doesn't flash German. Keep in sync with public/js/i18n.js.
     (function() {
       try {
         if (localStorage.getItem('kscw-theme') === 'light') {
           document.documentElement.classList.add('light');
         }
-        if (localStorage.getItem('kscw-locale') === 'en') {
-          document.documentElement.lang = 'en';
+        var loc = localStorage.getItem('kscw-locale');
+        if (loc !== 'de' && loc !== 'en') {
+          var nav = (navigator.language || '').toLowerCase();
+          loc = nav.indexOf('en') === 0 ? 'en' : 'de';
         }
+        if (loc === 'en') document.documentElement.lang = 'en';
       } catch (e) {}
     })();
   </script>

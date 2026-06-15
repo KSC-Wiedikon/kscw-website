@@ -152,8 +152,7 @@
     // Route to the central contact form, prefilled with sport + team.
     // The Directus /kscw/contact endpoint resolves the team's coaches + TR
     // server-side, so no email addresses are ever exposed in the browser.
-    var locale = window.location.pathname.indexOf('/en/') === 0 ? 'en' : 'de';
-    var contactPath = '/' + locale + '/club/kontakt';
+    var contactPath = '/club/kontakt';
     var qs = '?sport=' + encodeURIComponent(sport)
       + (TEAM_DIRECTUS_ID ? '&teamId=' + encodeURIComponent(TEAM_DIRECTUS_ID) : '');
     var contactHref = contactPath + qs;

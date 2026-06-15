@@ -2,6 +2,14 @@
 
 All notable changes to the KSC Wiedikon website are documented in this file.
 
+## [3.12.0] — 2026-06-15
+
+### Changed
+- **Single-URL routing**: dropped the `/de` and `/en` URL prefixes — each page now has one canonical (German-slug) URL with the language toggled client-side via `public/js/i18n.js`. All legacy bilingual URLs are 301-redirected to their canonical paths through `public/_redirects` (Cloudflare Pages), so existing links, bookmarks and search results keep working
+
+### Fixed
+- **Recent results — basketball games**: completed basketball games rendered with the volleyball icon and an empty team chip. Root cause was data-side — the season rollover archived the games' linked teams, so the public API couldn't resolve them (`kscw_team` → `null`). Fixed by re-pointing the orphaned games to their active teams (wiedisync migration `107`). Added a website fallback too: the sport icon is derived from the `game_id` `bb_`/`vb_` prefix when a team can't be read, and an unresolvable team renders no chip instead of an empty pill
+
 ## [3.11.2] — 2026-05-30
 
 ### Fixed

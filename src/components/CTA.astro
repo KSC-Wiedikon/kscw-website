@@ -4,14 +4,18 @@ interface Props {
   text: string;
   buttonLabel: string;
   buttonHref: string;
+  /** i18n keys — when set, the client engine swaps text for the active language. */
+  titleKey?: string;
+  textKey?: string;
+  buttonLabelKey?: string;
 }
 
-const { title, text, buttonLabel, buttonHref } = Astro.props;
+const { title, text, buttonLabel, buttonHref, titleKey, textKey, buttonLabelKey } = Astro.props;
 ---
 <section class="section cta-section">
   <div class="container" style="text-align:center;">
-    <h2>{title}</h2>
-    <p style="margin-bottom: var(--space-lg); max-width: 600px; margin-left: auto; margin-right: auto;">{text}</p>
-    <a href={buttonHref} class="btn btn-gold">{buttonLabel}</a>
+    <h2 data-i18n={titleKey}>{title}</h2>
+    <p style="margin-bottom: var(--space-lg); max-width: 600px; margin-left: auto; margin-right: auto;" data-i18n={textKey}>{text}</p>
+    <a href={buttonHref} class="btn btn-gold" data-i18n={buttonLabelKey}>{buttonLabel}</a>
   </div>
 </section>

@@ -252,7 +252,7 @@
         subject: subject,
         team_id: teamIdVal,
         message: message,
-        locale: window.location.pathname.indexOf('/en/') === 0 ? 'en' : 'de',
+        locale: (document.documentElement.lang === 'en') ? 'en' : 'de',
         turnstile_token: turnstileToken,
       }),
     })

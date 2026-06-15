@@ -1,0 +1,390 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import CTA from '../../components/CTA.astro';
+import { t } from '../../lib/i18n';
+
+const locale = 'de';
+---
+<PageLayout
+  title="Über uns — KSC Wiedikon"
+  description="KSC Wiedikon — Basketball und Volleyball seit 1982 in Zürich-Wiedikon."
+  locale={locale}
+  pageTitle={t(locale, 'aboutTitle')}
+  pageTitleKey="aboutTitle"
+  pageSubtitle={t(locale, 'aboutSubtitle')}
+  pageSubtitleKey="aboutSubtitle"
+>
+  <div class="tracing-beam-wrapper">
+    <div class="tracing-beam" aria-hidden="true">
+      <div class="tracing-beam-dot"></div>
+    </div>
+
+  <!-- Geschichte + Karte -->
+  <section class="section" style="overflow: hidden;">
+    <div class="container">
+      <div class="history-row">
+        <div class="history-content" style="text-align: justify;">
+          <h2 style="font-size: var(--text-2xl); margin-bottom: var(--space-lg); text-align: left;" data-i18n="aboutHistory">{t(locale, 'aboutHistory')}</h2>
+          <p data-i18n="aboutHistoryText1">{t(locale, 'aboutHistoryText1')}</p>
+          <p style="margin-top: var(--space-lg);" data-i18n="aboutHistoryText2">{t(locale, 'aboutHistoryText2')}</p>
+        </div>
+        <div class="history-map-wrapper">
+          <div class="map-contact-info">
+            <strong>KSC Wiedikon</strong>
+            <p>Schrennengasse 7, 8003 Zürich</p>
+            <p><a href="mailto:kscw@kscw.ch">kscw@kscw.ch</a></p>
+          </div>
+          <div id="history-map" style="height: 400px; border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="stats-section">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-number" data-value="1982">1982</span>
+          <span class="stat-label" data-i18n="aboutStatFounded">{t(locale, 'aboutStatFounded')}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" data-value="300+">300+</span>
+          <span class="stat-label" data-i18n="aboutStatMembers">{t(locale, 'aboutStatMembers')}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" data-value="20+">20+</span>
+          <span class="stat-label" data-i18n="aboutStatTeams">{t(locale, 'aboutStatTeams')}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number" data-value="2">2</span>
+          <span class="stat-label" data-i18n="aboutStatSports">{t(locale, 'aboutStatSports')}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Werte -->
+  <section class="section">
+    <div class="container">
+      <h2 style="font-size: var(--text-2xl); margin-bottom: var(--space-xl); text-align: center;" data-i18n="aboutValues">{t(locale, 'aboutValues')}</h2>
+      <div class="values-grid">
+        <div class="value-card">
+          <div class="value-icon">
+            <i data-lucide="users" style="width: 28px; height: 28px;"></i>
+          </div>
+          <h3 data-i18n="aboutCommunity">{t(locale, 'aboutCommunity')}</h3>
+          <p data-i18n="aboutCommunityText">{t(locale, 'aboutCommunityText')}</p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon">
+            <i data-lucide="handshake" style="width: 28px; height: 28px;"></i>
+          </div>
+          <h3 data-i18n="aboutFairplay">{t(locale, 'aboutFairplay')}</h3>
+          <p data-i18n="aboutFairplayText">{t(locale, 'aboutFairplayText')}</p>
+        </div>
+        <div class="value-card">
+          <div class="value-icon">
+            <i data-lucide="trending-up" style="width: 28px; height: 28px;"></i>
+          </div>
+          <h3 data-i18n="aboutDevelopment">{t(locale, 'aboutDevelopment')}</h3>
+          <p data-i18n="aboutDevelopmentText">{t(locale, 'aboutDevelopmentText')}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hallen -->
+  <section class="section" style="background: var(--bg-muted, #f9fafb);">
+    <div class="container">
+      <h2 style="font-size: var(--text-2xl); margin-bottom: var(--space-xl); text-align: center;" data-i18n="aboutHalls">{t(locale, 'aboutHalls')}</h2>
+      <div class="halls-grid">
+        <div class="hall-card hall-card--main">
+          <div class="hall-badge" data-i18n="aboutHallMainBadge">{t(locale, 'aboutHallMainBadge')}</div>
+          <h3>Kantonsschule Wiedikon</h3>
+          <p class="hall-names">KWI A · KWI B · KWI C</p>
+          <a href="https://maps.app.goo.gl/8ia1QiaZYZg1qUEU8" target="_blank" rel="noopener" class="hall-address">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
+            Schrennengasse 7, Zürich
+          </a>
+        </div>
+        <div class="hall-card">
+          <h3>Döltschi</h3>
+          <p class="hall-names">Döltschi 1 · Döltschi 2</p>
+          <a href="https://maps.app.goo.gl/GQzKo8vDLes53C9J7" target="_blank" rel="noopener" class="hall-address">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
+            Döltschiweg 184, Zürich
+          </a>
+        </div>
+        <div class="hall-card">
+          <h3>Borrweg</h3>
+          <p class="hall-names">Borrweg 1 · Borrweg 2</p>
+          <a href="https://maps.app.goo.gl/sYTZunyhNpMkk7i56" target="_blank" rel="noopener" class="hall-address">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
+            Borrweg 81, Zürich
+          </a>
+        </div>
+        <div class="hall-card">
+          <h3>Rebhügel</h3>
+          <p class="hall-names">Schulhaus Rebhügel</p>
+          <a href="https://maps.app.goo.gl/dYCbeP8vb4vjf8Aq9" target="_blank" rel="noopener" class="hall-address">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
+            Haldenstrasse 70, Zürich
+          </a>
+        </div>
+        <div class="hall-card">
+          <h3>Manegg</h3>
+          <p class="hall-names">Temporärhalle Zwirnerstrasse</p>
+          <a href="https://maps.app.goo.gl/YvPLBekcK3z5mV1a6" target="_blank" rel="noopener" class="hall-address">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
+            Zwirnerstrasse 60, Zürich
+          </a>
+        </div>
+        <div class="hall-card">
+          <h3>Entlisberg</h3>
+          <p class="hall-names">Schulhaus Entlisberg</p>
+          <a href="https://maps.app.goo.gl/Hwh8LoDU3rztdzM96" target="_blank" rel="noopener" class="hall-address">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
+            Balberstrasse 71, Zürich
+          </a>
+        </div>
+        <div class="hall-card">
+          <h3>Zurlinden</h3>
+          <p class="hall-names">Kindergartenhaus Wiedikon</p>
+          <a href="https://maps.app.goo.gl/8TKdiUbAsWEkJGti8" target="_blank" rel="noopener" class="hall-address">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
+            Zentralstrasse 105, Zürich
+          </a>
+        </div>
+        <div class="hall-card">
+          <h3>Fronwald</h3>
+          <p class="hall-names">Sportzentrum Fronwald</p>
+          <a href="https://maps.app.goo.gl/QuWG2ExLVQM3q3baA" target="_blank" rel="noopener" class="hall-address">
+            <i data-lucide="map-pin" style="width: 14px; height: 14px;"></i>
+            Fronwaldstrasse 115, Zürich
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </div><!-- /tracing-beam-wrapper -->
+
+  <!-- CTA -->
+  <CTA
+    title={t(locale, 'aboutCTA')}
+    titleKey="aboutCTA"
+    text={t(locale, 'aboutCTAText')}
+    textKey="aboutCTAText"
+    buttonLabel={t(locale, 'aboutCTAButton')}
+    buttonLabelKey="aboutCTAButton"
+    buttonHref="/club/kontakt"
+  />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script is:inline>
+    document.addEventListener('DOMContentLoaded', function () {
+      var map = L.map('history-map', { scrollWheelZoom: false }).setView([47.3679, 8.5162], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19
+      }).addTo(map);
+      var kscwIcon = L.icon({
+        iconUrl: '/images/kscw_trio.png',
+        iconSize: [48, 52],
+        iconAnchor: [24, 52],
+        popupAnchor: [0, -52]
+      });
+      var marker = L.marker([47.3679, 8.5162], { icon: kscwIcon })
+        .addTo(map)
+        .bindPopup('<strong>KSC Wiedikon</strong><br>Schrennengasse 7, 8003 Zürich<br><a href="mailto:kscw@kscw.ch">kscw@kscw.ch</a>')
+        .openPopup();
+      marker.on('click', function () {
+        window.open('https://maps.app.goo.gl/8ia1QiaZYZg1qUEU8', '_blank');
+      });
+    });
+  </script>
+  <script src="../../islands/stat-counters.ts"></script>
+  <script src="../../islands/scroll-animations.ts"></script>
+</PageLayout>
+
+<style>
+  .stats-section {
+    background: var(--bg-dark, #111827);
+    color: #ffffff;
+    padding: var(--space-3xl) 0;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-xl);
+    text-align: center;
+  }
+  @media (max-width: 640px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+  .stat-number {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--kscw-gold, #FFC832);
+  }
+  .stat-label {
+    font-size: var(--text-sm);
+    color: rgba(255,255,255,0.7);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .values-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-xl);
+  }
+  @media (max-width: 768px) {
+    .values-grid { grid-template-columns: 1fr; }
+  }
+  .value-card {
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    text-align: center;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .value-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    transform: translateY(-4px);
+  }
+  .value-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--kscw-blue, #4A55A2), var(--kscw-gold, #FFC832));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-md);
+    color: #ffffff;
+  }
+  .value-card h3 {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    margin-bottom: var(--space-sm);
+    color: var(--kscw-blue, #4A55A2);
+  }
+  .value-card p {
+    font-size: var(--text-sm);
+    color: #475569;
+    line-height: 1.6;
+  }
+  .history-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2xl);
+    align-items: start;
+  }
+  @media (max-width: 768px) {
+    .history-row { grid-template-columns: 1fr; }
+  }
+  .history-map-wrapper {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 0;
+    overflow: hidden;
+  }
+  .map-contact-info {
+    margin-bottom: var(--space-md);
+    font-size: var(--text-base);
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+  .map-contact-info strong {
+    font-size: var(--text-lg);
+    color: var(--text-primary);
+  }
+  .map-contact-info a {
+    color: var(--kscw-blue, #4A55A2);
+  }
+  .history-content p {
+    font-size: var(--text-base);
+    line-height: 1.8;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-lg);
+  }
+  .halls-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-lg);
+  }
+  @media (max-width: 1024px) {
+    .halls-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .halls-grid { grid-template-columns: 1fr; }
+  }
+  .hall-card {
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    text-align: center;
+    position: relative;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .hall-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+  .hall-card--main {
+    border-color: var(--kscw-gold, #FFC832);
+    border-width: 2px;
+  }
+  .hall-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--kscw-gold, #FFC832);
+    color: #1e293b;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 2px 10px;
+    border-radius: var(--radius-sm, 4px);
+  }
+  .hall-card h3 {
+    font-size: var(--text-base);
+    font-weight: 700;
+    margin-bottom: var(--space-xs);
+    color: #1e293b;
+  }
+  .hall-names {
+    font-size: var(--text-sm);
+    color: #475569;
+    margin-bottom: var(--space-sm);
+  }
+  .hall-address {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: var(--kscw-blue, #4A55A2);
+    text-decoration: none;
+    transition: opacity 0.2s ease;
+  }
+  .hall-address:hover {
+    opacity: 0.7;
+  }
+</style>

@@ -167,7 +167,7 @@
                     if (result && result.signed_up) {
                       alreadySignedUp = true;
                       var msg = form.getAttribute('data-msg-already-wiedisync')
-                        || (window.location.pathname.startsWith('/en')
+                        || (document.documentElement.lang === 'en'
                           ? "You're already signed up for the Mixed Tournament via Wiedisync — no further sign-up needed!"
                           : 'Du bist bereits via Wiedisync für das Mixed-Turnier angemeldet — keine weitere Anmeldung nötig!');
                       showFeedback(msg, 'info');
@@ -378,7 +378,7 @@
   function validate() {
     if (alreadySignedUp) {
       var msg = form.getAttribute('data-msg-already-wiedisync')
-        || (window.location.pathname.startsWith('/en')
+        || (document.documentElement.lang === 'en'
           ? "You're already signed up for the Mixed Tournament via Wiedisync — no further sign-up needed!"
           : 'Du bist bereits via Wiedisync für das Mixed-Turnier angemeldet — keine weitere Anmeldung nötig!');
       showFeedback(msg, 'info');
@@ -499,7 +499,7 @@
         if (wrapper) {
           var success = document.createElement('div');
           success.className = 'mt-success';
-          var isEn = window.location.pathname.startsWith('/en');
+          var isEn = document.documentElement.lang === 'en';
           var wiedisyncNote = isMember
             ? '<div class="mt-success-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4"/></svg>' + (isEn ? 'Participation saved in Wiedisync' : 'Teilnahme in Wiedisync gespeichert') + '</div>'
             : '';

@@ -1,18 +1,22 @@
 ---
 interface Props {
   title: string;
+  /** i18n key for the title — enables client-side language swap. */
+  titleKey?: string;
   actionHref?: string;
   actionLabel?: string;
+  /** i18n key for the action label — enables client-side language swap. */
+  actionLabelKey?: string;
 }
 
-const { title, actionHref, actionLabel } = Astro.props;
+const { title, titleKey, actionHref, actionLabel, actionLabelKey } = Astro.props;
 ---
 <div class="section-header">
   <div>
-    <h2>{title}</h2>
+    <h2 data-i18n={titleKey}>{title}</h2>
     <div class="gold-bar"></div>
   </div>
   {actionHref && actionLabel && (
-    <a href={actionHref} class="btn btn-sm btn-outline" set:html={actionLabel} />
+    <a href={actionHref} class="btn btn-sm btn-outline" data-i18n={actionLabelKey} set:html={actionLabel} />
   )}
 </div>

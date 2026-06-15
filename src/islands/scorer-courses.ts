@@ -25,20 +25,16 @@ const DEFAULT_HOURS = 4;
 const container = document.querySelector<HTMLElement>('[data-scorer-courses]');
 
 if (container) {
-  const locale = (container.dataset.locale === 'en' ? 'en' : 'de') as 'de' | 'en';
-  const txt = {
-    soon: container.dataset.soon || '',
-    opensSoon: container.dataset.opensSoon || '',
-    cta: container.dataset.cta || '',
-    cal: container.dataset.cal || '',
-    docHandout: container.dataset.docHandout || '',
-    docElearning: container.dataset.docElearning || '',
-    mode: {
-      in_person: container.dataset.modeInPerson || '',
-      recorded: container.dataset.modeRecorded || '',
-      both: container.dataset.modeBoth || '',
-    } as Record<ScorerCourse['mode'], string>,
-  };
+  // Runtime i18n: read the active language + translations from the live engine
+  // (single-URL site — language switches client-side and fires `langChanged`),
+  // not from frozen build-time data-* attributes. Re-read on every render() so
+  // a language switch is reflected without a page reload.
+  const i18n = (window as any).i18n;
+  const getLang = (): 'de' | 'en' =>
+    ((i18n && i18n.getLang && i18n.getLang()) === 'en' ? 'en' : 'de');
+  const tr = (key: string): string =>
+    (i18n && i18n.t ? i18n.t(key) : key);
+
   const section = container.closest<HTMLElement>('[data-scorer-section]');
   const base = getDirectusUrl();
 
@@ -118,7 +114,19 @@ if (container) {
     return `https://www.google.com/calendar/render?${params.toString()}`;
   };
 
+  // i18n key per course mode — resolved at render time via tr().
+  const MODE_KEY: Record<ScorerCourse['mode'], string> = {
+    in_person: 'scorerModeInPerson',
+    recorded: 'scorerModeRecorded',
+    both: 'scorerModeBoth',
+  };
+
   const render = (courses: ScorerCourse[]) => {
+    // Read the active language + translations fresh on every render so a
+    // client-side language switch relabels everything. Clear first so a
+    // re-render (langChanged) replaces the previous cards instead of stacking.
+    const locale = getLang();
+    container.textContent = '';
     for (const course of courses) {
       const slug = localeSlug(course, locale);
       const title = locale === 'en' ? course.titleEn : course.titleDe;
@@ -136,7 +144,7 @@ if (container) {
       headRow.appendChild(el('h3', { style: 'margin: 0;' }, title));
       const when = course.dateISO
         ? formatDate(course.dateISO) + (course.time ? ` · ${course.time}` : '')
-        : txt.soon;
+        : tr('scorerSignupSoon');
       headRow.appendChild(el('span', { style: 'font-weight: 600; color: var(--kscw-blue);' }, when));
       body.appendChild(headRow);
 
@@ -146,7 +154,7 @@ if (container) {
       metaRow.appendChild(el('span', {
         class: 'chip',
         style: 'background: var(--kscw-gold); color: var(--text-on-gold);',
-      }, txt.mode[course.mode] || ''));
+      }, tr(MODE_KEY[course.mode])));
       body.appendChild(metaRow);
 
       if ((course.mode === 'in_person' || course.mode === 'both')) {
@@ -164,7 +172,7 @@ if (container) {
             target: '_blank',
             rel: 'noopener noreferrer',
           });
-          labelBtn(cta, 'user-plus', txt.cta);
+          labelBtn(cta, 'user-plus', tr('scorerSignupCta'));
           actions.appendChild(cta);
         }
 
@@ -175,7 +183,7 @@ if (container) {
             target: '_blank',
             rel: 'noopener noreferrer',
           });
-          labelBtn(calBtn, 'calendar-plus', txt.cal);
+          labelBtn(calBtn, 'calendar-plus', tr('scorerSignupCalendar'));
           actions.appendChild(calBtn);
         }
 
@@ -188,13 +196,17 @@ if (container) {
         // already shows the full "date to be announced" message.
         body.appendChild(el('p', {
           style: 'color: var(--text-muted); font-style: italic; margin: 0;',
-        }, txt.opensSoon));
+        }, tr('scorerSignupOpensSoon')));
       }
 
       // Always-available info materials (course handout + e-learning
       // registration guide), hosted under /docs/. Secondary to the
       // sign-up CTA, so styled as outline links.
-      if (txt.docHandout || txt.docElearning) {
+      // Doc labels read from the live engine at render time so they swap with
+      // the language toggle.
+      const docHandout = tr('scorerCoursesHandout');
+      const docElearning = tr('scorerCoursesElearningReg');
+      if (docHandout || docElearning) {
         const docs = el('div', {
           style: 'display: flex; flex-wrap: wrap; gap: var(--space-sm);',
         });
@@ -208,11 +220,11 @@ if (container) {
           labelBtn(a, iconName, label);
           return a;
         };
-        if (txt.docHandout) {
-          docs.appendChild(docLink('/docs/schreiberwesen.pdf', txt.docHandout, 'file-text'));
+        if (docHandout) {
+          docs.appendChild(docLink('/docs/schreiberwesen.pdf', docHandout, 'file-text'));
         }
-        if (txt.docElearning) {
-          docs.appendChild(docLink('/docs/schreiberwesen-elearning-registration.pdf', txt.docElearning, 'clipboard-list'));
+        if (docElearning) {
+          docs.appendChild(docLink('/docs/schreiberwesen-elearning-registration.pdf', docElearning, 'clipboard-list'));
         }
         body.appendChild(docs);
       }
@@ -225,14 +237,34 @@ if (container) {
     if (lucide) lucide.createIcons();
   };
 
-  fetch(`${base}/items/scorer_courses?filter[active][_eq]=true&fields=slug_id,title_de,title_en,date_iso,time,mode,form_slug_de,form_slug_en,sort&sort=sort&limit=-1`)
-    .then((res) => (res.ok ? res.json() : null))
-    .then((json) => {
-      const rows = Array.isArray(json?.data) ? (json.data as Record<string, unknown>[]) : [];
-      const upcoming = getUpcomingScorerCourses(rows.map(mapRow));
-      if (!upcoming.length) return;
-      render(upcoming);
-      if (section) section.hidden = false;
-    })
-    .catch(() => { /* Directus unreachable — section stays hidden */ });
+  // Cache the fetched courses so a language switch re-renders from memory
+  // (relabel only — no Directus refetch).
+  let cachedCourses: ScorerCourse[] = [];
+
+  // Re-render in the active language when the user switches it client-side.
+  document.addEventListener('langChanged', () => {
+    if (cachedCourses.length) render(cachedCourses);
+  });
+
+  const load = () =>
+    fetch(`${base}/items/scorer_courses?filter[active][_eq]=true&fields=slug_id,title_de,title_en,date_iso,time,mode,form_slug_de,form_slug_en,sort&sort=sort&limit=-1`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const rows = Array.isArray(json?.data) ? (json.data as Record<string, unknown>[]) : [];
+        const upcoming = getUpcomingScorerCourses(rows.map(mapRow));
+        if (!upcoming.length) return;
+        cachedCourses = upcoming;
+        render(upcoming);
+        if (section) section.hidden = false;
+      })
+      .catch(() => { /* Directus unreachable — section stays hidden */ });
+
+  // Wait for the i18n engine so the first render is in the active language
+  // (could be English from a stored preference). Fall back if unavailable.
+  const ready = (window as any).i18nReady;
+  if (ready && typeof ready.then === 'function') {
+    ready.then(load, load);
+  } else {
+    load();
+  }
 }

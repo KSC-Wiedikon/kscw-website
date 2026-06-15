@@ -1,0 +1,148 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
+import { t } from '../../lib/i18n';
+
+const locale = 'de';
+---
+<PageLayout
+  title="Spielplanung — KSC Wiedikon"
+  titleKey="volleyballSpielplanungMetaTitle"
+  description="Spielplanung des KSC Wiedikon — Heimspiele planen, Spielsamstage und Halleninfos."
+  descriptionKey="volleyballSpielplanungMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'schedulingTitle')}
+  pageTitleKey="schedulingTitle"
+  pageSubtitle={t(locale, 'schedulingSubtitle')}
+  pageSubtitleKey="schedulingSubtitle"
+>
+  <!-- Einleitung -->
+  <section class="section">
+    <div class="container">
+      <SectionHeader title={t(locale, 'schedulingIntro')} titleKey="schedulingIntro" />
+      <div style="max-width: 720px;">
+        <p style="font-size: 1.125rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: var(--space-md);" data-i18n="schedulingIntroText1">
+          {t(locale, 'schedulingIntroText1')}
+        </p>
+        <p style="font-size: 1.125rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: var(--space-lg);" data-i18n="schedulingIntroText2">
+          {t(locale, 'schedulingIntroText2')}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Spielsamstage -->
+  <section class="section-alt">
+    <div class="container">
+      <SectionHeader title={t(locale, 'schedulingSaturdays')} titleKey="schedulingSaturdays" />
+      <div style="max-width: 720px;">
+        <p style="color: var(--text-secondary); margin-bottom: var(--space-lg);" data-i18n="schedulingSaturdaysText">
+          {t(locale, 'schedulingSaturdaysText')}
+        </p>
+        <div class="grid grid-3" style="margin-bottom: var(--space-lg);">
+          <div class="card" style="text-align: center; border-top: 4px solid var(--kscw-gold);">
+            <div class="card-body">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: var(--space-sm);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <h3 style="font-size: 1.5rem; margin-bottom: var(--space-xs);">11:00</h3>
+              <p style="color: var(--text-secondary); font-size: 0.875rem;" data-i18n="schedulingMorning">{t(locale, 'schedulingMorning')}</p>
+            </div>
+          </div>
+          <div class="card" style="text-align: center; border-top: 4px solid var(--kscw-blue);">
+            <div class="card-body">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: var(--space-sm);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <h3 style="font-size: 1.5rem; margin-bottom: var(--space-xs);">13:30</h3>
+              <p style="color: var(--text-secondary); font-size: 0.875rem;" data-i18n="schedulingAfternoon">{t(locale, 'schedulingAfternoon')}</p>
+            </div>
+          </div>
+          <div class="card" style="text-align: center; border-top: 4px solid var(--kscw-gold);">
+            <div class="card-body">
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: var(--space-sm);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <h3 style="font-size: 1.5rem; margin-bottom: var(--space-xs);">16:00</h3>
+              <p style="color: var(--text-secondary); font-size: 0.875rem;" data-i18n="schedulingLateAfternoon">{t(locale, 'schedulingLateAfternoon')}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Kontakt -->
+  <section class="section">
+    <div class="container">
+      <SectionHeader title="Kontakt" titleKey="contactTitle" />
+      <div style="max-width: 720px;">
+        <p style="color: var(--text-secondary); margin-bottom: var(--space-lg);" data-i18n="volleyballSpielplanungContactIntro">
+          Bei Fragen zur Spielplanung könnt ihr euch direkt an unser Spielplanungsteam wenden:
+        </p>
+        <a href="mailto:spielplanung_vb@mail.kscw.ch" class="contact-email-card">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          <span>spielplanung_vb@mail.kscw.ch</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Hallen -->
+  <section class="section-alt">
+    <div class="container">
+      <SectionHeader title={t(locale, 'schedulingHalls')} titleKey="schedulingHalls" />
+      <p style="color: var(--text-secondary); margin-bottom: var(--space-lg); max-width: 640px;" data-i18n="schedulingHallsText">
+        {t(locale, 'schedulingHallsText')}
+      </p>
+      <div class="grid grid-2" style="max-width: 720px;">
+        <div class="card" style="border-top: 4px solid var(--kscw-gold);">
+          <div class="card-body">
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>
+              <h3>Kantonsschule Wiedikon</h3>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-md);" data-i18n="volleyballSpielplanungHall1Desc">
+              Unsere Haupthalle mit drei Spielfeldern (KWI A, B, C). Hier finden die Spielsamstage und die meisten Heimspiele statt.
+            </p>
+            <div style="display: flex; align-items: flex-start; gap: var(--space-xs); color: var(--text-secondary); font-size: 0.875rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Schrennengasse 7<br>8003 Zürich</span>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--kscw-blue);">
+          <div class="card-body">
+            <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>
+              <h3>Döltschi</h3>
+            </div>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-md);" data-i18n="volleyballSpielplanungHall2Desc">
+              Doppelhalle der Schul- und Sportanlage Döltschi. Wird für Heimspiele und Trainings genutzt.
+            </p>
+            <div style="display: flex; align-items: flex-start; gap: var(--space-xs); color: var(--text-secondary); font-size: 0.875rem;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 2px;"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              <span>Döltschiweg 184<br>8055 Zürich</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="../../islands/scroll-animations.ts"></script>
+</PageLayout>
+
+<style is:global>
+  .contact-email-card {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md) var(--space-lg);
+    background: var(--surface-alt);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    color: var(--kscw-gold);
+    font-size: 1.125rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: border-color 0.2s;
+  }
+  .contact-email-card:hover {
+    border-color: var(--kscw-gold);
+  }
+</style>

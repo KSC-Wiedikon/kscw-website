@@ -75,9 +75,7 @@
   };
 
   function getLang() {
-    var path = window.location.pathname;
-    if (path.indexOf('/en/') === 0 || path === '/en') return 'en';
-    return 'de';
+    return (document.documentElement.lang === 'en') ? 'en' : 'de';
   }
 
   function t(key) {
@@ -474,4 +472,12 @@
   } else {
     autoRender();
   }
+
+  // Re-render in the new language when the toggle switches (labels come from
+  // getLang(), so clear the rendered tables and rebuild).
+  document.addEventListener('langChanged', function () {
+    var containers = document.querySelectorAll('[data-scoreboard]');
+    for (var i = 0; i < containers.length; i++) containers[i].textContent = '';
+    autoRender();
+  });
 })();

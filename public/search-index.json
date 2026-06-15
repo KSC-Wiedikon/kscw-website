@@ -1,0 +1,134 @@
+[
+  {
+    "url": "/",
+    "titleKey": "indexMetaTitle",
+    "descKey": "indexMetaDescription",
+    "section": ""
+  },
+  {
+    "url": "/basketball/",
+    "titleKey": "basketballMetaTitle",
+    "descKey": "basketballMetaDescription",
+    "section": "navBasketball"
+  },
+  {
+    "url": "/basketball/spielplanung",
+    "titleKey": "basketballSpielplanungMetaTitle",
+    "descKey": "basketballSpielplanungMetaDescription",
+    "section": "navBasketball"
+  },
+  {
+    "url": "/basketball/teams/nachwuchs",
+    "titleKey": "basketballTeamsNachwuchsMetaTitle",
+    "descKey": "basketballTeamsNachwuchsMetaDescription",
+    "section": "navBasketball"
+  },
+  {
+    "url": "/club/feedback",
+    "titleKey": "clubFeedbackMetaTitle",
+    "descKey": "clubFeedbackMetaDescription",
+    "section": "navClub"
+  },
+  {
+    "url": "/club/kontakt",
+    "titleKey": "clubKontaktMetaTitle",
+    "descKey": "clubKontaktMetaDescription",
+    "section": "navClub"
+  },
+  {
+    "url": "/club/ueber-uns",
+    "titleKey": "clubUeberUnsMetaTitle",
+    "descKey": "clubUeberUnsMetaDescription",
+    "section": "navClub"
+  },
+  {
+    "url": "/club/volley-feedback",
+    "titleKey": "clubVolleyFeedbackMetaTitle",
+    "descKey": "clubVolleyFeedbackMetaDescription",
+    "section": "navClub"
+  },
+  {
+    "url": "/club/vorstand",
+    "titleKey": "clubVorstandMetaTitle",
+    "descKey": "clubVorstandMetaDescription",
+    "section": "navClub"
+  },
+  {
+    "url": "/news/",
+    "titleKey": "newsMetaTitle",
+    "descKey": "newsMetaDescription",
+    "section": "navNews"
+  },
+  {
+    "url": "/sponsoren/",
+    "titleKey": "sponsorenMetaTitle",
+    "descKey": "sponsorenMetaDescription",
+    "section": "navSponsors"
+  },
+  {
+    "url": "/volleyball/",
+    "titleKey": "volleyballMetaTitle",
+    "descKey": "volleyballMetaDescription",
+    "section": "navVolleyball"
+  },
+  {
+    "url": "/volleyball/reglemente",
+    "titleKey": "volleyballReglementeMetaTitle",
+    "descKey": "volleyballReglementeMetaDescription",
+    "section": "navVolleyball"
+  },
+  {
+    "url": "/volleyball/spielplanung",
+    "titleKey": "volleyballSpielplanungMetaTitle",
+    "descKey": "volleyballSpielplanungMetaDescription",
+    "section": "navVolleyball"
+  },
+  {
+    "url": "/weiteres/anmeldung",
+    "titleKey": "weiteresAnmeldungMetaTitle",
+    "descKey": "weiteresAnmeldungMetaDescription",
+    "section": "navMore"
+  },
+  {
+    "url": "/weiteres/datenschutz",
+    "titleKey": "weiteresDatenschutzMetaTitle",
+    "descKey": "weiteresDatenschutzMetaDescription",
+    "section": "navMore"
+  },
+  {
+    "url": "/weiteres/impressum",
+    "titleKey": "weiteresImpressumMetaTitle",
+    "descKey": "weiteresImpressumMetaDescription",
+    "section": "navMore"
+  },
+  {
+    "url": "/weiteres/kalender",
+    "titleKey": "weiteresKalenderMetaTitle",
+    "descKey": "weiteresKalenderMetaDescription",
+    "section": "navMore"
+  },
+  {
+    "url": "/weiteres/logos",
+    "titleKey": "weiteresLogosMetaTitle",
+    "descKey": "weiteresLogosMetaDescription",
+    "section": "navMore"
+  },
+  {
+    "url": "/weiteres/mitgliedschaft",
+    "titleKey": "weiteresMitgliedschaftMetaTitle",
+    "descKey": "weiteresMitgliedschaftMetaDescription",
+    "section": "navMore"
+  },
+  {
+    "url": "/weiteres/partner",
+    "titleKey": "weiteresPartnerMetaTitle",
+    "descKey": "weiteresPartnerMetaDescription",
+    "section": "navMore"
+  },
+  {
+    "url": "/weiteres/schreiberkurse",
+    "titleKey": "weiteresSchreiberkurseMetaTitle",
+    "descKey": "weiteresSchreiberkurseMetaDescription",
+    "section": "navMore"
+  }
+]

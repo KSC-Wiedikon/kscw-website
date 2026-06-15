@@ -1,19 +1,19 @@
 ---
-import { t, getAlternateUrl } from '../lib/i18n';
+import { t } from '../lib/i18n';
 import type { Locale } from '../lib/i18n';
 import { getActiveTeams } from '../lib/fetch/teams';
 import { getBadgeText, getTeamDefs, type TeamCategory } from '../data/teams';
 
 interface Props {
-  locale: Locale;
+  locale?: Locale;
 }
 
-const { locale } = Astro.props;
-const otherLocale = locale === 'de' ? 'en' : 'de';
-const altUrl = getAlternateUrl(Astro.url);
+// Single-URL site: build-time render is German; the client engine swaps text
+// to English in place. `locale` stays for the German default render only.
+const { locale = 'de' } = Astro.props;
 
-// Helper to prefix locale
-const l = (path: string) => `/${locale}${path}`;
+// Links are locale-less now — one URL per page.
+const l = (path: string) => path;
 
 // Volleyball nav — live leagues/labels from Directus (Volleymanager is the
 // source of truth), so the dropdown follows the D1/D2 swap automatically.
@@ -35,11 +35,6 @@ const vbBy = (cat: string) => vbNav.filter((tm) => tm.category === cat).sort((a,
 const vbWomen = vbBy('women');
 const vbMen = vbBy('men');
 const vbYouth = vbBy('youth');
-
-// Build the alternate path for language toggle
-const currentPath = Astro.url.pathname;
-const dePath = currentPath.replace(`/en/`, `/de/`).replace(/^\/en$/, '/de');
-const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
 ---
   <header class="site-header">
     <div class="container">
@@ -54,28 +49,28 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
         <div class="nav-menu">
           <div class="nav-item">
             <button type="button" class="nav-link">
-              <span>{t(locale, 'navClub')}</span>
+              <span data-i18n="navClub">{t(locale, 'navClub')}</span>
               <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="nav-dropdown">
-              <a href={l('/news/')} class="dropdown-link">{t(locale, 'navNews')}</a>
-              <a href={l('/club/ueber-uns')} class="dropdown-link">{t(locale, 'navAbout')}</a>
-              <a href={l('/club/vorstand')} class="dropdown-link">{t(locale, 'navBoard')}</a>
-              <a href={l('/club/kontakt')} class="dropdown-link">{t(locale, 'navContact')}</a>
+              <a href={l('/news/')} class="dropdown-link" data-i18n="navNews">{t(locale, 'navNews')}</a>
+              <a href={l('/club/ueber-uns')} class="dropdown-link" data-i18n="navAbout">{t(locale, 'navAbout')}</a>
+              <a href={l('/club/vorstand')} class="dropdown-link" data-i18n="navBoard">{t(locale, 'navBoard')}</a>
+              <a href={l('/club/kontakt')} class="dropdown-link" data-i18n="navContact">{t(locale, 'navContact')}</a>
             </div>
           </div>
 
           <div class="nav-item">
             <button type="button" class="nav-link">
-              <span>{t(locale, 'navVolleyball')}</span>
+              <span data-i18n="navVolleyball">{t(locale, 'navVolleyball')}</span>
               <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="nav-dropdown">
-              <a href={l('/volleyball/')} class="dropdown-link">{t(locale, 'navOverview')}</a>
+              <a href={l('/volleyball/')} class="dropdown-link" data-i18n="navOverview">{t(locale, 'navOverview')}</a>
               <div class="dropdown-divider"></div>
               <div class="dropdown-group">
                 <button class="dropdown-group-toggle" aria-expanded="false">
-                  <span>{t(locale, 'navWomen')}</span>
+                  <span data-i18n="navWomen">{t(locale, 'navWomen')}</span>
                   <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="dropdown-group-items">
@@ -86,7 +81,7 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
               </div>
               <div class="dropdown-group">
                 <button class="dropdown-group-toggle" aria-expanded="false">
-                  <span>{t(locale, 'navMen')}</span>
+                  <span data-i18n="navMen">{t(locale, 'navMen')}</span>
                   <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="dropdown-group-items">
@@ -97,7 +92,7 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
               </div>
               <div class="dropdown-group">
                 <button class="dropdown-group-toggle" aria-expanded="false">
-                  <span>{t(locale, 'navYouth')}</span>
+                  <span data-i18n="navYouth">{t(locale, 'navYouth')}</span>
                   <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="dropdown-group-items">
@@ -107,22 +102,22 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
                 </div>
               </div>
               <div class="dropdown-divider"></div>
-              <a href={l(locale === 'de' ? '/volleyball/reglemente' : '/volleyball/regulations')} class="dropdown-link">{t(locale, 'navRegulations')}</a>
-              <a href={l(locale === 'de' ? '/volleyball/spielplanung' : '/volleyball/scheduling')} class="dropdown-link">{t(locale, 'navScheduling')}</a>
+              <a href={l('/volleyball/reglemente')} class="dropdown-link" data-i18n="navRegulations">{t(locale, 'navRegulations')}</a>
+              <a href={l('/volleyball/spielplanung')} class="dropdown-link" data-i18n="navScheduling">{t(locale, 'navScheduling')}</a>
             </div>
           </div>
 
           <div class="nav-item">
             <button type="button" class="nav-link">
-              <span>{t(locale, 'navBasketball')}</span>
+              <span data-i18n="navBasketball">{t(locale, 'navBasketball')}</span>
               <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="nav-dropdown">
-              <a href={l('/basketball/')} class="dropdown-link">{t(locale, 'navOverview')}</a>
+              <a href={l('/basketball/')} class="dropdown-link" data-i18n="navOverview">{t(locale, 'navOverview')}</a>
               <div class="dropdown-divider"></div>
               <div class="dropdown-group">
                 <button class="dropdown-group-toggle" aria-expanded="false">
-                  <span>{t(locale, 'navWomen')}</span>
+                  <span data-i18n="navWomen">{t(locale, 'navWomen')}</span>
                   <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="dropdown-group-items">
@@ -132,7 +127,7 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
               </div>
               <div class="dropdown-group">
                 <button class="dropdown-group-toggle" aria-expanded="false">
-                  <span>{t(locale, 'navMen')}</span>
+                  <span data-i18n="navMen">{t(locale, 'navMen')}</span>
                   <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="dropdown-group-items">
@@ -143,43 +138,46 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
               </div>
               <div class="dropdown-group">
                 <button class="dropdown-group-toggle" aria-expanded="false">
-                  <span>{t(locale, 'navYouth')}</span>
+                  <span data-i18n="navYouth">{t(locale, 'navYouth')}</span>
                   <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="dropdown-group-items">
-                  <a href={l('/basketball/teams/nachwuchs')} class="dropdown-link">{t(locale, 'navAllYouthTeams')}</a>
+                  <a href={l('/basketball/teams/nachwuchs')} class="dropdown-link" data-i18n="navAllYouthTeams">{t(locale, 'navAllYouthTeams')}</a>
                 </div>
               </div>
-              <a href={l(locale === 'de' ? '/basketball/spielplanung' : '/basketball/scheduling')} class="dropdown-link">{t(locale, 'navScheduling')}</a>
+              <a href={l('/basketball/spielplanung')} class="dropdown-link" data-i18n="navScheduling">{t(locale, 'navScheduling')}</a>
             </div>
           </div>
 
           <div class="nav-item">
             <button type="button" class="nav-link">
-              <span>{t(locale, 'navMore')}</span>
+              <span data-i18n="navMore">{t(locale, 'navMore')}</span>
               <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="nav-dropdown">
-              <a href={l('/weiteres/kalender')} class="dropdown-link">{t(locale, 'navCalendar')}</a>
-              <a href={l('/weiteres/mitgliedschaft')} class="dropdown-link">{t(locale, 'navMembership')}</a>
-              <a href={l('/weiteres/schreiberkurse')} class="dropdown-link">{t(locale, 'navScorerCourses')}</a>
-              <a href={l('/weiteres/logos')} class="dropdown-link">{t(locale, 'navLogos')}</a>
-              <a href={l('/sponsoren/')} class="dropdown-link">{t(locale, 'navSponsors')}</a>
-              <a href={l('/weiteres/partner')} class="dropdown-link">{t(locale, 'navPartner')}</a>
+              <a href={l('/weiteres/kalender')} class="dropdown-link" data-i18n="navCalendar">{t(locale, 'navCalendar')}</a>
+              <a href={l('/weiteres/mitgliedschaft')} class="dropdown-link" data-i18n="navMembership">{t(locale, 'navMembership')}</a>
+              <a href={l('/weiteres/schreiberkurse')} class="dropdown-link" data-i18n="navScorerCourses">{t(locale, 'navScorerCourses')}</a>
+              <a href={l('/weiteres/logos')} class="dropdown-link" data-i18n="navLogos">{t(locale, 'navLogos')}</a>
+              <a href={l('/sponsoren/')} class="dropdown-link" data-i18n="navSponsors">{t(locale, 'navSponsors')}</a>
+              <a href={l('/weiteres/partner')} class="dropdown-link" data-i18n="navPartner">{t(locale, 'navPartner')}</a>
             </div>
           </div>
+        <button type="button" class="search-btn" data-search-open aria-label={t(locale, 'searchOpen')} title={t(locale, 'searchOpen')} data-i18n-aria-label="searchOpen" data-i18n-title="searchOpen">
+          <i data-lucide="search" style="width:16px;height:16px;"></i>
+        </button>
         <a href="https://wiedisync.kscw.ch" class="nav-link btn btn-gold btn-sm" target="_blank" rel="noopener"><i data-lucide="lock" style="width:14px;height:14px;"></i> Wiedisync</a>
         <div class="lang-toggle" role="radiogroup" aria-label="Language">
-          <a href={locale === 'de' ? currentPath : dePath} class={`lang-btn ${locale === 'de' ? 'active' : ''}`} aria-label="Deutsch" data-lang-choice="de">DE</a>
+          <button type="button" class="lang-btn active" aria-label="Deutsch" data-lang="de">DE</button>
           <span class="lang-sep">|</span>
-          <a href={locale === 'en' ? currentPath : enPath} class={`lang-btn ${locale === 'en' ? 'active' : ''}`} aria-label="English" data-lang-choice="en">EN</a>
+          <button type="button" class="lang-btn" aria-label="English" data-lang="en">EN</button>
         </div>
-        <a href="/admin" class="admin-link" aria-label={t(locale, 'navAdmin')} title={t(locale, 'navAdmin')}>
+        <a href="/admin" class="admin-link" aria-label={t(locale, 'navAdmin')} title={t(locale, 'navAdmin')} data-i18n-aria-label="navAdmin" data-i18n-title="navAdmin">
           <i data-lucide="lock" style="width:14px;height:14px;"></i>
         </a>
         </div>
 
-        <button class="nav-hamburger" aria-label={t(locale, 'navOpenMenu')}>
+        <button class="nav-hamburger" aria-label={t(locale, 'navOpenMenu')} data-i18n-aria-label="navOpenMenu">
           <div class="hamburger-icon">
             <span></span>
             <span></span>
@@ -191,38 +189,42 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
 
     <!-- Mobile Navigation -->
     <div class="mobile-nav">
+      <button type="button" class="mobile-search-btn" data-search-open aria-label={t(locale, 'searchOpen')} data-i18n-aria-label="searchOpen">
+        <i data-lucide="search" style="width:16px;height:16px;"></i>
+        <span data-i18n="searchPlaceholder">{t(locale, 'searchPlaceholder')}</span>
+      </button>
       <div class="lang-toggle mobile-lang-toggle" role="radiogroup" aria-label="Language">
-        <a href={locale === 'de' ? currentPath : dePath} class={`lang-btn-mobile ${locale === 'de' ? 'active' : ''}`} aria-label="Deutsch" data-lang-choice="de">DE</a>
+        <button type="button" class="lang-btn-mobile active" aria-label="Deutsch" data-lang="de">DE</button>
         <span class="lang-sep">|</span>
-        <a href={locale === 'en' ? currentPath : enPath} class={`lang-btn-mobile ${locale === 'en' ? 'active' : ''}`} aria-label="English" data-lang-choice="en">EN</a>
-        <a href="/admin" class="admin-link admin-link--mobile" aria-label={t(locale, 'navAdmin')} title={t(locale, 'navAdmin')}>
+        <button type="button" class="lang-btn-mobile" aria-label="English" data-lang="en">EN</button>
+        <a href="/admin" class="admin-link admin-link--mobile" aria-label={t(locale, 'navAdmin')} title={t(locale, 'navAdmin')} data-i18n-aria-label="navAdmin" data-i18n-title="navAdmin">
           <i data-lucide="lock" style="width:14px;height:14px;"></i>
         </a>
       </div>
 
       <div class="mobile-nav-item">
         <button class="mobile-nav-link" aria-expanded="false">
-          <span>{t(locale, 'navClub')}</span>
+          <span data-i18n="navClub">{t(locale, 'navClub')}</span>
           <svg class="mobile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <div class="mobile-subnav">
-          <a href={l('/news/')} class="mobile-sublink">{t(locale, 'navNews')}</a>
-          <a href={l('/club/ueber-uns')} class="mobile-sublink">{t(locale, 'navAbout')}</a>
-          <a href={l('/club/vorstand')} class="mobile-sublink">{t(locale, 'navBoard')}</a>
-          <a href={l('/club/kontakt')} class="mobile-sublink">{t(locale, 'navContact')}</a>
+          <a href={l('/news/')} class="mobile-sublink" data-i18n="navNews">{t(locale, 'navNews')}</a>
+          <a href={l('/club/ueber-uns')} class="mobile-sublink" data-i18n="navAbout">{t(locale, 'navAbout')}</a>
+          <a href={l('/club/vorstand')} class="mobile-sublink" data-i18n="navBoard">{t(locale, 'navBoard')}</a>
+          <a href={l('/club/kontakt')} class="mobile-sublink" data-i18n="navContact">{t(locale, 'navContact')}</a>
         </div>
       </div>
 
       <div class="mobile-nav-item">
         <button class="mobile-nav-link" aria-expanded="false">
-          <span>{t(locale, 'navVolleyball')}</span>
+          <span data-i18n="navVolleyball">{t(locale, 'navVolleyball')}</span>
           <svg class="mobile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <div class="mobile-subnav">
-          <a href={l('/volleyball/')} class="mobile-sublink">{t(locale, 'navOverview')}</a>
+          <a href={l('/volleyball/')} class="mobile-sublink" data-i18n="navOverview">{t(locale, 'navOverview')}</a>
           <div class="dropdown-group">
             <button class="dropdown-group-toggle" aria-expanded="false">
-              <span>{t(locale, 'navWomen')}</span>
+              <span data-i18n="navWomen">{t(locale, 'navWomen')}</span>
               <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="dropdown-group-items">
@@ -233,7 +235,7 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
           </div>
           <div class="dropdown-group">
             <button class="dropdown-group-toggle" aria-expanded="false">
-              <span>{t(locale, 'navMen')}</span>
+              <span data-i18n="navMen">{t(locale, 'navMen')}</span>
               <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="dropdown-group-items">
@@ -244,7 +246,7 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
           </div>
           <div class="dropdown-group">
             <button class="dropdown-group-toggle" aria-expanded="false">
-              <span>{t(locale, 'navYouth')}</span>
+              <span data-i18n="navYouth">{t(locale, 'navYouth')}</span>
               <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="dropdown-group-items">
@@ -253,21 +255,21 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
               ))}
             </div>
           </div>
-          <a href={l(locale === 'de' ? '/volleyball/reglemente' : '/volleyball/regulations')} class="mobile-sublink">{t(locale, 'navRegulations')}</a>
-          <a href={l(locale === 'de' ? '/volleyball/spielplanung' : '/volleyball/scheduling')} class="mobile-sublink">{t(locale, 'navScheduling')}</a>
+          <a href={l('/volleyball/reglemente')} class="mobile-sublink" data-i18n="navRegulations">{t(locale, 'navRegulations')}</a>
+          <a href={l('/volleyball/spielplanung')} class="mobile-sublink" data-i18n="navScheduling">{t(locale, 'navScheduling')}</a>
         </div>
       </div>
 
       <div class="mobile-nav-item">
         <button class="mobile-nav-link" aria-expanded="false">
-          <span>{t(locale, 'navBasketball')}</span>
+          <span data-i18n="navBasketball">{t(locale, 'navBasketball')}</span>
           <svg class="mobile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <div class="mobile-subnav">
-          <a href={l('/basketball/')} class="mobile-sublink">{t(locale, 'navOverview')}</a>
+          <a href={l('/basketball/')} class="mobile-sublink" data-i18n="navOverview">{t(locale, 'navOverview')}</a>
           <div class="dropdown-group">
             <button class="dropdown-group-toggle" aria-expanded="false">
-              <span>{t(locale, 'navWomen')}</span>
+              <span data-i18n="navWomen">{t(locale, 'navWomen')}</span>
               <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="dropdown-group-items">
@@ -277,7 +279,7 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
           </div>
           <div class="dropdown-group">
             <button class="dropdown-group-toggle" aria-expanded="false">
-              <span>{t(locale, 'navMen')}</span>
+              <span data-i18n="navMen">{t(locale, 'navMen')}</span>
               <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="dropdown-group-items">
@@ -288,43 +290,60 @@ const enPath = currentPath.replace(`/de/`, `/en/`).replace(/^\/de$/, '/en');
           </div>
           <div class="dropdown-group">
             <button class="dropdown-group-toggle" aria-expanded="false">
-              <span>{t(locale, 'navYouth')}</span>
+              <span data-i18n="navYouth">{t(locale, 'navYouth')}</span>
               <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="dropdown-group-items">
-              <a href={l('/basketball/teams/nachwuchs')} class="mobile-sublink">{t(locale, 'navAllYouthTeams')}</a>
+              <a href={l('/basketball/teams/nachwuchs')} class="mobile-sublink" data-i18n="navAllYouthTeams">{t(locale, 'navAllYouthTeams')}</a>
             </div>
           </div>
-          <a href={l(locale === 'de' ? '/basketball/spielplanung' : '/basketball/scheduling')} class="mobile-sublink">{t(locale, 'navScheduling')}</a>
+          <a href={l('/basketball/spielplanung')} class="mobile-sublink" data-i18n="navScheduling">{t(locale, 'navScheduling')}</a>
         </div>
       </div>
 
       <div class="mobile-nav-item">
         <button class="mobile-nav-link" aria-expanded="false">
-          <span>{t(locale, 'navMore')}</span>
+          <span data-i18n="navMore">{t(locale, 'navMore')}</span>
           <svg class="mobile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </button>
         <div class="mobile-subnav">
-          <a href={l('/weiteres/kalender')} class="mobile-sublink">{t(locale, 'navCalendar')}</a>
-          <a href={l('/weiteres/mitgliedschaft')} class="mobile-sublink">{t(locale, 'navMembership')}</a>
-          <a href={l('/weiteres/schreiberkurse')} class="mobile-sublink">{t(locale, 'navScorerCourses')}</a>
-          <a href={l('/weiteres/logos')} class="mobile-sublink">{t(locale, 'navLogos')}</a>
-          <a href={l('/sponsoren/')} class="mobile-sublink">{t(locale, 'navSponsors')}</a>
-          <a href={l('/weiteres/partner')} class="mobile-sublink">{t(locale, 'navPartner')}</a>
+          <a href={l('/weiteres/kalender')} class="mobile-sublink" data-i18n="navCalendar">{t(locale, 'navCalendar')}</a>
+          <a href={l('/weiteres/mitgliedschaft')} class="mobile-sublink" data-i18n="navMembership">{t(locale, 'navMembership')}</a>
+          <a href={l('/weiteres/schreiberkurse')} class="mobile-sublink" data-i18n="navScorerCourses">{t(locale, 'navScorerCourses')}</a>
+          <a href={l('/weiteres/logos')} class="mobile-sublink" data-i18n="navLogos">{t(locale, 'navLogos')}</a>
+          <a href={l('/sponsoren/')} class="mobile-sublink" data-i18n="navSponsors">{t(locale, 'navSponsors')}</a>
+          <a href={l('/weiteres/partner')} class="mobile-sublink" data-i18n="navPartner">{t(locale, 'navPartner')}</a>
         </div>
       </div>
         <div class="mobile-nav-item" style="border-bottom: none; padding-top: 1rem;">
-          <a href="https://wiedisync.kscw.ch" class="btn btn-gold w-full" target="_blank" rel="noopener" style="justify-content: center;">{t(locale, 'navLogin')}</a>
+          <a href="https://wiedisync.kscw.ch" class="btn btn-gold w-full" target="_blank" rel="noopener" style="justify-content: center;" data-i18n="navLogin">{t(locale, 'navLogin')}</a>
         </div>
     </div>
   </header>
 
+  <!-- Site search overlay (bilingual; opened from the header search button or Cmd/Ctrl+K) -->
+  <div id="site-search" class="search-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label={t(locale, 'searchOpen')}>
+    <div class="search-panel">
+      <div class="search-input-row">
+        <i data-lucide="search" style="width:18px;height:18px;flex:none;opacity:0.6;"></i>
+        <input type="search" data-search-input class="search-input" autocomplete="off" placeholder={t(locale, 'searchPlaceholder')} data-i18n-placeholder="searchPlaceholder" aria-label={t(locale, 'searchPlaceholder')} />
+        <button type="button" class="search-close" data-search-close aria-label={t(locale, 'searchClose')} data-i18n-aria-label="searchClose">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+      <div class="search-results" data-search-results role="listbox"></div>
+    </div>
+  </div>
+
   <script is:inline>
-    // Persist the user's language choice so root visits to kscw.ch
-    // honor it on subsequent loads (see src/pages/index.astro).
-    document.querySelectorAll('[data-lang-choice]').forEach(function(el) {
-      el.addEventListener('click', function() {
-        try { localStorage.setItem('kscw-locale', el.dataset.langChoice); } catch (e) {}
+    // Language toggle: swap the page in place via the i18n engine — no
+    // navigation, since there's a single URL per page now. The engine persists
+    // the choice (localStorage 'kscw-locale') and updates the active button.
+    document.querySelectorAll('.lang-btn, .lang-btn-mobile').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var lang = btn.getAttribute('data-lang');
+        if (lang && window.i18n && window.i18n.setLang) window.i18n.setLang(lang);
       });
     });
   </script>
+  <script is:inline src="/js/search.js"></script>

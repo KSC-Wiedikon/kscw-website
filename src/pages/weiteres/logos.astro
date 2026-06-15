@@ -1,0 +1,123 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
+import { t } from '../../lib/i18n';
+
+const locale = 'de';
+---
+<PageLayout
+  title="Logo Downloads — KSC Wiedikon"
+  titleKey="weiteresLogosMetaTitle"
+  description="Offizielle Logos des KSC Wiedikon — Download in verschiedenen Formaten."
+  descriptionKey="weiteresLogosMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'logosTitle')}
+  pageTitleKey="logosTitle"
+  pageSubtitle={t(locale, 'logosSubtitle')}
+  pageSubtitleKey="logosSubtitle"
+>
+  <!-- Usage Guidelines -->
+  <section class="section">
+    <div class="container">
+      <div style="max-width: 720px; margin-bottom: var(--space-xl);">
+        <div class="card" style="border-left: 4px solid var(--kscw-gold);">
+          <div class="card-body" style="display: flex; align-items: flex-start; gap: var(--space-md);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="min-width: 32px;"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <div>
+              <p style="color: var(--text-secondary); margin-bottom: var(--space-md);" data-i18n="logosUsageText">
+                {t(locale, 'logosUsageText')}
+              </p>
+              <a href="/images/KSCW_Logo_Anwendungshilfe.pdf" download class="btn btn-gold" style="display: inline-flex; align-items: center; gap: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+                <span data-i18n="logosDownloadGuide">{t(locale, 'logosDownloadGuide')}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logo Grid -->
+      <SectionHeader title={t(locale, 'logosUsageGuide')} titleKey="logosUsageGuide" />
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-lg); max-width: 720px;">
+
+        <!-- KSCW Blau -->
+        <div class="card">
+          <div class="card-body" style="text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 160px; padding: var(--space-md); margin-bottom: var(--space-md); background: var(--surface-alt, var(--surface)); border-radius: var(--radius-md);">
+              <img src="/images/kscw_blau.png" alt="KSCW Logo Blau" data-i18n-alt="weiteresLogosAltBlue" style="max-height: 120px; max-width: 100%; object-fit: contain;">
+            </div>
+            <h3 style="margin-bottom: var(--space-xs);" data-i18n="logosBlue">{t(locale, 'logosBlue')}</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-md); font-size: 0.875rem;" data-i18n="logosBlueDesc">{t(locale, 'logosBlueDesc')}</p>
+            <a href="/images/kscw_blau.png" download class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span data-i18n="logosDownload">{t(locale, 'logosDownload')}</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- KSCW Gelb -->
+        <div class="card">
+          <div class="card-body" style="text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 160px; padding: var(--space-md); margin-bottom: var(--space-md); background: var(--surface-alt, var(--surface)); border-radius: var(--radius-md);">
+              <img src="/images/kscw_gelb.png" alt="KSCW Logo Gelb" data-i18n-alt="weiteresLogosAltGold" style="max-height: 120px; max-width: 100%; object-fit: contain;">
+            </div>
+            <h3 style="margin-bottom: var(--space-xs);" data-i18n="logosGold">{t(locale, 'logosGold')}</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-md); font-size: 0.875rem;" data-i18n="logosGoldDesc">{t(locale, 'logosGoldDesc')}</p>
+            <a href="/images/kscw_gelb.png" download class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span data-i18n="logosDownload">{t(locale, 'logosDownload')}</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- KSCW Weiss -->
+        <div class="card">
+          <div class="card-body" style="text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 160px; padding: var(--space-md); margin-bottom: var(--space-md); background: var(--surface-alt, var(--surface)); border-radius: var(--radius-md);">
+              <img src="/images/kscw_weiss.png" alt="KSCW Logo Weiss" data-i18n-alt="weiteresLogosAltWhite" style="max-height: 120px; max-width: 100%; object-fit: contain;">
+            </div>
+            <h3 style="margin-bottom: var(--space-xs);" data-i18n="logosWhite">{t(locale, 'logosWhite')}</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-md); font-size: 0.875rem;" data-i18n="logosWhiteDesc">{t(locale, 'logosWhiteDesc')}</p>
+            <a href="/images/kscw_weiss.png" download class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span data-i18n="logosDownload">{t(locale, 'logosDownload')}</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- KSCW Trio -->
+        <div class="card">
+          <div class="card-body" style="text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 160px; padding: var(--space-md); margin-bottom: var(--space-md); background: var(--surface-alt, var(--surface)); border-radius: var(--radius-md);">
+              <img src="/images/kscw_trio.png" alt="KSCW Logo Trio" data-i18n-alt="weiteresLogosAltTrio" style="max-height: 120px; max-width: 100%; object-fit: contain;">
+            </div>
+            <h3 style="margin-bottom: var(--space-xs);" data-i18n="logosTrio">{t(locale, 'logosTrio')}</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-md); font-size: 0.875rem;" data-i18n="logosTrioDesc">{t(locale, 'logosTrioDesc')}</p>
+            <a href="/images/kscw_trio.png" download class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span data-i18n="logosDownload">{t(locale, 'logosDownload')}</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- KSCW Vektor -->
+        <div class="card">
+          <div class="card-body" style="text-align: center;">
+            <div style="display: flex; align-items: center; justify-content: center; height: 160px; padding: var(--space-md); margin-bottom: var(--space-md); background: var(--surface-alt, var(--surface)); border-radius: var(--radius-md);">
+              <img src="/images/kscw_logo.svg" alt="KSCW Logo Vektor" data-i18n-alt="weiteresLogosAltVector" style="max-height: 120px; max-width: 100%; object-fit: contain;">
+            </div>
+            <h3 style="margin-bottom: var(--space-xs);" data-i18n="logosVector">{t(locale, 'logosVector')}</h3>
+            <p style="color: var(--text-secondary); margin-bottom: var(--space-md); font-size: 0.875rem;" data-i18n="logosVectorDesc">{t(locale, 'logosVectorDesc')}</p>
+            <a href="/images/kscw_logo.svg" download class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+              <span data-i18n="logosDownload">{t(locale, 'logosDownload')}</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <script src="../../islands/scroll-animations.ts"></script>
+</PageLayout>

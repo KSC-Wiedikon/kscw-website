@@ -32,8 +32,7 @@
 
   // ── i18n ────────────────────────────────────────────────────────────
   function getLocale() {
-    var path = window.location.pathname;
-    return path.startsWith('/en') ? 'en' : 'de';
+    return (document.documentElement.lang === 'en') ? 'en' : 'de';
   }
 
   var messages = {

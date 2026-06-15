@@ -17,13 +17,17 @@
 
   /* ── Language Detection ───────────────────────────────────── */
 
+  var STORAGE_KEY = 'kscw-locale';
+
   function detectLang() {
-    // Astro uses /de/ and /en/ directory routing — derive locale from URL path
-    var pathLang = window.location.pathname.split('/')[1];
-    if (pathLang === 'en' || pathLang === 'de') return pathLang;
-    var stored = localStorage.getItem('lang');
-    if (stored) return stored;
-    if (navigator.language && navigator.language.startsWith('en')) return 'en';
+    // Single-URL site: language lives in localStorage (set by the header
+    // toggle), not in the URL path. KSCW is German-first — default to German
+    // for everyone and only switch to English on an explicit prior choice
+    // (matches the site's long-standing "German unless you pick EN" behavior).
+    try {
+      var stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === 'en') return 'en';
+    } catch (e) { /* private mode */ }
     return 'de';
   }
 
@@ -107,11 +111,26 @@
       if (ariaKey) ariaNodes[a].setAttribute('aria-label', t(ariaKey));
     }
 
+    // data-i18n-alt → alt attribute
+    var altNodes = root.querySelectorAll('[data-i18n-alt]');
+    for (var al = 0; al < altNodes.length; al++) {
+      var altKey = altNodes[al].getAttribute('data-i18n-alt');
+      if (altKey) altNodes[al].setAttribute('alt', t(altKey));
+    }
+
     // <meta name="i18n-title"> → document.title
     var metaTitle = document.querySelector('meta[name="i18n-title"]');
     if (metaTitle) {
       var metaKey = metaTitle.getAttribute('content');
       if (metaKey) document.title = t(metaKey);
+    }
+
+    // <meta name="i18n-description"> → <meta name="description"> content
+    var metaDesc = document.querySelector('meta[name="i18n-description"]');
+    if (metaDesc) {
+      var descKey = metaDesc.getAttribute('content');
+      var descTarget = document.querySelector('meta[name="description"]');
+      if (descKey && descTarget) descTarget.setAttribute('content', t(descKey));
     }
   }
 
@@ -121,7 +140,7 @@
     var buttons = document.querySelectorAll('.lang-btn, .lang-btn-mobile');
     for (var i = 0; i < buttons.length; i++) {
       var btn = buttons[i];
-      var btnLang = btn.getAttribute('data-lang');
+      var btnLang = btn.getAttribute('data-lang') || btn.getAttribute('data-lang-choice');
       var isActive = btnLang === lang;
       btn.classList.toggle('active', isActive);
       btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
@@ -131,10 +150,11 @@
   /* ── Set Language ─────────────────────────────────────────── */
 
   function setLang(lang) {
-    localStorage.setItem('lang', lang);
+    try { localStorage.setItem(STORAGE_KEY, lang); } catch (e) { /* private mode */ }
     return loadTranslations(lang).then(function () {
       applyTranslations();
       updateLangButtons(lang);
+      document.body.classList.remove('i18n-loading');
       document.dispatchEvent(new CustomEvent('langChanged', { detail: { lang: lang } }));
     });
   }
@@ -144,13 +164,21 @@
   function init() {
     var lang = detectLang();
     return loadTranslations(lang).then(function () {
-      if (lang !== 'de') {
-        applyTranslations();
-        document.body.classList.remove('i18n-loading');
-      }
+      // German is the server-rendered default — no DOM pass needed. English
+      // gets swapped in place. Either way, clear the loading veil.
+      if (lang !== 'de') applyTranslations();
+      document.body.classList.remove('i18n-loading');
       updateLangButtons(lang);
       readyResolve(lang);
     });
+  }
+
+  // Auto-initialize as soon as the script runs / DOM is ready, so language is
+  // applied without every page wiring it up manually.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
   }
 
   /* ── Public API ───────────────────────────────────────────── */

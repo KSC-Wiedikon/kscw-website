@@ -4,10 +4,16 @@ import type { Locale } from '../lib/i18n';
 
 interface Props {
   title: string;
+  titleKey?: string;
   description?: string;
-  locale: Locale;
+  descriptionKey?: string;
+  locale?: Locale;
   pageTitle: string;
+  /** i18n key for the H1 — enables client-side language swap. */
+  pageTitleKey?: string;
   pageSubtitle?: string;
+  /** i18n key for the subtitle — enables client-side language swap. */
+  pageSubtitleKey?: string;
   /** Render a twinkling sparkles canvas behind the page-header. */
   sparklesHero?: boolean;
   /** Override default sparkle color (CSS rgba string, alpha must be 1). */
@@ -16,15 +22,19 @@ interface Props {
 
 const {
   title,
+  titleKey,
   description,
-  locale,
+  descriptionKey,
+  locale = 'de',
   pageTitle,
+  pageTitleKey,
   pageSubtitle,
+  pageSubtitleKey,
   sparklesHero = false,
   sparkleColor,
 } = Astro.props;
 ---
-<BaseLayout title={title} description={description} locale={locale}>
+<BaseLayout title={title} titleKey={titleKey} description={description} descriptionKey={descriptionKey} locale={locale}>
   <section class="page-header">
     {sparklesHero && (
       <canvas
@@ -34,8 +44,8 @@ const {
       ></canvas>
     )}
     <div class="container">
-      <h1>{pageTitle}</h1>
-      {pageSubtitle && <p class="page-subtitle">{pageSubtitle}</p>}
+      <h1 data-i18n={pageTitleKey}>{pageTitle}</h1>
+      {pageSubtitle && <p class="page-subtitle" data-i18n={pageSubtitleKey}>{pageSubtitle}</p>}
     </div>
   </section>
   <slot />

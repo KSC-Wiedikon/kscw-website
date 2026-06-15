@@ -1,0 +1,22 @@
+# Single-URL migration: the site dropped the /de and /en URL prefixes (one URL
+# per page, language toggled client-side). 301 every old bilingual URL to its
+# canonical German-slug path so existing links, bookmarks and search results
+# keep working. Cloudflare Pages: first match wins — specific rules first.
+
+# English pages that had a translated slug map to the German canonical slug.
+/en/volleyball/regulations    /volleyball/reglemente      301
+/en/volleyball/scheduling     /volleyball/spielplanung    301
+/en/basketball/scheduling     /basketball/spielplanung    301
+
+# Retired mixed-tournament pages (previously redirected to the sport overview).
+/de/volleyball/mixed-turnier      /volleyball   301
+/en/volleyball/mixed-tournament   /volleyball   301
+/en/volleyball/mixed-turnier      /volleyball   301
+
+# Everything else: same slug, just drop the locale prefix.
+/de/*   /:splat   301
+/en/*   /:splat   301
+
+# Bare locale roots → home.
+/de   /   301
+/en   /   301

@@ -16,7 +16,7 @@ export async function GET() {
   const items = articles.map(a => {
     // Slug is admin-authored — URL-encode it for the link and XML-escape the
     // final URL so it cannot break the feed or inject markup into RSS readers.
-    const link = escXml(`${siteUrl}/de/news/?article=${encodeURIComponent(a.slug || '')}`);
+    const link = escXml(`${siteUrl}/news/?article=${encodeURIComponent(a.slug || '')}`);
     const pubDate = new Date(a.publishedAt || a.dateCreated).toUTCString();
     const category = escXml(a.category || 'club');
     return `    <item>
@@ -33,7 +33,7 @@ export async function GET() {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>KSC Wiedikon News</title>
-    <link>${siteUrl}/de/news/</link>
+    <link>${siteUrl}/news/</link>
     <description>Neuigkeiten vom KSC Wiedikon — Volleyball &amp; Basketball</description>
     <language>de-ch</language>
     <atom:link href="${siteUrl}/feed.xml" rel="self" type="application/rss+xml"/>

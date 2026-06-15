@@ -1,24 +1,616 @@
 ---
-// Root page: detect browser language and redirect to /de/ or /en/
+import { Image } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+import { t } from '../lib/i18n';
+import heroLogo from '../assets/images/kscw_trio.png';
+import { getUpcomingEvents } from '../lib/fetch/events';
+
+const locale = 'de';
+
+// Event descriptions are authored in the lower-trust WiediSync members app and
+// reach this public page unsanitised. Strip all HTML to plain text at build time
+// so a coach cannot store `<img onerror=...>` that runs in every visitor's browser.
+const stripHtml = (s: string): string =>
+  s.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim();
+
+let upcomingEvents: any[] = [];
+try {
+  const events = await getUpcomingEvents(3);
+  upcomingEvents = events.map(ev => ({
+    title: ev.title,
+    date: ev.startDate,
+    time: '',
+    location: ev.location || '',
+    category: ev.eventType || 'other',
+    description: stripHtml(ev.description || ''),
+  }));
+} catch (e) {
+  console.warn('Failed to fetch events:', e);
+}
 ---
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <title>KSC Wiedikon</title>
+<BaseLayout
+  title="KSC Wiedikon — Basketball & Volleyball"
+  titleKey="indexMetaTitle"
+  description="KSC Wiedikon — Basketball und Volleyball seit 1982. Sportverein in Zürich-Wiedikon mit über 30 Teams."
+  descriptionKey="indexMetaDescription"
+  locale={locale}
+>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <Image src={heroLogo} alt="" class="hero-logo" aria-hidden="true" loading="eager" />
+        <h1>KSC Wiedikon</h1>
+        <p class="hero-subtitle" data-i18n="homeSubtitle">{t(locale, 'homeSubtitle')}</p>
+        <div class="hero-buttons">
+          <a href="/volleyball/" class="btn sport-btn sport-btn--vb">
+            <svg class="sport-btn-icon" viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm87.63,96H181.37a104.18,104.18,0,0,0-35.78-78.23A88.18,88.18,0,0,1,215.63,120ZM44.53,155.87A87.95,87.95,0,0,1,77.27,56.13L94.39,85.78a104.14,104.14,0,0,0-49.86,70.09ZM58.9,182.43a88,88,0,0,1,43.49-82.79L118.76,128,77.27,199.87A88.62,88.62,0,0,1,58.9,182.43Zm150.84-21.85a88,88,0,0,1-93.49,3.78L132.62,136h83A87.16,87.16,0,0,1,209.74,160.58Z"/></svg>
+            <span>Volleyball</span>
+          </a>
+          <a href="/basketball/" class="btn sport-btn sport-btn--bb">
+            <svg class="sport-btn-icon" viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M63.6,46.39a103.48,103.48,0,0,1,52-21.65,4,4,0,0,1,4.45,4V120H95.7A103.77,103.77,0,0,0,63.38,52.44,4,4,0,0,1,63.6,46.39ZM46,64.07a103.51,103.51,0,0,0-21.29,51.46,4,4,0,0,0,4,4.47H79.63A87.86,87.86,0,0,0,51.89,63.59,4,4,0,0,0,46,64.07ZM192.4,46.39a103.48,103.48,0,0,0-52-21.65,4,4,0,0,0-4.45,4V120h24.3a103.77,103.77,0,0,1,32.32-67.56A4,4,0,0,0,192.4,46.39Zm38.86,69.14A103.51,103.51,0,0,0,210,64.07a4,4,0,0,0-5.86-.48A87.86,87.86,0,0,0,176.37,120h50.91A4,4,0,0,0,231.26,115.53ZM24.74,140.47A103.51,103.51,0,0,0,46,191.93a4,4,0,0,0,5.86.48A87.86,87.86,0,0,0,79.63,136H28.72A4,4,0,0,0,24.74,140.47ZM210,191.93a103.51,103.51,0,0,0,21.29-51.46,4,4,0,0,0-4-4.47H176.37a87.86,87.86,0,0,0,27.74,56.41A4,4,0,0,0,210,191.93ZM63.6,209.61a103.48,103.48,0,0,0,52,21.65,4,4,0,0,0,4.45-4V136H95.7a103.77,103.77,0,0,1-32.32,67.56A4,4,0,0,0,63.6,209.61ZM160.3,136H136v91.28a4,4,0,0,0,4.45,4,103.48,103.48,0,0,0,52-21.65,4,4,0,0,0,.22-6.05A103.77,103.77,0,0,1,160.3,136Z"/></svg>
+            <span>Basketball</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Games (upcoming + recent results side-by-side on desktop) -->
+  <section class="section" id="games">
+    <div class="container">
+      <div class="games-grid">
+        <div class="games-grid__col">
+          <SectionHeader title={t(locale, 'homeUpcomingGames')} titleKey="homeUpcomingGames" />
+          <div class="sport-tabs" data-target="upcoming-games-list">
+            <button class="sport-tab active" data-filter="all" data-i18n="newsTabAll">Alle</button>
+            <button class="sport-tab" data-filter="volleyball">Volleyball</button>
+            <button class="sport-tab" data-filter="basketball">Basketball</button>
+          </div>
+          <table class="game-table" id="upcoming-games-list">
+            <tbody><!-- Populated by client-side JS --></tbody>
+          </table>
+        </div>
+        <div class="games-grid__col">
+          <SectionHeader title={t(locale, 'homeRecentResults')} titleKey="homeRecentResults" />
+          <div class="sport-tabs" data-target="recent-results-list">
+            <button class="sport-tab active" data-filter="all" data-i18n="newsTabAll">Alle</button>
+            <button class="sport-tab" data-filter="volleyball">Volleyball</button>
+            <button class="sport-tab" data-filter="basketball">Basketball</button>
+          </div>
+          <table class="game-table" id="recent-results-list">
+            <tbody><!-- Populated by client-side JS --></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- News -->
+  <section class="section-alt" id="news">
+    <div class="container">
+      <SectionHeader
+        title={t(locale, 'homeNews')}
+        titleKey="homeNews"
+        actionHref="/news/"
+        actionLabel={t(locale, 'homeAllNews')}
+        actionLabelKey="homeAllNews"
+      />
+      <div class="grid grid-2 card-glow-grid" id="news-grid">
+        <p id="news-empty" data-i18n="homeNewsEmpty">Keine News vorhanden.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Events -->
+  {upcomingEvents.length > 0 && (
+    <section class="section" id="events">
+      <div class="container">
+        <SectionHeader title={t(locale, 'homeEvents')} titleKey="homeEvents" />
+        <div class="grid grid-3 card-glow-grid">
+          {upcomingEvents.map(ev => (
+            <article class={`card event-card fade-in${ev.description ? ' event-card--clickable' : ''}`}>
+              <div class="card-body">
+                <div class="flex items-center gap-sm mb-md">
+                  <span class="news-date">{new Date(ev.date).toLocaleDateString('de-CH')}</span>
+                  <span class="badge badge-green">
+                    {ev.category === 'social' ? t(locale, 'eventCategorySocial')
+                      : ev.category === 'verein' ? t(locale, 'eventCategoryClub')
+                      : ev.category === 'meeting' ? t(locale, 'eventCategoryAssembly')
+                      : ev.category === 'tournament' ? t(locale, 'eventCategoryTournament')
+                      : t(locale, 'eventCategoryOther')}
+                  </span>
+                  {ev.description && <span class="event-expand-icon" aria-hidden="true">&#x25BC;</span>}
+                </div>
+                <h3>{ev.title}</h3>
+                {ev.time && <p class="event-location">{ev.time.slice(0, 5)}</p>}
+                {ev.location && <p class="event-location">{ev.location}</p>}
+              </div>
+              {ev.description && (
+                <div class="event-description">{ev.description}</div>
+              )}
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- Scoreboard -->
+  <section class="section" id="scoreboard">
+    <div class="container">
+      <SectionHeader title="KSCW Scoreboard" />
+      <div id="home-scoreboard" data-scoreboard="all"></div>
+    </div>
+  </section>
+
+  <!-- Sponsors -->
+  <section class="section-alt" id="sponsors">
+    <div class="container">
+      <SectionHeader
+        title={t(locale, 'homePartners')}
+        titleKey="homePartners"
+        actionHref="/sponsoren/"
+        actionLabel={t(locale, 'homeAllSponsors')}
+        actionLabelKey="homeAllSponsors"
+      />
+      <div class="sponsor-overflow">
+        <div id="sponsor-track" class="sponsor-track">
+          <!-- Populated by client-side JS -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Client-side data loading -->
+  <script is:inline src="/js/scoreboard.js"></script>
+  <script is:inline src="/js/game-modal.js"></script>
+  <script is:inline src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
+  <script is:inline src="/js/news-modal.js"></script>
   <script is:inline>
-    // Root defaults to /de/. Only honor an explicit prior choice (set when
-    // the user clicked EN/DE in the header) to avoid breaking the default
-    // German experience for first-time visitors with English browsers.
-    (function() {
-      var pref = null;
-      try { pref = localStorage.getItem('kscw-locale'); } catch (e) {}
-      var locale = pref === 'en' ? 'en' : 'de';
-      window.location.replace('/' + locale + '/');
+    (function () {
+      'use strict';
+
+      var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+
+      // Read a translation at call time so re-renders pick up the active language.
+      // Falls back to the German default if i18n hasn't loaded yet.
+      function tr18n(key, fallback) {
+        if (window.i18n && typeof i18n.t === 'function') {
+          var v = i18n.t(key);
+          if (v && v !== key) return v;
+        }
+        return fallback;
+      }
+
+      // Table loading rows
+      ['upcoming-games-list', 'recent-results-list'].forEach(function(id) {
+        var tbl = document.getElementById(id);
+        if (tbl) {
+          var tbody = tbl.querySelector('tbody') || tbl;
+          if (!tbody.children.length) {
+            var tr = document.createElement('tr');
+            var td = document.createElement('td');
+            td.setAttribute('colspan', '6');
+            td.style.textAlign = 'center'; td.style.padding = '2rem'; td.style.opacity = '0.5';
+            td.textContent = tr18n('homeTableLoading', 'Laden…');
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+          }
+        }
+      });
+
+      // Sport icons — filled versions matching Wiedisync (hardcoded SVG, safe)
+      var VB_SVG = '<svg width="18" height="18" viewBox="0 0 256 256" style="color:#FFC832" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm87.63,96H181.37a104.18,104.18,0,0,0-35.78-78.23A88.18,88.18,0,0,1,215.63,120ZM44.53,155.87A87.95,87.95,0,0,1,77.27,56.13L94.39,85.78a104.14,104.14,0,0,0-49.86,70.09ZM58.9,182.43a88,88,0,0,1,43.49-82.79L118.76,128,77.27,199.87A88.62,88.62,0,0,1,58.9,182.43Zm150.84-21.85a88,88,0,0,1-93.49,3.78L132.62,136h83A87.16,87.16,0,0,1,209.74,160.58Z"/></svg>';
+      var BB_SVG = '<svg width="18" height="18" viewBox="0 0 256 256" style="color:#F97316" fill="currentColor"><path d="M63.6,46.39a103.48,103.48,0,0,1,52-21.65,4,4,0,0,1,4.45,4V120H95.7A103.77,103.77,0,0,0,63.38,52.44,4,4,0,0,1,63.6,46.39ZM46,64.07a103.51,103.51,0,0,0-21.29,51.46,4,4,0,0,0,4,4.47H79.63A87.86,87.86,0,0,0,51.89,63.59,4,4,0,0,0,46,64.07ZM192.4,46.39a103.48,103.48,0,0,0-52-21.65,4,4,0,0,0-4.45,4V120h24.3a103.77,103.77,0,0,1,32.32-67.56A4,4,0,0,0,192.4,46.39Zm38.86,69.14A103.51,103.51,0,0,0,210,64.07a4,4,0,0,0-5.86-.48A87.86,87.86,0,0,0,176.37,120h50.91A4,4,0,0,0,231.26,115.53ZM24.74,140.47A103.51,103.51,0,0,0,46,191.93a4,4,0,0,0,5.86.48A87.86,87.86,0,0,0,79.63,136H28.72A4,4,0,0,0,24.74,140.47ZM210,191.93a103.51,103.51,0,0,0,21.29-51.46,4,4,0,0,0-4-4.47H176.37a87.86,87.86,0,0,0,27.74,56.41A4,4,0,0,0,210,191.93ZM63.6,209.61a103.48,103.48,0,0,0,52,21.65,4,4,0,0,0,4.45-4V136H95.7a103.77,103.77,0,0,1-32.32,67.56A4,4,0,0,0,63.6,209.61ZM160.3,136H136v91.28a4,4,0,0,0,4.45,4,103.48,103.48,0,0,0,52-21.65,4,4,0,0,0,.22-6.05A103.77,103.77,0,0,1,160.3,136Z"/></svg>';
+
+      // Prefer the linked team's sport; fall back to the game_id prefix (bb_/vb_)
+      // so the icon stays correct even when the kscw_team relation can't be read
+      // (e.g. games pointing at archived teams from a previous season).
+      function gameSport(game) {
+        if (game.teamSport) return game.teamSport;
+        var gid = game.gameId || '';
+        if (gid.indexOf('bb_') === 0) return 'basketball';
+        if (gid.indexOf('vb_') === 0) return 'volleyball';
+        return 'volleyball';
+      }
+      function sportSvg(game) {
+        return (gameSport(game) === 'basketball') ? BB_SVG : VB_SVG;
+      }
+
+      function createIconEl(game) {
+        var span = document.createElement('span');
+        span.className = 'game-sport-icon';
+        // SAFE: sportSvg() returns only hardcoded VB_SVG or BB_SVG constants defined above.
+        // No user input flows into this string. Using innerHTML for SVG namespace compat.
+        span.innerHTML = sportSvg(game); // eslint-disable-line no-unsanitized/property
+        return span;
+      }
+
+      function createChip(game) {
+        if (!game.teamName) return null; // no resolvable team → render nothing, not an empty pill
+        var chip = document.createElement('span');
+        chip.className = 'chip';
+        if (game.teamColor) {
+          chip.style.background = game.teamColor; chip.style.color = '#fff';
+          chip.textContent = game.teamName || '';
+        } else {
+          chip.style.background = '#e2e8f0'; chip.style.color = '#475569';
+          chip.textContent = game.teamName || '';
+        }
+        return chip;
+      }
+
+      // ── Game data cache for filtering ──
+      var cachedGames = { upcoming: {}, completed: {} };
+
+      function makeCell(content, className) {
+        var td = document.createElement('td');
+        if (className) td.className = className;
+        if (typeof content === 'string') td.textContent = content;
+        else if (content) td.appendChild(content);
+        return td;
+      }
+
+      function formatDate(iso) {
+        if (!iso) return '\u2013';
+        try {
+          var dateOnly = iso.length > 10 ? iso.slice(0, 10) : iso;
+          var d = new Date(dateOnly + 'T12:00:00');
+          if (isNaN(d.getTime())) return '\u2013';
+          return d.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        } catch (e) { return '\u2013'; }
+      }
+
+      function buildGameRow(game, showScore) {
+        var tr = document.createElement('tr');
+        tr.className = 'fade-in';
+        tr._gameData = game; // store for click handler
+
+        var isHome = game.isHome;
+
+        // 1: sport icon
+        tr.appendChild(makeCell(createIconEl(game), 'gt-icon'));
+
+        // 2: date
+        tr.appendChild(makeCell(formatDate(game.date), 'gt-date'));
+
+        // 3: time
+        tr.appendChild(makeCell(game.time ? game.time.slice(0, 5) : '', 'gt-time'));
+
+        // 4: team chip
+        tr.appendChild(makeCell(createChip(game), 'gt-team'));
+
+        // 5: home/away
+        var badge = document.createElement('span');
+        badge.className = 'game-badge ' + (isHome ? 'home' : 'away');
+        badge.textContent = isHome
+          ? tr18n('teamBadgeHome', 'Heim')
+          : tr18n('homeBadgeAwayShort', 'Ausw.');
+        tr.appendChild(makeCell(badge, 'gt-loc'));
+
+        // 6: matchup (split into spans so mobile can align home/away under scores)
+        var matchupInner = document.createElement('span');
+        matchupInner.className = 'gt-matchup-inner';
+        var homeNameEl = document.createElement('span');
+        homeNameEl.className = 'gt-home-team';
+        homeNameEl.textContent = game.homeTeam;
+        var vsEl = document.createElement('span');
+        vsEl.className = 'gt-vs';
+        vsEl.textContent = ' vs ';
+        var awayNameEl = document.createElement('span');
+        awayNameEl.className = 'gt-away-team';
+        awayNameEl.textContent = game.awayTeam;
+        matchupInner.appendChild(homeNameEl);
+        matchupInner.appendChild(vsEl);
+        matchupInner.appendChild(awayNameEl);
+        tr.appendChild(makeCell(matchupInner, 'gt-matchup'));
+
+        // 7: score (results) or empty spacer (upcoming)
+        if (showScore && game.homeScore != null && game.awayScore != null) {
+          var scoreSpan = document.createElement('span');
+          scoreSpan.className = 'game-score';
+          var tied = game.homeScore === game.awayScore;
+          if (tied && game.sport === 'basketball') {
+            scoreSpan.className += ' tie';
+          } else {
+            var homeWin = game.homeScore > game.awayScore;
+            var kscwWin = isHome ? homeWin : !homeWin;
+            scoreSpan.className += kscwWin ? ' win' : ' loss';
+          }
+          var homeScoreEl = document.createElement('span');
+          homeScoreEl.className = 'gt-home-score';
+          homeScoreEl.textContent = game.homeScore;
+          var sepEl = document.createElement('span');
+          sepEl.className = 'gt-score-sep';
+          sepEl.textContent = ':';
+          var awayScoreEl = document.createElement('span');
+          awayScoreEl.className = 'gt-away-score';
+          awayScoreEl.textContent = game.awayScore;
+          scoreSpan.appendChild(homeScoreEl);
+          scoreSpan.appendChild(sepEl);
+          scoreSpan.appendChild(awayScoreEl);
+          tr.appendChild(makeCell(scoreSpan, 'gt-score'));
+        } else {
+          tr.appendChild(makeCell('', 'gt-score'));
+        }
+
+        return tr;
+      }
+
+      function renderGameTable(tableId, games, showScore) {
+        var tbl = document.getElementById(tableId);
+        if (!tbl) return;
+        var tbody = tbl.querySelector('tbody') || tbl;
+        while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+        if (!games.length) {
+          var tr = document.createElement('tr');
+          var td = document.createElement('td');
+          td.setAttribute('colspan', '7');
+          td.className = 'game-empty';
+          td.textContent = tr18n('homeNoGames', 'Keine Spiele gefunden.');
+          tr.appendChild(td); tbody.appendChild(tr);
+          return;
+        }
+        var frag = document.createDocumentFragment();
+        for (var i = 0; i < games.length; i++) {
+          frag.appendChild(buildGameRow(games[i], showScore));
+        }
+        tbody.appendChild(frag);
+      }
+
+      // ── Fetch games from Directus ──
+      var today = new Date().toISOString().slice(0, 10);
+      var gameFields = 'id,game_id,date,time,home_team,away_team,home_score,away_score,status,type,league,season,sets_json,kscw_team.id,kscw_team.name,kscw_team.sport,kscw_team.color,hall.id,hall.name,hall.address';
+
+      function mapGame(g) {
+        return {
+          id: g.id, gameId: g.game_id, date: g.date, time: g.time,
+          homeTeam: g.home_team, awayTeam: g.away_team,
+          homeScore: g.home_score, awayScore: g.away_score,
+          status: g.status, type: g.type, league: g.league, season: g.season,
+          setsJson: g.sets_json ? (typeof g.sets_json === 'string' ? JSON.parse(g.sets_json) : g.sets_json) : null,
+          teamId: g.kscw_team ? String(g.kscw_team.id) : null,
+          teamName: g.kscw_team ? g.kscw_team.name : null,
+          teamSport: g.kscw_team ? g.kscw_team.sport : null,
+          teamColor: g.kscw_team ? g.kscw_team.color : null,
+          teamShort: g.kscw_team ? g.kscw_team.name : '',
+          isHome: g.type === 'home',
+          opponent: g.type === 'home' ? g.away_team : g.home_team,
+          score: (g.home_score != null && g.away_score != null) ? g.home_score + ':' + g.away_score : null,
+          hall: g.hall || null,
+          sport: g.kscw_team ? g.kscw_team.sport : 'volleyball'
+        };
+      }
+
+      function buildGameUrl(sport, direction) {
+        var isUpcoming = direction === 'upcoming';
+        var filter = isUpcoming
+          ? { _and: [{ date: { _gte: today } }, { status: { _neq: 'cancelled' } }] }
+          : { status: { _eq: 'completed' } };
+        if (sport !== 'all') {
+          var sportFilter = { kscw_team: { sport: { _eq: sport } } };
+          filter = { _and: (filter._and || [filter]).concat(sportFilter) };
+        }
+        var sort = isUpcoming ? 'date,time' : '-date,-time';
+        return DIRECTUS_URL + '/items/games?fields=' + encodeURIComponent(gameFields)
+          + '&sort=' + sort + '&limit=5&filter=' + encodeURIComponent(JSON.stringify(filter));
+      }
+
+      function fetchGames() {
+        var sports = ['all', 'volleyball', 'basketball'];
+        var fetches = [];
+        sports.forEach(function(sport) {
+          ['upcoming', 'completed'].forEach(function(dir) {
+            fetches.push(
+              fetch(buildGameUrl(sport, dir)).then(function(r) { return r.json(); })
+                .then(function(data) { cachedGames[dir][sport] = (data.data || []).map(mapGame); })
+            );
+          });
+        });
+        Promise.all(fetches).then(function() {
+          renderGameTable('upcoming-games-list', cachedGames.upcoming.all, false);
+          renderGameTable('recent-results-list', cachedGames.completed.all, true);
+          requestAnimationFrame(observeNewFadeIns);
+        }).catch(function(err) { console.warn('Failed to fetch games:', err); });
+      }
+
+      // ── Sponsor Carousel ──
+      function fetchSponsors() {
+        var sponsorTrack = document.getElementById('sponsor-track');
+        if (!sponsorTrack) return;
+        fetch(DIRECTUS_URL + '/items/sponsors?fields=id,name,logo,website_url&sort=name&limit=-1&filter[team_page_only][_eq]=false')
+          .then(function (res) { return res.json(); })
+          .then(function (data) {
+            var allSponsors = data.data || [];
+            if (!allSponsors.length) return;
+            var spFrag = document.createDocumentFragment();
+            for (var pass = 0; pass < 2; pass++) {
+              for (var s = 0; s < allSponsors.length; s++) {
+                var sp = allSponsors[s];
+                var link = document.createElement('a');
+                link.href = sp.website_url || '#';
+                link.className = 'sponsor-item';
+                if (sp.website_url) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
+                link.title = sp.name;
+                var logoSrc = sp.logo ? (DIRECTUS_URL + '/assets/' + sp.logo + '?width=300&quality=80') : null;
+                if (logoSrc) {
+                  var img = document.createElement('img');
+                  img.src = logoSrc;
+                  img.alt = sp.name;
+                  img.style.maxHeight = '40px'; img.style.objectFit = 'contain';
+                  link.appendChild(img);
+                } else {
+                  var label = document.createElement('span');
+                  label.textContent = sp.name; link.appendChild(label);
+                }
+                spFrag.appendChild(link);
+              }
+            }
+            sponsorTrack.appendChild(spFrag);
+          }).catch(function () {});
+      }
+
+      // ── Sport filter tabs ──
+      document.querySelectorAll('.sport-tabs').forEach(function (tabGroup) {
+        tabGroup.addEventListener('click', function (e) {
+          var btn = e.target.closest('.sport-tab');
+          if (!btn) return;
+          var sport = btn.getAttribute('data-filter');
+          var targetId = tabGroup.getAttribute('data-target');
+          tabGroup.querySelectorAll('.sport-tab').forEach(function (b) { b.classList.remove('active'); });
+          btn.classList.add('active');
+          var dir = targetId === 'upcoming-games-list' ? 'upcoming' : 'completed';
+          renderGameTable(targetId, cachedGames[dir][sport] || [], dir === 'completed');
+          requestAnimationFrame(observeNewFadeIns);
+        });
+      });
+
+      function observeNewFadeIns() {
+        var els = document.querySelectorAll('.fade-in:not(.visible)');
+        if (!els.length) return;
+        if (!('IntersectionObserver' in window)) {
+          els.forEach(function(el) { el.classList.add('visible'); });
+          return;
+        }
+        var obs = new IntersectionObserver(function(entries, o) {
+          entries.forEach(function(entry) {
+            if (entry.isIntersecting) { entry.target.classList.add('visible'); o.unobserve(entry.target); }
+          });
+        }, { threshold: 0.1, rootMargin: '0px 0px -20px 0px' });
+        els.forEach(function(el) { obs.observe(el); });
+      }
+
+      // ── News (client-side) ──
+      var cachedArticles = null; // raw Directus rows, re-rendered on langChanged
+
+      function renderNews() {
+        var grid = document.getElementById('news-grid');
+        var empty = document.getElementById('news-empty');
+        if (!grid || !cachedArticles) return;
+        var articles = cachedArticles;
+        // Clear previously rendered cards, but keep the (hidden) empty placeholder.
+        var stale = grid.querySelectorAll('.news-card');
+        for (var k = 0; k < stale.length; k++) grid.removeChild(stale[k]);
+        if (!articles.length) return;
+        if (empty) empty.style.display = 'none';
+        var locale = document.documentElement.lang || 'de';
+        var frag = document.createDocumentFragment();
+            var svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>';
+            for (var i = 0; i < articles.length; i++) {
+              var n = articles[i];
+              var imageUrl = n.image ? (DIRECTUS_URL + '/assets/' + n.image + '?width=800&quality=80') : '';
+              var date = n.published_at || n.date_created;
+              var title = (locale === 'en' && n.title_en) ? n.title_en : n.title;
+              var badgeClass = n.category === 'volleyball' ? 'badge-blue' : n.category === 'basketball' ? 'badge-orange' : '';
+              var catLabel = n.category === 'volleyball' ? 'Volleyball' : n.category === 'basketball' ? 'Basketball' : 'Club';
+
+              var article = document.createElement('article');
+              article.className = 'card news-card fade-in';
+              article.setAttribute('data-news-id', n.id);
+
+              var imgDiv = document.createElement('div');
+              imgDiv.className = 'card-img-placeholder';
+              if (imageUrl) {
+                var img = document.createElement('img');
+                img.src = imageUrl;
+                img.alt = title;
+                imgDiv.appendChild(img);
+              } else {
+                imgDiv.innerHTML = svgIcon;
+              }
+              article.appendChild(imgDiv);
+
+              var body = document.createElement('div');
+              body.className = 'card-body';
+              var meta = document.createElement('div');
+              meta.className = 'flex items-center gap-sm mb-md';
+              var dateSpan = document.createElement('span');
+              dateSpan.className = 'news-date';
+              dateSpan.textContent = new Date(date).toLocaleDateString('de-CH');
+              meta.appendChild(dateSpan);
+              var badge = document.createElement('span');
+              badge.className = 'badge ' + badgeClass;
+              badge.textContent = catLabel;
+              meta.appendChild(badge);
+              body.appendChild(meta);
+
+              var h3 = document.createElement('h3');
+              h3.textContent = title;
+              body.appendChild(h3);
+
+              if (n.excerpt) {
+                var p = document.createElement('p');
+                p.className = 'news-excerpt';
+                p.textContent = n.excerpt;
+                body.appendChild(p);
+              }
+              article.appendChild(body);
+
+              var script = document.createElement('script');
+              script.type = 'application/json';
+              script.className = 'news-data';
+              script.textContent = JSON.stringify({ title: title, body: n.body, date: date, category: n.category, image: imageUrl, author: n.author, slug: n.slug });
+              article.appendChild(script);
+
+          frag.appendChild(article);
+        }
+        grid.appendChild(frag);
+        requestAnimationFrame(observeNewFadeIns);
+      }
+
+      function fetchNews() {
+        var grid = document.getElementById('news-grid');
+        if (!grid) return;
+        var newsFields = 'id,title,title_en,slug,excerpt,body,category,author,published_at,image,date_created';
+        // Published-only is enforced by the Directus Public role permission; is_published is not readable anonymously.
+        fetch(DIRECTUS_URL + '/items/news?fields=' + encodeURIComponent(newsFields) + '&sort=-published_at&limit=2')
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            cachedArticles = data.data || [];
+            renderNews();
+          }).catch(function() {});
+      }
+
+      // ── Init ──
+      fetchNews();
+      fetchGames();
+      fetchSponsors();
+
+      // ── Game row click → modal ──
+      document.querySelectorAll('.game-table').forEach(function (tbl) {
+        tbl.addEventListener('click', function (e) {
+          var tr = e.target.closest('tr');
+          if (tr && tr._gameData && window.showGameModal) {
+            window.showGameModal(tr._gameData, (window.i18n && i18n.getLang()) || 'de');
+          }
+        });
+      });
+
+      // Re-render one games table in the active language, preserving the
+      // currently selected sport filter (read from the active tab in the DOM).
+      function rerenderGamesTable(targetId, dir) {
+        var tabGroup = document.querySelector('.sport-tabs[data-target="' + targetId + '"]');
+        var activeBtn = tabGroup ? tabGroup.querySelector('.sport-tab.active') : null;
+        var sport = (activeBtn && activeBtn.getAttribute('data-filter')) || 'all';
+        renderGameTable(targetId, cachedGames[dir][sport] || [], dir === 'completed');
+      }
+
+      // ── Re-render runtime content when the language changes client-side ──
+      // The static-rendered tab labels / headers are handled by i18n.js's
+      // applyTranslations(); here we only re-render the JS-built games tables
+      // and news cards so their loading/empty/badge strings pick up the new lang.
+      document.addEventListener('langChanged', function () {
+        rerenderGamesTable('upcoming-games-list', 'upcoming');
+        rerenderGamesTable('recent-results-list', 'completed');
+        renderNews();
+        requestAnimationFrame(observeNewFadeIns);
+      });
     })();
   </script>
-  <meta http-equiv="refresh" content="0;url=/de/">
-</head>
-<body>
-  <p>Redirecting...</p>
-</body>
-</html>
+  <script src="../islands/event-expand.ts"></script>
+  <script src="../islands/scroll-animations.ts"></script>
+  <script src="../islands/sponsor-carousel.ts"></script>
+</BaseLayout>

@@ -1,0 +1,50 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import { t } from '../../lib/i18n';
+import { getAllEvents } from '../../lib/fetch/events';
+
+const locale = 'de';
+
+let allEvents: any[] = [];
+try {
+  const events = await getAllEvents();
+  allEvents = events.map(ev => ({
+    title: ev.title,
+    date: ev.startDate,
+    endDate: ev.endDate || '',
+    time: '',
+    location: ev.location || '',
+    category: ev.eventType || 'other',
+    description: ev.description || '',
+    body: ev.description || '',
+    signupUrl: ev.signupUrl || '',
+  }));
+} catch (e) {
+  console.warn('Failed to fetch events:', e);
+}
+---
+<PageLayout
+  title="Kalender — KSC Wiedikon"
+  titleKey="weiteresKalenderMetaTitle"
+  description="Kalender des KSC Wiedikon — Alle Spiele, Trainings und Events auf einen Blick."
+  descriptionKey="weiteresKalenderMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'calendarTitle')}
+  pageTitleKey="calendarTitle"
+  pageSubtitle={t(locale, 'calendarSubtitle')}
+  pageSubtitleKey="calendarSubtitle"
+>
+  <section class="section">
+    <div class="container">
+      <div id="calendar-grid" data-lang="de">
+        <div class="cal-loading" data-i18n="weiteresKalenderLoading">Spiele werden geladen...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Escape <, > and & to \uXXXX so an event field containing "</script>" cannot
+       break out of the data island. JSON.parse decodes them back transparently. -->
+  <script id="events-data" type="application/json" set:html={JSON.stringify(allEvents).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')} />
+  <script src="../../islands/calendar-grid.ts"></script>
+  <script src="../../islands/scroll-animations.ts"></script>
+</PageLayout>

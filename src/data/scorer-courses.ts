@@ -44,8 +44,17 @@ export const scorerCourses: ScorerCourse[] = [
   },
 ];
 
+/**
+ * Sign-up form slug for the active language, falling back to the other
+ * language's form when the preferred one isn't built yet. The DE/EN forms are
+ * field-compatible duplicates, so a fallback still submits correctly — better
+ * to show a sign-up button (in the other language) than to hide it entirely.
+ * Returns null only when neither language has a form.
+ */
 export function localeSlug(c: ScorerCourse, locale: 'de' | 'en'): string | null {
-  return locale === 'en' ? c.formSlugEn : c.formSlugDe;
+  const preferred = locale === 'en' ? c.formSlugEn : c.formSlugDe;
+  const fallback = locale === 'en' ? c.formSlugDe : c.formSlugEn;
+  return preferred ?? fallback;
 }
 
 /**

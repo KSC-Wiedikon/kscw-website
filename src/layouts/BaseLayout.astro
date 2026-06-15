@@ -2,34 +2,38 @@
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
-import { t, getAlternateUrl } from '../lib/i18n';
 import type { Locale } from '../lib/i18n';
 
 interface Props {
+  /** German default rendered into <title> (the SSR/no-JS language). */
   title: string;
+  /** i18n key — when set, the client engine swaps <title> for the active language. */
+  titleKey?: string;
+  /** German default for the meta description. */
   description?: string;
-  locale: Locale;
+  /** i18n key — when set, the client engine swaps the meta description. */
+  descriptionKey?: string;
+  /** Build-time locale for the German default render. Single-URL site → always 'de'. */
+  locale?: Locale;
 }
 
-const { title, description, locale } = Astro.props;
-const altUrl = getAlternateUrl(Astro.url);
-const altLocale = locale === 'de' ? 'en' : 'de';
+const { title, titleKey, description, descriptionKey, locale = 'de' } = Astro.props;
 ---
 <!DOCTYPE html>
-<html lang={locale}>
+<html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark light">
   <meta name="supported-color-schemes" content="dark light">
   {description && <meta name="description" content={description}>}
+  {descriptionKey && <meta name="i18n-description" content={descriptionKey}>}
   <title>{title}</title>
+  {titleKey && <meta name="i18n-title" content={titleKey}>}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" href="/images/kscw_trio.png" type="image/png">
-  <link rel="alternate" hreflang={locale} href={Astro.url.pathname}>
-  <link rel="alternate" hreflang={altLocale} href={altUrl}>
   <link rel="alternate" type="application/rss+xml" title="KSC Wiedikon News" href="/feed.xml">
   <script is:inline src="https://browser.sentry-cdn.com/9.27.0/bundle.min.js" integrity="sha384-l+DRKdttgde2nTK8cjclL7gMH8ppmfZkjDrpe0sf98IeOzcCZo+AjGwPe4qipohT" crossorigin="anonymous"></script>
   <script is:inline>
@@ -53,13 +57,23 @@ const altLocale = locale === 'de' ? 'en' : 'de';
   </script>
   <script is:inline src="/js/error-logger.js"></script>
   <script is:inline>
-    // Theme: dark by default, light if saved
+    // Pre-paint: apply saved theme + language before first paint.
+    // Page HTML is server-rendered in German; the i18n engine swaps to
+    // English in place when that's the saved choice.
     (function() {
-      if (localStorage.getItem('kscw-theme') === 'light') {
-        document.documentElement.classList.add('light');
-      }
+      try {
+        if (localStorage.getItem('kscw-theme') === 'light') {
+          document.documentElement.classList.add('light');
+        }
+        if (localStorage.getItem('kscw-locale') === 'en') {
+          document.documentElement.lang = 'en';
+        }
+      } catch (e) {}
     })();
   </script>
+  <!-- Client-side i18n engine: loaded site-wide, auto-initializes, swaps
+       [data-i18n*] nodes to the active language. -->
+  <script is:inline src="/js/i18n.js"></script>
 </head>
 <body>
   <div class="scroll-progress" aria-hidden="true">

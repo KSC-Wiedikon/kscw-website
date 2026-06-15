@@ -153,7 +153,7 @@
     var shareLabel = el('span', 'nm-share-label', isDE ? 'Teilen' : 'Share');
     shareBar.appendChild(shareLabel);
 
-    var shareBase = window.location.origin + '/' + (isDE ? 'de' : 'en') + '/news/';
+    var shareBase = window.location.origin + '/news/';
     var pageUrl = data.slug ? shareBase + '?article=' + encodeURIComponent(data.slug) : shareBase;
     var shareText = data.title + ' — KSC Wiedikon';
 

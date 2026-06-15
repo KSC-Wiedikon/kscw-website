@@ -1,0 +1,106 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import { t } from '../../lib/i18n';
+
+const locale = 'de';
+---
+<PageLayout
+  title="Datenschutz — KSC Wiedikon"
+  titleKey="weiteresDatenschutzMetaTitle"
+  description="Datenschutzerklärung des KSC Wiedikon — Informationen zum Umgang mit Ihren Daten."
+  descriptionKey="weiteresDatenschutzMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'privacyTitle')}
+  pageTitleKey="privacyTitle"
+  pageSubtitle={t(locale, 'privacySubtitle')}
+  pageSubtitleKey="privacySubtitle"
+>
+  <section class="section">
+    <div class="container">
+      <div class="legal-content">
+
+        <p class="legal-intro" data-i18n="privacyIntro">{t(locale, 'privacyIntro')}</p>
+
+        <div class="legal-card">
+          <h2 data-i18n="privacyResponsible">{t(locale, 'privacyResponsible')}</h2>
+          <p data-i18n="privacyResponsibleText">{t(locale, 'privacyResponsibleText')}</p>
+          <p style="margin-top: var(--space-sm);"><strong>KSC Wiedikon</strong><br>Schrennengasse 7<br>8003 Zürich<br><a href="mailto:kscw@kscw.ch">kscw@kscw.ch</a></p>
+        </div>
+
+        <div class="legal-card">
+          <h2 data-i18n="privacyHosting">{t(locale, 'privacyHosting')}</h2>
+          <p data-i18n="privacyHostingText">{t(locale, 'privacyHostingText')}</p>
+        </div>
+
+        <div class="legal-card">
+          <h2 data-i18n="privacyCollection">{t(locale, 'privacyCollection')}</h2>
+          <p data-i18n="privacyCollectionText">{t(locale, 'privacyCollectionText')}</p>
+        </div>
+
+        <div class="legal-card">
+          <h2 data-i18n="privacyContact">{t(locale, 'privacyContact')}</h2>
+          <p data-i18n="privacyContactText">{t(locale, 'privacyContactText')}</p>
+        </div>
+
+        <div class="legal-card">
+          <h2 data-i18n="privacyCookies">{t(locale, 'privacyCookies')}</h2>
+          <p data-i18n="privacyCookiesText">{t(locale, 'privacyCookiesText')}</p>
+        </div>
+
+        <div class="legal-card">
+          <h2 data-i18n="privacyErrorTracking">{t(locale, 'privacyErrorTracking')}</h2>
+          <p data-i18n="privacyErrorTrackingText">{t(locale, 'privacyErrorTrackingText')}</p>
+        </div>
+
+        <div class="legal-card">
+          <h2 data-i18n="privacyThirdParty">{t(locale, 'privacyThirdParty')}</h2>
+          <p data-i18n="privacyThirdPartyText">{t(locale, 'privacyThirdPartyText')}</p>
+        </div>
+
+        <div class="legal-card">
+          <h2 data-i18n="privacyRights">{t(locale, 'privacyRights')}</h2>
+          <p data-i18n="privacyRightsText">{t(locale, 'privacyRightsText')}</p>
+          <p style="margin-top: var(--space-sm);"><a href="mailto:kscw@kscw.ch">kscw@kscw.ch</a></p>
+        </div>
+
+        <div class="legal-card">
+          <h2 data-i18n="privacyChanges">{t(locale, 'privacyChanges')}</h2>
+          <p data-i18n="privacyChangesText">{t(locale, 'privacyChangesText')}</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .legal-content {
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+    text-align: justify;
+  }
+  .legal-intro {
+    font-size: var(--text-base);
+    line-height: 1.8;
+    color: var(--text-secondary);
+  }
+  .legal-card h2 {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--kscw-blue, #4A55A2);
+    margin-bottom: var(--space-sm);
+  }
+  .legal-card p {
+    font-size: var(--text-base);
+    line-height: 1.7;
+    color: var(--text-secondary);
+  }
+  .legal-card a {
+    color: var(--kscw-blue, #4A55A2);
+  }
+  .legal-card a:hover {
+    text-decoration: underline;
+  }
+</style>

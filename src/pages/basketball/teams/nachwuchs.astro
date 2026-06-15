@@ -1,0 +1,293 @@
+---
+import PageLayout from '../../../layouts/PageLayout.astro';
+import CTA from '../../../components/CTA.astro';
+import { t } from '../../../lib/i18n';
+
+const locale = 'de';
+---
+<PageLayout
+  title="Basketball Nachwuchs — KSC Wiedikon"
+  titleKey="basketballTeamsNachwuchsMetaTitle"
+  description="KSC Wiedikon Basketball Nachwuchs — Alle Jugendteams von U8 bis U18 im Überblick."
+  descriptionKey="basketballTeamsNachwuchsMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'bbYouthTitle')}
+  pageTitleKey="bbYouthTitle"
+  pageSubtitle={t(locale, 'bbYouthSubtitle')}
+  pageSubtitleKey="bbYouthSubtitle"
+>
+  <!-- Youth Teams -->
+  <section class="section">
+    <div class="container">
+      <div class="youth-sections">
+
+        <!-- U18 -->
+        <div id="hu18">
+          <div class="youth-section-title">
+            <h2>U18</h2>
+          </div>
+          <div class="youth-grid">
+            <div class="youth-card">
+              <div class="youth-card-header">
+                <span class="chip" style="background: #f97316; color: #ffffff;" data-i18n="basketballTeamsNachwuchsU18BoysChip">U18 Knaben</span>
+                <h3 data-i18n="basketballTeamsNachwuchsU18BoysName">U18 Knaben</h3>
+              </div>
+              <p data-i18n="basketballTeamsNachwuchsU18BoysDesc">Unser U18-Knabenteam spielt in der regionalen Jugendliga und bereitet sich auf den Übergang in die Herrenmannschaften vor. Technik, Taktik und Teamgeist stehen im Fokus.</p>
+              <div class="youth-meta">
+                <span data-i18n-html="basketballTeamsNachwuchsU18BoysTraining"><strong>Training:</strong> Dienstag 18:00 – 19:30</span>
+                <span data-i18n-html="basketballTeamsNachwuchsHallLabel1"><strong>Halle:</strong> Turnhalle Utogrund</span>
+                <span><strong>Coach:</strong> Marco Frei</span>
+              </div>
+            </div>
+            <div class="youth-card" id="du18">
+              <div class="youth-card-header">
+                <span class="chip" style="background: #c084fc; color: #ffffff;" data-i18n="basketballTeamsNachwuchsU18GirlsChip">U18 Mädchen</span>
+                <h3 data-i18n="basketballTeamsNachwuchsU18GirlsName">U18 Mädchen</h3>
+              </div>
+              <p data-i18n="basketballTeamsNachwuchsU18GirlsDesc">Die U18 Mädchen sind ein ambitioniertes Team mit starkem Zusammenhalt. Sie nehmen an regionalen Turnieren teil und entwickeln ihre spielerischen Fähigkeiten stetig weiter.</p>
+              <div class="youth-meta">
+                <span data-i18n-html="basketballTeamsNachwuchsU18GirlsTraining"><strong>Training:</strong> Mittwoch 18:00 – 19:30</span>
+                <span data-i18n-html="basketballTeamsNachwuchsHallLabel2"><strong>Halle:</strong> Turnhalle Lavater</span>
+                <span><strong>Coach:</strong> Sabrina Vollenweider</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- U16 -->
+        <div id="hu16">
+          <div class="youth-section-title">
+            <h2>U16</h2>
+          </div>
+          <div class="youth-grid">
+            <div class="youth-card">
+              <div class="youth-card-header">
+                <span class="chip" style="background: #fb923c; color: #ffffff;" data-i18n="basketballTeamsNachwuchsU16BoysChip">U16 Knaben</span>
+                <h3 data-i18n="basketballTeamsNachwuchsU16BoysName">U16 Knaben</h3>
+              </div>
+              <p data-i18n="basketballTeamsNachwuchsU16BoysDesc">Im U16-Bereich wird die basketballerische Grundausbildung vertieft. Positionsspiel und Spielverständnis werden gezielt gefördert.</p>
+              <div class="youth-meta">
+                <span data-i18n-html="basketballTeamsNachwuchsU16BoysTraining"><strong>Training:</strong> Montag 17:30 – 19:00</span>
+                <span data-i18n-html="basketballTeamsNachwuchsHallLabel3"><strong>Halle:</strong> Turnhalle Sihlfeld</span>
+                <span><strong>Coach:</strong> David Ammann</span>
+              </div>
+            </div>
+            <div class="youth-card" id="du16">
+              <div class="youth-card-header">
+                <span class="chip" style="background: #d8b4fe; color: #1e1e1e;" data-i18n="basketballTeamsNachwuchsU16GirlsChip">U16 Mädchen</span>
+                <h3 data-i18n="basketballTeamsNachwuchsU16GirlsName">U16 Mädchen</h3>
+              </div>
+              <p data-i18n="basketballTeamsNachwuchsU16GirlsDesc">Die U16 Mädchen trainieren mit Begeisterung und nehmen regelmässig an Meisterschaftsspielen teil. Spass am Basketball steht an erster Stelle.</p>
+              <div class="youth-meta">
+                <span data-i18n-html="basketballTeamsNachwuchsU16GirlsTraining"><strong>Training:</strong> Donnerstag 17:30 – 19:00</span>
+                <span data-i18n-html="basketballTeamsNachwuchsHallLabel2"><strong>Halle:</strong> Turnhalle Lavater</span>
+                <span><strong>Coach:</strong> Nina Berger</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- U14 -->
+        <div id="hu14">
+          <div class="youth-section-title">
+            <h2>U14</h2>
+          </div>
+          <div class="youth-grid">
+            <div class="youth-card">
+              <div class="youth-card-header">
+                <span class="chip" style="background: #fdba74; color: #1e1e1e;" data-i18n="basketballTeamsNachwuchsU14BoysChip">U14 Knaben</span>
+                <h3 data-i18n="basketballTeamsNachwuchsU14BoysName">U14 Knaben</h3>
+              </div>
+              <p data-i18n="basketballTeamsNachwuchsU14BoysDesc">Unsere U14 Knaben lernen die Grundlagen des Basketballs: Dribbeln, Passen, Werfen und erste taktische Konzepte in spielerischer Form.</p>
+              <div class="youth-meta">
+                <span data-i18n-html="basketballTeamsNachwuchsU14BoysTraining"><strong>Training:</strong> Dienstag 16:30 – 18:00</span>
+                <span data-i18n-html="basketballTeamsNachwuchsHallLabel1"><strong>Halle:</strong> Turnhalle Utogrund</span>
+                <span><strong>Coach:</strong> Patrick Rüegg</span>
+              </div>
+            </div>
+            <div class="youth-card" id="du14">
+              <div class="youth-card-header">
+                <span class="chip" style="background: #e9d5ff; color: #1e1e1e;" data-i18n="basketballTeamsNachwuchsU14GirlsChip">U14 Mädchen</span>
+                <h3 data-i18n="basketballTeamsNachwuchsU14GirlsName">U14 Mädchen</h3>
+              </div>
+              <p data-i18n="basketballTeamsNachwuchsU14GirlsDesc">Die U14 Mädchen entwickeln ihre Basketballskills in einer motivierenden Umgebung. Teamwork und Freude an der Bewegung sind zentral.</p>
+              <div class="youth-meta">
+                <span data-i18n-html="basketballTeamsNachwuchsU14GirlsTraining"><strong>Training:</strong> Freitag 16:30 – 18:00</span>
+                <span data-i18n-html="basketballTeamsNachwuchsHallLabel3"><strong>Halle:</strong> Turnhalle Sihlfeld</span>
+                <span><strong>Coach:</strong> Laura Kessler</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- U12 -->
+        <div id="hu12">
+          <div class="youth-section-title">
+            <h2>U12</h2>
+          </div>
+          <div class="youth-grid">
+            <div class="youth-card">
+              <div class="youth-card-header">
+                <span class="chip" style="background: #fed7aa; color: #1e1e1e;" data-i18n="basketballTeamsNachwuchsU12BoysChip">U12 Knaben</span>
+                <h3 data-i18n="basketballTeamsNachwuchsU12BoysName">U12 Knaben</h3>
+              </div>
+              <p data-i18n="basketballTeamsNachwuchsU12BoysDesc">Im U12-Bereich steht die spielerische Heranführung an den Basketball im Vordergrund. Koordination, Ballgefühl und Spass prägen die Trainings.</p>
+              <div class="youth-meta">
+                <span data-i18n-html="basketballTeamsNachwuchsU12BoysTraining"><strong>Training:</strong> Mittwoch 15:30 – 17:00</span>
+                <span data-i18n-html="basketballTeamsNachwuchsHallLabel2"><strong>Halle:</strong> Turnhalle Lavater</span>
+                <span><strong>Coach:</strong> Thomas Wyss</span>
+              </div>
+            </div>
+            <div class="youth-card" id="du12">
+              <div class="youth-card-header">
+                <span class="chip" style="background: #f3e8ff; color: #1e1e1e;" data-i18n="basketballTeamsNachwuchsU12GirlsChip">U12 Mädchen</span>
+                <h3 data-i18n="basketballTeamsNachwuchsU12GirlsName">U12 Mädchen</h3>
+              </div>
+              <p data-i18n="basketballTeamsNachwuchsU12GirlsDesc">Die U12 Mädchen entdecken Basketball mit viel Energie und Freude. In altersgerechten Trainings werden Grundtechniken und Spielfreude vermittelt.</p>
+              <div class="youth-meta">
+                <span data-i18n-html="basketballTeamsNachwuchsU12GirlsTraining"><strong>Training:</strong> Samstag 10:00 – 11:30</span>
+                <span data-i18n-html="basketballTeamsNachwuchsHallLabel1"><strong>Halle:</strong> Turnhalle Utogrund</span>
+                <span><strong>Coach:</strong> Sandra Müller</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- U10 -->
+        <div id="mu10">
+          <div class="youth-section-title">
+            <h2>U10</h2>
+          </div>
+          <div class="youth-grid">
+            <div class="youth-card" id="du10">
+              <div class="youth-card-header">
+                <span class="chip" style="background: #14b8a6; color: #ffffff;">U10 Mixed</span>
+                <h3>U10 Mixed</h3>
+              </div>
+              <p data-i18n="basketballTeamsNachwuchsU10MixedDesc">Unser U10-Team ist gemischt und bietet Kindern den idealen Einstieg in den Basketball. Spielerische Übungen, Mini-Turniere und jede Menge Spass warten auf die jungen Athletinnen und Athleten.</p>
+              <div class="youth-meta">
+                <span data-i18n-html="basketballTeamsNachwuchsU10MixedTraining"><strong>Training:</strong> Samstag 09:00 – 10:30</span>
+                <span data-i18n-html="basketballTeamsNachwuchsHallLabel3"><strong>Halle:</strong> Turnhalle Sihlfeld</span>
+                <span><strong>Coach:</strong> Jonas Brunner</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- U8 -->
+        <div id="mu8">
+          <div class="youth-section-title">
+            <h2>U8</h2>
+          </div>
+          <div class="youth-grid">
+            <div class="youth-card">
+              <div class="youth-card-header">
+                <span class="chip" style="background: #0d9488; color: #ffffff;">U8 Mixed</span>
+                <h3>U8 Mixed</h3>
+              </div>
+              <p data-i18n="basketballTeamsNachwuchsU8MixedDesc">Das jüngste Team im Verein! Hier lernen Kinder ab 5 Jahren die ersten Schritte mit dem Basketball. Bewegung, Koordination und Spass stehen im Mittelpunkt — ganz ohne Leistungsdruck.</p>
+              <div class="youth-meta">
+                <span data-i18n-html="basketballTeamsNachwuchsU8MixedTraining"><strong>Training:</strong> Samstag 10:30 – 11:30</span>
+                <span data-i18n-html="basketballTeamsNachwuchsHallLabel3"><strong>Halle:</strong> Turnhalle Sihlfeld</span>
+                <span><strong>Coach:</strong> Lena Hartmann</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <CTA
+    title={t(locale, 'bbYouthCTA')}
+    titleKey="bbYouthCTA"
+    text={t(locale, 'bbYouthCTAText')}
+    textKey="bbYouthCTAText"
+    buttonLabel={t(locale, 'bbYouthCTAButton')}
+    buttonLabelKey="bbYouthCTAButton"
+    buttonHref="/club/kontakt?sport=basketball&team=Nachwuchs"
+  />
+
+  <script src="../../../islands/scroll-animations.ts"></script>
+</PageLayout>
+
+<style>
+  .youth-sections { display: flex; flex-direction: column; gap: var(--space-2xl); }
+  .youth-section-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+    padding-bottom: var(--space-sm);
+    border-bottom: 2px solid var(--border);
+  }
+  .youth-section-title .chip {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    display: inline-block;
+  }
+  .youth-section-title h2 {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    margin: 0;
+  }
+  .youth-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-lg);
+  }
+  .youth-card {
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-lg);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .youth-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+  .youth-card-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+  .youth-card-header .chip {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+  }
+  .youth-card-header h3 {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    margin: 0;
+  }
+  .youth-card p {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0 0 var(--space-sm) 0;
+  }
+  .youth-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin-top: var(--space-md);
+    font-size: var(--text-sm);
+  }
+  .youth-meta span {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    color: var(--text-secondary);
+  }
+  .youth-meta strong {
+    color: var(--text-primary);
+  }
+</style>

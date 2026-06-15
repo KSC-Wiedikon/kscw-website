@@ -39,29 +39,56 @@ interface CalendarEvent {
 
 const container = document.getElementById('calendar-grid')
 if (container) {
-  const lang = container.dataset.lang || 'de'
+  // Live language: read from the runtime i18n engine each time labels are
+  // recomputed (single-URL site — language switches client-side and fires a
+  // `langChanged` event, so this must NOT be captured once at load).
+  const getLang = (): string =>
+    ((window as any).i18n && (window as any).i18n.getLang && (window as any).i18n.getLang())
+    || document.documentElement.lang
+    || container.dataset.lang
+    || 'de'
 
-  const dayHeaders =
-    lang === 'de'
-      ? ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
-      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  // Labels are recomputed from the current language on every render via
+  // computeLabels(); declared with `let` so the closures below (modals,
+  // toolbar, chips) always read the active-language value.
+  let lang = getLang()
+  let dayHeaders: string[] = []
+  let monthNames: string[] = []
+  let todayLabel = ''
+  let homeLabel = ''
+  let awayLabel = ''
+  let loadingLabel = ''
+  let subscribeLabel = ''
+  let downloadLabel = ''
+  let subscribeTitle = ''
+  let allTeamsLabel = ''
+  let eventsLabel = 'Events'
+  let homeGamesLabel = ''
+  let awayGamesLabel = ''
 
-  const monthNames =
-    lang === 'de'
-      ? ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
-      : ['January','February','March','April','May','June','July','August','September','October','November','December']
-
-  const todayLabel = lang === 'de' ? 'Heute' : 'Today'
-  const homeLabel = lang === 'de' ? 'Heim' : 'Home'
-  const awayLabel = lang === 'de' ? 'Auswärts' : 'Away'
-  const loadingLabel = lang === 'de' ? 'Spiele werden geladen...' : 'Loading games...'
-  const subscribeLabel = lang === 'de' ? 'Abonnieren' : 'Subscribe'
-  const downloadLabel = lang === 'de' ? 'Herunterladen' : 'Download'
-  const subscribeTitle = lang === 'de' ? 'Kalender abonnieren' : 'Subscribe to Calendar'
-  const allTeamsLabel = lang === 'de' ? 'Alle Teams' : 'All Teams'
-  const eventsLabel = 'Events'
-  const homeGamesLabel = lang === 'de' ? 'Heimspiele' : 'Home Games'
-  const awayGamesLabel = lang === 'de' ? 'Auswärtsspiele' : 'Away Games'
+  function computeLabels(): void {
+    lang = getLang()
+    dayHeaders =
+      lang === 'de'
+        ? ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
+        : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+    monthNames =
+      lang === 'de'
+        ? ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember']
+        : ['January','February','March','April','May','June','July','August','September','October','November','December']
+    todayLabel = lang === 'de' ? 'Heute' : 'Today'
+    homeLabel = lang === 'de' ? 'Heim' : 'Home'
+    awayLabel = lang === 'de' ? 'Auswärts' : 'Away'
+    loadingLabel = lang === 'de' ? 'Spiele werden geladen...' : 'Loading games...'
+    subscribeLabel = lang === 'de' ? 'Abonnieren' : 'Subscribe'
+    downloadLabel = lang === 'de' ? 'Herunterladen' : 'Download'
+    subscribeTitle = lang === 'de' ? 'Kalender abonnieren' : 'Subscribe to Calendar'
+    allTeamsLabel = lang === 'de' ? 'Alle Teams' : 'All Teams'
+    eventsLabel = 'Events'
+    homeGamesLabel = lang === 'de' ? 'Heimspiele' : 'Home Games'
+    awayGamesLabel = lang === 'de' ? 'Auswärtsspiele' : 'Away Games'
+  }
+  computeLabels()
 
   let currentMonth = new Date()
   currentMonth.setDate(1)
@@ -700,6 +727,9 @@ if (container) {
 
   // -- Full render (used for month navigation and initial load) --
   async function render(): Promise<void> {
+    // Re-evaluate the active language + labels on every full render so a
+    // client-side language switch is reflected without a page reload.
+    computeLabels()
     container!.textContent = ''
     container!.appendChild(el('div', 'cal-loading', loadingLabel))
     await fetchGames(currentMonth)
@@ -1109,6 +1139,20 @@ if (container) {
   // Close dropdowns on outside click
   document.addEventListener('click', () => closeAllDropdowns())
 
-  // Initial load
-  fetchTeams().then(() => render())
+  // Re-render in the new language when the user switches it client-side.
+  // `render()` re-runs computeLabels() and rebuilds the toolbar + grid;
+  // fetchGames() short-circuits on the already-fetched range (no refetch),
+  // and calEvents stays cached, so this is a pure relabel + rebuild.
+  document.addEventListener('langChanged', () => { render() })
+
+  // Initial load — wait for the i18n engine so the very first render is in the
+  // active language (it may be English from a stored preference). Falls back to
+  // immediate render if i18n is unavailable.
+  const start = () => fetchTeams().then(() => render())
+  const ready = (window as any).i18nReady
+  if (ready && typeof ready.then === 'function') {
+    ready.then(start, start)
+  } else {
+    start()
+  }
 }

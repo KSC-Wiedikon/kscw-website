@@ -47,7 +47,7 @@
 
   // ── i18n ─────────────────────────────────────────────────────────────
   function getLocale() {
-    return window.location.pathname.startsWith('/en') ? 'en' : 'de';
+    return (document.documentElement.lang === 'en') ? 'en' : 'de';
   }
 
   // Group labels from i18n data attributes on the page

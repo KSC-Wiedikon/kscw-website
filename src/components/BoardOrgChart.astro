@@ -28,7 +28,6 @@ const rightRessorts = ressorts.filter(m => m.branch === 'right' || (!m.branch));
 const bottomRessorts = ressorts.filter(m => m.branch === 'bottom');
 
 const initials = (m: BoardMember) => m.initials || m.name.split(' ').map(w => w[0]).join('').toUpperCase();
-const role = (m: BoardMember) => locale === 'en' ? m.role_en : m.role_de;
 const photoSrc = (m: BoardMember) => m.photo ? `/images/board/${m.photo}` : null;
 const nameParts = (m: BoardMember) => {
   const idx = m.name.indexOf(' ');
@@ -42,7 +41,7 @@ const nameParts = (m: BoardMember) => {
         {photoSrc(president)
           ? <img class="org-photo" src={photoSrc(president)!} alt={president.name} loading="lazy" />
           : <div class="org-avatar">{initials(president)}</div>}
-        <div class="org-role">{role(president)}</div>
+        <div class="org-role"><span data-lang-only="de">{president.role_de}</span><span data-lang-only="en">{president.role_en}</span></div>
         <div class="org-name"><span>{nameParts(president).first}</span><span>{nameParts(president).last}</span></div>
       </div>
     </div>
@@ -54,7 +53,7 @@ const nameParts = (m: BoardMember) => {
         {photoSrc(vice)
           ? <img class="org-photo" src={photoSrc(vice)!} alt={vice.name} loading="lazy" />
           : <div class="org-avatar">{initials(vice)}</div>}
-        <div class="org-role">{role(vice)}</div>
+        <div class="org-role"><span data-lang-only="de">{vice.role_de}</span><span data-lang-only="en">{vice.role_en}</span></div>
         <div class="org-name"><span>{nameParts(vice).first}</span><span>{nameParts(vice).last}</span></div>
       </div>
     </div>
@@ -68,7 +67,7 @@ const nameParts = (m: BoardMember) => {
             {photoSrc(m)
               ? <img class="org-photo" src={photoSrc(m)!} alt={m.name} loading="lazy" />
               : <div class="org-avatar">{initials(m)}</div>}
-            <div class="org-role">{role(m)}</div>
+            <div class="org-role"><span data-lang-only="de">{m.role_de}</span><span data-lang-only="en">{m.role_en}</span></div>
             <div class="org-name"><span>{nameParts(m).first}</span><span>{nameParts(m).last}</span></div>
           </div>
         ))}
@@ -79,7 +78,7 @@ const nameParts = (m: BoardMember) => {
             {photoSrc(m)
               ? <img class="org-photo" src={photoSrc(m)!} alt={m.name} loading="lazy" />
               : <div class="org-avatar">{initials(m)}</div>}
-            <div class="org-role">{role(m)}</div>
+            <div class="org-role"><span data-lang-only="de">{m.role_de}</span><span data-lang-only="en">{m.role_en}</span></div>
             <div class="org-name"><span>{nameParts(m).first}</span><span>{nameParts(m).last}</span></div>
           </div>
         ))}
@@ -94,7 +93,7 @@ const nameParts = (m: BoardMember) => {
           {photoSrc(m)
             ? <img class="org-photo" src={photoSrc(m)!} alt={m.name} loading="lazy" />
             : <div class="org-avatar">{initials(m)}</div>}
-          <div class="org-role">{role(m)}</div>
+          <div class="org-role"><span data-lang-only="de">{m.role_de}</span><span data-lang-only="en">{m.role_en}</span></div>
           <div class="org-name"><span>{nameParts(m).first}</span><span>{nameParts(m).last}</span></div>
         </div>
       ))}

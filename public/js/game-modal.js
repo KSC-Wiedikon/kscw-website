@@ -71,6 +71,9 @@
   window.showGameModal = function (game, locale) {
     if (overlay) close();
 
+    // Default to the live document language when no locale is passed, so the
+    // modal matches the active UI language even if a caller omits the param.
+    if (!locale) locale = document.documentElement.lang || 'de';
     var isDE = locale !== 'en';
 
     document.body.style.overflow = 'hidden';

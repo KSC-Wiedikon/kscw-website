@@ -1,0 +1,100 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
+import TeamCard from '../../components/TeamCard.astro';
+import CTA from '../../components/CTA.astro';
+import { t } from '../../lib/i18n';
+import { getActiveTeams, type Team } from '../../lib/fetch/teams';
+import { allTeamDefs } from '../../data/teams';
+
+const locale = 'de';
+const basePath = `/basketball`;
+
+let allTeams: Team[];
+try {
+  allTeams = await getActiveTeams();
+} catch {
+  allTeams = allTeamDefs.map(d => ({ ...d, league: d.fallbackLeague || '', photoUrl: '', season: '' }));
+}
+const bb = (cat: string) =>
+  allTeams
+    .filter(t => t.sport === 'basketball' && t.category === cat)
+    .sort((a, b) => a.order - b.order);
+
+const women = bb('women');
+const men = bb('men');
+const youth = bb('youth');
+
+const moreText = t(locale, 'bbMore');
+---
+<PageLayout
+  title="Basketball — KSC Wiedikon"
+  titleKey="basketballMetaTitle"
+  description="Alle Basketball-Teams des KSC Wiedikon — Von der 1. Liga bis U8."
+  descriptionKey="basketballMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'bbTitle')}
+  pageTitleKey="bbTitle"
+  pageSubtitle={t(locale, 'bbSubtitle')}
+  pageSubtitleKey="bbSubtitle"
+  sparklesHero={true}
+  sparkleColor="rgba(255, 184, 99, 1)"
+>
+  <!-- Damen -->
+  <section class="section">
+    <div class="container">
+      <SectionHeader title={t(locale, 'bbWomen')} titleKey="bbWomen" />
+      <div class="grid grid-4">
+        {women.map((team: TeamData) => (
+          <TeamCard team={team} locale={locale} basePath={basePath} moreText={moreText} moreTextKey="bbMore" />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Herren -->
+  <section class="section-alt">
+    <div class="container">
+      <SectionHeader title={t(locale, 'bbMen')} titleKey="bbMen" />
+      <div class="grid grid-4">
+        {men.map((team: TeamData) => (
+          <TeamCard team={team} locale={locale} basePath={basePath} moreText={moreText} moreTextKey="bbMore" />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Nachwuchs -->
+  <section class="section">
+    <div class="container">
+      <SectionHeader title={t(locale, 'bbYouth')} titleKey="bbYouth" />
+      <div class="grid grid-4">
+        {youth.map((team: TeamData) => (
+          <TeamCard team={team} locale={locale} basePath={basePath} moreText={moreText} moreTextKey="bbMore" />
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Scoreboard -->
+  <section class="section-alt" id="bb-scoreboard-section">
+    <div class="container">
+      <SectionHeader title="KSCW Basketball Scoreboard" />
+      <div id="bb-scoreboard" data-scoreboard="basketball"></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <CTA
+    title={t(locale, 'bbCTA')}
+    titleKey="bbCTA"
+    text={t(locale, 'bbCTAText')}
+    textKey="bbCTAText"
+    buttonLabel={t(locale, 'bbCTAButton')}
+    buttonLabelKey="bbCTAButton"
+    buttonHref="/club/kontakt"
+  />
+
+  <script is:inline src="/js/scoreboard.js"></script>
+  <script src="../../islands/scroll-animations.ts"></script>
+</PageLayout>

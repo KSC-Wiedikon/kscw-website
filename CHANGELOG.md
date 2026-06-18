@@ -2,6 +2,14 @@
 
 All notable changes to the KSC Wiedikon website are documented in this file.
 
+## [3.13.0] — 2026-06-18
+
+### Added
+- **`kscw.ch` cutover prep**: the site is moving from `kscw-website.pages.dev` to its real domain `kscw.ch`. Added a Cloudflare Pages Functions middleware (`functions/_middleware.js`) that 302-redirects the bare `kscw-website.pages.dev` host to `kscw.ch`, so links already shared pointing at the pages.dev address land on the live site. A temporary 302 (not 301) so it stays cleanly reversible; kept at least until 2026-07-08
+
+### Changed
+- **Canonical site URL** set to `https://kscw.ch` in `astro.config.mjs` (was the pages.dev address), matching the RSS feed which already used it
+
 ## [3.12.0] — 2026-06-15
 
 ### Changed

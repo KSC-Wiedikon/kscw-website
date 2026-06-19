@@ -15,6 +15,11 @@ export interface YouthSlot {
 export interface YouthTeamInfo {
   coaches: string[]
   slots: YouthSlot[]
+  // Set when the team is full: the waiting-list link (teams.waitlist_url) and
+  // an optional button label (teams.waitlist_label, defaults client-side to
+  // "Warteliste"). Absent → team has space, no waiting-list button shown.
+  waitlistUrl?: string
+  waitlistLabel?: string
 }
 
 /** Map of age-group code (HU18, DU16, MU8 …) → coaches + training slots. */
@@ -33,7 +38,35 @@ interface DirectusSlot {
   hall: { name: string } | null
 }
 
+interface DirectusTeamWaitlist {
+  name: string
+  waitlist_url: string | null
+  waitlist_label: string | null
+}
+
 const hhmm = (t: string | null | undefined) => (t ?? '').slice(0, 5)
+
+// Full-team waiting-list links, keyed by upper-cased team name (= card code).
+// Fetched separately and independently caught so a missing field / revoked
+// permission only drops the waiting-list buttons — coaches and training still
+// render. A team counts as "full" purely by having a non-empty waitlist_url.
+async function fetchWaitlist(): Promise<Record<string, { url: string; label: string }>> {
+  try {
+    const teams = await fetchAllItems<DirectusTeamWaitlist>('teams', {
+      filter: { sport: { _eq: 'basketball' }, active: { _eq: true } },
+      fields: ['name', 'waitlist_url', 'waitlist_label'],
+    })
+    const out: Record<string, { url: string; label: string }> = {}
+    for (const t of teams) {
+      const url = (t.waitlist_url ?? '').trim()
+      if (url) out[t.name.toUpperCase()] = { url, label: (t.waitlist_label ?? '').trim() }
+    }
+    return out
+  } catch (err) {
+    console.warn('[youthBasketball] waitlist fetch failed — full-team links omitted:', err)
+    return {}
+  }
+}
 
 // One label can serve several groups, e.g. "BB - MU8/MU10" (combined session)
 // or "BB - HU16+" (extra session). Pull every [HDM]U<number> token; adult
@@ -48,7 +81,7 @@ function codesFromLabel(label: string): string[] {
 
 export async function getYouthBasketball(): Promise<YouthBasketball> {
   try {
-    const [teams, slots] = await Promise.all([
+    const [teams, slots, waitlist] = await Promise.all([
       fetchAllItems<DirectusTeam>('teams', {
         filter: { sport: { _eq: 'basketball' }, active: { _eq: true } },
         fields: ['name', 'coach.members_id.first_name', 'coach.members_id.last_name'],
@@ -58,6 +91,7 @@ export async function getYouthBasketball(): Promise<YouthBasketball> {
         sort: ['day_of_week', 'start_time'],
         fields: ['day_of_week', 'start_time', 'end_time', 'label', 'hall.name'],
       }),
+      fetchWaitlist(),
     ])
 
     const data: YouthBasketball = {}
@@ -80,6 +114,12 @@ export async function getYouthBasketball(): Promise<YouthBasketball> {
           hall: s.hall?.name ?? '',
         })
       }
+    }
+
+    for (const [code, w] of Object.entries(waitlist)) {
+      const info = ensure(code)
+      info.waitlistUrl = w.url
+      if (w.label) info.waitlistLabel = w.label
     }
 
     return data

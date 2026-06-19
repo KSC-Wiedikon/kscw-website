@@ -14,6 +14,15 @@ interface Props {
 const { code, data } = Astro.props
 const info = data[code] ?? { coaches: [], slots: [] }
 
+// Full team → show a waiting-list button. A custom label (from Directus) is
+// rendered verbatim; an empty label falls back to the i18n "Warteliste" key so
+// the client toggle can localise it. labelKey is undefined for custom labels,
+// which Astro omits, leaving the literal text untouched by the language switch.
+const waitlistUrl = info.waitlistUrl?.trim()
+const customLabel = info.waitlistLabel?.trim()
+const waitlistLabel = customLabel || 'Warteliste'
+const waitlistLabelKey = customLabel ? undefined : 'bbWaitlistLabel'
+
 // 0 = Monday … 6 = Sunday (Directus hall_slots convention). Page builds in DE;
 // the client toggle swaps these via weekdayLong<n> keys.
 const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
@@ -31,6 +40,20 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
   )}
   {info.coaches.length > 0 && (
     <span><strong data-i18n="bbCoachLabel">Coach:</strong> {info.coaches.join(', ')}</span>
+  )}
+  {waitlistUrl && (
+    <div class="youth-waitlist">
+      <span class="youth-full-badge" data-i18n="bbTeamFull">Team voll</span>
+      <a
+        class="btn btn-outline btn-sm youth-waitlist-btn"
+        href={waitlistUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span data-i18n={waitlistLabelKey}>{waitlistLabel}</span>
+        <span aria-hidden="true">→</span>
+      </a>
+    </div>
   )}
 </div>
 
@@ -50,4 +73,36 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
   }
   .youth-meta strong { color: var(--text-primary); }
   .youth-slot { padding-left: var(--space-md); }
+
+  /* Full-team waiting-list row. Rules are scoped under .youth-meta so they
+     win against the generic `.youth-meta span` colour/display above. */
+  .youth-meta .youth-waitlist {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-xs);
+  }
+  .youth-meta .youth-full-badge {
+    display: inline-flex;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: var(--kscw-gold);
+    color: var(--text-on-gold);
+  }
+  .youth-meta .youth-waitlist-btn {
+    color: var(--kscw-blue);
+    text-transform: none;
+    letter-spacing: 0;
+    min-height: 0;
+  }
+  .youth-meta .youth-waitlist-btn span {
+    display: inline;
+    color: inherit;
+  }
 </style>

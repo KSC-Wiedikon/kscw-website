@@ -1,9 +1,17 @@
-import { fetchAllItems, assetUrl } from '../directus'
-import { allTeamDefs, expandDisplayName, type TeamDef } from '../../data/teams'
+import { directusFetch, assetUrl } from '../directus'
+import { allTeamDefs, expandDisplayName, type TeamDef, type Training } from '../../data/teams'
+
+/** A weekly training slot derived from live hall slots by /kscw/public/teams. */
+interface LiveTraining {
+  day: Training['day']; start: string; end: string;
+  hall_name: string | null; hall_address: string | null;
+}
 
 interface DirectusTeam {
-  id: number; name: string; sport: string; league: string; color: string;
-  team_picture: string | null; active: boolean; full_name: string; season: string;
+  id: number; team_id: string | null; name: string; sport: string; league: string;
+  color: string; team_picture: string | null; full_name: string; season: string;
+  /** Weekly training summary from live hall slots (Mon→Sun). */
+  trainings?: LiveTraining[];
 }
 
 export interface Team extends TeamDef {
@@ -30,14 +38,10 @@ async function fetchActiveTeamsRaw(attempts = 3): Promise<DirectusTeam[]> {
   let lastErr: unknown
   for (let i = 1; i <= attempts; i++) {
     try {
-      // NOTE: do NOT request `slug` — it's a website-only concept, not a `teams`
-      // column. Querying it 400s (FORBIDDEN), which silently sent every caller
-      // to the static fallback (stale leagues everywhere). slug comes from the def.
-      return await fetchAllItems<DirectusTeam>('teams', {
-        filter: { active: { _eq: true } },
-        sort: ['sport', 'name'],
-        fields: ['id', 'name', 'sport', 'league', 'color', 'team_picture', 'full_name', 'season'],
-      })
+      // Custom endpoint (not /items/teams): it exposes the season-stable `team_id`
+      // and a live weekly training summary, neither of which the public role can
+      // read off the raw `teams` collection. Returns only active teams already.
+      return await directusFetch<DirectusTeam[]>('/kscw/public/teams')
     } catch (err) {
       lastErr = err
       if (i < attempts) await new Promise((r) => setTimeout(r, 400 * i))
@@ -51,11 +55,13 @@ async function fetchActiveTeams(): Promise<Team[]> {
   const items = await fetchActiveTeamsRaw()
   return items
     .map(t => {
-      // Volleyball defs match the live Directus short name — season-robust and
-      // it follows the D1/D2 league swap (whichever team is named "D1" gets the
-      // d1 slug + its live league). Basketball stays directusId-matched.
+      // Match priority: team_id (season-stable external id, used by basketball) →
+      // teamName (volleyball short name; follows the D1/D2 league swap) → directusId
+      // (legacy fallback). team_id survives both the June rollover and renames.
       const def = allTeamDefs.find(d =>
-        d.teamName ? (d.sport === t.sport && d.teamName === t.name) : d.directusId === String(t.id),
+        d.team_id ? (d.sport === t.sport && d.team_id === t.team_id)
+          : d.teamName ? (d.sport === t.sport && d.teamName === t.name)
+            : d.directusId === String(t.id),
       )
       if (!def) return null
       const live = !!def.teamName
@@ -67,6 +73,9 @@ async function fetchActiveTeams(): Promise<Team[]> {
         league: t.league,
         photoUrl: assetUrl(t.team_picture, 'width=640&quality=80'),
         season: t.season,
+        // Prefer live hall slots; fall back to the static def trainings only when
+        // the endpoint didn't supply them (e.g. older backend not yet deployed).
+        trainings: Array.isArray(t.trainings) ? t.trainings : def.trainings,
       }
     })
     .filter((t): t is Team => t !== null)

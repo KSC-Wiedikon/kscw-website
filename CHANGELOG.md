@@ -2,6 +2,15 @@
 
 All notable changes to the KSC Wiedikon website are documented in this file.
 
+## [3.14.0] — 2026-06-19
+
+### Fixed
+- **Basketball page empty after the season rollover**: the basketball listing matched teams by their Directus primary key, which is reassigned at every June rollover (new rows created, old ones archived). After the 2026/27 rollover nothing matched and the basketball page showed zero teams. Basketball now matches on the season-stable `team_id` (e.g. `bb_1348`), which survives both the rollover **and** team renames. (Volleyball already matched by short name; switching it to `team_id` too is a follow-up.)
+- **Team-card training times were hardcoded and stale**: the day/time on each team card came from static values in `src/data/teams.ts` and had drifted out of sync with the real hall schedule (e.g. volleyball H1 showed `Di/Do`, actual is `Mi/Fr`). Cards (volleyball + basketball) now render a live weekly training summary derived from Directus hall slots.
+
+### Changed
+- **`/kscw/public/teams` enriched** (wiedisync `kscw-endpoints`): now returns the stable `team_id` and a per-team weekly training summary (collapsed from the `trainings` hall slots, Mon→Sun, with hall name/address) so the website gets team identity and trainings in a single call. Deployed to Directus dev + prod.
+
 ## [3.13.0] — 2026-06-18
 
 ### Added

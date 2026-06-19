@@ -19,11 +19,18 @@ export interface Training {
 
 export interface TeamDef {
   directusId: string;
+  /** Stable Directus external id (e.g. "bb_1348", "vb_2743"). When set, the team
+   *  is matched to live Directus data by this id instead of directusId/teamName.
+   *  It's the season-stable key the backend itself uses for rollover follow-through
+   *  (the numeric `id` is reassigned every June), so it survives both the season
+   *  rollover AND team renames. Basketball matches on this; volleyball still matches
+   *  on teamName pending the team_id sweep. */
+  team_id?: string;
   /** Stable Directus short name (e.g. "D1", "HU23-1", "Legends"). When set,
    *  the team is matched to live Directus data by this name instead of
    *  directusId — survives season rollover AND the D1/D2 league swap, since
    *  the live league/id follow whichever team currently holds the name.
-   *  Volleyball only; basketball stays directusId-matched. */
+   *  Volleyball only; basketball matches by team_id. */
   teamName?: string;
   slug: string;
   sport: Sport;
@@ -190,14 +197,14 @@ const volleyballYouth: TeamDef[] = [
 
 const basketballWomen: TeamDef[] = [
   {
-    directusId: '27', slug: 'lions', sport: 'basketball', category: 'women',
+    directusId: '27', team_id: 'bb_4445', slug: 'lions', sport: 'basketball', category: 'women',
     chipLabel: 'Lions', displayName: 'Lions', order: 1,
     chipBg: '#6d28d9', chipText: '#ffffff',
     trainings: [{ day: 'mo', start: '20:00', end: '21:30' }, { day: 'do', start: '19:30', end: '21:30' }],
     hasDetailPage: true, fallbackLeague: 'D1LRA',
   },
   {
-    directusId: '30', slug: 'rhinos', sport: 'basketball', category: 'women',
+    directusId: '30', team_id: 'bb_1077', slug: 'rhinos', sport: 'basketball', category: 'women',
     chipLabel: 'Rhinos', displayName: 'Rhinos', order: 2,
     chipBg: '#059669', chipText: '#ffffff',
     trainings: [{ day: 'di', start: '20:00', end: '21:30' }, { day: 'do', start: '20:00', end: '21:30' }],
@@ -207,21 +214,21 @@ const basketballWomen: TeamDef[] = [
 
 const basketballMen: TeamDef[] = [
   {
-    directusId: '20', slug: 'h1', sport: 'basketball', category: 'men',
+    directusId: '20', team_id: 'bb_1348', slug: 'h1', sport: 'basketball', category: 'men',
     chipLabel: 'BB-H1', displayName: 'Herren 1', order: 1,
     chipBg: '#9a3412', chipText: '#ffffff',
     trainings: [{ day: 'mo', start: '20:00', end: '21:30' }, { day: 'mi', start: '20:00', end: '21:30' }],
     hasDetailPage: true, fallbackLeague: 'H1LRA',
   },
   {
-    directusId: '21', slug: 'h3', sport: 'basketball', category: 'men',
+    directusId: '21', team_id: 'bb_4829', slug: 'h3', sport: 'basketball', category: 'men',
     chipLabel: 'BB-H3', displayName: 'Herren 3', order: 2,
     chipBg: '#c2410c', chipText: '#ffffff',
     trainings: [{ day: 'di', start: '20:00', end: '21:30' }, { day: 'do', start: '20:00', end: '21:30' }],
     hasDetailPage: true, fallbackLeague: 'H3LS',
   },
   {
-    directusId: '22', slug: 'h4', sport: 'basketball', category: 'men',
+    directusId: '22', team_id: 'bb_7183', slug: 'h4', sport: 'basketball', category: 'men',
     chipLabel: 'BB-H4', displayName: 'Herren 4', order: 3,
     chipBg: '#ea580c', chipText: '#ffffff',
     trainings: [{ day: 'mi', start: '20:00', end: '21:30' }],
@@ -231,77 +238,77 @@ const basketballMen: TeamDef[] = [
 
 const basketballYouth: TeamDef[] = [
   {
-    directusId: '26', slug: 'hu18', sport: 'basketball', category: 'youth',
+    directusId: '26', team_id: 'bb_5789', slug: 'hu18', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-HU18', displayName: 'Herren U18', order: 1,
     chipBg: '#f97316', chipText: '#ffffff',
     trainings: [{ day: 'mo', start: '18:00', end: '19:30' }, { day: 'mi', start: '18:00', end: '19:30' }],
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#hu18',
   },
   {
-    directusId: '25', slug: 'hu16', sport: 'basketball', category: 'youth',
+    directusId: '25', team_id: 'bb_5498', slug: 'hu16', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-HU16', displayName: 'Herren U16', order: 2,
     chipBg: '#fb923c', chipText: '#7c2d12',
     trainings: [{ day: 'di', start: '17:30', end: '19:00' }, { day: 'do', start: '17:30', end: '19:00' }],
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#hu16',
   },
   {
-    directusId: '24', slug: 'hu14', sport: 'basketball', category: 'youth',
+    directusId: '24', team_id: 'bb_5790', slug: 'hu14', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-HU14', displayName: 'Herren U14', order: 3,
     chipBg: '#fdba74', chipText: '#7c2d12',
     trainings: [{ day: 'mo', start: '17:00', end: '18:30' }, { day: 'mi', start: '17:00', end: '18:30' }],
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#hu14',
   },
   {
-    directusId: '23', slug: 'hu12', sport: 'basketball', category: 'youth',
+    directusId: '23', team_id: 'bb_5791', slug: 'hu12', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-HU12', displayName: 'Herren U12', order: 4,
     chipBg: '#fed7aa', chipText: '#7c2d12',
     trainings: [{ day: 'di', start: '16:00', end: '17:30' }],
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#hu12',
   },
   {
-    directusId: '18', slug: 'du18', sport: 'basketball', category: 'youth',
+    directusId: '18', team_id: 'bb_5697', slug: 'du18', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-DU18', displayName: 'Damen U18', order: 5,
     chipBg: '#c084fc', chipText: '#581c87',
     trainings: [{ day: 'mo', start: '17:30', end: '19:00' }, { day: 'mi', start: '17:30', end: '19:00' }],
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#du18',
   },
   {
-    directusId: '17', slug: 'du16', sport: 'basketball', category: 'youth',
+    directusId: '17', team_id: 'bb_7182', slug: 'du16', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-DU16', displayName: 'Damen U16', order: 6,
     chipBg: '#d8b4fe', chipText: '#581c87',
     trainings: [{ day: 'di', start: '17:00', end: '18:30' }, { day: 'do', start: '17:00', end: '18:30' }],
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#du16',
   },
   {
-    directusId: '16', slug: 'du14', sport: 'basketball', category: 'youth',
+    directusId: '16', team_id: 'bb_5441', slug: 'du14', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-DU14', displayName: 'Damen U14', order: 7,
     chipBg: '#e9d5ff', chipText: '#581c87',
     trainings: [{ day: 'mo', start: '16:00', end: '17:30' }, { day: 'mi', start: '16:00', end: '17:30' }],
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#du14',
   },
   {
-    directusId: '15', slug: 'du12', sport: 'basketball', category: 'youth',
+    directusId: '15', team_id: 'bb_5104', slug: 'du12', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-DU12', displayName: 'Damen U12', order: 8,
     chipBg: '#f3e8ff', chipText: '#581c87',
     trainings: [{ day: 'di', start: '16:00', end: '17:30' }],
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#du12',
   },
   {
-    directusId: '', slug: 'du10', sport: 'basketball', category: 'youth',
+    directusId: '', team_id: 'bb_7444', slug: 'du10', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-DU10', displayName: 'Damen U10', order: 9,
     chipBg: '#faf5ff', chipText: '#581c87',
     trainings: [{ day: 'sa', start: '10:00', end: '11:30' }],
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#du10',
   },
   {
-    directusId: '28', slug: 'mu10', sport: 'basketball', category: 'youth',
+    directusId: '28', team_id: 'bb_5287', slug: 'mu10', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-MU10', displayName: 'Mixed U10', order: 10,
     chipBg: '#14b8a6', chipText: '#042f2e',
     trainings: [{ day: 'sa', start: '09:00', end: '10:30' }],
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#mu10',
   },
   {
-    directusId: '29', slug: 'mu8', sport: 'basketball', category: 'youth',
+    directusId: '29', team_id: 'bb_6724', slug: 'mu8', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-MU8', displayName: 'Mixed U8', order: 11,
     chipBg: '#0d9488', chipText: '#ffffff',
     trainings: [{ day: 'sa', start: '10:30', end: '12:00' }],

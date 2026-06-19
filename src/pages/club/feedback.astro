@@ -135,397 +135,70 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v4.0.2</span>
+          <span class="changelog-badge">v1.0.0</span>
         </h2>
 
         <div class="changelog-entry">
-          <div class="changelog-meta">v4.0.2 — 2026-06-19</div>
+          <div class="changelog-meta">v1.0.0 — 2026-06-19</div>
           <div class="changelog-group">
-            <h3>Geändert</h3>
+            <h3>Website &amp; Navigation</h3>
             <ul>
-              <li><strong>Hallennamen im Nachwuchs entfernt</strong>: Auf den Basketball-Nachwuchs-Karten zeigen die Trainingszeiten jetzt nur noch Wochentag und Uhrzeit (ohne Hallenname)</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v4.0.1 — 2026-06-19</div>
-          <div class="changelog-group">
-            <h3>Behoben</h3>
-            <ul>
-              <li><strong>Trainingszeiten doppelt angezeigt</strong>: Auf den Team-Karten (Volleyball und Basketball) erschienen die Trainingszeiten gleichzeitig auf Deutsch und Englisch. Sie folgen jetzt der Sprachumschaltung oben rechts</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v4.0.0 — 2026-06-19</div>
-          <div class="changelog-group">
-            <h3>Hinzugefügt</h3>
-            <ul>
-              <li><strong>Kontakt-Button im Nachwuchs</strong>: Oben auf der Nachwuchs-Seite führt ein Kontakt-Button direkt zum Kontaktformular</li>
+              <li>Zweisprachige Website (Deutsch / Englisch) mit einer kanonischen URL pro Seite und einer Sprachumschaltung, die deine Wahl merkt</li>
+              <li>Live auf der vereinseigenen Domain kscw.ch</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Geändert</h3>
+            <h3>Teams</h3>
             <ul>
-              <li><strong>Echte Trainer*innen & Trainingszeiten im Nachwuchs</strong>: Die Basketball-Nachwuchsteams (U8–U18) zeigten bisher Platzhalter. Trainer*innen kommen jetzt aus Directus und die Trainingszeiten samt Halle direkt aus dem Hallenplan — jede Altersgruppe listet alle wöchentlichen Trainings</li>
+              <li>Dynamische Teamseiten (Volleyball und Basketball) mit Live-Daten aus Directus: Spiele, Tabellen, Kader, Fotos und eine wöchentliche Trainingsübersicht aus dem echten Hallenplan</li>
+              <li>Auf- / Abstiegsbänder in den Tabellen, saisonstabile Team-Zuordnung über den Jahreswechsel hinweg, und ein Basketball-Nachwuchsbereich mit echten Trainer*innen und Trainingszeiten</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Behoben</h3>
+            <h3>Spiele, Tabelle &amp; Kalender</h3>
             <ul>
-              <li><strong>Lesbarkeit der Nachwuchs-Karten</strong>: Im Dark Mode war der Text auf den Karten kaum lesbar (heller Text auf weisser Karte) — die Karten nutzen jetzt eine zum Theme passende Hintergrundfarbe</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.14.0 — 2026-06-19</div>
-          <div class="changelog-group">
-            <h3>Behoben</h3>
-            <ul>
-              <li><strong>Basketball-Teams wieder sichtbar</strong>: Nach dem Saisonwechsel waren alle Basketball-Teams von der Basketball-Seite verschwunden — sie erscheinen jetzt wieder zuverlässig (und überstehen auch künftige Saisonwechsel)</li>
-              <li><strong>Echte Trainingszeiten</strong>: Die Trainingszeiten auf den Team-Karten (Volleyball und Basketball) stammen jetzt direkt aus dem Hallenplan statt aus fest hinterlegten Werten — sie bleiben damit immer aktuell</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.13.0 — 2026-06-18</div>
-          <div class="changelog-group">
-            <h3>Geändert</h3>
-            <ul>
-              <li><strong>Umzug auf <code>kscw.ch</code></strong>: Die Website zieht von der vorläufigen Adresse <code>kscw-website.pages.dev</code> auf die richtige Domain <code>kscw.ch</code> um. Bereits geteilte Links auf die alte <code>.pages.dev</code>-Adresse werden automatisch auf <code>kscw.ch</code> weitergeleitet</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.12.0 — 2026-06-15</div>
-          <div class="changelog-group">
-            <h3>Geändert</h3>
-            <ul>
-              <li><strong>Vereinfachte Adressen</strong>: Jede Seite hat jetzt eine einzige Adresse — die Sprache wird direkt im Browser umgeschaltet (oben rechts), statt über getrennte <code>/de/</code>- und <code>/en/</code>-Links. Bestehende Links und Lesezeichen funktionieren weiterhin (automatische Weiterleitung)</li>
+              <li>Spielzeilen auf der Startseite und ein Spiel-Detailfenster mit Sätzen, Schiedsrichtern und Spielort</li>
+              <li>Eine Anzeigetafel mit Umschaltung Absolut / pro Spiel, und ein Live-Kalender mit Event-Tooltips und Detailfenstern</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Behoben</h3>
+            <h3>Anmeldung &amp; Mitgliedschaft</h3>
             <ul>
-              <li><strong>Neueste Resultate – Basketballspiele</strong>: Basketballspiele zeigten fälschlich das Volleyball-Icon und keinen Teamnamen. Jetzt erscheinen das richtige Basketball-Icon und der Teamname</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.11.2 — 2026-05-30</div>
-          <div class="changelog-group">
-            <h3>Behoben</h3>
-            <ul>
-              <li><strong>Admin-Tabs auf dem Handy nicht erreichbar</strong>: die Bereichs-Tabs (News, Events, Anmeldungen, Sponsoren, Schreiberkurse, Mixed-Turnier, …) ragten auf dem Smartphone über den Bildschirmrand hinaus und liessen sich nicht erreichen. Die Tab-Leiste ist jetzt eine horizontal scrollbare, oben angeheftete Navigationsleiste — seitlich wischen, um jeden Bereich zu erreichen, und sie bleibt beim Scrollen oben fixiert</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.11.1 — 2026-05-23</div>
-          <div class="changelog-group">
-            <h3>Behoben</h3>
-            <ul>
-              <li><strong>Startzeit Schreiberkurs</strong>: der englische Kurs am 08.07.2026 beginnt jetzt um <strong>19:00</strong> (statt 19:30); Ende bleibt 21:30 — der Kalendereintrag deckt damit 2,5 Stunden ab</li>
-              <li><strong>Deutscher Schreiberkurs</strong>: Uhrzeit wieder geleert — Datum und Zeit werden bis zur Bestätigung als noch offen (TBD) angezeigt</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.11.0 — 2026-05-21</div>
-          <div class="changelog-group">
-            <h3>Neu</h3>
-            <ul>
-              <li><strong>Admin-Schnellzugriff</strong>: neben der Sprachumschaltung (oben rechts auf Desktop, im Mobile-Menü ganz oben) sitzt jetzt ein dezentes Schloss-Icon, das direkt zum Admin-Login führt — kein verstecktes Klicken im Footer mehr</li>
-              <li><strong>Sport-Buttons im Hero überarbeitet</strong>: die Volleyball- und Basketball-Buttons auf der Startseite haben jetzt klare Sport-Icons (Volleyball, Basketball), sauberere Verläufe (Volleyball: KSCW-Blau mit Mikasa-Gold-Akzent, Basketball: warmer Orange-Verlauf mit Highlight) und beim Überfahren rotiert das Icon leicht nach links</li>
-              <li>Beide Effekte respektieren <code>prefers-reduced-motion</code></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.10.0 — 2026-05-20</div>
-          <div class="changelog-group">
-            <h3>Neu</h3>
-            <ul>
-              <li><strong>Sparkles-Hero auf den Sport-Seiten</strong>: über Volleyball- und Basketball-Übersicht zieht jetzt ein dezenter Schwarm Lichtpunkte langsam durch das Hero — gold für Volleyball, orange für Basketball. Pausiert automatisch beim Wegscrollen</li>
-              <li><strong>Tracing-Beam auf "Über uns"</strong>: ab 1280&nbsp;px Bildschirmbreite verläuft links neben dem Inhalt ein vertikaler blau-goldener Balken, der mit dem Scroll-Fortschritt mitwächst — ein pulsierender goldener Punkt markiert den Anfang</li>
-              <li>Beide Effekte respektieren <code>prefers-reduced-motion</code></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.9.0 — 2026-05-20</div>
-          <div class="changelog-group">
-            <h3>Neu</h3>
-            <ul>
-              <li><strong>Cursor-Spotlight auf Karten</strong>: News- und Event-Karten auf der Startseite zeigen jetzt einen sanften goldenen Lichtkegel, der dem Mauszeiger folgt — gibt der Übersicht spürbar Tiefe</li>
-              <li><strong>3D-Tilt auf Team-Karten</strong>: alle Team-Karten (Volleyball &amp; Basketball) kippen beim Überfahren leicht in Richtung des Mauszeigers (max. 6° auf beiden Achsen). Subtil, aber lebendig. Auf Touch-Geräten unverändert</li>
-              <li>Beide Effekte respektieren <code>prefers-reduced-motion</code></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.8.0 — 2026-05-20</div>
-          <div class="changelog-group">
-            <h3>Neu</h3>
-            <ul>
-              <li><strong>Hero-Animationen auf der Startseite</strong>: sanft driftende Hintergrundverläufe in Vereinsblau und Gold, ein dezenter Goldglanz im Schriftzug "KSC Wiedikon", pulsierende Sportbuttons beim Überfahren — alles rein in CSS, ohne zusätzliches JavaScript</li>
-              <li><strong>Scroll-Fortschrittsbalken</strong>: ein dünner blau-goldener Balken oben am Bildschirmrand zeigt jetzt, wie weit man auf der aktuellen Seite gescrollt hat</li>
-              <li><strong>Sanftere Sektions-Einblendungen</strong>: neue Variante, die Inhalte beim Reinscrollen mit einem leichten Weichzeichner einblendet (statt nur Opazität)</li>
-              <li><strong>Belebte Zahlen-Counter</strong>: hochzählende Statistiken (z.B. auf "Über uns") bekommen während der Animation einen kurzen goldenen Glow</li>
-              <li>Alle neuen Animationen respektieren <code>prefers-reduced-motion</code> — wer im Betriebssystem reduzierte Bewegung eingestellt hat, sieht die Seite unverändert ruhig</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.7.0 — 2026-05-20</div>
-          <div class="changelog-group">
-            <h3>Neu</h3>
-            <ul>
-              <li><strong>Admin – Bereichsberechtigungen pro Person</strong>: Manager sehen jetzt im Admin-Bereich einen neuen Tab "Admin". Dort lässt sich pro Website-Admin auswählen, welche Bereiche (News, Events, Anmeldungen, Sponsoren, Schreiberkurse, Mixed-Turnier) für diese Person sichtbar und bearbeitbar sind — mit echter Berechtigungsprüfung auf dem Server (kein reines UI-Verstecken)</li>
+              <li>Ein einheitliches Online-Anmeldeformular für Volleyball, Basketball und Passivmitgliedschaft, mit Ausweis-Upload, PDF-Vorausfüllung der Lizenzformulare und Turnstile-Spamschutz</li>
+              <li>Ein Admin-Bereich für Anmeldungen mit Freigabe- / Ablehnungs-Workflow, ClubDesk-CSV-Export und automatischen Bestätigungs-E-Mails</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Behoben</h3>
+            <h3>News, Events &amp; Kurse</h3>
             <ul>
-              <li><strong>Schreiberkurse "Zum Kalender hinzufügen"</strong>: der Link funktioniert jetzt auch auf dem Handy. Statt einer `.ics`-Datei öffnet sich jetzt direkt das Google-Kalender-Erstellungsformular mit Titel, Datum/Zeit und Ort vorausgefüllt — der "Termin nicht gefunden"-Fehler nach dem Google-Login ist damit weg</li>
-              <li><strong>Admin – Geburtsdatum-Anzeige</strong>: Geburtsdaten werden jetzt im Schweizer Format `tt.mm.jjjj` angezeigt (ohne Uhrzeit), statt des rohen ISO-Strings mit Zeitzone</li>
-              <li><strong>Admin – Export "Anmeldungen"</strong>: der Export erzeugt jetzt tab-getrennte Dateien (`.tsv`) statt komma-getrennt. Adressen mit Kommas brechen den Import damit nicht mehr</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.6.0 — 2026-05-19</div>
-          <div class="changelog-group">
-            <h3>Neu</h3>
-            <ul>
-              <li><strong>Schreiberkurs "Zum Kalender hinzufügen"</strong>: jeder Kurs hat jetzt einen Button (mit Kalender-Icon), der einen Kalender-Termin (.ics) mit Datum, Uhrzeit, Dauer und Veranstaltungsort herunterlädt</li>
-              <li><strong>Veranstaltungsort auf der Kurskarte</strong>: Präsenz-Kurse zeigen die Adresse (KSC Wiedikon, Goldbrunnenstrasse 80, 8055 Zürich) jetzt direkt auf der Karte</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.5.0 — 2026-05-19</div>
-          <div class="changelog-group">
-            <h3>Geändert</h3>
-            <ul>
-              <li><strong>Schreiberkurs-Anmeldung</strong>: das Anmeldeformular wird nicht mehr eingebettet (gequetscht) in der Seite angezeigt. Ein klarer Button öffnet das Formular jetzt im Vollbild in einem neuen Tab — deutlich besser auf dem Handy</li>
+              <li>Vereinsnews auf der Startseite und eine eigene News-Seite mit RSS, Kalender-Events mit Anmeldelinks und Live-Anmeldezahlen, sowie Schreiberkurse mit „Zum Kalender hinzufügen“</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Behoben</h3>
+            <h3>Kontakt &amp; Feedback</h3>
             <ul>
-              <li><strong>Admin – Aktiv-Schalter</strong>: Label und Schalter klebten aneinander; sie stehen jetzt korrekt links bzw. rechts mit Abstand dazwischen</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.4.1 — 2026-05-14</div>
-          <div class="changelog-group">
-            <h3>Geändert</h3>
-            <ul>
-              <li><strong>Kontaktformular Team-Dropdown</strong>: zeigt nur noch Mannschaften, die aktuell für neue Spielende offen sind. Geschlossene Teams sind nicht mehr auswählbar. Über den Team-Button gelangt man weiterhin direkt mit vorgewählter Mannschaft ins Formular, das Dropdown bleibt änderbar</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.4.0 — 2026-05-13</div>
-          <div class="changelog-group">
-            <h3>Geändert</h3>
-            <ul>
-              <li><strong>Kontakt-Button auf Team-Seiten</strong>: Der Button "Kontakt aufnehmen" öffnet jetzt das zentrale Kontaktformular mit vorausgefüllter Sportart und Mannschaft, statt eine E-Mail mit sichtbaren Coach- und TR-Adressen zu öffnen. Der Versand läuft serverseitig — die Empfängeradressen sind nirgends mehr im Browser sichtbar. Betreff der E-Mail: "Kontakt [Team]" (DE) bzw. "Contact [Team]" (EN), je nach Sprache der aufrufenden Seite</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.3.2 — 2026-05-13</div>
-          <div class="changelog-group">
-            <h3>Behoben</h3>
-            <ul>
-              <li><strong>Vorstandsseite mobil</strong>: Organigramm jetzt als Fischgrätenstruktur — Präsidentin → Vize → zentrale Linie mit den beiden TKs links und Kassier/Aktuar rechts, Beisitz mittig unten. Alle Karten gleich gross (Höhe und Breite)</li>
-              <li><strong>Letzte Resultate / nächste Spiele</strong>: lange Team-Chips wie "Herren 3 (Unicorns) H4" sprengten die Tabelle auf dem Handy nicht mehr (Chip bricht an Wortgrenzen um). Auf dem Desktop sitzt der Chip jetzt auf einer zweiten Zeile unter jedem Spiel, damit die Begegnungsspalte mehr Platz hat</li>
-              <li><strong>Spieletabelle mobil</strong>: Jede Zeile ist jetzt gestapelt — Datum + Uhrzeit / Heim vs Auswärts / Ergebnis — wobei jedes Resultat genau unter der jeweiligen Mannschaft steht. Lange Teamnamen brechen um statt abgeschnitten zu werden</li>
-              <li><strong>Scoreboard mobil</strong>: Metrik-Bezeichnung hat eine eigene Zeile über Schnitt + Team, damit die Team-Spalte nicht mehr buchstabenweise umgebrochen wird</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.3.1 — 2026-05-13</div>
-          <div class="changelog-group">
-            <h3>Geändert</h3>
-            <ul>
-              <li><strong>Vorstandsseite</strong>: neu als Organigramm dargestellt (Präsidentin → Vize → 5 Ressorts) mit Verbindungslinien. Jedes Mitglied zeigt Funktion und Name. Auf dem Handy stapeln sich die Karten. Daten aktualisiert auf den Vorstand 2026/27</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.3.0 — 2026-05-13</div>
-          <div class="changelog-group">
-            <h3>Neu</h3>
-            <ul>
-              <li><strong>Event-Anmeldungen</strong>: Events können neu ein Anmeldeformular hinterlegen. Im Kalender erscheint ein "Anmelden"-Button mit Live-Zähler der Anmeldungen. Admins verwalten den Link direkt in <code>/admin</code> und können die Antworten als Tabelle einsehen oder als CSV exportieren</li>
-              <li><strong>OpnForm selbst gehostet auf <code>forms.kscw.ch</code></strong>: ersetzt die ClubDesk-Anmeldeseiten, die nach dem Umzug von kscw.ch nicht mehr funktionieren. KSCW-Branding (Blau, Logo) und wöchentliches automatisches Update gegen die Originalquelle</li>
-              <li><strong>Probetrainings auf Team-Seiten</strong>: Teams, die für neue Spielende offen sind, zeigen jetzt die nächsten Probetrainings (Datum · Zeit · Halle) direkt beim "Kontakt aufnehmen"-Button</li>
-              <li><strong>Sprachpräferenz wird gespeichert</strong>: Wer einmal auf EN klickt, landet beim nächsten Besuch automatisch auf der englischen Version. <code>kscw.ch</code> bleibt standardmässig deutsch</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.2.4 — 2026-05-06</div>
-          <div class="changelog-group">
-            <h3>Sicherheit</h3>
-            <ul>
-              <li>Abhängigkeiten aktualisiert — 4 Sicherheitswarnungen behoben (Astro XSS, Vite Path-Traversal, defu Prototype-Pollution, PostCSS XSS)</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.2.3 — 2026-04-18</div>
-          <div class="changelog-group">
-            <h3>News</h3>
-            <ul>
-              <li>Externe Links werden in der News-Ansicht nicht mehr angezeigt — Ticket- und Aktionslinks sind ausschliesslich auf Wiedisync verfügbar. Bei Artikeln mit Links erscheint ein Hinweis mit Link zum Wiedisync-Loginbereich</li>
-              <li>Blocksatz mit automatischer Silbentrennung als Standard. Admin-Ausrichtungen pro Absatz werden respektiert</li>
-              <li>Leere News-Ansicht behoben — redundanter Filter führte zu 403-Fehler vom Directus (Homepage, News-Übersicht, RSS-Feed)</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.2.1 — 2026-04-04</div>
-          <div class="changelog-group">
-            <h3>Rechtliches</h3>
-            <ul>
-              <li>Datenschutz & Impressum: Hetzner-Hosting-Abschnitt hinzugefügt (Rechenzentrum Nürnberg)</li>
-              <li>Benachrichtigungen werden nach 3 Tagen automatisch gelöscht</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.2.0 — 2026-04-02</div>
-          <div class="changelog-group">
-            <h3>Anmeldeformular</h3>
-            <ul>
-              <li>Nationalität: Suchbares Dropdown mit Favoriten (CH, DE, FR, AT, IT) + alle Länder</li>
-              <li>Handynummer: Landesvorwahl-Auswahl mit allen Ländern (Standard +41 CH)</li>
-              <li>Basketball-Beiträge: Aktiv Erwachsene, Junioren U18, Passiv, Familie</li>
-              <li>Basketball-Lizenz: OTR 1, OTR 2, OTN Dropdown</li>
-              <li>Swiss Basketball PDF-Dokumente mit automatischer Vorbefüllung</li>
-              <li>Anrede wird automatisch vom Geschlecht abgeleitet</li>
+              <li>Ein zentrales Kontaktformular, das die richtigen Trainer*innen erreicht, ohne deren E-Mail-Adressen preiszugeben</li>
+              <li>Ein Feedback-Formular (Bug / Feature / Feedback) mit Screenshot-Upload, das automatisch ein GitHub-Issue erstellt</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Sicherheit</h3>
+            <h3>Inhaltsseiten</h3>
             <ul>
-              <li>pdf-lib selbst gehostet (vorher unpkg CDN ohne SRI)</li>
-              <li>Dateityp- und Grössenvalidierung vor Upload (JPG/PNG/WebP/PDF, max 10 MB)</li>
-              <li>Turnstile CAPTCHA-Token wird bei fehlgeschlagenem Absenden zurückgesetzt</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.1.0 — 2026-04-01</div>
-          <div class="changelog-group">
-            <h3>Anmeldeformular</h3>
-            <ul>
-              <li>Neues einheitliches Anmeldeformular für Volleyball, Basketball und Passivmitglieder — ersetzt ClubDesk-Formular + Google Forms</li>
-              <li>Admin-Tab «Anmeldungen» mit Statusfilter, Detail-Modal, Genehmigen/Ablehnen</li>
-              <li>ClubDesk CSV-Export aus dem Admin-Bereich</li>
-              <li>Basketball PDF-Vorbefüllung (Lizenzantrag, Player's Self Declaration, National Team Declaration)</li>
-              <li>Datei-Upload für Ausweiskopien mit Download + Auto-Löschung im Admin</li>
-              <li>Bestätigungs-E-Mails bei Anmeldung (sportartspezifisch)</li>
-              <li>Admin-Benachrichtigung bei jeder neuen Anmeldung</li>
-              <li>Datenschutzhinweis mit Einwilligungs-Checkbox (90-Tage Auto-Löschung)</li>
-              <li>Automatischer Lösch-Flow in Directus — täglicher Cron löscht Anmeldungen + Dateien nach 90 Tagen</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.0.0 — 2026-03-30</div>
-          <div class="changelog-group">
-            <h3>Backend-Migration</h3>
-            <ul>
-              <li>Komplette Migration von PocketBase zu Directus API-Backend</li>
-              <li>Neue modulare Datenabfrage — jede Seite lädt nur was sie braucht</li>
-              <li>Admin-Bereich nutzt jetzt Directus REST statt PocketBase SDK</li>
-              <li>60 Dateien (Teamfotos, News-Bilder, Sponsor-Logos) zu Directus migriert</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v1.2.0 — 2026-03-20</div>
-          <div class="changelog-group">
-            <h3>Testing</h3>
-            <ul>
-              <li>Umfassende Test-Suite: Vitest (Unit) + Playwright (E2E), 170 Tests</li>
-              <li>GitHub Actions CI-Pipeline bei Push auf dev/prod</li>
+              <li>Über uns mit Vereinsgeschichte und Karte, der Vorstand als Organigramm, Reglemente mit SVRZ-Einbettungen, Sponsoren, Impressum und Datenschutz</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Fehlerbehebungen</h3>
+            <h3>Design &amp; Feinschliff</h3>
             <ul>
-              <li>Feedback-Formular Turnstile-Validierung behoben</li>
-              <li>Fehlende EN-Übersetzungsschlüssel ergänzt</li>
-              <li>Kalender und Leaflet-Karte: Overflow-Probleme behoben</li>
-              <li>Theme-Toggle und Sponsor-Karussell: Funktion auf allen Seiten</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v1.0.0 — 2026-03-19</div>
-          <div class="changelog-group">
-            <h3>Website</h3>
-            <ul>
-              <li>Astro 6 statische Seite mit eigenem CSS Design System, zweisprachig (DE/EN)</li>
-              <li>Directus API Backend, Hetzner Hosting (Rechenzentrum Nürnberg)</li>
+              <li>Animiertes Hero, Scroll-Fortschrittsbalken, Karten-Spotlight, 3D-Tilt auf Team-Karten und bereichsabhängige Sparkle-Effekte — alle respektieren „Bewegung reduzieren“</li>
+              <li>Schweizer Datumsformat tt.mm.jjjj und 24-Stunden-Zeiten überall, mit hellem / dunklem Theme</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Teams, Spiele & Kalender</h3>
+            <h3>Admin &amp; Infrastruktur</h3>
             <ul>
-              <li>Dynamische Team-Seiten mit Live-Daten (Spiele, Rangliste, Kader, Training, Fotos)</li>
-              <li>Aufstiegs-/Abstiegsfarben in der Volleyball-Rangliste, Akkordeon-Navigation (Damen/Herren/Nachwuchs)</li>
-              <li>Spiel-Modal mit Sätzen, Schiedsrichtern, Spielort. Scoreboard mit Absolut/Pro-Spiel Umschaltung</li>
-              <li>Kalender-Raster mit Event-Tooltips</li>
-            </ul>
-          </div>
-          <div class="changelog-group">
-            <h3>Feedback & Admin</h3>
-            <ul>
-              <li>Feedback-Formular (Bug/Feature/Feedback) mit Turnstile CAPTCHA, Screenshot-Upload und automatischer GitHub-Issue-Erstellung</li>
-              <li>Admin-Bereich mit Glassmorphism-Login, Passwort-Sichtbarkeit, Dark/Light Mode</li>
-            </ul>
-          </div>
-          <div class="changelog-group">
-            <h3>Inhalt</h3>
-            <ul>
-              <li>Geschichte mit Leaflet-Karte, Scorer-Kurs Ressourcen, Reglemente mit SVRZ-Einbettungen</li>
-              <li>Impressum, Datenschutz, Sponsoren-Seite</li>
+              <li>Ein versteckter Admin-Bereich mit Bereichsberechtigungen pro Person, serverseitig durchgesetzt — nicht nur in der UI versteckt</li>
+              <li>Gebaut mit Astro 6, Directus-REST-Backend, Cloudflare-Pages-Hosting und gehärteten CSP- / Sicherheits-Headern</li>
             </ul>
           </div>
         </div>
@@ -538,397 +211,70 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v4.0.2</span>
+          <span class="changelog-badge">v1.0.0</span>
         </h2>
 
         <div class="changelog-entry">
-          <div class="changelog-meta">v4.0.2 — 2026-06-19</div>
+          <div class="changelog-meta">v1.0.0 — 2026-06-19</div>
           <div class="changelog-group">
-            <h3>Changed</h3>
+            <h3>Site &amp; navigation</h3>
             <ul>
-              <li><strong>Hall names removed from youth cards</strong>: on the basketball youth cards the training slots now show only weekday and time (no hall name)</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v4.0.1 — 2026-06-19</div>
-          <div class="changelog-group">
-            <h3>Fixed</h3>
-            <ul>
-              <li><strong>Training times shown in both languages</strong>: on the team cards (volleyball and basketball) the training times appeared in German and English at once. They now follow the language toggle in the top-right</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v4.0.0 — 2026-06-19</div>
-          <div class="changelog-group">
-            <h3>Added</h3>
-            <ul>
-              <li><strong>Contact button on the youth page</strong>: a contact button at the top of the youth page links straight to the contact form</li>
+              <li>Bilingual German / English site with a single canonical URL per page and a language toggle that remembers your choice</li>
+              <li>Live on the club's own domain, kscw.ch</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Changed</h3>
+            <h3>Teams</h3>
             <ul>
-              <li><strong>Real youth coaches & training times</strong>: the basketball youth teams (U8–U18) used to show placeholders. Coaches now come from Directus and training times with hall come straight from the hall schedule — each age group lists all of its weekly sessions</li>
+              <li>Dynamic team pages (volleyball and basketball) with live data from Directus: games, rankings, roster, photos and a weekly training summary from the real hall schedule</li>
+              <li>Promotion / relegation colour bands on rankings, season-stable team matching that survives the yearly rollover, and a basketball youth section with live coaches and training times</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Fixed</h3>
+            <h3>Games, scoreboard &amp; calendar</h3>
             <ul>
-              <li><strong>Youth cards readability</strong>: in dark mode the text on the cards was barely legible (light text on a white card) — the cards now use a theme-aware background colour</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.14.0 — 2026-06-19</div>
-          <div class="changelog-group">
-            <h3>Fixed</h3>
-            <ul>
-              <li><strong>Basketball teams visible again</strong>: after the season rollover all basketball teams had vanished from the basketball page — they now show reliably again (and survive future rollovers too)</li>
-              <li><strong>Real training times</strong>: the training times on the team cards (volleyball and basketball) now come straight from the hall schedule instead of hardcoded values, so they always stay current</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.13.0 — 2026-06-18</div>
-          <div class="changelog-group">
-            <h3>Changed</h3>
-            <ul>
-              <li><strong>Move to <code>kscw.ch</code></strong>: the website is moving from the temporary <code>kscw-website.pages.dev</code> address to its real domain <code>kscw.ch</code>. Links already shared pointing at the old <code>.pages.dev</code> address now redirect automatically to <code>kscw.ch</code></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.12.0 — 2026-06-15</div>
-          <div class="changelog-group">
-            <h3>Changed</h3>
-            <ul>
-              <li><strong>Single-URL addresses</strong>: every page now has one address — the language is switched right in the browser (top right) instead of via separate <code>/de/</code> and <code>/en/</code> links. Existing links and bookmarks keep working (automatic redirect)</li>
+              <li>Homepage game rows and a game detail modal with sets, referees and venue</li>
+              <li>A scoreboard with Absolute / Per-Game toggle, and a live calendar with event tooltips and detail modals</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Fixed</h3>
+            <h3>Registration &amp; membership</h3>
             <ul>
-              <li><strong>Recent results – basketball games</strong>: basketball games incorrectly showed the volleyball icon and no team name. They now show the correct basketball icon and the team name</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.11.2 — 2026-05-30</div>
-          <div class="changelog-group">
-            <h3>Fixed</h3>
-            <ul>
-              <li><strong>Admin tabs unreachable on mobile</strong>: the section tabs (news, events, registrations, sponsors, scorer courses, mixed turnier, …) overflowed off-screen with no way to reach them on phones. The tab bar is now a horizontally-scrollable sticky navbar — swipe sideways to reach every section, and it stays pinned to the top while you scroll</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.11.1 — 2026-05-23</div>
-          <div class="changelog-group">
-            <h3>Fixed</h3>
-            <ul>
-              <li><strong>Scorer course start time</strong>: the English course on 08.07.2026 now starts at <strong>19:00</strong> (was 19:30); end stays 21:30, so the calendar event covers a 2.5-hour block</li>
-              <li><strong>German scorer course</strong>: time cleared back to blank — date and time now show as to-be-announced (TBD) until confirmed</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.11.0 — 2026-05-21</div>
-          <div class="changelog-group">
-            <h3>Added</h3>
-            <ul>
-              <li><strong>Admin quick-access lock</strong>: a discreet padlock icon now sits next to the language toggle (top-right on desktop, at the top of the mobile menu) and links straight to the admin login — no more hunting for the hidden footer link</li>
-              <li><strong>Hero sport buttons refreshed</strong>: the Volleyball and Basketball buttons on the homepage now feature crisp sport icons (volleyball, basketball), cleaner gradients (volleyball: KSCW blue with a Mikasa-gold accent, basketball: warm orange gradient with a top highlight), and the icon tilts slightly on hover</li>
-              <li>Both effects respect <code>prefers-reduced-motion</code></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.10.0 — 2026-05-20</div>
-          <div class="changelog-group">
-            <h3>Added</h3>
-            <ul>
-              <li><strong>Sparkles hero on the sport pages</strong>: a subtle swarm of upward-drifting twinkles now floats across the volleyball and basketball landing heroes — gold for volleyball, orange for basketball. Pauses automatically when scrolled out of view</li>
-              <li><strong>Tracing beam on "About us"</strong>: from 1280&nbsp;px viewport width upward, a vertical blue-to-gold bar runs along the left side of the page content and fills in as you scroll — a pulsing gold dot marks the top</li>
-              <li>Both effects respect <code>prefers-reduced-motion</code></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.9.0 — 2026-05-20</div>
-          <div class="changelog-group">
-            <h3>Added</h3>
-            <ul>
-              <li><strong>Cursor spotlight on cards</strong>: news and event cards on the homepage now show a soft gold spotlight that follows the mouse cursor — gives the overview real depth</li>
-              <li><strong>3D tilt on team cards</strong>: all team cards (volleyball &amp; basketball) gently tilt toward the cursor on hover (max. 6° on each axis). Subtle but lively. Unchanged on touch devices</li>
-              <li>Both effects respect <code>prefers-reduced-motion</code></li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.8.0 — 2026-05-20</div>
-          <div class="changelog-group">
-            <h3>Added</h3>
-            <ul>
-              <li><strong>Hero animations on the homepage</strong>: drifting blue/gold radial glows behind the hero, a subtle gold shimmer sweeping through the "KSC Wiedikon" title, and the sport buttons now pulse in their respective sport colors on hover — all pure CSS, no extra JavaScript</li>
-              <li><strong>Scroll progress bar</strong>: a thin blue-to-gold bar at the very top of the viewport now shows how far down the current page you've scrolled</li>
-              <li><strong>Softer section reveals</strong>: new variant that fades sections in with a gentle blur (not just opacity) as they enter the viewport</li>
-              <li><strong>Livelier number counters</strong>: the counting statistics (e.g. on "About us") now get a brief gold glow while they animate up</li>
-              <li>All new animations respect <code>prefers-reduced-motion</code> — users who have reduced motion enabled in their OS see the page completely still</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.7.0 — 2026-05-20</div>
-          <div class="changelog-group">
-            <h3>Added</h3>
-            <ul>
-              <li><strong>Admin – per-user section permissions</strong>: managers now see a new "Admin" tab in the admin area. There you can choose, per Website Admin, which sections (News, Events, Registrations, Sponsors, Scorer Courses, Mixed Tournament) that person can see and edit — with real backend permission checks (not just UI hiding)</li>
+              <li>A unified online registration form for volleyball, basketball and passive memberships, with ID upload, PDF pre-fill of the licence forms and Turnstile spam protection</li>
+              <li>An admin registrations tab with approve / reject workflow, ClubDesk CSV export and automatic confirmation emails</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Fixed</h3>
+            <h3>News, events &amp; courses</h3>
             <ul>
-              <li><strong>Scorer course "Add to calendar"</strong>: the link now works on mobile too. Instead of an `.ics` file, it opens Google Calendar's event-creation form pre-filled with title, date/time and venue — the "Termin nicht gefunden" error after Google login is gone</li>
-              <li><strong>Admin – birthdate display</strong>: birthdates now render in Swiss `dd.mm.yyyy` format (no time component), instead of the raw ISO string with timezone</li>
-              <li><strong>Admin – "Registrations" export</strong>: the export now produces tab-separated files (`.tsv`) instead of comma-separated. Addresses containing commas no longer break the import</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.6.0 — 2026-05-19</div>
-          <div class="changelog-group">
-            <h3>Added</h3>
-            <ul>
-              <li><strong>Scorer course "Add to calendar"</strong>: every course now has a button (with a calendar icon) that downloads an `.ics` event with the title, date/time, duration and venue. The sign-up button got an icon too</li>
-              <li><strong>Venue on the course card</strong>: in-person courses now show the address (KSC Wiedikon, Goldbrunnenstrasse 80, 8055 Zürich) directly on the card</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.5.0 — 2026-05-19</div>
-          <div class="changelog-group">
-            <h3>Changed</h3>
-            <ul>
-              <li><strong>Scorer course sign-up</strong>: the sign-up form is no longer shown as a cramped embedded frame inside the page. A clear button now opens the form full-screen in a new tab — much better on mobile</li>
+              <li>Club news on the homepage and a news page with RSS, calendar events with sign-up links and live submission counts, and scorer courses with an „add to calendar“ button</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Fixed</h3>
+            <h3>Contact &amp; feedback</h3>
             <ul>
-              <li><strong>Admin – Active toggle</strong>: the label and switch were stuck together; they now sit correctly on the left and right with spacing between them</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.4.1 — 2026-05-14</div>
-          <div class="changelog-group">
-            <h3>Changed</h3>
-            <ul>
-              <li><strong>Contact form team dropdown</strong>: only lists teams that are currently open to new players. Closed teams are no longer selectable. Pre-selecting a team via the team-page button still works and the dropdown remains changeable</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.4.0 — 2026-05-13</div>
-          <div class="changelog-group">
-            <h3>Changed</h3>
-            <ul>
-              <li><strong>Team contact button</strong>: the "Get in touch" button on team pages now opens the central contact form with sport and team pre-filled, instead of opening an email with visible coach and TR addresses. Delivery happens server-side — recipient addresses are no longer exposed in the browser. Email subject: "Contact [Team]" (EN) or "Kontakt [Team]" (DE), based on the language of the originating page</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.3.2 — 2026-05-13</div>
-          <div class="changelog-group">
-            <h3>Fixed</h3>
-            <ul>
-              <li><strong>Board page on mobile</strong>: org chart now renders as a fishbone — President → Vice → central spine with TKs on the left and Kassier/Aktuar on the right, Beisitz centered at the bottom. All cards share the same width and height</li>
-              <li><strong>Recent results / upcoming games</strong>: long team chips no longer push the table off-screen on mobile (chips wrap at word boundaries). On desktop the chip moved to its own row beneath each game, giving the matchup column more breathing room</li>
-              <li><strong>Games table on mobile</strong>: each row now stacks as date+time / home vs away / score, with each score centered under its respective team. Long team names wrap instead of being truncated</li>
-              <li><strong>Scoreboard on mobile</strong>: metric label sits on its own line above the average + leading team so the team chip column stops being squeezed character-by-character</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.3.1 — 2026-05-13</div>
-          <div class="changelog-group">
-            <h3>Changed</h3>
-            <ul>
-              <li><strong>Board page</strong>: redesigned as a hierarchical org chart (President → Vice → 5 Ressorts) with CSS-drawn connector lines. Each card shows role and name. Stacks on mobile. Data updated to the 2026/27 board</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.3.0 — 2026-05-13</div>
-          <div class="changelog-group">
-            <h3>New</h3>
-            <ul>
-              <li><strong>Event signups</strong>: events can now host a signup form. Calendar shows an "Sign up" button with a live count. Admins paste the form URL in <code>/admin</code> and can view all responses as a table or one-click CSV export</li>
-              <li><strong>Self-hosted OpnForm at <code>forms.kscw.ch</code></strong>: replaces the ClubDesk-hosted signup pages that will break after the kscw.ch migration. KSCW-branded (color, logo) with weekly auto-update against upstream</li>
-              <li><strong>Trial trainings on team pages</strong>: teams open for new players now show their next Probetrainings (date · time · hall) right next to the "Get in touch" CTA</li>
-              <li><strong>Language preference remembered</strong>: clicking EN once routes future visits to the English site automatically. <code>kscw.ch</code> still defaults to German</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.2.4 — 2026-05-06</div>
-          <div class="changelog-group">
-            <h3>Security</h3>
-            <ul>
-              <li>Dependencies upgraded — cleared 4 security advisories (Astro XSS, Vite path traversal, defu prototype pollution, PostCSS XSS)</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.2.3 — 2026-04-18</div>
-          <div class="changelog-group">
-            <h3>News</h3>
-            <ul>
-              <li>External links are no longer shown in the public news view — ticket and action links are reserved for Wiedisync (members area). Articles with links now display a CTA pointing members to the Wiedisync login</li>
-              <li>Justified alignment with automatic hyphenation is now the default. Admin per-paragraph overrides are honored</li>
-              <li>Fixed empty news view — a redundant filter caused 403 errors from Directus (homepage, news list, RSS feed)</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.2.1 — 2026-04-04</div>
-          <div class="changelog-group">
-            <h3>Legal</h3>
-            <ul>
-              <li>Privacy Policy & Imprint: Added Hetzner hosting section (Nuremberg datacenter)</li>
-              <li>Notifications auto-deleted after 3 days</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.2.0 — 2026-04-02</div>
-          <div class="changelog-group">
-            <h3>Registration Form</h3>
-            <ul>
-              <li>Nationality: Searchable dropdown with favorites (CH, DE, FR, AT, IT) + all countries</li>
-              <li>Phone: Country code selector with all countries (default +41 CH)</li>
-              <li>Basketball fees: Active Adults, Juniors U18, Passive, Family</li>
-              <li>Basketball licence: OTR 1, OTR 2, OTN dropdown</li>
-              <li>Swiss Basketball PDF documents with auto pre-fill from form data</li>
-              <li>Salutation auto-derived from gender selection</li>
+              <li>A central contact form that reaches the right coaches without exposing their email addresses</li>
+              <li>A feedback form (bug / feature / feedback) with screenshot upload that opens a GitHub issue automatically</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Security</h3>
+            <h3>Content pages</h3>
             <ul>
-              <li>Self-hosted pdf-lib (was unpkg CDN without SRI)</li>
-              <li>Client-side file type + size validation before upload (JPG/PNG/WebP/PDF, max 10 MB)</li>
-              <li>Turnstile CAPTCHA token reset on failed submission</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.1.0 — 2026-04-01</div>
-          <div class="changelog-group">
-            <h3>Registration System</h3>
-            <ul>
-              <li>Unified registration form for Volleyball, Basketball and Passive memberships — replaces ClubDesk form + Google Forms</li>
-              <li>Admin "Registrations" tab with status filters, detail modal, approve/reject workflow</li>
-              <li>ClubDesk CSV export from admin panel</li>
-              <li>Basketball PDF pre-fill (licence application, Player's Self Declaration, National Team Declaration)</li>
-              <li>File uploads for ID copies with download + auto-delete from admin</li>
-              <li>Sport-specific confirmation emails on registration</li>
-              <li>Admin notification email on each new registration</li>
-              <li>Privacy notice with consent checkbox (90-day auto-deletion)</li>
-              <li>Auto-deletion Flow in Directus — daily cron deletes registrations + files after 90 days</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v3.0.0 — 2026-03-30</div>
-          <div class="changelog-group">
-            <h3>Backend Migration</h3>
-            <ul>
-              <li>Complete migration from PocketBase to Directus API backend</li>
-              <li>New modular data fetching — each page loads only what it needs</li>
-              <li>Admin panel now uses Directus REST instead of PocketBase SDK</li>
-              <li>60 files (team photos, news images, sponsor logos) migrated to Directus</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v1.2.0 — 2026-03-20</div>
-          <div class="changelog-group">
-            <h3>Testing</h3>
-            <ul>
-              <li>Comprehensive test suite: Vitest (unit) + Playwright (E2E), 170 tests</li>
-              <li>GitHub Actions CI pipeline on push to dev/prod</li>
+              <li>About us with club history and a map, the board as an org chart, regulations with SVRZ embeds, sponsors, imprint and privacy policy</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Bug Fixes</h3>
+            <h3>Design &amp; polish</h3>
             <ul>
-              <li>Feedback form Turnstile validation fixed</li>
-              <li>Missing EN translation keys added</li>
-              <li>Calendar grid and Leaflet map: overflow issues fixed</li>
-              <li>Theme toggle and sponsor carousel: working across all pages</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="changelog-entry">
-          <div class="changelog-meta">v1.0.0 — 2026-03-19</div>
-          <div class="changelog-group">
-            <h3>Website</h3>
-            <ul>
-              <li>Astro 6 static site with custom CSS design system, bilingual (DE/EN)</li>
-              <li>Directus API backend, Hetzner hosting (Nuremberg datacenter)</li>
+              <li>Animated hero, scroll-progress bar, card spotlight, 3D-tilt team cards and section-aware sparkle effects — all respecting „reduce motion“</li>
+              <li>Swiss dd.mm.yyyy dates and HH:MM times throughout, with a dark / light theme</li>
             </ul>
           </div>
           <div class="changelog-group">
-            <h3>Teams, Games & Calendar</h3>
+            <h3>Admin &amp; infrastructure</h3>
             <ul>
-              <li>Dynamic team pages with live data (games, rankings, roster, training, photos)</li>
-              <li>Promotion/relegation color bands on volleyball rankings, accordion navigation (Women/Men/Youth)</li>
-              <li>Game modal with sets, referees, venue. Scoreboard with Absolute/Per-Game toggle</li>
-              <li>Calendar grid with event tooltips</li>
-            </ul>
-          </div>
-          <div class="changelog-group">
-            <h3>Feedback & Admin</h3>
-            <ul>
-              <li>Feedback form (Bug/Feature/Feedback) with Turnstile CAPTCHA, screenshot upload, automatic GitHub issue creation</li>
-              <li>Admin area with glassmorphism login, password visibility toggle, dark/light mode</li>
-            </ul>
-          </div>
-          <div class="changelog-group">
-            <h3>Content</h3>
-            <ul>
-              <li>History page with Leaflet map, scorer course resources, regulations with SVRZ embeds</li>
-              <li>Imprint, Privacy Policy, Sponsors page</li>
+              <li>A hidden admin area with per-person area permissions enforced on the server, not just hidden in the UI</li>
+              <li>Built on Astro 6 with a Directus REST backend, Cloudflare Pages hosting and hardened CSP / security headers</li>
             </ul>
           </div>
         </div>

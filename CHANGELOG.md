@@ -2,6 +2,14 @@
 
 All notable changes to the KSC Wiedikon website are documented in this file.
 
+## [4.0.2] — 2026-06-19
+
+### Changed
+- **Basketball youth cards — hall names removed**: each training slot now shows just weekday + time (no ` · Hall`), per request (`YouthMeta.astro`).
+
+### Removed
+- **Static `trainings` arrays deleted from the team defs** (`src/data/teams.ts`): team cards have rendered live hall-slot trainings since 3.14.0, so the hardcoded values were dead. `trainings` is now optional and `formatTrainings` tolerates an empty/absent list; only the rare whole-fetch-failed offline fallback now shows no training line.
+
 ## [4.0.1] — 2026-06-19
 
 ### Fixed

@@ -73,9 +73,10 @@ async function fetchActiveTeams(): Promise<Team[]> {
         league: t.league,
         photoUrl: assetUrl(t.team_picture, 'width=640&quality=80'),
         season: t.season,
-        // Prefer live hall slots; fall back to the static def trainings only when
-        // the endpoint didn't supply them (e.g. older backend not yet deployed).
-        trainings: Array.isArray(t.trainings) ? t.trainings : def.trainings,
+        // Live hall slots from /kscw/public/teams. Defs no longer carry static
+        // trainings, so a team with none shows no training line (and the whole-
+        // fetch-failed fallback path below renders none too).
+        trainings: Array.isArray(t.trainings) ? t.trainings : [],
       }
     })
     .filter((t): t is Team => t !== null)

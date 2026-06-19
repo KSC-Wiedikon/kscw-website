@@ -1,8 +1,9 @@
 ---
 // Renders the training + coach lines for one basketball youth card, sourced
-// from Directus (coach M2M + hall_slots). Lists every weekly slot. Weekday
-// names carry a data-i18n key so the client language toggle localises them;
-// times, halls and coach names are language-neutral.
+// from Directus (coach M2M + hall_slots). Lists every weekly slot as weekday +
+// time (hall name intentionally not shown). Weekday names carry a data-i18n key
+// so the client language toggle localises them; times and coach names are
+// language-neutral.
 import type { YouthBasketball } from '../lib/fetch/youthBasketball'
 
 interface Props {
@@ -23,7 +24,7 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
       <span class="youth-meta-label"><strong data-i18n="bbTrainingLabel">Training:</strong></span>
       {info.slots.map(s => (
         <span class="youth-slot">
-          <span data-i18n={`weekdayLong${s.day}`}>{DE_DAYS[s.day] ?? ''}</span>{` ${s.start}–${s.end}`}{s.hall ? ` · ${s.hall}` : ''}
+          <span data-i18n={`weekdayLong${s.day}`}>{DE_DAYS[s.day] ?? ''}</span>{` ${s.start}–${s.end}`}
         </span>
       ))}
     </>

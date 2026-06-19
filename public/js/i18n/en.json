@@ -837,5 +837,14 @@
   "searchPlaceholder": "Search pages…",
   "searchNoResults": "No results found",
   "searchHint": "Type to find pages",
-  "searchClose": "Close"
+  "searchClose": "Close",
+  "bbTrainingLabel": "Training:",
+  "bbCoachLabel": "Coach:",
+  "weekdayLong0": "Monday",
+  "weekdayLong1": "Tuesday",
+  "weekdayLong2": "Wednesday",
+  "weekdayLong3": "Thursday",
+  "weekdayLong4": "Friday",
+  "weekdayLong5": "Saturday",
+  "weekdayLong6": "Sunday"
 }

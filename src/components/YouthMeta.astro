@@ -1,0 +1,52 @@
+---
+// Renders the training + coach lines for one basketball youth card, sourced
+// from Directus (coach M2M + hall_slots). Lists every weekly slot. Weekday
+// names carry a data-i18n key so the client language toggle localises them;
+// times, halls and coach names are language-neutral.
+import type { YouthBasketball } from '../lib/fetch/youthBasketball'
+
+interface Props {
+  code: string
+  data: YouthBasketball
+}
+
+const { code, data } = Astro.props
+const info = data[code] ?? { coaches: [], slots: [] }
+
+// 0 = Monday … 6 = Sunday (Directus hall_slots convention). Page builds in DE;
+// the client toggle swaps these via weekdayLong<n> keys.
+const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
+---
+<div class="youth-meta">
+  {info.slots.length > 0 && (
+    <>
+      <span class="youth-meta-label"><strong data-i18n="bbTrainingLabel">Training:</strong></span>
+      {info.slots.map(s => (
+        <span class="youth-slot">
+          <span data-i18n={`weekdayLong${s.day}`}>{DE_DAYS[s.day] ?? ''}</span>{` ${s.start}–${s.end}`}{s.hall ? ` · ${s.hall}` : ''}
+        </span>
+      ))}
+    </>
+  )}
+  {info.coaches.length > 0 && (
+    <span><strong data-i18n="bbCoachLabel">Coach:</strong> {info.coaches.join(', ')}</span>
+  )}
+</div>
+
+<style>
+  .youth-meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    margin-top: var(--space-md);
+    font-size: var(--text-sm);
+  }
+  .youth-meta span {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    color: var(--text-secondary);
+  }
+  .youth-meta strong { color: var(--text-primary); }
+  .youth-slot { padding-left: var(--space-md); }
+</style>

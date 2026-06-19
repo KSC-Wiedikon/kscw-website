@@ -2,6 +2,17 @@
 
 All notable changes to the KSC Wiedikon website are documented in this file.
 
+## [4.0.0] — 2026-06-19
+
+### Added
+- **Contact button on the basketball youth page**: a "Kontakt aufnehmen" button at the top of `/basketball/teams/nachwuchs` links straight to the contact form (prefilled for basketball / Nachwuchs).
+
+### Changed
+- **Basketball youth coaches & training now live from Directus**: the Nachwuchs cards (U8–U18) previously showed hardcoded placeholder coaches, training times and halls. Coaches now come from the team `coach` relationship (→ members) and training day/time/hall from the hall schedule (`hall_slots`), matched per age group by slot label. Every group lists all of its weekly sessions, and weekday names follow the language toggle. The Directus coach data was populated from the ClubDesk export (dev first, then prod).
+
+### Fixed
+- **Youth cards unreadable in dark mode**: the cards forced a white background via an undefined `--card-bg` variable, so under the default dark theme the light text sat on white — illegible. Cards now use the theme-aware `--bg-light` surface, which has proper contrast in both themes.
+
 ## [3.14.0] — 2026-06-19
 
 ### Fixed

@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website are documented in this file.
 
+## [4.0.1] — 2026-06-19
+
+### Fixed
+- **Team-card training times rendered in both languages at once**: the card markup emits a DE and an EN `data-lang-only` span, but `.team-card-meta span { display: inline-flex }` (specificity 0,1,1) overrode the toggle's `[data-lang-only="en"] { display: none }` (0,1,0), so both showed. Scoped that layout rule to `:not([data-lang-only])` so the language toggle wins. Affects volleyball + basketball cards (shared `TeamCard`).
+
 ## [4.0.0] — 2026-06-19
 
 ### Added

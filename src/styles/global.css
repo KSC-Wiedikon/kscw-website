@@ -1806,7 +1806,10 @@ tr:hover td {
   font-size: var(--text-sm);
   color: var(--text-secondary);
 }
-.team-card-meta span {
+/* Exclude the language-toggle spans: this layout rule's specificity (0,1,1)
+   otherwise beats the global `[data-lang-only] { display:none }` (0,1,0) and
+   forces BOTH the DE and EN training text to show at once. */
+.team-card-meta span:not([data-lang-only]) {
   display: inline-flex;
   align-items: center;
   gap: 4px;

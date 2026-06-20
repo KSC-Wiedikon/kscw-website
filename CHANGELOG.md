@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.1.0] — 2026-06-20
+
+### Standings by season
+- Team-page standings now have a season picker — current tables, last season's final standings (2024/25 added back) and the archive. Driven off the rankings data directly, so it stays correct after teams roll over to the new season in June (when standings aren't published yet).
+- For a season Swiss Volley hasn't published yet, a short "Data to be shared later by Swiss Volley" note appears instead of an empty table.
+
 ## [1.0.0] — 2026-06-19
 
 First official release of the KSC Wiedikon website — a fast, bilingual (DE / EN) Astro static site backed by the club's Directus API and hosted on Cloudflare Pages. The sections below describe what the site does at 1.0.

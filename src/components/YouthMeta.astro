@@ -23,6 +23,12 @@ const customLabel = info.waitlistLabel?.trim()
 const waitlistLabel = customLabel || 'Warteliste'
 const waitlistLabelKey = customLabel ? undefined : 'bbWaitlistLabel'
 
+// Not full + actively recruiting → green "Open for players" badge plus a link
+// into the contact form, prefilled to this exact team (sport + teamId). The
+// /kscw/contact backend routes youth-team submissions to the youth contact.
+const openForPlayers = !waitlistUrl && info.openForPlayers === true
+const contactHref = `/club/kontakt?sport=basketball${info.teamId ? `&teamId=${encodeURIComponent(info.teamId)}` : ''}`
+
 // 0 = Monday … 6 = Sunday (Directus hall_slots convention). Page builds in DE;
 // the client toggle swaps these via weekdayLong<n> keys.
 const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
@@ -51,6 +57,15 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
         rel="noopener noreferrer"
       >
         <span data-i18n={waitlistLabelKey}>{waitlistLabel}</span>
+        <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  )}
+  {openForPlayers && (
+    <div class="youth-open">
+      <span class="youth-open-badge" data-i18n="bbTeamOpen">Offen für neue Spieler</span>
+      <a class="btn btn-outline btn-sm youth-open-btn" href={contactHref}>
+        <span data-i18n="bbTeamOpenCta">Kontakt aufnehmen</span>
         <span aria-hidden="true">→</span>
       </a>
     </div>
@@ -102,6 +117,37 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
     min-height: 0;
   }
   .youth-meta .youth-waitlist-btn span {
+    display: inline;
+    color: inherit;
+  }
+
+  /* Open-for-players row — green counterpart to the gold "Team voll" row. */
+  .youth-meta .youth-open {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-top: var(--space-xs);
+  }
+  .youth-meta .youth-open-badge {
+    display: inline-flex;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: var(--success);
+    color: #ffffff;
+  }
+  .youth-meta .youth-open-btn {
+    color: var(--success);
+    text-transform: none;
+    letter-spacing: 0;
+    min-height: 0;
+  }
+  .youth-meta .youth-open-btn span {
     display: inline;
     color: inherit;
   }

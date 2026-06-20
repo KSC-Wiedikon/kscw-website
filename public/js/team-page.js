@@ -378,7 +378,11 @@
         initRosterViewToggle();
         renderTrainings(trainings);
         renderHookGames(upcoming, results, teamData);
-        renderHookRankings(rankings, teamData, barrageRankings);
+        // Rankings are driven off the rankings collection directly (see
+        // setupRankingsSeasons) rather than the endpoint's team.season rows:
+        // teams roll over to the new season in June before Swiss Volley
+        // publishes standings, so team.season points at an empty season.
+        setupRankingsSeasons(teamData);
         renderSponsors(sponsors);
 
         // Update static tab labels and headings with i18n
@@ -1118,6 +1122,130 @@
 
     appendSection(rankings, teamInfo.league, teamInfo.league || '', false);
     appendSection(barrage, barrage.length ? barrage[0].league : '', null, true);
+  }
+
+  // ── Rangliste season selector ──────────────────────────────────────
+  // Drive the Rangliste tab off the rankings collection directly so it can
+  // show prior seasons (now archived) and stay correct after the June team
+  // rollover, when team.season points at a season Swiss Volley hasn't
+  // published yet. Defaults to the latest season WITH data; the dropdown also
+  // offers the new season as a "coming soon" placeholder until its rows land.
+  var RANK_CUP_RE = /^Group \d+$|Cup|Turnier|Pokal|Final|Runde \d|Spiel \d|Tour \d/i;
+
+  function rankSeasonLong(season) {
+    var m = /^(\d{4})\/(\d{2})$/.exec(season || '');
+    return m ? (m[1] + '/' + m[1].slice(0, 2) + m[2]) : (season || '');
+  }
+
+  function rankingsApi(query) {
+    return fetch(DIRECTUS_URL + '/items/rankings?' + query)
+      .then(function (r) { return r.ok ? r.json() : { data: [] }; })
+      .then(function (j) { return j.data || []; })
+      .catch(function () { return []; });
+  }
+
+  function setupRankingsSeasons(teamData) {
+    var teamId = teamData.team_id || '';
+    if (!teamId) { renderHookRankings([], teamData, []); return; }
+    rankingsApi('aggregate[count]=*&groupBy[]=season&filter[team_id][_eq]=' + encodeURIComponent(teamId))
+      .then(function (rows) {
+        var withData = rows.map(function (r) { return r.season; }).filter(Boolean).sort().reverse();
+        var options = withData.slice();
+        // Offer the team's registered (current) season as a placeholder when it
+        // has no data yet.
+        if (teamData.season && options.indexOf(teamData.season) === -1) options.unshift(teamData.season);
+        var defaultSeason = withData[0] || teamData.season || '';
+        buildRankSeasonSelect(options, defaultSeason, teamData);
+        loadRankingsForSeason(defaultSeason, teamData);
+      });
+  }
+
+  function buildRankSeasonSelect(seasons, selected, teamData) {
+    var rankEl = document.getElementById('rankings-table');
+    if (!rankEl || !seasons.length) return;
+    var old = document.getElementById('rankings-season-select');
+    if (old && old.parentNode) old.parentNode.removeChild(old);
+
+    var wrap = document.createElement('div');
+    wrap.id = 'rankings-season-select';
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.gap = 'var(--space-sm)';
+    wrap.style.marginBottom = 'var(--space-lg)';
+
+    var label = document.createElement('label');
+    label.setAttribute('for', 'rankings-season');
+    label.textContent = i18n.t('teamSeason');
+    label.style.fontSize = 'var(--text-sm)';
+    label.style.color = 'var(--text-muted)';
+
+    var sel = document.createElement('select');
+    sel.id = 'rankings-season';
+    sel.className = 'form-select';
+    sel.style.width = 'auto';
+    seasons.forEach(function (s) {
+      var opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = rankSeasonLong(s);
+      if (s === selected) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    sel.addEventListener('change', function () { loadRankingsForSeason(sel.value, teamData); });
+
+    wrap.appendChild(label);
+    wrap.appendChild(sel);
+    rankEl.parentNode.insertBefore(wrap, rankEl);
+  }
+
+  function loadRankingsForSeason(season, teamData) {
+    var teamId = teamData.team_id || '';
+    rankingsApi('filter[team_id][_eq]=' + encodeURIComponent(teamId) + '&filter[season][_eq]=' + encodeURIComponent(season) + '&fields[]=league&limit=-1')
+      .then(function (rows) {
+        var leagues = rows.map(function (r) { return r.league; }).filter(Boolean);
+        var mainLeague = leagues.filter(function (l) { return !RANK_CUP_RE.test(l) && !/barrage/i.test(l); })[0] || '';
+        var barrageLeagues = leagues.filter(function (l) { return /barrage/i.test(l); });
+
+        if (!mainLeague && !barrageLeagues.length) { renderRankingsPlaceholder(season); return; }
+
+        var fetches = [mainLeague
+          ? rankingsApi('filter[league][_eq]=' + encodeURIComponent(mainLeague) + '&filter[season][_eq]=' + encodeURIComponent(season) + '&sort[]=rank&limit=-1')
+          : Promise.resolve([])];
+        barrageLeagues.forEach(function (bl) {
+          fetches.push(rankingsApi('filter[league][_eq]=' + encodeURIComponent(bl) + '&filter[season][_eq]=' + encodeURIComponent(season) + '&sort[]=rank&limit=-1'));
+        });
+
+        Promise.all(fetches).then(function (results) {
+          var main = results[0] || [];
+          var barrage = [];
+          for (var i = 1; i < results.length; i++) barrage = barrage.concat(results[i] || []);
+          var sport = teamData.sport || 'volleyball';
+          main.forEach(function (r) { if (!r.sport) r.sport = sport; });
+          barrage.forEach(function (r) { if (!r.sport) r.sport = sport; });
+          var info = {}; for (var k in teamData) info[k] = teamData[k];
+          info.league = mainLeague || teamData.league;
+          renderHookRankings(main, info, barrage);
+        });
+      });
+  }
+
+  function renderRankingsPlaceholder(season) {
+    var rankEl = document.getElementById('rankings-table');
+    if (!rankEl) return;
+    rankEl.textContent = '';
+    var box = document.createElement('div');
+    box.style.textAlign = 'center';
+    box.style.padding = 'var(--space-2xl) var(--space-lg)';
+    box.style.color = 'var(--text-muted)';
+    var s = document.createElement('p');
+    s.style.fontWeight = '600';
+    s.textContent = rankSeasonLong(season);
+    var p = document.createElement('p');
+    p.style.fontSize = 'var(--text-sm)';
+    p.style.marginTop = 'var(--space-xs)';
+    p.textContent = i18n.t('rankingComingSoon');
+    box.appendChild(s);
+    box.appendChild(p);
+    rankEl.appendChild(box);
   }
 
   // ── Promotion / relegation colors (volleyball) ─────────────────────

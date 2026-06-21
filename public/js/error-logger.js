@@ -26,8 +26,11 @@
       entry.source = 'frontend'
       entry.page = window.location.pathname
       entry.userAgent = navigator.userAgent
+      // sendBeacon with a raw string sets Content-Type: text/plain, which the
+      // Directus /client-error endpoint (global express.json parser) drops on the
+      // floor — wrap in a Blob with an explicit JSON type so the body is parsed.
       navigator.sendBeacon
-        ? navigator.sendBeacon(ENDPOINT, JSON.stringify(entry))
+        ? navigator.sendBeacon(ENDPOINT, new Blob([JSON.stringify(entry)], { type: 'application/json' }))
         : fetch(ENDPOINT, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

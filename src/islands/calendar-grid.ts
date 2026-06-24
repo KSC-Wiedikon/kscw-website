@@ -112,6 +112,18 @@ if (container) {
   }
 
   // -- Date helpers --
+  // Events carry a full UTC instant: an all-day event authored as Zurich
+  // midnight is stored as the *previous* day 22:00Z in summer (e.g. Aug 22
+  // 00:00 local → "2026-08-21T22:00:00Z"). Slicing the UTC string would bucket
+  // it on the wrong day, so resolve the calendar day in the club timezone.
+  // Games carry a plain `YYYY-MM-DD` date (no time) — passed through unchanged.
+  function eventDateKey(iso: string): string {
+    if (!iso) return ''
+    if (iso.length <= 10) return iso
+    // en-CA renders ISO-ordered YYYY-MM-DD; `timeZone` picks the Zurich day.
+    // Locale here only shapes a machine key (not display) — display paths use de-CH.
+    return new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' })
+  }
   function startOfMonth(d: Date): Date {
     return new Date(d.getFullYear(), d.getMonth(), 1)
   }
@@ -419,9 +431,9 @@ if (container) {
     // Title
     modal.appendChild(el('h3', 'cal-modal-title', ev.title))
 
-    // Info — ev.date is wall-clock time stored as UTC; slice to date-only + noon-anchor to render admin's intended day in any timezone
-    const dateOnly = ev.date.length > 10 ? ev.date.slice(0, 10) : ev.date
-    const dateObj = new Date(dateOnly + 'T12:00:00')
+    // Info — resolve the event's Zurich calendar day (eventDateKey), then
+    // noon-anchor that day so the long-format render stays on it in any timezone.
+    const dateObj = new Date(eventDateKey(ev.date) + 'T12:00:00')
     const dateStr = dateObj.toLocaleDateString('de-CH', {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     })
@@ -759,7 +771,7 @@ if (container) {
 
     const eventsByDate = new Map<string, CalendarEvent[]>()
     for (const ev of calEvents) {
-      const key = ev.date.slice(0, 10)
+      const key = eventDateKey(ev.date)
       if (!eventsByDate.has(key)) eventsByDate.set(key, [])
       eventsByDate.get(key)!.push(ev)
     }

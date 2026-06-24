@@ -3,13 +3,32 @@
  * Extracted from public/js/data.js for reuse across components and islands
  */
 
+/** Club timezone — all dates render as the wall-clock day in Zurich. */
+const CLUB_TZ = 'Europe/Zurich';
+
+/**
+ * Resolve an ISO date string to the `Date` instant whose Europe/Zurich
+ * calendar day equals the day the value represents.
+ *
+ * - Full timestamps (e.g. `2026-08-21T22:00:00.000Z`) are true UTC instants:
+ *   an all-day event authored as Zurich midnight is stored as the *previous*
+ *   day 22:00Z in summer. Slicing the string would land it on the wrong day,
+ *   so we keep the instant and let callers render it with `timeZone: CLUB_TZ`.
+ * - Date-only strings (e.g. `2026-08-22`) carry no time; we anchor them at noon
+ *   UTC so the ±1–2h Zurich offset can never shift them across a day boundary.
+ */
+function toClubInstant(isoDate: string): Date {
+  return isoDate.length <= 10 ? new Date(isoDate + 'T12:00:00Z') : new Date(isoDate);
+}
+
 /**
  * Format ISO date string as Swiss-style `dd.mm.yyyy` regardless of caller
  * locale. Hardcoded to `de-CH`: passing 'en-CH' would yield slashes
  * (`30/03/2026`), which mixes formats across the site for English visitors.
  * App-wide convention is dd.mm.yyyy — see wiedisync `INFRA.md → Time &
- * Date Formatting`.
- * @param isoDate ISO date string (YYYY-MM-DD)
+ * Date Formatting`. The day is resolved in `Europe/Zurich`, so full UTC
+ * timestamps (e.g. all-day events) render on their intended local day.
+ * @param isoDate ISO date string (`YYYY-MM-DD` or full ISO timestamp)
  * @param _locale Ignored; retained for backwards compatibility with old
  *   callers that passed 'en-CH'. New callers should omit.
  * @returns Formatted date (e.g., "30.03.2026")
@@ -19,9 +38,8 @@ export function formatDate(isoDate: string, _locale?: string): string {
   if (!isoDate) return '–';
 
   try {
-    const dateOnly = isoDate.length > 10 ? isoDate.slice(0, 10) : isoDate;
-    const date = new Date(dateOnly + 'T12:00:00');
-    return date.toLocaleDateString('de-CH', {
+    return toClubInstant(isoDate).toLocaleDateString('de-CH', {
+      timeZone: CLUB_TZ,
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -32,8 +50,9 @@ export function formatDate(isoDate: string, _locale?: string): string {
 }
 
 /**
- * Format ISO date string as long locale-specific date with weekday
- * @param isoDate ISO date string (YYYY-MM-DD)
+ * Format ISO date string as long locale-specific date with weekday.
+ * Day resolved in `Europe/Zurich` (see {@link formatDate}).
+ * @param isoDate ISO date string (`YYYY-MM-DD` or full ISO timestamp)
  * @param locale Locale code (default: 'de-CH')
  * @returns Formatted date (e.g., "So, 30. März 2026" for de-CH)
  */
@@ -41,9 +60,8 @@ export function formatDateLong(isoDate: string, locale = 'de-CH'): string {
   if (!isoDate) return '–';
 
   try {
-    const dateOnly = isoDate.length > 10 ? isoDate.slice(0, 10) : isoDate;
-    const date = new Date(dateOnly + 'T12:00:00');
-    return date.toLocaleDateString(locale, {
+    return toClubInstant(isoDate).toLocaleDateString(locale, {
+      timeZone: CLUB_TZ,
       weekday: 'short',
       day: 'numeric',
       month: 'long',

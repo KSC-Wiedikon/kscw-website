@@ -5,6 +5,7 @@ import SectionHeader from '../components/SectionHeader.astro';
 import { t } from '../lib/i18n';
 import heroLogo from '../assets/images/kscw_trio.png';
 import { getUpcomingEvents } from '../lib/fetch/events';
+import { formatDate } from '../lib/utils';
 
 const locale = 'de';
 
@@ -113,7 +114,7 @@ try {
             <article class={`card event-card fade-in${ev.description ? ' event-card--clickable' : ''}`}>
               <div class="card-body">
                 <div class="flex items-center gap-sm mb-md">
-                  <span class="news-date">{new Date(ev.date).toLocaleDateString('de-CH')}</span>
+                  <span class="news-date">{formatDate(ev.date)}</span>
                   <span class="badge badge-green">
                     {ev.category === 'social' ? t(locale, 'eventCategorySocial')
                       : ev.category === 'verein' ? t(locale, 'eventCategoryClub')
@@ -529,7 +530,7 @@ try {
               meta.className = 'flex items-center gap-sm mb-md';
               var dateSpan = document.createElement('span');
               dateSpan.className = 'news-date';
-              dateSpan.textContent = new Date(date).toLocaleDateString('de-CH');
+              dateSpan.textContent = new Date(date).toLocaleDateString('de-CH', { timeZone: 'Europe/Zurich' });
               meta.appendChild(dateSpan);
               var badge = document.createElement('span');
               badge.className = 'badge ' + badgeClass;

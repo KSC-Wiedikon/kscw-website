@@ -136,7 +136,7 @@ const locale = 'de';
               meta.className = 'flex items-center gap-sm mb-md';
               var dateSpan = document.createElement('span');
               dateSpan.className = 'news-date';
-              dateSpan.textContent = new Date(date).toLocaleDateString('de-CH');
+              dateSpan.textContent = new Date(date).toLocaleDateString('de-CH', { timeZone: 'Europe/Zurich' });
               meta.appendChild(dateSpan);
               var badge = document.createElement('span');
               badge.className = 'badge ' + badgeClass;

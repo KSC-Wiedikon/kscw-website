@@ -77,7 +77,7 @@
     var left = el('div', 'nm-header-left');
 
     var dateStr = data.date
-      ? new Date(data.date).toLocaleDateString(isDE ? 'de-CH' : 'en-CH', { day: '2-digit', month: 'long', year: 'numeric' })
+      ? new Date(data.date).toLocaleDateString(isDE ? 'de-CH' : 'en-CH', { timeZone: 'Europe/Zurich', day: '2-digit', month: 'long', year: 'numeric' })
       : '';
     if (dateStr) left.appendChild(el('span', 'news-date', dateStr));
 

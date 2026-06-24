@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.1.1] — 2026-06-24
+
+### Calendar & event dates fixed
+- All-day events (e.g. the Photoday) showed up one day too early in the calendar and on the homepage. Dates are now always read in Swiss time (Europe/Zurich), so they land on the correct day regardless of where the visitor is.
+- News dates are likewise pinned to Swiss time for consistency.
+
 ## [1.1.0] — 2026-06-20
 
 ### Standings by season

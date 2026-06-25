@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.2.0] — 2026-06-25
+
+### Hall closures in the calendar
+- The calendar now shows "Halle geschlossen" days — school holidays, public holidays and hall closures (e.g. for tournaments), read from the `hall_closures` collection. The many per-hall rows are collapsed into one marker per day/reason listing the affected halls, with a detail modal. A toolbar toggle shows/hides them (default on).
+- Calendar subscription fixed and extended: the subscribe/download links pointed at a dead path (`/api/ical`) and are corrected to the live feed (`/kscw/ical`); hall closures are now an opt-in subscribe source. Also fixes a latent bug where selecting every source omitted the `source` filter and silently dropped events from the subscription.
+
 ## [1.1.1] — 2026-06-24
 
 ### Calendar & event dates fixed

@@ -37,6 +37,28 @@ interface CalendarEvent {
   signupUrl?: string
 }
 
+// A single row from the `hall_closures` collection. One closure row exists per
+// (date-range × hall), so a school-holiday week is stored as ~12 rows (one per
+// hall). They are collapsed back into one entry per day/reason at render time.
+interface DirectusClosure {
+  id: number
+  start_date: string // YYYY-MM-DD (plain date, no time)
+  end_date: string   // YYYY-MM-DD, inclusive
+  reason: string
+  source: string     // 'school_holidays' | 'gcal' | 'manual'
+  hall?: { id: number; name: string } | null
+}
+
+// Per-day, per-reason grouping of the raw closure rows above: the 12 hall rows
+// of one holiday become a single chip listing the affected halls.
+interface ClosureGroup {
+  label: string      // display label (localized for the generic "Halle geschlossen")
+  source: string
+  startDate: string  // full closure range start (not just the rendered day)
+  endDate: string
+  halls: string[]
+}
+
 const container = document.getElementById('calendar-grid')
 if (container) {
   // Live language: read from the runtime i18n engine each time labels are
@@ -65,6 +87,8 @@ if (container) {
   let eventsLabel = 'Events'
   let homeGamesLabel = ''
   let awayGamesLabel = ''
+  let closuresLabel = ''
+  let affectedHallsLabel = ''
 
   function computeLabels(): void {
     lang = getLang()
@@ -87,6 +111,8 @@ if (container) {
     eventsLabel = 'Events'
     homeGamesLabel = lang === 'de' ? 'Heimspiele' : 'Home Games'
     awayGamesLabel = lang === 'de' ? 'Auswärtsspiele' : 'Away Games'
+    closuresLabel = lang === 'de' ? 'Halle geschlossen' : 'Hall closed'
+    affectedHallsLabel = lang === 'de' ? 'Betroffene Hallen' : 'Affected halls'
   }
   computeLabels()
 
@@ -94,10 +120,13 @@ if (container) {
   currentMonth.setDate(1)
   let games: DirectusGame[] = []
   let fetchedRange = ''
+  let closures: DirectusClosure[] = []
+  let fetchedClosureRange = ''
   // Filter state
   let filterType = new Set(['home', 'away'])
   let filterSport = new Set(['volleyball', 'basketball'])
   let filterTeams = new Set<string>() // empty = all
+  let showClosures = true // "Halle geschlossen" entries, toggleable in the toolbar
 
   // Teams list
   let allTeams: DirectusTeam[] = []
@@ -252,6 +281,78 @@ if (container) {
     }
   }
 
+  // -- Fetch hall closures --
+  // Fetched client-side per visible range (like games) since the collection is
+  // large and growing. Overlap filter: a closure is in range when its span
+  // intersects the grid — start_date <= gridEnd AND end_date >= gridStart.
+  async function fetchClosures(month: Date): Promise<void> {
+    const gridStart = startOfWeek(startOfMonth(month))
+    const gridEnd = endOfWeek(endOfMonth(month))
+    const from = toDateKey(gridStart)
+    const to = toDateKey(gridEnd)
+    const rangeKey = `${from}_${to}`
+    if (rangeKey === fetchedClosureRange) return
+    fetchedClosureRange = rangeKey
+
+    try {
+      const filter = encodeURIComponent(JSON.stringify({ _and: [{ start_date: { _lte: to } }, { end_date: { _gte: from } }] }))
+      const fields = encodeURIComponent('id,start_date,end_date,reason,source,hall.id,hall.name')
+      const url = `${DIRECTUS_URL}/items/hall_closures?limit=-1&sort=start_date&filter=${filter}&fields=${fields}`
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      closures = data.data || []
+    } catch {
+      closures = []
+    }
+  }
+
+  // Normalize the free-text reason: the gcal feed stores "Halle Geschlossen ",
+  // "Halle geschlossen " etc. — collapse those to one localized label so the
+  // per-hall rows merge into a single chip. Holiday names pass through verbatim.
+  function closureLabel(reason: string): string {
+    const r = (reason || '').trim()
+    if (/^halle\s+geschlossen$/i.test(r)) return closuresLabel
+    return r || closuresLabel
+  }
+
+  // Format a closure's full span for the detail/day modals (dd.mm.yyyy).
+  function formatClosureRange(startKey: string, endKey: string): string {
+    const fmt = (key: string) =>
+      new Date(key + 'T12:00:00').toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    return startKey === endKey ? fmt(startKey) : `${fmt(startKey)} – ${fmt(endKey)}`
+  }
+
+  // -- Closure padlock icon --
+  function closureIcon(): SVGElement {
+    const svg = svgEl('svg', { viewBox: '0 0 24 24', class: 'cal-closure-icon', fill: 'none', stroke: 'currentColor', 'stroke-width': '2', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' })
+    svg.appendChild(svgEl('rect', { x: '3', y: '11', width: '18', height: '11', rx: '2', ry: '2' }))
+    svg.appendChild(svgEl('path', { d: 'M7 11V7a5 5 0 0 1 10 0v4' }))
+    return svg
+  }
+
+  // Group the raw closure rows covering `dayKey` by their display label, merging
+  // the per-hall rows: collect affected halls and widen the span to the union.
+  function closureGroupsForDay(dayKey: string): ClosureGroup[] {
+    if (!showClosures) return []
+    const groups = new Map<string, ClosureGroup>()
+    for (const c of closures) {
+      if (!(c.start_date <= dayKey && c.end_date >= dayKey)) continue
+      const label = closureLabel(c.reason)
+      let g = groups.get(label)
+      if (!g) {
+        g = { label, source: c.source, startDate: c.start_date, endDate: c.end_date, halls: [] }
+        groups.set(label, g)
+      } else {
+        if (c.start_date < g.startDate) g.startDate = c.start_date
+        if (c.end_date > g.endDate) g.endDate = c.end_date
+      }
+      const hn = c.hall?.name
+      if (hn && !g.halls.includes(hn)) g.halls.push(hn)
+    }
+    return Array.from(groups.values())
+  }
+
   // -- Filter games --
   function applyFilters(gameList: DirectusGame[]): DirectusGame[] {
     return gameList.filter(g => {
@@ -316,6 +417,22 @@ if (container) {
     btn.addEventListener('click', (e) => {
       e.stopPropagation()
       showEventDetail(ev)
+    })
+
+    return btn
+  }
+
+  // -- Closure chip --
+  function closureChip(g: ClosureGroup): HTMLElement {
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'cal-entry cal-entry--closure'
+    btn.appendChild(closureIcon())
+    btn.appendChild(el('span', 'cal-entry-title', g.label))
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      showClosureDetail(g)
     })
 
     return btn
@@ -490,6 +607,47 @@ if (container) {
     document.addEventListener('keydown', escHandler)
   }
 
+  // -- Closure detail modal --
+  function showClosureDetail(g: ClosureGroup): void {
+    const overlay = el('div', 'cal-modal-overlay')
+    overlay.addEventListener('click', () => overlay.remove())
+
+    const modal = el('div', 'cal-modal')
+    modal.style.maxWidth = '420px'
+    modal.addEventListener('click', (e) => e.stopPropagation())
+
+    const closeBtn = document.createElement('button')
+    closeBtn.type = 'button'
+    closeBtn.className = 'cal-modal-close'
+    closeBtn.textContent = '×'
+    closeBtn.addEventListener('click', () => overlay.remove())
+    modal.appendChild(closeBtn)
+
+    const hdr = el('div', 'cal-modal-row-header')
+    hdr.style.marginBottom = 'var(--space-sm)'
+    hdr.appendChild(el('span', 'cal-tooltip-sport cal-tooltip-sport--closure', closuresLabel))
+    modal.appendChild(hdr)
+
+    // Title: the closure reason (holiday name, tournament, …). Falls back to the
+    // generic localized label when the reason is itself just "Halle geschlossen".
+    modal.appendChild(el('h3', 'cal-modal-title', g.label))
+
+    const infoList = el('div', 'cal-detail-info')
+    infoList.appendChild(makeInfoRow('📅', formatClosureRange(g.startDate, g.endDate)))
+    if (g.halls.length > 0) {
+      infoList.appendChild(makeInfoRow('🏢', `${affectedHallsLabel}: ${g.halls.join(', ')}`))
+    }
+    modal.appendChild(infoList)
+
+    overlay.appendChild(modal)
+    document.body.appendChild(overlay)
+
+    const escHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', escHandler) }
+    }
+    document.addEventListener('keydown', escHandler)
+  }
+
   // -- Info row helper --
   function makeInfoRow(icon: string, text: string): HTMLElement {
     const row = el('div', 'cal-detail-row')
@@ -593,8 +751,22 @@ if (container) {
       }
     ))
 
+    // -- Closure toggle (standalone button, not a dropdown so it doesn't shift
+    //    the .cal-filter-wrap indices applyFilterUpdate restores) --
+    const closureToggle = document.createElement('button')
+    closureToggle.type = 'button'
+    closureToggle.className = 'cal-filter-btn cal-closure-toggle' + (showClosures ? '' : ' is-off')
+    closureToggle.setAttribute('aria-pressed', String(showClosures))
+    closureToggle.appendChild(closureIcon())
+    closureToggle.appendChild(document.createTextNode(closuresLabel))
+    closureToggle.addEventListener('click', () => {
+      showClosures = !showClosures
+      applyFilterUpdate(-1)
+    })
+    filters.appendChild(closureToggle)
+
     // -- Reset button (only show when filters are active) --
-    const hasActiveFilters = filterType.size < 2 || filterSport.size < 2 || filterTeams.size > 0
+    const hasActiveFilters = filterType.size < 2 || filterSport.size < 2 || filterTeams.size > 0 || !showClosures
     if (hasActiveFilters) {
       const resetBtn = document.createElement('button')
       resetBtn.type = 'button'
@@ -604,6 +776,7 @@ if (container) {
         filterType = new Set(['home', 'away'])
         filterSport = new Set(['volleyball', 'basketball'])
         filterTeams.clear()
+        showClosures = true
         applyFilterUpdate(-1)
       })
       filters.appendChild(resetBtn)
@@ -744,7 +917,7 @@ if (container) {
     computeLabels()
     container!.textContent = ''
     container!.appendChild(el('div', 'cal-loading', loadingLabel))
-    await fetchGames(currentMonth)
+    await Promise.all([fetchGames(currentMonth), fetchClosures(currentMonth)])
 
     container!.textContent = ''
     container!.appendChild(renderToolbar())
@@ -866,7 +1039,8 @@ if (container) {
       cell.appendChild(num)
 
       const dayEvents = eventsByDate.get(key) || []
-      const allEntries = dayGames.length + dayEvents.length
+      const dayClosures = closureGroupsForDay(key)
+      const allEntries = dayGames.length + dayEvents.length + dayClosures.length
 
       if (inMonth && allEntries > 0) {
         const entriesDiv = el('div', 'cal-entries')
@@ -885,6 +1059,12 @@ if (container) {
           count++
         }
 
+        for (const c of dayClosures) {
+          if (count >= maxVisible) break
+          entriesDiv.appendChild(closureChip(c))
+          count++
+        }
+
         const overflow = allEntries - maxVisible
         if (overflow > 0) {
           const more = document.createElement('button')
@@ -893,7 +1073,7 @@ if (container) {
           more.textContent = `+${overflow}`
           more.addEventListener('click', (e) => {
             e.stopPropagation()
-            showDayModal(date, dayGames, dayEvents)
+            showDayModal(date, dayGames, dayEvents, dayClosures)
           })
           entriesDiv.appendChild(more)
         }
@@ -908,7 +1088,7 @@ if (container) {
   }
 
   // -- Day overflow modal --
-  function showDayModal(date: Date, dayGames: DirectusGame[], dayEvents: CalendarEvent[] = []): void {
+  function showDayModal(date: Date, dayGames: DirectusGame[], dayEvents: CalendarEvent[] = [], dayClosures: ClosureGroup[] = []): void {
     const overlay = el('div', 'cal-modal-overlay')
     overlay.addEventListener('click', () => overlay.remove())
 
@@ -983,6 +1163,22 @@ if (container) {
       modal.appendChild(row)
     }
 
+    for (const c of dayClosures) {
+      const row = el('div', 'cal-modal-row cal-modal-row--closure')
+
+      const rowHdr = el('div', 'cal-modal-row-header')
+      rowHdr.appendChild(el('span', 'cal-tooltip-sport cal-tooltip-sport--closure', closuresLabel))
+      row.appendChild(rowHdr)
+
+      row.appendChild(el('div', 'cal-modal-teams', c.label))
+      row.appendChild(el('div', 'cal-modal-hall', formatClosureRange(c.startDate, c.endDate)))
+      if (c.halls.length > 0) {
+        row.appendChild(el('div', 'cal-modal-hall', `${affectedHallsLabel}: ${c.halls.join(', ')}`))
+      }
+
+      modal.appendChild(row)
+    }
+
     overlay.appendChild(modal)
     document.body.appendChild(overlay)
 
@@ -1013,7 +1209,7 @@ if (container) {
     modal.appendChild(el('h3', 'cal-modal-title', subscribeTitle))
 
     // State for subscribe modal
-    const subSources = { home: true, away: true, events: true }
+    const subSources = { home: true, away: true, events: true, closures: true }
     const subSports = { volleyball: true, basketball: true }
     const subTeams = new Set<string>() // tracks EXCLUDED team IDs
 
@@ -1024,6 +1220,7 @@ if (container) {
     srcChecks.appendChild(makeCheckLabel(homeGamesLabel, true, (c) => { subSources.home = c }))
     srcChecks.appendChild(makeCheckLabel(awayGamesLabel, true, (c) => { subSources.away = c }))
     srcChecks.appendChild(makeCheckLabel(eventsLabel, true, (c) => { subSources.events = c }))
+    srcChecks.appendChild(makeCheckLabel(closuresLabel, true, (c) => { subSources.closures = c }))
     srcSection.appendChild(srcChecks)
     modal.appendChild(srcSection)
 
@@ -1112,7 +1309,7 @@ if (container) {
 
   function buildIcalUrl(
     protocol: string,
-    sources: { home: boolean; away: boolean; events: boolean },
+    sources: { home: boolean; away: boolean; events: boolean; closures: boolean },
     sports: { volleyball: boolean; basketball: boolean },
     excludedTeams: Set<string>
   ): string {
@@ -1120,18 +1317,22 @@ if (container) {
     if (sources.home) srcParts.push('games-home')
     if (sources.away) srcParts.push('games-away')
     if (sources.events) srcParts.push('events')
+    if (sources.closures) srcParts.push('closures')
 
     const params = new URLSearchParams()
-    if (srcParts.length > 0 && srcParts.length < 3) {
+    // Always send the explicit allowlist: the feed defaults to games-only when
+    // `source` is omitted, which would silently drop events and closures.
+    if (srcParts.length > 0) {
       params.set('source', srcParts.join(','))
     }
 
-    // Sport-specific route or param
+    // Sport-specific route (the feed filters games by sport via the path; events
+    // and closures are returned regardless, so combining them is safe).
     const onlyVB = sports.volleyball && !sports.basketball
     const onlyBB = sports.basketball && !sports.volleyball
-    let path = '/api/ical'
-    if (onlyVB) path = '/api/ical/volleyball'
-    else if (onlyBB) path = '/api/ical/basketball'
+    let path = '/kscw/ical'
+    if (onlyVB) path = '/kscw/ical/volleyball'
+    else if (onlyBB) path = '/kscw/ical/basketball'
 
     // Team filter: include only non-excluded teams
     if (excludedTeams.size > 0) {

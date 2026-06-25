@@ -135,8 +135,18 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.2.0</span>
+          <span class="changelog-badge">v1.2.1</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.2.1 — 2026-06-25</div>
+          <div class="changelog-group">
+            <h3>Anmeldeformular: Sicherheitsprüfung korrigiert</h3>
+            <ul>
+              <li>Beim langen Ausfüllen des Anmeldeformulars (z. B. Basketball, mit Dokumenten zum Herunterladen und Hochladen) konnte die Sicherheitsprüfung (Captcha) ablaufen und das Absenden ohne Hinweis blockieren. Die Prüfung wird jetzt automatisch erneuert; falls sie doch einmal abläuft, erscheint eine klare Meldung zur erneuten Bestätigung</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.2.0 — 2026-06-25</div>
@@ -244,8 +254,18 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.2.0</span>
+          <span class="changelog-badge">v1.2.1</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.2.1 — 2026-06-25</div>
+          <div class="changelog-group">
+            <h3>Registration form security check fixed</h3>
+            <ul>
+              <li>On a long registration (e.g. basketball, with documents to download and upload) the security check (captcha) could expire and silently block submitting. It now refreshes automatically while the form is open, with a clear "please re-confirm" message if it ever lapses</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.2.0 — 2026-06-25</div>

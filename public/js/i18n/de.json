@@ -614,7 +614,7 @@
   "registrationError": "Fehler beim Senden. Bitte versuche es erneut.",
   "registrationValidationRequired": "Bitte fülle alle Pflichtfelder aus.",
   "registrationValidationEmail": "Bitte gib eine gültige E-Mail-Adresse ein.",
-  "registrationValidationCaptcha": "Bitte bestätige, dass du kein Roboter bist.",
+  "registrationValidationCaptcha": "Bitte bestätige erneut, dass du kein Roboter bist. Die Sicherheitsprüfung ist möglicherweise abgelaufen.",
   "registrationValidationConsent": "Bitte akzeptiere die Datenschutzerklärung.",
   "registrationValidationID": "Bitte lade mindestens die Vorderseite deines Ausweises hoch.",
   "registrationValidationTeam": "Bitte wähle mindestens ein Team aus.",

@@ -614,7 +614,7 @@
   "registrationError": "Error sending. Please try again.",
   "registrationValidationRequired": "Please fill in all required fields.",
   "registrationValidationEmail": "Please enter a valid email address.",
-  "registrationValidationCaptcha": "Please confirm that you are not a robot.",
+  "registrationValidationCaptcha": "Please re-confirm that you are not a robot. The security check may have expired.",
   "registrationValidationConsent": "Please accept the privacy policy.",
   "registrationValidationID": "Please upload at least the front of your ID.",
   "registrationValidationTeam": "Please select at least one team.",

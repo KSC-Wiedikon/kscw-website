@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.2.1] — 2026-06-25
+
+### Registration form captcha fixed
+- On a long registration (e.g. basketball, with document downloads and uploads), the Cloudflare Turnstile security check could expire before submitting and silently block the form — the applicant got stuck with nothing logged. The check now auto-refreshes its token while the form is open, recovers from transient challenge errors instead of crashing the page, and shows a clear "please re-confirm" message if it ever lapses. Client-side submit blocks (expired captcha, missing file/team) are now logged so failures are diagnosable.
+
 ## [1.2.0] — 2026-06-25
 
 ### Hall closures in the calendar

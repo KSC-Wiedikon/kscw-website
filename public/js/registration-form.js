@@ -21,6 +21,13 @@
 
   if (!form) return;
 
+  // Surface client-side submit blocks (validation / expired captcha) into the
+  // error log via the console.error capture in error-logger.js, so silent
+  // "it didn't work" reports become diagnosable. Prefixed for easy filtering.
+  function logBlock(reason) {
+    try { console.error('[registration] ' + reason); } catch (_) { /* noop */ }
+  }
+
   // ── Country data (ISO code → dial code, DE name, EN name) ──────────
   var FAVORITE_CODES = ['CH', 'DE', 'FR', 'AT', 'IT'];
 
@@ -483,6 +490,28 @@
       sitekey: TURNSTILE_SITE_KEY,
       theme: 'auto',
       size: 'flexible',
+      // Resilience: auto-refresh an expired token and auto-retry transient
+      // challenge failures (the 300xxx client-side errors some mobile browsers /
+      // privacy blockers throw) instead of dead-ending the applicant.
+      'refresh-expired': 'auto',
+      retry: 'auto',
+      'retry-interval': 3000,
+      'expired-callback': function () {
+        // Token went stale (valid only ~5 min; this form takes longer to fill).
+        // Reset so a fresh token is fetched and the submit handler doesn't
+        // silently bounce the user with an empty token.
+        logBlock('turnstile token expired — auto-resetting');
+        try { window.turnstile.reset(turnstileWidgetId); } catch (_) { /* noop */ }
+      },
+      'timeout-callback': function () {
+        try { window.turnstile.reset(turnstileWidgetId); } catch (_) { /* noop */ }
+      },
+      'error-callback': function (code) {
+        // Returning true tells Turnstile we've handled it, suppressing the
+        // "Uncaught TurnstileError" and letting retry:'auto' recover.
+        logBlock('turnstile error ' + (code || ''));
+        return true;
+      },
     });
   }
 
@@ -723,24 +752,35 @@
     hideFeedback();
 
     var type = (form.querySelector('input[name="membership_type"]:checked') || {}).value;
-    if (!type) return showFeedback('error', i18n.t('registrationValidationRequired'));
+    if (!type) { logBlock('blocked: no membership type'); return showFeedback('error', i18n.t('registrationValidationRequired')); }
 
     var consent = document.getElementById('consent');
-    if (!consent || !consent.checked) return showFeedback('error', i18n.t('registrationValidationConsent'));
+    if (!consent || !consent.checked) { logBlock('blocked: consent not checked'); return showFeedback('error', i18n.t('registrationValidationConsent')); }
 
     var turnstileToken = '';
     if (window.turnstile && turnstileWidgetId !== null) {
       turnstileToken = window.turnstile.getResponse(turnstileWidgetId) || '';
     }
-    if (!turnstileToken) return showFeedback('error', i18n.t('registrationValidationCaptcha'));
+    if (!turnstileToken) {
+      // Most common cause: the token expired while the (long) form was filled,
+      // so getResponse() is empty even though the widget may still look solved.
+      // Reset to fetch a fresh token and tell the user to re-confirm.
+      logBlock('blocked: missing/expired turnstile token at submit');
+      if (window.turnstile && turnstileWidgetId !== null) {
+        try { window.turnstile.reset(turnstileWidgetId); } catch (_) { /* noop */ }
+      }
+      return showFeedback('error', i18n.t('registrationValidationCaptcha'));
+    }
 
     if (type === 'basketball') {
       var front = document.getElementById('id-front');
       if (!front.files.length) {
+        logBlock('blocked: bb ID front missing');
         return showFeedback('error', i18n.t('registrationValidationID'));
       }
       var lizenzUpload = document.getElementById('bb-doc-lizenz-upload');
       if (lizenzUpload && !lizenzUpload.files.length) {
+        logBlock('blocked: bb lizenzantrag upload missing');
         return showFeedback('error', locale === 'de'
           ? 'Bitte lade den unterschriebenen Lizenzantrag hoch.'
           : 'Please upload the signed licence application.');
@@ -754,6 +794,7 @@
         var teamName = type === 'volleyball' ? 'team_vb' : 'team_bb';
         var checked = form.querySelectorAll('input[name="' + teamName + '"]:checked');
         if (!checked.length) {
+          logBlock('blocked: no team selected (' + type + ')');
           return showFeedback('error', i18n.t('registrationValidationTeam'));
         }
       }
@@ -879,6 +920,10 @@
         }
       })
       .catch(function (err) {
+        // Backend/network fetch failures are already logged by error-logger.js;
+        // this also captures pure client-side throws (e.g. file too large /
+        // wrong type from validateFile) that never hit the network.
+        logBlock('submit failed: ' + (err && err.message ? err.message : 'unknown'));
         showFeedback('error', err.message || i18n.t('registrationError'));
         if (window.turnstile && turnstileWidgetId !== null) {
           window.turnstile.reset(turnstileWidgetId);

@@ -503,6 +503,7 @@ button.nav-link {
   transition: transform var(--transition-fast);
 }
 .nav-item:hover .chevron,
+.nav-item:focus-within .chevron,
 .nav-item.open .chevron {
   transform: rotate(180deg);
 }
@@ -524,8 +525,13 @@ button.nav-link {
   z-index: var(--z-dropdown);
 }
 .nav-item:hover .nav-dropdown,
+.nav-item:focus-within .nav-dropdown,
 .nav-item.open .nav-dropdown {
   display: block;
+}
+/* Escape collapses the dropdown even while focus stays on the trigger. */
+.nav-item.nav-dropdown-collapsed:focus-within .nav-dropdown {
+  display: none;
 }
 .dropdown-link {
   display: block;
@@ -2655,6 +2661,25 @@ tr:hover td {
 }
 .admin-link--mobile {
   margin-left: 0.6rem;
+}
+
+/* ── Touch-target floors (≥44px) on coarse pointers ────────────
+   Keep the compact desktop visuals, but give icon-only / tiny text
+   buttons a 44px hit area on touch devices (a11y: UI-WEB-4 / UI-WEB-5). */
+@media (hover: none), (pointer: coarse) {
+  .lang-btn,
+  .lang-btn-mobile,
+  .admin-link,
+  .search-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mobile-search-btn {
+    min-height: 44px;
+  }
 }
 
 /* ── Focus States ──────────────────────────────────────────── */

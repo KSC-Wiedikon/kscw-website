@@ -500,17 +500,41 @@
           var success = document.createElement('div');
           success.className = 'mt-success';
           var isEn = document.documentElement.lang === 'en';
-          var wiedisyncNote = isMember
-            ? '<div class="mt-success-badge"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4"/></svg>' + (isEn ? 'Participation saved in Wiedisync' : 'Teilnahme in Wiedisync gespeichert') + '</div>'
-            : '';
-          var calLink = '<a href="/mixed-turnier-2026.ics" class="mt-success-cal" download>' + (isEn ? 'Add to Calendar' : 'Zum Kalender hinzuf\u00FCgen') + '</a>';
-          success.innerHTML = '<div class="mt-success-card">'
-            + '<div class="mt-success-icon"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke="#4A55A2" fill="rgba(74,85,162,0.1)"/><path d="m9 12 2 2 4-4" stroke="#4A55A2"/></svg></div>'
-            + '<h2 class="mt-success-title">' + escapeHtml(form.getAttribute('data-msg-success') || 'Thank you!') + '</h2>'
-            + '<p class="mt-success-text">' + escapeHtml(form.getAttribute('data-msg-success-text') || '') + '</p>'
-            + wiedisyncNote
-            + '<div class="mt-success-actions">' + calLink + '</div>'
-            + '</div>';
+
+          var card = document.createElement('div');
+          card.className = 'mt-success-card';
+
+          // Static success icon
+          var iconWrap = document.createElement('div');
+          iconWrap.className = 'mt-success-icon';
+          iconWrap.innerHTML = '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" stroke="#4A55A2" fill="rgba(74,85,162,0.1)"/><path d="m9 12 2 2 4-4" stroke="#4A55A2"/></svg>';
+          card.appendChild(iconWrap);
+
+          // WEB-SEC-7: dynamic message via textContent so it can never be
+          // interpreted as HTML regardless of source.
+          var titleEl = document.createElement('h2');
+          titleEl.className = 'mt-success-title';
+          titleEl.textContent = form.getAttribute('data-msg-success') || 'Thank you!';
+          card.appendChild(titleEl);
+
+          var textEl = document.createElement('p');
+          textEl.className = 'mt-success-text';
+          textEl.textContent = form.getAttribute('data-msg-success-text') || '';
+          card.appendChild(textEl);
+
+          if (isMember) {
+            var badge = document.createElement('div');
+            badge.className = 'mt-success-badge';
+            badge.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4"/></svg>' + (isEn ? 'Participation saved in Wiedisync' : 'Teilnahme in Wiedisync gespeichert');
+            card.appendChild(badge);
+          }
+
+          var actions = document.createElement('div');
+          actions.className = 'mt-success-actions';
+          actions.innerHTML = '<a href="/mixed-turnier-2026.ics" class="mt-success-cal" download>' + (isEn ? 'Add to Calendar' : 'Zum Kalender hinzuf\u00FCgen') + '</a>';
+          card.appendChild(actions);
+
+          success.appendChild(card);
           wrapper.replaceChild(success, form);
         }
       })

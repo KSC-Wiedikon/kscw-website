@@ -64,7 +64,9 @@ const locale = 'de';
   <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <script is:inline src="/js/newsletter-form.js"></script>
 
-  <script is:inline src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
+  <!-- DOMPurify vendored locally (audit WEB-SEC-4): same-origin load so the
+       news-body XSS sanitizer can't be removed by a CDN outage. Pinned 3.2.4. -->
+  <script is:inline src="/js/vendor/purify.min.js"></script>
   <script is:inline src="/js/news-modal.js"></script>
   <script is:inline>
     (function () {

@@ -355,6 +355,11 @@ import '../styles/global.css';
     }
     function fetchMembers() {
       if (cachedMembers) return Promise.resolve(cachedMembers);
+      // WEB-ADM-2 (residual): this pulls every user's email directly from /users.
+      // Safe today because the admin page is reachable only by manager-admins
+      // (no non-admin "Website Admin" gated role exists yet). If such a gated
+      // role IS ever introduced (per the design spec), this direct /users call
+      // MUST be re-scoped — a website-only admin should not read member emails.
       return getValidToken().then(function(token) {
         return fetch(DIRECTUS_URL + '/users?sort=first_name,last_name&fields=id,first_name,last_name,email&limit=-1', {
           headers: { 'Authorization': 'Bearer ' + token },
@@ -1323,11 +1328,15 @@ import '../styles/global.css';
       URL.revokeObjectURL(url);
     }
 
-    // Note modal for mixed turnier (speech bubble → full text, DOMPurify sanitized)
+    // Note modal for mixed turnier (speech bubble → full text)
     window._showMtNote = function(btn) {
       var text = btn.getAttribute('data-note') || '';
       var modal = document.getElementById('admin-modal');
-      var clean = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(text) : escapeHtml(text);
+      // WEB-ADM-3: the note is plain text filled by an UNauthenticated public
+      // visitor. Escape ALL markup (no <a href>/<img src> phishing/beacon
+      // injection into the admin DOM) — the pre-wrap container preserves the
+      // line breaks, so escaping is fully sufficient here.
+      var clean = escapeHtml(text);
       modal.innerHTML = '<div class="admin-modal-content">' +
         '<div class="admin-modal-header">' +
           '<h2>Notes</h2>' +
@@ -2224,6 +2233,10 @@ import '../styles/global.css';
         function autoTranslate(text) {
           if (!text || text.length < 3) { titleEnInput.value = ''; return; }
           var tgtLang = adminLang === 'de' ? 'en' : 'de';
+          // WEB-SEC-5 / WEB-ADM-6 (info, accepted): the admin-typed news/event
+          // title is sent to api.mymemory.translated.net (third party) for
+          // auto-translation. This is a conscious choice — titles are published
+          // publicly anyway, so there is no confidential data leaving the admin.
           fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=' + adminLang + '|' + tgtLang)
             .then(function(r) { return r.json(); })
             .then(function(data) {

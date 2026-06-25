@@ -48,7 +48,7 @@ const vbYouth = vbBy('youth');
         <!-- Desktop Navigation -->
         <div class="nav-menu">
           <div class="nav-item">
-            <button type="button" class="nav-link">
+            <button type="button" class="nav-link" aria-haspopup="true" aria-expanded="false">
               <span data-i18n="navClub">{t(locale, 'navClub')}</span>
               <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
@@ -61,7 +61,7 @@ const vbYouth = vbBy('youth');
           </div>
 
           <div class="nav-item">
-            <button type="button" class="nav-link">
+            <button type="button" class="nav-link" aria-haspopup="true" aria-expanded="false">
               <span data-i18n="navVolleyball">{t(locale, 'navVolleyball')}</span>
               <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
@@ -108,7 +108,7 @@ const vbYouth = vbBy('youth');
           </div>
 
           <div class="nav-item">
-            <button type="button" class="nav-link">
+            <button type="button" class="nav-link" aria-haspopup="true" aria-expanded="false">
               <span data-i18n="navBasketball">{t(locale, 'navBasketball')}</span>
               <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
@@ -150,7 +150,7 @@ const vbYouth = vbBy('youth');
           </div>
 
           <div class="nav-item">
-            <button type="button" class="nav-link">
+            <button type="button" class="nav-link" aria-haspopup="true" aria-expanded="false">
               <span data-i18n="navMore">{t(locale, 'navMore')}</span>
               <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
@@ -167,17 +167,17 @@ const vbYouth = vbBy('youth');
           <i data-lucide="search" style="width:16px;height:16px;"></i>
         </button>
         <a href="https://wiedisync.kscw.ch" class="nav-link btn btn-gold btn-sm" target="_blank" rel="noopener"><i data-lucide="lock" style="width:14px;height:14px;"></i> Wiedisync</a>
-        <div class="lang-toggle" role="radiogroup" aria-label="Language">
-          <button type="button" class="lang-btn active" aria-label="Deutsch" data-lang="de">DE</button>
+        <div class="lang-toggle" aria-label="Language">
+          <button type="button" class="lang-btn active" aria-label="Deutsch" aria-pressed="true" data-lang="de">DE</button>
           <span class="lang-sep">|</span>
-          <button type="button" class="lang-btn" aria-label="English" data-lang="en">EN</button>
+          <button type="button" class="lang-btn" aria-label="English" aria-pressed="false" data-lang="en">EN</button>
         </div>
         <a href="/admin" class="admin-link" aria-label={t(locale, 'navAdmin')} title={t(locale, 'navAdmin')} data-i18n-aria-label="navAdmin" data-i18n-title="navAdmin">
           <i data-lucide="lock" style="width:14px;height:14px;"></i>
         </a>
         </div>
 
-        <button class="nav-hamburger" aria-label={t(locale, 'navOpenMenu')} data-i18n-aria-label="navOpenMenu">
+        <button class="nav-hamburger" aria-label={t(locale, 'navOpenMenu')} data-i18n-aria-label="navOpenMenu" aria-expanded="false" aria-controls="mobile-nav">
           <div class="hamburger-icon">
             <span></span>
             <span></span>
@@ -188,15 +188,15 @@ const vbYouth = vbBy('youth');
     </div>
 
     <!-- Mobile Navigation -->
-    <div class="mobile-nav">
+    <div class="mobile-nav" id="mobile-nav">
       <button type="button" class="mobile-search-btn" data-search-open aria-label={t(locale, 'searchOpen')} data-i18n-aria-label="searchOpen">
         <i data-lucide="search" style="width:16px;height:16px;"></i>
         <span data-i18n="searchPlaceholder">{t(locale, 'searchPlaceholder')}</span>
       </button>
-      <div class="lang-toggle mobile-lang-toggle" role="radiogroup" aria-label="Language">
-        <button type="button" class="lang-btn-mobile active" aria-label="Deutsch" data-lang="de">DE</button>
+      <div class="lang-toggle mobile-lang-toggle" aria-label="Language">
+        <button type="button" class="lang-btn-mobile active" aria-label="Deutsch" aria-pressed="true" data-lang="de">DE</button>
         <span class="lang-sep">|</span>
-        <button type="button" class="lang-btn-mobile" aria-label="English" data-lang="en">EN</button>
+        <button type="button" class="lang-btn-mobile" aria-label="English" aria-pressed="false" data-lang="en">EN</button>
         <a href="/admin" class="admin-link admin-link--mobile" aria-label={t(locale, 'navAdmin')} title={t(locale, 'navAdmin')} data-i18n-aria-label="navAdmin" data-i18n-title="navAdmin">
           <i data-lucide="lock" style="width:14px;height:14px;"></i>
         </a>

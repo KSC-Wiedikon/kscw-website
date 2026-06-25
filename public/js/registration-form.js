@@ -707,12 +707,27 @@
     overlay.className = 'success-modal-overlay';
     var modal = document.createElement('div');
     modal.className = 'success-modal';
-    modal.innerHTML =
-      '<div class="success-modal-icon">' +
-        '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>' +
-      '</div>' +
-      '<p class="success-modal-msg">' + msg + '</p>' +
-      '<button type="button" class="success-modal-btn">OK</button>';
+
+    // WEB-SEC-7: build the dynamic message via textContent so it can never be
+    // interpreted as HTML regardless of source. The static icon/button stay as
+    // markup; only the message node carries (currently static i18n) text.
+    var iconWrap = document.createElement('div');
+    iconWrap.className = 'success-modal-icon';
+    iconWrap.innerHTML =
+      '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>';
+
+    var msgEl = document.createElement('p');
+    msgEl.className = 'success-modal-msg';
+    msgEl.textContent = msg || '';
+
+    var okBtn = document.createElement('button');
+    okBtn.type = 'button';
+    okBtn.className = 'success-modal-btn';
+    okBtn.textContent = 'OK';
+
+    modal.appendChild(iconWrap);
+    modal.appendChild(msgEl);
+    modal.appendChild(okBtn);
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
     // Trigger animation

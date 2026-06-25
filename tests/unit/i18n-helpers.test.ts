@@ -7,7 +7,8 @@ describe('t()', () => {
   });
 
   it('returns English string for EN locale', () => {
-    expect(t('en', 'navAbout')).toBe('About Us');
+    // Sentence case per the KSCW capitalisation convention (audit UI-WEB-2).
+    expect(t('en', 'navAbout')).toBe('About us');
   });
 
   it('returns the key when it exists in neither locale', () => {

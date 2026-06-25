@@ -439,9 +439,23 @@
         if (wrapper) {
           var success = document.createElement('div');
           success.className = 'vf-success';
-          success.innerHTML = '<div class="vf-success-icon"><svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#4A55A2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></div>'
-            + '<h2>' + escapeHtml(form.getAttribute('data-msg-success') || 'Thank you!') + '</h2>'
-            + '<p>' + escapeHtml(form.getAttribute('data-msg-success-text') || '') + '</p>';
+
+          // Static success icon
+          var iconWrap = document.createElement('div');
+          iconWrap.className = 'vf-success-icon';
+          iconWrap.innerHTML = '<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#4A55A2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
+          success.appendChild(iconWrap);
+
+          // WEB-SEC-7: dynamic message via textContent so it can never be
+          // interpreted as HTML regardless of source.
+          var titleEl = document.createElement('h2');
+          titleEl.textContent = form.getAttribute('data-msg-success') || 'Thank you!';
+          success.appendChild(titleEl);
+
+          var textEl = document.createElement('p');
+          textEl.textContent = form.getAttribute('data-msg-success-text') || '';
+          success.appendChild(textEl);
+
           wrapper.replaceChild(success, form);
         }
       })

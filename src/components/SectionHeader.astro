@@ -17,6 +17,6 @@ const { title, titleKey, actionHref, actionLabel, actionLabelKey } = Astro.props
     <div class="gold-bar"></div>
   </div>
   {actionHref && actionLabel && (
-    <a href={actionHref} class="btn btn-sm btn-outline" data-i18n={actionLabelKey} set:html={actionLabel} />
+    <a href={actionHref} class="btn btn-sm btn-outline" data-i18n={actionLabelKey}>{actionLabel}</a>
   )}
 </div>

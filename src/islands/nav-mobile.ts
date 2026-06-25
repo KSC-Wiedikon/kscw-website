@@ -13,9 +13,14 @@ const hamburger = document.querySelector('.nav-hamburger');
 const mobileNav = document.querySelector('.mobile-nav');
 
 if (hamburger) {
+  const setNavOpen = (open: boolean) => {
+    document.body.classList.toggle('nav-open', open);
+    hamburger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+
   hamburger.addEventListener('click', (e) => {
     e.stopPropagation();
-    document.body.classList.toggle('nav-open');
+    setNavOpen(!document.body.classList.contains('nav-open'));
   });
 
   document.addEventListener('click', (e) => {
@@ -23,14 +28,14 @@ if (hamburger) {
     const target = e.target as HTMLElement;
     if (mobileNav?.contains(target)) return;
     if (hamburger.contains(target)) return;
-    document.body.classList.remove('nav-open');
+    setNavOpen(false);
   });
 
   if (mobileNav) {
     mobileNav.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
       if (target.closest('a')) {
-        document.body.classList.remove('nav-open');
+        setNavOpen(false);
       }
     });
   }
@@ -46,36 +51,74 @@ document.querySelectorAll('.mobile-nav-link').forEach((link) => {
   link.addEventListener('click', (e) => {
     e.preventDefault();
     document.querySelectorAll('.mobile-nav-item.open').forEach((item) => {
-      if (item !== parent) item.classList.remove('open');
+      if (item !== parent) {
+        item.classList.remove('open');
+        const sibling = item.querySelector('.mobile-nav-link');
+        if (sibling) sibling.setAttribute('aria-expanded', 'false');
+      }
     });
-    parent.classList.toggle('open');
+    const willOpen = !parent.classList.contains('open');
+    parent.classList.toggle('open', willOpen);
+    link.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
   });
 });
 
-// 4. Desktop Dropdown Touch Support
+// 4. Desktop Dropdown — touch + keyboard support
 const navItems = document.querySelectorAll('.nav-item');
+
+const setItemOpen = (item: Element, open: boolean) => {
+  item.classList.toggle('open', open);
+  if (open) item.classList.remove('nav-dropdown-collapsed');
+  const trigger = item.querySelector('.nav-link');
+  if (trigger) trigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+};
+
 navItems.forEach((item) => {
   const dropdown = item.querySelector('.nav-dropdown');
   if (!dropdown) return;
-  const link = item.querySelector('.nav-link');
+  const link = item.querySelector('.nav-link') as HTMLElement | null;
   if (!link) return;
 
+  // Click: on touch (no hover) it toggles. On hover devices the CSS :hover
+  // already opens it, so a real mouse click is ignored — but a keyboard
+  // activation (Enter/Space fires a click with detail === 0) always toggles.
   link.addEventListener('click', (e) => {
-    if (window.matchMedia('(hover: hover)').matches) return;
-    if (!item.classList.contains('open')) {
-      e.preventDefault();
-      navItems.forEach((other) => {
-        if (other !== item) other.classList.remove('open');
-      });
-      item.classList.add('open');
+    const keyboard = (e as MouseEvent).detail === 0;
+    if (window.matchMedia('(hover: hover)').matches && !keyboard) return;
+    e.preventDefault();
+    const willOpen = !item.classList.contains('open');
+    navItems.forEach((other) => { if (other !== item) setItemOpen(other, false); });
+    setItemOpen(item, willOpen);
+  });
+
+  // Keep aria-expanded honest with the CSS :focus-within reveal, and clear any
+  // prior Escape-collapse as soon as focus (re)enters the item.
+  item.addEventListener('focusin', () => {
+    item.classList.remove('nav-dropdown-collapsed');
+    link.setAttribute('aria-expanded', 'true');
+  });
+  item.addEventListener('focusout', (e) => {
+    if (!item.contains((e as FocusEvent).relatedTarget as Node)) {
+      item.classList.remove('open', 'nav-dropdown-collapsed');
+      link.setAttribute('aria-expanded', 'false');
     }
+  });
+
+  // Escape closes the dropdown and returns focus to the trigger.
+  item.addEventListener('keydown', (e) => {
+    if ((e as KeyboardEvent).key !== 'Escape') return;
+    link.focus(); // move focus to the trigger first…
+    // …then collapse, so the focusin handler above doesn't immediately re-open it.
+    item.classList.remove('open');
+    item.classList.add('nav-dropdown-collapsed');
+    link.setAttribute('aria-expanded', 'false');
   });
 });
 
 document.addEventListener('click', (e) => {
   const target = e.target as HTMLElement;
   navItems.forEach((item) => {
-    if (!item.contains(target)) item.classList.remove('open');
+    if (!item.contains(target)) setItemOpen(item, false);
   });
 });
 

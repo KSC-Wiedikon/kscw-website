@@ -89,6 +89,7 @@ if (container) {
   let awayGamesLabel = ''
   let closuresLabel = ''
   let affectedHallsLabel = ''
+  let allHallsLabel = ''
 
   function computeLabels(): void {
     lang = getLang()
@@ -113,6 +114,7 @@ if (container) {
     awayGamesLabel = lang === 'de' ? 'Auswärtsspiele' : 'Away Games'
     closuresLabel = lang === 'de' ? 'Halle geschlossen' : 'Hall closed'
     affectedHallsLabel = lang === 'de' ? 'Betroffene Hallen' : 'Affected halls'
+    allHallsLabel = lang === 'de' ? 'Alle Hallen' : 'All halls'
   }
   computeLabels()
 
@@ -422,20 +424,63 @@ if (container) {
     return btn
   }
 
-  // -- Closure chip --
-  function closureChip(g: ClosureGroup): HTMLElement {
-    const btn = document.createElement('button')
-    btn.type = 'button'
-    btn.className = 'cal-entry cal-entry--closure'
-    btn.appendChild(closureIcon())
-    btn.appendChild(el('span', 'cal-entry-title', g.label))
+  // -- Closure: affected-hall summary --
+  // School-holiday closures span every hall (Directus stores one row per hall) —
+  // collapse to a single "Alle Hallen" label instead of listing all ~12. gcal /
+  // manual closures list their specific halls, compacted by shared prefix
+  // ("KWI A","KWI B","KWI C" → "KWI A, B, C"). A gcal closure with no hall set
+  // defaults to the main KWI halls.
+  function closureHallsLabel(g: ClosureGroup): string {
+    if (g.source === 'school_holidays') return allHallsLabel
+    if (g.halls.length === 0) return 'KWI A, B, C'
+    return compactHalls(g.halls)
+  }
 
-    btn.addEventListener('click', (e) => {
+  function compactHalls(names: string[]): string {
+    const sorted = [...names].sort((a, b) => a.localeCompare(b, 'de'))
+    const order: string[] = []
+    const byPrefix = new Map<string, string[]>()
+    for (const n of sorted) {
+      const sp = n.indexOf(' ')
+      const prefix = sp > 0 ? n.slice(0, sp) : n
+      const rest = sp > 0 ? n.slice(sp + 1) : ''
+      if (!byPrefix.has(prefix)) { byPrefix.set(prefix, []); order.push(prefix) }
+      if (rest) byPrefix.get(prefix)!.push(rest)
+    }
+    return order
+      .map(p => {
+        const rests = byPrefix.get(p)!
+        return rests.length ? `${p} ${rests.join(', ')}` : p
+      })
+      .join(' · ')
+  }
+
+  // -- Full-day closure block --
+  // A closure paints the whole day red (.cal-cell--closed); this is the centered
+  // reason + affected-halls overlay. Clicking opens the closure detail, or the
+  // day modal when the day also has games/events or multiple closures.
+  function closureBlock(date: Date, dayGames: DirectusGame[], dayEvents: CalendarEvent[], groups: ClosureGroup[]): HTMLElement {
+    const block = document.createElement('button')
+    block.type = 'button'
+    block.className = 'cal-closed-block'
+
+    for (const g of groups) {
+      const line = el('div', 'cal-closed-line')
+      line.appendChild(el('div', 'cal-closed-reason', g.label))
+      line.appendChild(el('div', 'cal-closed-halls', closureHallsLabel(g)))
+      block.appendChild(line)
+    }
+
+    block.addEventListener('click', (e) => {
       e.stopPropagation()
-      showClosureDetail(g)
+      if (groups.length === 1 && dayGames.length === 0 && dayEvents.length === 0) {
+        showClosureDetail(groups[0])
+      } else {
+        showDayModal(date, dayGames, dayEvents, groups)
+      }
     })
 
-    return btn
+    return block
   }
 
   // -- Game detail modal --
@@ -634,9 +679,7 @@ if (container) {
 
     const infoList = el('div', 'cal-detail-info')
     infoList.appendChild(makeInfoRow('📅', formatClosureRange(g.startDate, g.endDate)))
-    if (g.halls.length > 0) {
-      infoList.appendChild(makeInfoRow('🏢', `${affectedHallsLabel}: ${g.halls.join(', ')}`))
-    }
+    infoList.appendChild(makeInfoRow('🏢', `${affectedHallsLabel}: ${closureHallsLabel(g)}`))
     modal.appendChild(infoList)
 
     overlay.appendChild(modal)
@@ -1040,9 +1083,15 @@ if (container) {
 
       const dayEvents = eventsByDate.get(key) || []
       const dayClosures = closureGroupsForDay(key)
-      const allEntries = dayGames.length + dayEvents.length + dayClosures.length
+      const hasClosure = inMonth && dayClosures.length > 0
+      if (hasClosure) cell.classList.add('cal-cell--closed')
 
-      if (inMonth && allEntries > 0) {
+      // Closures fill the whole cell (red block below); only games + events are
+      // capped chips. They still render on a closed day so away games etc. aren't
+      // hidden by the closure of a KSCW hall.
+      const chipEntries = dayGames.length + dayEvents.length
+
+      if (inMonth && chipEntries > 0) {
         const entriesDiv = el('div', 'cal-entries')
         const maxVisible = window.innerWidth < 640 ? 2 : 3
         let count = 0
@@ -1059,13 +1108,7 @@ if (container) {
           count++
         }
 
-        for (const c of dayClosures) {
-          if (count >= maxVisible) break
-          entriesDiv.appendChild(closureChip(c))
-          count++
-        }
-
-        const overflow = allEntries - maxVisible
+        const overflow = chipEntries - maxVisible
         if (overflow > 0) {
           const more = document.createElement('button')
           more.type = 'button'
@@ -1079,6 +1122,10 @@ if (container) {
         }
 
         cell.appendChild(entriesDiv)
+      }
+
+      if (hasClosure) {
+        cell.appendChild(closureBlock(date, dayGames, dayEvents, dayClosures))
       }
 
       grid.appendChild(cell)
@@ -1172,9 +1219,7 @@ if (container) {
 
       row.appendChild(el('div', 'cal-modal-teams', c.label))
       row.appendChild(el('div', 'cal-modal-hall', formatClosureRange(c.startDate, c.endDate)))
-      if (c.halls.length > 0) {
-        row.appendChild(el('div', 'cal-modal-hall', `${affectedHallsLabel}: ${c.halls.join(', ')}`))
-      }
+      row.appendChild(el('div', 'cal-modal-hall', `${affectedHallsLabel}: ${closureHallsLabel(c)}`))
 
       modal.appendChild(row)
     }

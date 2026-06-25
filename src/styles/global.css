@@ -3662,21 +3662,9 @@ button:focus-visible {
 }
 
 /* ── Hall closures ("Halle geschlossen") ──────────────────── */
-/* Muted slate so closures (incl. multi-week holidays) read as background
-   context and don't compete with the colored game / event chips. */
-.cal-entry--closure {
-  background: rgba(148, 163, 184, 0.18);
-  color: #cbd5e1;
-  border-left: 2px solid #94a3b8;
-}
-.light .cal-entry--closure {
-  background: rgba(100, 116, 139, 0.12);
-  color: #475569;
-}
-/* Closures carry no time/badge, so keep the label visible on mobile too
-   (games hide it for space) — a lone padlock would be ambiguous. */
-.cal-entry--closure .cal-entry-title { display: inline; }
-
+/* Closures no longer render as in-cell chips — they paint the whole day red
+   (see ".cal-cell--closed" below). The padlock icon is still used by the
+   toolbar show/hide toggle and the modal headers. */
 .cal-closure-icon {
   width: 11px;
   height: 11px;
@@ -3712,6 +3700,61 @@ button:focus-visible {
 .cal-closure-toggle.is-off {
   opacity: 0.55;
   text-decoration: line-through;
+}
+
+/* ── Full-day closure ("Halle geschlossen") ───────────────── */
+/* A closure paints the whole day red with the reason centered; affected halls
+   read underneath. Games/events (if any) still render as chips above this. */
+.cal-cell--closed {
+  display: flex;
+  flex-direction: column;
+  background: rgba(220, 38, 38, 0.16);
+}
+.light .cal-cell--closed {
+  background: rgba(220, 38, 38, 0.09);
+}
+.cal-closed-block {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 100%;
+  min-height: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: center;
+  padding: 0.125rem;
+  overflow: hidden;
+}
+.cal-closed-block:hover { opacity: 0.8; }
+.cal-closed-line { max-width: 100%; min-width: 0; }
+.cal-closed-reason {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #f87171;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.light .cal-closed-reason { color: #b91c1c; }
+.cal-closed-halls {
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #fca5a5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.light .cal-closed-halls { color: #dc2626; }
+@media (min-width: 640px) {
+  .cal-closed-reason { font-size: var(--text-xs); }
+  .cal-closed-halls { font-size: 10px; }
 }
 
 /* ── Scoreboard ──────────────────────────────────────────── */

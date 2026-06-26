@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.2.2] — 2026-06-26
+
+### Youth registration unblocked + confirmation screen fixed
+- The membership form silently refused to submit for younger applicants (under 23 volleyball / under 25 basketball): the AHV field of the *non-selected* sport stayed mandatory while hidden, so the browser blocked submission with no message at all — no confirmation email, no record was created. The AHV requirement now applies only to the sport actually selected, so youth sign-ups go through.
+- The "thank you" confirmation that appears after a successful sign-up was styled with page-scoped CSS that never matched the dynamically-created element, so it rendered invisibly — a successful submission looked like nothing happened. The confirmation now displays correctly.
+
 ## [1.2.1] — 2026-06-25
 
 ### Registration form captcha fixed

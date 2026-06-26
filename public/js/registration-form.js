@@ -421,8 +421,14 @@
 
   function updateAhvRequired() {
     var dobVal = dobInput ? dobInput.value : '';
-    var vbRequired = isUnderAge(dobVal, 23);
-    var bbRequired = isUnderAge(dobVal, 25);
+    var selected = form.querySelector('input[name="membership_type"]:checked');
+    var selType = selected ? selected.value : '';
+    // Only require the AHV field of the CURRENTLY SELECTED sport. Otherwise the
+    // other sport's AHV input — which sits in a display:none section — stays
+    // `required` while hidden, and the browser silently refuses to submit the
+    // form ("an invalid form control is not focusable"): no message, no log.
+    var vbRequired = selType === 'volleyball' && isUnderAge(dobVal, 23);
+    var bbRequired = selType === 'basketball' && isUnderAge(dobVal, 25);
     var vbAhv = document.getElementById('vb-ahv');
     var bbAhv = document.getElementById('bb-ahv');
     var vbGroup = document.getElementById('vb-ahv-group');

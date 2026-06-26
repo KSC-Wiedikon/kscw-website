@@ -29,6 +29,13 @@ const waitlistLabelKey = customLabel ? undefined : 'bbWaitlistLabel'
 const openForPlayers = !waitlistUrl && info.openForPlayers === true
 const contactHref = `/club/kontakt?sport=basketball${info.teamId ? `&teamId=${encodeURIComponent(info.teamId)}` : ''}`
 
+// Female youth teams (D-codes: DU18/DU16/…) get the feminine German badge
+// "Offen für neue Spielerinnen"; male (H) and mixed (M) keep "…Spieler". English
+// is gender-neutral, so bbTeamOpenF resolves to the same "Open for players".
+const openIsFemale = code.toUpperCase().startsWith('D')
+const openKey = openIsFemale ? 'bbTeamOpenF' : 'bbTeamOpen'
+const openText = openIsFemale ? 'Offen für neue Spielerinnen' : 'Offen für neue Spieler'
+
 // 0 = Monday … 6 = Sunday (Directus hall_slots convention). Page builds in DE;
 // the client toggle swaps these via weekdayLong<n> keys.
 const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
@@ -63,7 +70,7 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
   )}
   {openForPlayers && (
     <div class="youth-open">
-      <span class="youth-open-badge" data-i18n="bbTeamOpen">Offen für neue Spieler</span>
+      <span class="youth-open-badge" data-i18n={openKey}>{openText}</span>
       <a class="btn btn-outline btn-sm youth-open-btn" href={contactHref}>
         <span data-i18n="bbTeamOpenCta">Kontakt aufnehmen</span>
         <span aria-hidden="true">→</span>

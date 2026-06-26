@@ -79,11 +79,14 @@
   }
 
   // Not full + recruiting → green badge + contact link, prefilled to this team.
-  function buildOpen(o) {
+  // Female youth teams (D-codes) get the feminine German badge "…Spielerinnen";
+  // male (H) / mixed (M) keep "…Spieler". English is neutral (same key value).
+  function buildOpen(o, code) {
+    var female = String(code || '').charAt(0).toUpperCase() === 'D';
     var wrap = el('div', 'youth-open');
     var badge = el('span', 'youth-open-badge');
-    badge.setAttribute('data-i18n', 'bbTeamOpen');
-    badge.textContent = 'Offen für neue Spieler';
+    badge.setAttribute('data-i18n', female ? 'bbTeamOpenF' : 'bbTeamOpen');
+    badge.textContent = female ? 'Offen für neue Spielerinnen' : 'Offen für neue Spieler';
     var a = el('a', 'btn btn-outline btn-sm youth-open-btn');
     a.href = '/club/kontakt?sport=basketball' + (o.id ? '&teamId=' + encodeURIComponent(o.id) : '');
     var label = el('span');
@@ -119,7 +122,7 @@
       // A non-empty waitlist_url means "full" and wins over the open badge,
       // matching the build's `openForPlayers = !waitlistUrl && open` rule.
       if (w) meta.appendChild(buildWaitlist(w));
-      else if (o && o.open) meta.appendChild(buildOpen(o));
+      else if (o && o.open) meta.appendChild(buildOpen(o, code));
     }
 
     // Localise the freshly injected data-i18n nodes to the active language.

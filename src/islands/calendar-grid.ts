@@ -352,7 +352,22 @@ if (container) {
       const hn = c.hall?.name
       if (hn && !g.halls.includes(hn)) g.halls.push(hn)
     }
-    return Array.from(groups.values())
+    // Suppress redundant subset closures: if a broader closure already covers a
+    // narrower one's halls (e.g. a "Sommerferien / Alle Hallen" school-holiday
+    // closure over a generic "Halle geschlossen / KWI A, B, C"), show only the
+    // broader set. A school_holidays closure covers every hall, so it strictly
+    // contains any other group on that day.
+    const all = Array.from(groups.values())
+    const coverage = (g: ClosureGroup): 'ALL' | Set<string> =>
+      g.source === 'school_holidays' ? 'ALL'
+        : new Set(g.halls.length ? g.halls : ['KWI A', 'KWI B', 'KWI C'])
+    const strictlyContains = (a: 'ALL' | Set<string>, b: 'ALL' | Set<string>): boolean => {
+      if (a === 'ALL') return b !== 'ALL'        // ALL contains any non-ALL set
+      if (b === 'ALL') return false
+      return a.size > b.size && [...b].every(h => a.has(h))
+    }
+    const covers = all.map(coverage)
+    return all.filter((_, i) => !all.some((_, j) => j !== i && strictlyContains(covers[j], covers[i])))
   }
 
   // -- Filter games --

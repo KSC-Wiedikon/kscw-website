@@ -176,6 +176,9 @@ const youth = await getYouthBasketball();
   />
 
   <script src="../../../islands/scroll-animations.ts"></script>
+  <!-- Live open/waiting-list status — overrides the build-time render so
+       open_for_players + waitlist_url changes appear without a site rebuild. -->
+  <script is:inline src="/js/youth-status.js"></script>
 </PageLayout>
 
 <style>

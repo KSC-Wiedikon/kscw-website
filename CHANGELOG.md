@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.3.0] — 2026-06-26
+
+### Basketball youth: live open / waiting-list status
+- The basketball youth page (`/basketball/teams/nachwuchs`) baked each team's "Open for players" badge + contact link and the "Team full" / waiting-list button into the page at build time, so a change only showed after a full site rebuild. That status is now refreshed live in the browser from Directus: flipping a team's `open_for_players` (or setting a waiting-list link) appears immediately, no rebuild needed. The build-time render stays as the no-JS / instant-paint fallback.
+- Note: the "Team full" / waiting-list button still requires the `waitlist_url` field to be readable by Directus's **Public** role. It is currently locked, so those buttons stay hidden (both the page logic and the new live fetch handle this gracefully) until that read permission is granted — at which point they appear with no further code change.
+
 ## [1.2.2] — 2026-06-26
 
 ### Youth registration unblocked + confirmation screen fixed

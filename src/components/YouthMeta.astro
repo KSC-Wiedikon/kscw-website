@@ -33,7 +33,7 @@ const contactHref = `/club/kontakt?sport=basketball${info.teamId ? `&teamId=${en
 // the client toggle swaps these via weekdayLong<n> keys.
 const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
 ---
-<div class="youth-meta">
+<div class="youth-meta" data-team-code={code}>
   {info.slots.length > 0 && (
     <>
       <span class="youth-meta-label"><strong data-i18n="bbTrainingLabel">Training:</strong></span>
@@ -80,7 +80,12 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
     margin-top: var(--space-md);
     font-size: var(--text-sm);
   }
-  .youth-meta span {
+  /* Direct-child only: styles the training/coach lines. Must NOT reach the
+     nested badge/button spans inside .youth-open / .youth-waitlist — those are
+     styled by the global rules below, and a descendant `span` selector here
+     (scoped to a high-specificity `[cid] span[cid]`) would otherwise override
+     their colour/display on the build-rendered fallback rows. */
+  .youth-meta > span {
     display: flex;
     align-items: center;
     gap: var(--space-xs);
@@ -89,8 +94,16 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
   .youth-meta strong { color: var(--text-primary); }
   .youth-slot { padding-left: var(--space-md); }
 
-  /* Full-team waiting-list row. Rules are scoped under .youth-meta so they
-     win against the generic `.youth-meta span` colour/display above. */
+</style>
+
+<!-- Status-row styles are GLOBAL (unscoped) on purpose: the rows are rendered
+     identically whether the build emits them OR public/js/youth-status.js injects
+     them live in the browser. Astro scopes component <style> via a per-element
+     `data-astro-cid-*` attribute that dynamically-created nodes can't carry, so
+     scoped rules would leave JS-injected badges unstyled. Selectors stay under
+     `.youth-meta` to keep specificity (and to win over the generic
+     `.youth-meta span` colour/display rule above). -->
+<style is:global>
   .youth-meta .youth-waitlist {
     display: flex;
     flex-direction: row;

@@ -157,6 +157,14 @@
   }
 
   // ── Create team label element ───────────────────────────────────────
+  // Strip the club prefix from a full team name so labels read "KSCW H3"
+  // instead of "KSCW KSC Wiedikon H3" (rankings store the long form).
+  function shortenTeam(name) {
+    if (!name) return name;
+    var s = String(name).replace(/^KSCW\s+/i, '').replace(/KSC\s+Wiedikon\s*/i, '').trim();
+    return s || name;
+  }
+
   function createTeamLabel(teamShort, label) {
     var span = document.createElement('span');
     span.className = 'scoreboard-team-label';
@@ -216,12 +224,12 @@
 
     var btnAbs = document.createElement('button');
     btnAbs.type = 'button';
-    btnAbs.className = 'sport-tab active';
+    btnAbs.className = 'sport-tab';
     btnAbs.textContent = t('absolute');
 
     var btnPg = document.createElement('button');
     btnPg.type = 'button';
-    btnPg.className = 'sport-tab';
+    btnPg.className = 'sport-tab active';
     btnPg.textContent = t('perGame');
 
     toggleWrap.appendChild(btnAbs);
@@ -445,13 +453,13 @@
       // Build teamIdMap from teams collection (keyed by numeric id)
       for (var ti = 0; ti < teams.length; ti++) {
         var tm = teams[ti];
-        teamIdMap[String(tm.id)] = tm.name;
+        teamIdMap[String(tm.id)] = shortenTeam(tm.name);
       }
       // Also populate from rankings team_name for KSCW teams
       for (var ri = 0; ri < rankings.length; ri++) {
         var rk = rankings[ri];
         if (rk.team_id && rk.team_name && rk.team_name.indexOf('KSC Wiedikon') !== -1) {
-          teamIdMap[rk.team_id] = rk.team_name;
+          teamIdMap[rk.team_id] = shortenTeam(rk.team_name);
         }
       }
 

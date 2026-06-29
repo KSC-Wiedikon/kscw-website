@@ -288,6 +288,7 @@
 
   function selectNationality(name, code) {
     natHidden.value = name;
+    natHidden.dataset.code = code || '';
     natTriggerText.textContent = name;
     natWrapper.classList.remove('open');
     natSearch.value = '';
@@ -882,6 +883,7 @@
       ort: val('ort'),
       geburtsdatum: val('geburtsdatum'),
       nationalitaet: natHidden ? natHidden.value : '',
+      nationalitaet_code: natHidden ? (natHidden.dataset.code || '') : '',
       geschlecht: val('geschlecht'),
       bemerkungen: val('bemerkungen'),
       turnstile_token: turnstileToken,

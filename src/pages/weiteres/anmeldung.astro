@@ -3,6 +3,16 @@ import PageLayout from '../../layouts/PageLayout.astro';
 import { t } from '../../lib/i18n';
 
 const locale = 'de';
+
+// Zürich Kantonsschulen for the "other cantonal school" dropdown. Excludes
+// KS Wiedikon on purpose — that's the dedicated KWI option above (which stores
+// "KS Wiedikon"). Shown only when "Yes, other cantonal school" is selected.
+const KS_OTHER = [
+  'KS Birch', 'KS Büelrain', 'KS Bülach', 'KS Dübendorf', 'KS Enge',
+  'KS Freudenberg', 'KS Hottingen', 'KS Küsnacht', 'KS Limmattal', 'KS Oerlikon',
+  'KS Riesbach', 'KS Rychenberg', 'KS Rämibühl', 'KS Stadelhofen', 'KS Uster',
+  'KS Wetzikon', 'KS Zürich Nord', 'Liceo artistico',
+];
 ---
 <PageLayout
   title="Anmeldung — KSC Wiedikon"
@@ -164,8 +174,16 @@ const locale = 'de';
             <select id="kantonsschule-vb" name="kantonsschule_vb" class="form-select" data-conditional-required>
               <option value="" disabled selected>—</option>
               <option value="Nein" data-i18n="registrationKantonsschuleNo">{t(locale, 'registrationKantonsschuleNo')}</option>
-              <option value="KS Rämibühl" data-i18n="registrationKantonsschuleWiedikon">{t(locale, 'registrationKantonsschuleWiedikon')}</option>
+              <option value="KS Wiedikon" data-i18n="registrationKantonsschuleWiedikon">{t(locale, 'registrationKantonsschuleWiedikon')}</option>
               <option value="Andere Kantonsschule" data-i18n="registrationKantonsschuleOther">{t(locale, 'registrationKantonsschuleOther')}</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="ks-other-vb-group" style="display:none;">
+            <label for="ks-other-vb"><span data-i18n="registrationKantonsschuleWhich">{t(locale, 'registrationKantonsschuleWhich')}</span> *</label>
+            <select id="ks-other-vb" name="kantonsschule_other_vb" class="form-select">
+              <option value="" disabled selected>—</option>
+              {KS_OTHER.map((s) => <option value={s}>{s}</option>)}
             </select>
           </div>
 
@@ -247,8 +265,16 @@ const locale = 'de';
             <select id="kantonsschule-bb" name="kantonsschule_bb" class="form-select" data-conditional-required>
               <option value="" disabled selected>—</option>
               <option value="Nein" data-i18n="registrationKantonsschuleNo">{t(locale, 'registrationKantonsschuleNo')}</option>
-              <option value="KS Rämibühl" data-i18n="registrationKantonsschuleWiedikon">{t(locale, 'registrationKantonsschuleWiedikon')}</option>
+              <option value="KS Wiedikon" data-i18n="registrationKantonsschuleWiedikon">{t(locale, 'registrationKantonsschuleWiedikon')}</option>
               <option value="Andere Kantonsschule" data-i18n="registrationKantonsschuleOther">{t(locale, 'registrationKantonsschuleOther')}</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="ks-other-bb-group" style="display:none;">
+            <label for="ks-other-bb"><span data-i18n="registrationKantonsschuleWhich">{t(locale, 'registrationKantonsschuleWhich')}</span> *</label>
+            <select id="ks-other-bb" name="kantonsschule_other_bb" class="form-select">
+              <option value="" disabled selected>—</option>
+              {KS_OTHER.map((s) => <option value={s}>{s}</option>)}
             </select>
           </div>
 
@@ -432,7 +458,7 @@ const locale = 'de';
   </section>
 
   <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-  <script is:inline src="/js/registration-form.js?v=3.1.3"></script>
+  <script is:inline src="/js/registration-form.js?v=3.2.1"></script>
   <script src="../../islands/scroll-animations.ts"></script>
 </PageLayout>
 

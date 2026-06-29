@@ -288,6 +288,7 @@
 
   function selectNationality(name, code) {
     natHidden.value = name;
+    natHidden.dataset.code = code || '';
     natTriggerText.textContent = name;
     natWrapper.classList.remove('open');
     natSearch.value = '';
@@ -404,6 +405,32 @@
   }
   setupRefToggle('vb-ref-check', 'vb-ref-level-group', 'vb-ref-level');
   setupRefToggle('passive-vb-ref-check', 'passive-vb-ref-level-group', 'passive-vb-ref-level');
+
+  // ── Kantonsschule "which school" dropdown (VB + BB) ──────────
+  // Reveal the school picker only when "other cantonal school" is chosen. The
+  // picker is intentionally NOT data-conditional-required (a hidden required
+  // field silently blocks submit); requiredness is validated in JS on submit.
+  function setupKsOther(primaryId, groupId, otherId) {
+    var primary = document.getElementById(primaryId);
+    var group = document.getElementById(groupId);
+    var other = document.getElementById(otherId);
+    if (!primary || !group || !other) return;
+    primary.addEventListener('change', function () {
+      var show = primary.value === 'Andere Kantonsschule';
+      group.style.display = show ? '' : 'none';
+      if (!show) other.selectedIndex = 0;
+    });
+  }
+  setupKsOther('kantonsschule-vb', 'ks-other-vb-group', 'ks-other-vb');
+  setupKsOther('kantonsschule-bb', 'ks-other-bb-group', 'ks-other-bb');
+
+  // Resolve the kantonsschule value: the specific school when "other" is picked,
+  // otherwise the primary choice (Nein / KS Wiedikon).
+  function kantonsschuleValue(prefix) {
+    var primary = val('kantonsschule-' + prefix);
+    if (primary === 'Andere Kantonsschule') return val('ks-other-' + prefix) || primary;
+    return primary;
+  }
 
   // ── Age-based AHV required logic ───────────────────────────
   // AHV mandatory if under 23 (VB) or under 25 (BB)
@@ -821,6 +848,17 @@
       }
     }
 
+    // "Other cantonal school" picked but no specific school chosen.
+    if (type === 'volleyball' || type === 'basketball') {
+      var ksPrefix = type === 'volleyball' ? 'vb' : 'bb';
+      if (val('kantonsschule-' + ksPrefix) === 'Andere Kantonsschule' && !val('ks-other-' + ksPrefix)) {
+        logBlock('blocked: kantonsschule (other) not specified');
+        return showFeedback('error', locale === 'de'
+          ? 'Bitte wähle deine Kantonsschule.'
+          : 'Please select your cantonal school.');
+      }
+    }
+
     setLoading(true);
 
     // Build full phone number: "+41 79 123 45 67" format
@@ -845,6 +883,7 @@
       ort: val('ort'),
       geburtsdatum: val('geburtsdatum'),
       nationalitaet: natHidden ? natHidden.value : '',
+      nationalitaet_code: natHidden ? (natHidden.dataset.code || '') : '',
       geschlecht: val('geschlecht'),
       bemerkungen: val('bemerkungen'),
       turnstile_token: turnstileToken,
@@ -859,7 +898,7 @@
       payload.team = vbTeams.join(', ');
       payload.beitragskategorie = val('vb-fee');
       payload.ahv_nummer = val('vb-ahv');
-      payload.kantonsschule = val('kantonsschule-vb');
+      payload.kantonsschule = kantonsschuleValue('vb');
       var lizenzVbChecked = [];
       form.querySelectorAll('input[name="lizenz_vb"]:checked').forEach(function (cb) {
         lizenzVbChecked.push(cb.value);
@@ -879,7 +918,7 @@
       payload.team = bbTeams.join(', ');
       payload.beitragskategorie = val('bb-fee');
       payload.ahv_nummer = val('bb-ahv');
-      payload.kantonsschule = val('kantonsschule-bb');
+      payload.kantonsschule = kantonsschuleValue('bb');
       // BB licence: scorer (radio, single choice) + referee (checkbox, combinable)
       var bbLicParts = [];
       var scorerRadio = form.querySelector('input[name="bb_scorer_licence"]:checked');

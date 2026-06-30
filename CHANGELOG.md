@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.3.1] — 2026-06-30
+
+### Calendar: instant month navigation
+- The calendar re-fetched games and hall closures from Directus every time you changed month, flashing a loading spinner on each prev/next/today click. Both collections are small and bounded to the season, so the whole dataset now loads once when the page opens and month navigation is instant — no spinner, no refetch. (Newly entered games still appear after a page reload, as before.)
+
 ## [1.3.0] — 2026-06-26
 
 ### Basketball youth: live open / waiting-list status

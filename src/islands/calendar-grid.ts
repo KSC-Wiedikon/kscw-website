@@ -121,9 +121,14 @@ if (container) {
   let currentMonth = new Date()
   currentMonth.setDate(1)
   let games: DirectusGame[] = []
-  let fetchedRange = ''
   let closures: DirectusClosure[] = []
-  let fetchedClosureRange = ''
+  // Whole calendar dataset (games + closures) is fetched once up front, not per
+  // visible month — the collections are small (a few hundred rows spanning the
+  // season) so a single load makes month navigation instant with no spinner or
+  // refetch. buildCalendarGrid() / closureGroupsForDay() already filter the full
+  // arrays down to the rendered month, so loading everything needs no render
+  // changes. Flag guards against re-fetching on navigation / language switch.
+  let dataLoaded = false
   // Filter state
   let filterType = new Set(['home', 'away'])
   let filterSport = new Set(['volleyball', 'basketball'])
@@ -254,59 +259,24 @@ if (container) {
     }
   }
 
-  // -- Fetch games --
-  async function fetchGames(month: Date): Promise<void> {
-    const mStart = startOfMonth(month)
-    const mEnd = endOfMonth(month)
-    const gridStart = startOfWeek(mStart)
-    const gridEnd = endOfWeek(mEnd)
+  // -- Fetch all games + closures (once) --
+  // Both collections are small and bounded to the season range, so the entire
+  // dataset is loaded in one shot instead of a windowed query per visible month.
+  // Month navigation then never hits the network — buildCalendarGrid() filters
+  // these arrays down to the rendered grid. Runs once; the dataLoaded flag (set
+  // by the caller) short-circuits any later call.
+  async function fetchAllData(): Promise<void> {
+    const gameFields = encodeURIComponent('id,game_id,date,time,home_team,away_team,home_score,away_score,status,type,kscw_team.id,kscw_team.name,kscw_team.sport,kscw_team.color,hall.id,hall.name,hall.address')
+    const closureFields = encodeURIComponent('id,start_date,end_date,reason,source,hall.id,hall.name')
+    const gamesUrl = `${DIRECTUS_URL}/items/games?limit=-1&sort=date,time&fields=${gameFields}`
+    const closuresUrl = `${DIRECTUS_URL}/items/hall_closures?limit=-1&sort=start_date&fields=${closureFields}`
 
-    const from = toDateKey(gridStart)
-    const to = toDateKey(new Date(gridEnd.getFullYear(), gridEnd.getMonth(), gridEnd.getDate() + 1))
-    const rangeKey = `${from}_${to}`
-    if (rangeKey === fetchedRange) return
-    fetchedRange = rangeKey
-
-    try {
-      const filter = encodeURIComponent(JSON.stringify({ _and: [{ date: { _gte: from } }, { date: { _lt: to } }] }))
-      const fields = encodeURIComponent('id,game_id,date,time,home_team,away_team,home_score,away_score,status,type,kscw_team.id,kscw_team.name,kscw_team.sport,kscw_team.color,hall.id,hall.name,hall.address')
-      const url =
-        `${DIRECTUS_URL}/items/games?limit=-1&sort=date,time` +
-        `&filter=${filter}` +
-        `&fields=${fields}`
-      const res = await fetch(url)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      games = data.data || []
-    } catch {
-      games = []
-    }
-  }
-
-  // -- Fetch hall closures --
-  // Fetched client-side per visible range (like games) since the collection is
-  // large and growing. Overlap filter: a closure is in range when its span
-  // intersects the grid — start_date <= gridEnd AND end_date >= gridStart.
-  async function fetchClosures(month: Date): Promise<void> {
-    const gridStart = startOfWeek(startOfMonth(month))
-    const gridEnd = endOfWeek(endOfMonth(month))
-    const from = toDateKey(gridStart)
-    const to = toDateKey(gridEnd)
-    const rangeKey = `${from}_${to}`
-    if (rangeKey === fetchedClosureRange) return
-    fetchedClosureRange = rangeKey
-
-    try {
-      const filter = encodeURIComponent(JSON.stringify({ _and: [{ start_date: { _lte: to } }, { end_date: { _gte: from } }] }))
-      const fields = encodeURIComponent('id,start_date,end_date,reason,source,hall.id,hall.name')
-      const url = `${DIRECTUS_URL}/items/hall_closures?limit=-1&sort=start_date&filter=${filter}&fields=${fields}`
-      const res = await fetch(url)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      closures = data.data || []
-    } catch {
-      closures = []
-    }
+    const [gamesRes, closuresRes] = await Promise.allSettled([
+      fetch(gamesUrl).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+      fetch(closuresUrl).then(r => r.ok ? r.json() : Promise.reject(r.status)),
+    ])
+    games = gamesRes.status === 'fulfilled' ? (gamesRes.value.data || []) : []
+    closures = closuresRes.status === 'fulfilled' ? (closuresRes.value.data || []) : []
   }
 
   // Normalize the free-text reason: the gcal feed stores "Halle Geschlossen ",
@@ -968,14 +938,20 @@ if (container) {
     openDropdownIdx = -1
   }
 
-  // -- Full render (used for month navigation and initial load) --
+  // -- Full render (used for month navigation, language switch and initial load) --
   async function render(): Promise<void> {
     // Re-evaluate the active language + labels on every full render so a
     // client-side language switch is reflected without a page reload.
     computeLabels()
-    container!.textContent = ''
-    container!.appendChild(el('div', 'cal-loading', loadingLabel))
-    await Promise.all([fetchGames(currentMonth), fetchClosures(currentMonth)])
+    // Network fetch happens only on the very first render. Month navigation and
+    // language switches reuse the already-loaded dataset, so they rebuild
+    // instantly without a loading spinner or refetch.
+    if (!dataLoaded) {
+      container!.textContent = ''
+      container!.appendChild(el('div', 'cal-loading', loadingLabel))
+      await fetchAllData()
+      dataLoaded = true
+    }
 
     container!.textContent = ''
     container!.appendChild(renderToolbar())
@@ -1413,9 +1389,9 @@ if (container) {
   document.addEventListener('click', () => closeAllDropdowns())
 
   // Re-render in the new language when the user switches it client-side.
-  // `render()` re-runs computeLabels() and rebuilds the toolbar + grid;
-  // fetchGames() short-circuits on the already-fetched range (no refetch),
-  // and calEvents stays cached, so this is a pure relabel + rebuild.
+  // `render()` re-runs computeLabels() and rebuilds the toolbar + grid; the
+  // dataLoaded flag keeps it from refetching, and calEvents stays cached, so
+  // this is a pure relabel + rebuild.
   document.addEventListener('langChanged', () => { render() })
 
   // Initial load — wait for the i18n engine so the very first render is in the

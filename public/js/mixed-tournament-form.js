@@ -100,6 +100,15 @@
   TEAMS.forEach(function (t) { teamNameToChip[t.name] = t.chip; teamNameToChip[t.chip] = t.chip; });
 
   function fetchMemberNames() {
+    // SECURITY FOLLOW-UP (server-side): this UNAUTHENTICATED Directus Flow returns
+    // the full member directory (id, name, sex, teams, wiedisync_active) and so
+    // bypasses the scoped public members read (website_visible=true + adults only),
+    // leaking minors / opted-out members plus internal member ids. The real fix is
+    // in the Flow itself (not in this repo): scope it to the public policy —
+    // website_visible + adults, and drop `id`. Tracked as a follow-up. Note the
+    // member `id` is still used here for the already-signed-up check + submission
+    // linkage below, so it can only be dropped once the Flow returns an opaque
+    // lookup key instead. Do not widen this call's usage of the response.
     fetch(DIRECTUS_URL + '/flows/trigger/531dc3c2-64ec-4a7e-a989-da983d3530e4')
       .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
       .then(function (data) {

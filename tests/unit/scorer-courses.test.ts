@@ -25,9 +25,13 @@ describe('scorer-courses data', () => {
     expect(out.map(c => c.id)).toEqual(['soon', 'future', 'tba']);
   });
 
-  it('localeSlug returns the locale form slug or null', () => {
+  it('localeSlug returns the preferred slug, falling back to the other language', () => {
     expect(localeSlug(base, 'en')).toBe('schreiberkurs-2026-07-08-en');
-    expect(localeSlug(base, 'de')).toBeNull();
+    // DE form not built yet → intentionally falls back to the field-compatible
+    // EN form rather than hiding the sign-up button (see localeSlug docstring).
+    expect(localeSlug(base, 'de')).toBe('schreiberkurs-2026-07-08-en');
+    // null only when neither language has a form.
+    expect(localeSlug({ ...base, formSlugEn: null }, 'de')).toBeNull();
   });
 
   it('normalizeFormSlug extracts the bare slug from a full forms.kscw.ch URL', () => {

@@ -53,6 +53,15 @@
     return a;
   }
 
+  // Only allow http(s)/mailto (and root-relative) URLs into an href — a
+  // javascript: URL coming from Directus would otherwise be an XSS sink.
+  // Mirrors the href post-pass in news-modal.js. Returns '' for unsafe URLs.
+  function safeUrl(url) {
+    var u = String(url || '').trim();
+    if (/^https?:/i.test(u) || /^mailto:/i.test(u) || u.charAt(0) === '/') return u;
+    return '';
+  }
+
   // Full team → gold "Team voll" badge + waiting-list link. A custom label from
   // Directus renders verbatim; an empty label uses the localisable key.
   function buildWaitlist(w) {
@@ -61,9 +70,14 @@
     badge.setAttribute('data-i18n', 'bbTeamFull');
     badge.textContent = 'Team voll';
     var a = el('a', 'btn btn-outline btn-sm youth-waitlist-btn');
-    a.href = w.url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
+    // Validate the scheme before it reaches the href; an unsafe URL renders the
+    // label as a plain (non-clickable) element rather than as a link.
+    var href = safeUrl(w.url);
+    if (href) {
+      a.href = href;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+    }
     var label = el('span');
     if (w.label) {
       label.textContent = w.label;
@@ -100,6 +114,13 @@
   }
 
   function render(openRows, waitRows) {
+    // Only reconcile against live data when the fetch actually returned rows.
+    // On a fetch error / empty result both arrays are [], so we leave the
+    // server-rendered fallback badges in place rather than wiping every card's
+    // status. (waitRows alone may legitimately be [] — that's the expected 403
+    // while waitlist_url stays non-public — so the open fetch is what gates.)
+    if (!openRows.length && !waitRows.length) return;
+
     var open = {}, wait = {};
     openRows.forEach(function (t) {
       if (t && t.name) open[String(t.name).toUpperCase()] = { id: String(t.id), open: t.open_for_players === true };

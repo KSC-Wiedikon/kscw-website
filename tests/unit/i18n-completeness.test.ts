@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import de from '../../src/i18n/de.json';
-import en from '../../src/i18n/en.json';
+// The translation dictionaries live under public/js/i18n (loaded at runtime by
+// public/js/i18n.js and at build time via src/lib/i18n.ts) — not src/i18n.
+import de from '../../public/js/i18n/de.json';
+import en from '../../public/js/i18n/en.json';
 
 describe('i18n completeness', () => {
   const deKeys = Object.keys(de);

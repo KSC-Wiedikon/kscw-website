@@ -260,15 +260,22 @@ if (container) {
   }
 
   // -- Fetch all games + closures (once) --
-  // Both collections are small and bounded to the season range, so the entire
-  // dataset is loaded in one shot instead of a windowed query per visible month.
-  // Month navigation then never hits the network — buildCalendarGrid() filters
-  // these arrays down to the rendered grid. Runs once; the dataLoaded flag (set
-  // by the caller) short-circuits any later call.
+  // Both collections are small and bounded to the current/upcoming season, so
+  // the dataset is loaded in one shot instead of a windowed query per visible
+  // month. Month navigation then never hits the network — buildCalendarGrid()
+  // filters these arrays down to the rendered grid. Runs once; the dataLoaded
+  // flag (set by the caller) short-circuits any later call.
   async function fetchAllData(): Promise<void> {
     const gameFields = encodeURIComponent('id,game_id,date,time,home_team,away_team,home_score,away_score,status,type,kscw_team.id,kscw_team.name,kscw_team.sport,kscw_team.color,hall.id,hall.name,hall.address')
     const closureFields = encodeURIComponent('id,start_date,end_date,reason,source,hall.id,hall.name')
-    const gamesUrl = `${DIRECTUS_URL}/items/games?limit=-1&sort=date,time&fields=${gameFields}`
+    // Bound the games fetch to a rolling window (recent past → all future) so the
+    // payload can't grow without limit as historical fixtures pile up season over
+    // season. The calendar only surfaces the current/upcoming season; games older
+    // than a few months aren't worth loading on every page view.
+    const windowStart = new Date()
+    windowStart.setMonth(windowStart.getMonth() - 6)
+    const gamesFilter = encodeURIComponent(JSON.stringify({ date: { _gte: toDateKey(windowStart) } }))
+    const gamesUrl = `${DIRECTUS_URL}/items/games?limit=-1&sort=date,time&fields=${gameFields}&filter=${gamesFilter}`
     const closuresUrl = `${DIRECTUS_URL}/items/hall_closures?limit=-1&sort=start_date&fields=${closureFields}`
 
     const [gamesRes, closuresRes] = await Promise.allSettled([
@@ -343,6 +350,9 @@ if (container) {
   // -- Filter games --
   function applyFilters(gameList: DirectusGame[]): DirectusGame[] {
     return gameList.filter(g => {
+      // Skip games with a missing/invalid date: they can't be placed on the grid
+      // and would crash the `g.date.slice(0, 10)` bucketing below.
+      if (!g.date) return false
       if (!filterType.has(g.type)) return false
       const sport = getTeamSport(g)
       if (!filterSport.has(sport)) return false

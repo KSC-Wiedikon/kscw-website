@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { t, getLocaleFromUrl, getAlternateUrl } from '../../src/lib/i18n';
+import { t } from '../../src/lib/i18n';
 
+// NOTE: getLocaleFromUrl()/getAlternateUrl() were removed in the single-URL
+// refactor (commit 1f904a7). The site no longer routes locale via a /de//en/
+// path prefix — language lives in localStorage and is swapped client-side by
+// public/js/i18n.js — so those helpers (and their tests) no longer apply. The
+// t() guard below covers the surviving build-time i18n lookup API.
 describe('t()', () => {
   it('returns German string for DE locale', () => {
     expect(t('de', 'navClub')).toBe('Club');
@@ -17,33 +22,5 @@ describe('t()', () => {
 
   it('returns the key itself when not found in any locale', () => {
     expect(t('de', 'totallyFakeKey')).toBe('totallyFakeKey');
-  });
-});
-
-describe('getLocaleFromUrl()', () => {
-  it('returns de for /de/ paths', () => {
-    expect(getLocaleFromUrl(new URL('http://localhost/de/club/kontakt'))).toBe('de');
-  });
-
-  it('returns en for /en/ paths', () => {
-    expect(getLocaleFromUrl(new URL('http://localhost/en/club/kontakt'))).toBe('en');
-  });
-
-  it('defaults to de for unknown locale', () => {
-    expect(getLocaleFromUrl(new URL('http://localhost/fr/something'))).toBe('de');
-  });
-});
-
-describe('getAlternateUrl()', () => {
-  it('swaps /de/ to /en/', () => {
-    expect(getAlternateUrl(new URL('http://localhost/de/club/kontakt'))).toBe('/en/club/kontakt');
-  });
-
-  it('swaps /en/ to /de/', () => {
-    expect(getAlternateUrl(new URL('http://localhost/en/club/kontakt'))).toBe('/de/club/kontakt');
-  });
-
-  it('handles root locale paths', () => {
-    expect(getAlternateUrl(new URL('http://localhost/de/'))).toBe('/en/');
   });
 });

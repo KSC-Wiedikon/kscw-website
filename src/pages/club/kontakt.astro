@@ -298,6 +298,22 @@ const basketballContacts = contactPersons.filter(c => c.sport === 'basketball');
     max-height: 0;
     opacity: 0;
   }
+  /* Status note under the team dropdown (full / not-recruiting states). */
+  .team-recruiting-note {
+    margin: 0.5rem 0 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary, #6b7280);
+    line-height: 1.4;
+  }
+  .team-waitlist-link {
+    font-weight: 600;
+    color: var(--kscw-blue, #4A55A2);
+    text-decoration: underline;
+    white-space: nowrap;
+  }
+  .team-waitlist-link:hover {
+    opacity: 0.85;
+  }
   .form-feedback {
     padding: 0.875rem 1rem;
     border-radius: var(--radius-md, 8px);

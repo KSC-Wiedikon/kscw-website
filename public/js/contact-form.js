@@ -66,7 +66,7 @@
     var url = DIRECTUS_URL + '/items/teams'
       + '?filter[sport][_eq]=' + sport
       + '&filter[active][_eq]=true'
-      + '&fields=id,name,league,open_for_players'
+      + '&fields=id,name,league,open_for_players,waitlist_url,waitlist_label'
       + '&sort=name'
       + '&limit=-1';
 
@@ -134,10 +134,17 @@
     updateRecruitingNote();
   }
 
-  // ── "Not recruiting" note ─────────────────────────────────────────
-  // Shown under the team dropdown when the selected team isn't open for new
-  // players. Created lazily so we don't have to touch the kontakt markup.
+  // ── Team-status note (full / not recruiting) ──────────────────────
+  // Shown under the team dropdown. Three states, driven by the selected team:
+  //   • has a waitlist_url  → team is FULL: show a link to its waiting list and
+  //     BLOCK the contact submit — a full team must not generate a coach / BB
+  //     youth-coordinator email (the /kscw/contact backend enforces the same).
+  //   • open_for_players === false (no waitlist) → not actively recruiting:
+  //     advisory note only, submit stays enabled.
+  //   • otherwise → hidden, submit enabled.
+  // Created lazily so we don't have to touch the kontakt markup.
   var recruitingNote = null;
+  var teamBlocksSubmit = false;
 
   function ensureRecruitingNote() {
     if (recruitingNote || !teamGroup) return recruitingNote;
@@ -149,16 +156,49 @@
     return recruitingNote;
   }
 
+  // Only allow http(s)/mailto (and root-relative) URLs into an href — a
+  // javascript: URL coming from Directus would otherwise be an XSS sink.
+  function safeUrl(url) {
+    var u = String(url || '').trim();
+    if (/^https?:/i.test(u) || /^mailto:/i.test(u) || u.charAt(0) === '/') return u;
+    return '';
+  }
+
+  function setSubmitBlocked(blocked) {
+    teamBlocksSubmit = blocked;
+    if (submitBtn) submitBtn.disabled = blocked;
+  }
+
   function updateRecruitingNote() {
     var note = ensureRecruitingNote();
     if (!note) return;
     var team = teamSelect ? currentTeamsById[teamSelect.value] : null;
-    if (team && team.open_for_players === false) {
+    while (note.firstChild) note.removeChild(note.firstChild);
+
+    var waitlistUrl = team && team.waitlist_url ? safeUrl(team.waitlist_url) : '';
+    if (team && waitlistUrl) {
+      // Full team → offer the waiting list, block the contact submit.
+      var msg = document.createElement('span');
+      msg.textContent = i18n.t('contactTeamFullWaitlist', { team: team.name });
+      note.appendChild(msg);
+      note.appendChild(document.createTextNode(' '));
+      var a = document.createElement('a');
+      a.href = waitlistUrl;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.className = 'team-waitlist-link';
+      var lbl = team.waitlist_label ? String(team.waitlist_label).trim() : '';
+      a.textContent = lbl || i18n.t('contactWaitlistCta');
+      note.appendChild(a);
+      note.style.display = '';
+      setSubmitBlocked(true);
+    } else if (team && team.open_for_players === false) {
       note.textContent = i18n.t('contactTeamNotRecruiting', { team: team.name });
       note.style.display = '';
+      setSubmitBlocked(false);
     } else {
-      note.textContent = '';
       note.style.display = 'none';
+      setSubmitBlocked(false);
     }
   }
 
@@ -215,6 +255,9 @@
     ev.preventDefault();
     hideFeedback();
 
+    // Full team selected → the waiting-list link is the only path; never POST.
+    if (teamBlocksSubmit) return;
+
     var firstName = (document.getElementById('vorname').value || '').trim();
     var lastName = (document.getElementById('nachname').value || '').trim();
     var email = (document.getElementById('email').value || '').trim();
@@ -257,7 +300,12 @@
       }),
     })
       .then(function (r) {
-        if (!r.ok) return r.json().then(function (d) { throw new Error(d.message || i18n.t('contactError')); });
+        if (!r.ok) return r.json().then(function (d) {
+          // Team went full between page load and submit (stale cached page) —
+          // the backend rejects it; surface the waiting-list hint, not a raw error.
+          if (d && d.error === 'team_full') throw new Error(i18n.t('contactTeamFullError'));
+          throw new Error(d.message || i18n.t('contactError'));
+        });
         return r.json();
       })
       .then(function () {

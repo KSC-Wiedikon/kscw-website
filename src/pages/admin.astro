@@ -1396,6 +1396,17 @@ import '../styles/global.css';
         (item.bb_doc_natdecl ? '<div class="admin-field"><label>National Team Decl. (PDF)</label>' +
           '<a href="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.bb_doc_natdecl) + '" target="_blank" class="admin-btn admin-btn-sm">View</a></div>' : '') +
 
+        // Flag a non-Swiss basketball registration that is missing one of the two
+        // extra FIBA documents (Player's Self Declaration / National Team
+        // Declaration) — these are mandatory for non-Swiss players and used to
+        // slip through unnoticed. nationalitaet_code only present on newer rows;
+        // when absent we don't flag (avoids false positives on legacy records).
+        ((item.membership_type === 'basketball' &&
+          (item.nationalitaet_code || '').toUpperCase() &&
+          (item.nationalitaet_code || '').toUpperCase() !== 'CH' &&
+          (!item.bb_doc_selfdecl || !item.bb_doc_natdecl)) ?
+          '<div class="admin-field" style="grid-column:1/-1"><span style="color:#dc2626;font-weight:700">⚠ Missing required documents for a non-Swiss player (Player’s Self Declaration and/or National Team Declaration).</span></div>' : '') +
+
         '<div class="admin-modal-footer">' +
         '<button type="button" class="admin-btn" id="modal-cancel">' + t('cancel') + '</button>' +
 

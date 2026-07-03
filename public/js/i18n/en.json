@@ -592,7 +592,7 @@
   "registrationIDUpload": "Front and back of identity card or passport (image/PDF)",
   "registrationIDUploadNote": "Note: foreign residence permits are not accepted! Allowed formats: JPG, PNG, WebP, PDF (max. 10 MB).",
   "registrationIDFront": "Front side",
-  "registrationIDBack": "Back side (optional)",
+  "registrationIDBack": "Back side",
   "registrationBBDocs": "Documents for Swiss Basketball",
   "registrationBBDocsHint": "Download the templates — your data will be pre-filled automatically. Please check the details, fill in the remaining fields, sign and upload the documents below.",
   "registrationBBDocsLizenz": "Licence application (required)",

@@ -826,12 +826,47 @@
         logBlock('blocked: bb ID front missing');
         return showFeedback('error', i18n.t('registrationValidationID'));
       }
+      var back = document.getElementById('id-back');
+      if (back && !back.files.length) {
+        logBlock('blocked: bb ID back missing');
+        return showFeedback('error', locale === 'de'
+          ? 'Bitte lade auch die Rückseite deiner ID / deines Passes hoch.'
+          : 'Please also upload the back of your ID / passport.');
+      }
       var lizenzUpload = document.getElementById('bb-doc-lizenz-upload');
       if (lizenzUpload && !lizenzUpload.files.length) {
         logBlock('blocked: bb lizenzantrag upload missing');
         return showFeedback('error', locale === 'de'
           ? 'Bitte lade den unterschriebenen Lizenzantrag hoch.'
           : 'Please upload the signed licence application.');
+      }
+      // Nationality drives whether the two extra FIBA documents are required.
+      var natCode = natHidden ? (natHidden.dataset.code || '') : '';
+      if (!natCode) {
+        logBlock('blocked: bb nationality not selected');
+        return showFeedback('error', locale === 'de'
+          ? 'Bitte wähle deine Nationalität.'
+          : 'Please select your nationality.');
+      }
+      // Non-Swiss players must additionally upload the signed Player's Self
+      // Declaration + National Team Declaration (Swiss Basketball requirement):
+      // 5 documents in total instead of 3. Without this, a non-Swiss applicant
+      // could submit with only the 3 base documents and it went through silently.
+      if (natCode !== 'CH') {
+        var selfDecl = document.getElementById('bb-doc-selfdecl-upload');
+        if (selfDecl && !selfDecl.files.length) {
+          logBlock('blocked: bb self-declaration missing (non-Swiss)');
+          return showFeedback('error', locale === 'de'
+            ? 'Als nicht-Schweizer Spieler:in musst du zusätzlich die unterschriebene «Player’s Self Declaration» hochladen.'
+            : 'As a non-Swiss player you must also upload the signed "Player’s Self Declaration".');
+        }
+        var natDecl = document.getElementById('bb-doc-natdecl-upload');
+        if (natDecl && !natDecl.files.length) {
+          logBlock('blocked: bb national-team-declaration missing (non-Swiss)');
+          return showFeedback('error', locale === 'de'
+            ? 'Als nicht-Schweizer Spieler:in musst du zusätzlich die unterschriebene «National Team Declaration» hochladen.'
+            : 'As a non-Swiss player you must also upload the signed "National Team Declaration".');
+        }
       }
     }
 

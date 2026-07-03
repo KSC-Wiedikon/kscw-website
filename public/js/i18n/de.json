@@ -592,7 +592,7 @@
   "registrationIDUpload": "Vorder- und Rückseite von Identitätskarte oder Pass (Bild/PDF)",
   "registrationIDUploadNote": "Achtung, Ausländerausweis geht nicht! Erlaubte Formate: JPG, PNG, WebP, PDF (max. 10 MB).",
   "registrationIDFront": "Vorderseite",
-  "registrationIDBack": "Rückseite (optional)",
+  "registrationIDBack": "Rückseite",
   "registrationBBDocs": "Dokumente für Swiss Basketball",
   "registrationBBDocsHint": "Lade die Vorlagen herunter — deine Daten werden automatisch vorausgefüllt. Bitte überprüfe die Angaben, fülle die fehlenden Felder aus, unterschreibe und lade die Dokumente unten wieder hoch.",
   "registrationBBDocsLizenz": "Lizenzantrag (Pflicht)",

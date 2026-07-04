@@ -870,5 +870,13 @@
   "weekdayLong3": "Thursday",
   "weekdayLong4": "Friday",
   "weekdayLong5": "Saturday",
-  "weekdayLong6": "Sunday"
+  "weekdayLong6": "Sunday",
+  "regDocsMetaTitle": "Submit documents — KSC Wiedikon",
+  "regDocsMetaDescription": "Securely submit missing documents for your KSC Wiedikon registration.",
+  "regDocsTitle": "Submit documents",
+  "regDocsSubtitle": "Upload missing registration documents securely",
+  "regDocsIntro": "Enter the reference number from your registration confirmation (e.g. REG-2026-1234) and the email address used in the registration.",
+  "regDocsRef": "Reference number",
+  "regDocsEmail": "Email address",
+  "regDocsCheck": "Find registration"
 }

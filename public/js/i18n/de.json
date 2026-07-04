@@ -870,5 +870,13 @@
   "weekdayLong3": "Donnerstag",
   "weekdayLong4": "Freitag",
   "weekdayLong5": "Samstag",
-  "weekdayLong6": "Sonntag"
+  "weekdayLong6": "Sonntag",
+  "regDocsMetaTitle": "Dokumente nachreichen — KSC Wiedikon",
+  "regDocsMetaDescription": "Fehlende Dokumente zu deiner KSC-Wiedikon-Anmeldung sicher nachreichen.",
+  "regDocsTitle": "Dokumente nachreichen",
+  "regDocsSubtitle": "Fehlende Anmelde-Dokumente sicher hochladen",
+  "regDocsIntro": "Gib die Referenznummer aus deiner Anmelde-Bestätigung (z. B. REG-2026-1234) und die E-Mail-Adresse der Anmeldung ein.",
+  "regDocsRef": "Referenznummer",
+  "regDocsEmail": "E-Mail-Adresse",
+  "regDocsCheck": "Anmeldung suchen"
 }

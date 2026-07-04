@@ -979,28 +979,67 @@
       if (passiveRefLevel) payload.schiedsrichter_stufe = passiveRefLevel;
     }
 
-    // Step 1: Create registration (JSON)
-    fetch(DIRECTUS_URL + '/kscw/registration', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
+    // Documents FIRST, registration second: the server refuses a basketball
+    // registration whose document ids are missing (docs_required), so wait for
+    // the eager uploads (started on file pick) and put their ids into the
+    // create payload. No more create-then-upload window — a failed upload
+    // means NO registration is created and the user can simply retry.
+    var docsReady = Promise.resolve();
+    if (type === 'basketball') {
+      docsReady = collectDocIds().then(function (docIds) {
+        for (var dk in docIds) payload[dk] = docIds[dk];
+      });
+    }
+
+    docsReady
+      .then(function () {
+        return fetch(DIRECTUS_URL + '/kscw/registration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+      })
       .then(function (r) {
         if (!r.ok) return r.json().then(function (d) { throw new Error(d.message || d.error || i18n.t('registrationError')); });
         return r.json();
       })
       .then(function (data) {
-        // Step 2: Upload files for basketball (if any)
-        if (type === 'basketball') {
-          return uploadIDFiles(data.id, data.reference_number);
+        // Belt-and-braces vs deploy-order skew: ALSO link the documents via the
+        // attach route. An old backend (ignores doc ids at create) applies them
+        // here; the new backend idempotently re-sets the same ids. Non-fatal —
+        // logged if it ever fails so it shows up in the error log.
+        if (type === 'basketball' && data && data.id) {
+          var linkBody = { reference_number: data.reference_number };
+          var haveDocs = false;
+          for (var lk in docUploads) {
+            if (docUploads[lk] && docUploads[lk].fileId) { linkBody[lk] = docUploads[lk].fileId; haveDocs = true; }
+          }
+          if (haveDocs) {
+            return fetch(DIRECTUS_URL + '/kscw/registration/' + data.id + '/files', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(linkBody),
+            }).then(function (lr) {
+              if (!lr.ok) logBlock('doc link fallback failed: HTTP ' + lr.status);
+            }).catch(function (le) {
+              logBlock('doc link fallback failed: ' + (le && le.message ? le.message : 'unknown'));
+            });
+          }
         }
       })
       .then(function () {
         showFeedback('success', i18n.t('registrationSuccess'));
         form.reset();
         // Reset custom UI
+        docUploads = {};
+        var stEls = form.querySelectorAll('.doc-upload-status');
+        for (var si = 0; si < stEls.length; si++) stEls[si].textContent = '';
         if (natTriggerText) natTriggerText.textContent = '—';
-        if (natHidden) natHidden.value = '';
+        if (natHidden) { natHidden.value = ''; delete natHidden.dataset.code; }
+        // Back to the pre-selection default: FIBA doc rows hidden until a
+        // nationality is picked again (updateForeignDocs('') would SHOW them).
+        var fdRows = document.querySelectorAll('.bb-doc-foreign');
+        for (var fdi = 0; fdi < fdRows.length; fdi++) fdRows[fdi].style.display = 'none';
         if (phoneCode) phoneCode.value = 'CH';
         vbFields.style.display = 'none';
         bbFields.style.display = 'none';
@@ -1046,62 +1085,126 @@
     }
   }
 
-  function uploadIDFiles(registrationId, referenceNumber) {
-    var frontFile = document.getElementById('id-front').files[0];
-    var backEl = document.getElementById('id-back');
-    var backFile = backEl ? backEl.files[0] : null;
+  // ── Eager document upload ───────────────────────────────────
+  // Each document uploads to /files the moment it is picked, with inline
+  // status feedback next to the input. A failed upload (wrong type, too
+  // large, network/Safari blob errors) is visible IMMEDIATELY — before
+  // submit — and re-picking the file retries. At submit, collectDocIds()
+  // waits for in-flight uploads and hands the file ids to the create call.
+  var DOC_INPUTS = [
+    { id: 'id-front', key: 'id_upload_front' },
+    { id: 'id-back', key: 'id_upload_back' },
+    { id: 'bb-doc-lizenz-upload', key: 'bb_doc_lizenz' },
+    { id: 'bb-doc-selfdecl-upload', key: 'bb_doc_selfdecl' },
+    { id: 'bb-doc-natdecl-upload', key: 'bb_doc_natdecl' },
+  ];
+  var docUploads = {}; // key → { promise, fileId, error }
 
-    // BB document uploads
-    var lizenzDocEl = document.getElementById('bb-doc-lizenz-upload');
-    var selfDeclDocEl = document.getElementById('bb-doc-selfdecl-upload');
-    var natDeclDocEl = document.getElementById('bb-doc-natdecl-upload');
-    var lizenzDoc = lizenzDocEl ? lizenzDocEl.files[0] : null;
-    var selfDeclDoc = selfDeclDocEl ? selfDeclDocEl.files[0] : null;
-    var natDeclDoc = natDeclDocEl ? natDeclDocEl.files[0] : null;
+  function docStatusEl(input) {
+    var el = input.nextElementSibling;
+    if (el && el.className === 'doc-upload-status') return el;
+    el = document.createElement('small');
+    el.className = 'doc-upload-status';
+    el.style.display = 'block';
+    el.style.marginTop = '4px';
+    input.parentNode.insertBefore(el, input.nextSibling);
+    return el;
+  }
 
-    var allFiles = [frontFile, backFile, lizenzDoc, selfDeclDoc, natDeclDoc].filter(Boolean);
-    if (!allFiles.length) return Promise.resolve();
-
-    // Validate all files before uploading
-    for (var vi = 0; vi < allFiles.length; vi++) validateFile(allFiles[vi]);
-
-    // Upload all files in parallel
-    var uploads = [];
-    var uploadKeys = [];
-    if (frontFile) { uploads.push(uploadSingleFile(frontFile)); uploadKeys.push('id_upload_front'); }
-    if (backFile) { uploads.push(uploadSingleFile(backFile)); uploadKeys.push('id_upload_back'); }
-    if (lizenzDoc) { uploads.push(uploadSingleFile(lizenzDoc)); uploadKeys.push('bb_doc_lizenz'); }
-    if (selfDeclDoc) { uploads.push(uploadSingleFile(selfDeclDoc)); uploadKeys.push('bb_doc_selfdecl'); }
-    if (natDeclDoc) { uploads.push(uploadSingleFile(natDeclDoc)); uploadKeys.push('bb_doc_natdecl'); }
-
-    return Promise.all(uploads).then(function (fileIds) {
-      var body = { reference_number: referenceNumber };
-      for (var ki = 0; ki < uploadKeys.length; ki++) {
-        body[uploadKeys[ki]] = fileIds[ki];
-      }
-
-      return fetch(DIRECTUS_URL + '/kscw/registration/' + registrationId + '/files', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+  function startDocUpload(input, key) {
+    var file = input.files[0];
+    var st = docStatusEl(input);
+    if (!file) {
+      delete docUploads[key];
+      st.textContent = '';
+      return;
+    }
+    try {
+      validateFile(file);
+    } catch (e) {
+      input.value = '';
+      delete docUploads[key];
+      st.textContent = '✗ ' + e.message;
+      st.style.color = '#b91c1c';
+      return;
+    }
+    st.textContent = locale === 'de' ? 'Wird hochgeladen…' : 'Uploading…';
+    st.style.color = '';
+    var entry = { promise: null, fileId: null, error: null };
+    entry.promise = uploadSingleFile(file)
+      .then(function (fid) {
+        entry.fileId = fid;
+        st.textContent = locale === 'de' ? '✓ Hochgeladen' : '✓ Uploaded';
+        st.style.color = '#15803d';
+      })
+      .catch(function (err) {
+        entry.error = err;
+        // Clear the input so re-picking the SAME file still fires `change`
+        // (Chromium/Safari skip the event when the selection is identical) —
+        // otherwise the retry instruction dead-ends.
+        input.value = '';
+        st.textContent = locale === 'de'
+          ? '✗ Upload fehlgeschlagen — bitte Datei erneut auswählen.'
+          : '✗ Upload failed — please pick the file again.';
+        st.style.color = '#b91c1c';
+        logBlock('doc eager-upload failed (' + key + '): ' + (err && err.message ? err.message : 'unknown'));
       });
+    docUploads[key] = entry;
+  }
+
+  DOC_INPUTS.forEach(function (d) {
+    var el = document.getElementById(d.id);
+    if (el) el.addEventListener('change', function () { startDocUpload(el, d.key); });
+  });
+
+  // Resolve every picked document to its uploaded file id, waiting for
+  // in-flight uploads; throws (localized) when any picked file has no id.
+  function collectDocIds() {
+    var pending = [];
+    var results = {};
+    var failed = false;
+    DOC_INPUTS.forEach(function (d) {
+      var el = document.getElementById(d.id);
+      if (!el || !el.files.length) return;
+      var entry = docUploads[d.key];
+      if (!entry || entry.error) {
+        // Change listener missed, or the eager upload failed and the user
+        // re-picked without a change event — retry the upload now.
+        startDocUpload(el, d.key);
+        entry = docUploads[d.key];
+      }
+      if (!entry) { failed = true; return; }
+      pending.push(entry.promise.then(function () {
+        if (entry.fileId) results[d.key] = entry.fileId;
+        else failed = true;
+      }));
+    });
+    return Promise.all(pending).then(function () {
+      if (failed) {
+        throw new Error(locale === 'de'
+          ? 'Ein Dokument konnte nicht hochgeladen werden — bitte wähle die Datei erneut aus und versuche es nochmals.'
+          : 'A document could not be uploaded — please re-select the file and try again.');
+      }
+      return results;
     });
   }
 
   function uploadSingleFile(file) {
-    var fd = new FormData();
-    fd.append('file', file);
-    fd.append('folder', 'registrations');
-    return fetch(DIRECTUS_URL + '/files', {
+    // Dedicated registration-upload endpoint: the file is created inside the
+    // PRIVATE registration folder server-side (never anon-readable, unlike the
+    // old anonymous POST /files which left folder-less files), with MIME/size
+    // enforced by the backend too.
+    return fetch(DIRECTUS_URL + '/kscw/registration/upload?filename=' + encodeURIComponent(file.name || 'document'), {
       method: 'POST',
-      body: fd,
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
     })
       .then(function (r) {
         if (!r.ok) throw new Error('File upload failed');
         return r.json();
       })
       .then(function (data) {
-        return data.data.id;
+        return data.id;
       });
   }
 

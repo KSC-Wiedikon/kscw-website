@@ -1,0 +1,61 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import { t } from '../../lib/i18n';
+
+const locale = 'de';
+---
+<PageLayout
+  title="Dokumente nachreichen — KSC Wiedikon"
+  titleKey="regDocsMetaTitle"
+  description="Fehlende Dokumente zu deiner KSC-Wiedikon-Anmeldung sicher nachreichen."
+  descriptionKey="regDocsMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'regDocsTitle')}
+  pageTitleKey="regDocsTitle"
+  pageSubtitle={t(locale, 'regDocsSubtitle')}
+  pageSubtitleKey="regDocsSubtitle"
+>
+  <section class="section">
+    <div class="container" style="max-width: 640px;">
+      <p style="color: var(--text-secondary); margin-bottom: var(--space-lg);" data-i18n="regDocsIntro">{t(locale, 'regDocsIntro')}</p>
+
+      <form id="docstatus-form">
+        <div class="form-group">
+          <label for="docs-ref"><span data-i18n="regDocsRef">{t(locale, 'regDocsRef')}</span> *</label>
+          <input type="text" id="docs-ref" name="reference" placeholder="REG-2026-1234" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="docs-email"><span data-i18n="regDocsEmail">{t(locale, 'regDocsEmail')}</span> *</label>
+          <input type="email" id="docs-email" name="email" required autocomplete="email">
+        </div>
+        <button type="submit" class="form-submit" id="docs-check-btn" data-i18n="regDocsCheck">{t(locale, 'regDocsCheck')}</button>
+      </form>
+
+      <div id="docs-feedback" style="display: none; margin-top: var(--space-md);"></div>
+      <div id="docs-slots" style="display: none; margin-top: var(--space-lg);"></div>
+    </div>
+  </section>
+
+  <script is:inline src="/js/anmeldung-dokumente.js?v=1.0.0"></script>
+</PageLayout>
+
+<style>
+  .form-group {
+    margin-bottom: var(--space-md);
+  }
+  .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: var(--space-xs);
+  }
+  .form-group input[type='text'],
+  .form-group input[type='email'] {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--border-color, #d1d5db);
+    border-radius: 8px;
+    font-size: var(--text-base);
+    background: var(--bg-primary, #fff);
+    color: var(--text-primary, #111);
+  }
+</style>

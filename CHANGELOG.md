@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.5.1] — 2026-07-06
+
+### Calendar: numbered referees
+- Referees in the game popup are now listed one per line with their official role — "1. Schiedsrichter" / "2. Schiedsrichter" (EN: "1st referee" / "2nd referee") — instead of a single comma-joined row.
+
 ## [1.5.0] — 2026-07-06
 
 ### Calendar: full game details

@@ -2,6 +2,14 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.5.0] — 2026-07-06
+
+### Calendar: full game details
+- The game detail popup in the calendar now shows the league, the official game number (Swiss Volley / Basketplan) and — for volleyball — the assigned referees. Referee data comes live from Directus (`games.referees_json`, now publicly readable); new-season games show no referees until Swiss Volley publishes the assignments.
+
+### Scorer courses: 2026 materials
+- The four separate PDF/PPT download cards (DE + EN each) are replaced by two cards linking the new 2026 course files: the course materials PDF and the course presentation (PowerPoint on Google Slides).
+
 ## [1.4.0] — 2026-07-06
 
 ### Scorer courses: fully editable in the admin panel

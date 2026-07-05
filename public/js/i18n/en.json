@@ -562,6 +562,8 @@
   "registrationAHVNote": "This information is required for us to receive federal subsidies in youth categories.",
   "registrationFeeCategory": "Fee category",
   "registrationFeeCategoryPlaceholder": "Select category…",
+  "registrationPassiveFeeStandard": "Passive member",
+  "registrationPassiveFeeGratis": "Free (referee / official)",
   "registrationKantonsschule": "Are you a student or alumnus/alumna of a Zurich cantonal school?",
   "registrationKantonsschuleNo": "No",
   "registrationKantonsschuleWiedikon": "Yes, Kantonsschule Wiedikon",

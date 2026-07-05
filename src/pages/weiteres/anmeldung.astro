@@ -367,6 +367,14 @@ const KS_OTHER = [
         <!-- ═══ PASSIVE-ONLY FIELDS ═══ -->
         <div id="passive-fields" style="display: none;">
           <div class="form-group">
+            <label for="passive-fee"><span data-i18n="registrationFeeCategory">{t(locale, 'registrationFeeCategory')}</span> *</label>
+            <select id="passive-fee" name="passive_fee" class="form-select" data-conditional-required>
+              <option value="" disabled selected data-i18n="registrationFeeCategoryPlaceholder">{t(locale, 'registrationFeeCategoryPlaceholder')}</option>
+              <option value="Passivmitglied" data-i18n="registrationPassiveFeeStandard">{t(locale, 'registrationPassiveFeeStandard')}</option>
+              <option value="Gratis" data-i18n="registrationPassiveFeeGratis">{t(locale, 'registrationPassiveFeeGratis')}</option>
+            </select>
+          </div>
+          <div class="form-group">
             <label data-i18n="registrationPassiveLicenceVB">{t(locale, 'registrationPassiveLicenceVB')}</label>
             <div class="toggle-group">
               <label class="toggle-label">
@@ -458,7 +466,7 @@ const KS_OTHER = [
   </section>
 
   <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-  <script is:inline src="/js/registration-form.js?v=3.3.0"></script>
+  <script is:inline src="/js/registration-form.js?v=3.4.0"></script>
   <script src="../../islands/scroll-animations.ts"></script>
 </PageLayout>
 

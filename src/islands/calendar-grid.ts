@@ -22,6 +22,8 @@ interface DirectusGame {
   away_score: number
   status: string
   type: string
+  league?: string | null
+  referees_json?: Array<{ name: string; id?: number }> | null
   kscw_team?: DirectusTeam | null
   hall?: { id: number; name: string; address: string; city?: string; maps_url?: string } | null
 }
@@ -266,7 +268,7 @@ if (container) {
   // filters these arrays down to the rendered grid. Runs once; the dataLoaded
   // flag (set by the caller) short-circuits any later call.
   async function fetchAllData(): Promise<void> {
-    const gameFields = encodeURIComponent('id,game_id,date,time,home_team,away_team,home_score,away_score,status,type,kscw_team.id,kscw_team.name,kscw_team.sport,kscw_team.color,hall.id,hall.name,hall.address')
+    const gameFields = encodeURIComponent('id,game_id,date,time,home_team,away_team,home_score,away_score,status,type,league,referees_json,kscw_team.id,kscw_team.name,kscw_team.sport,kscw_team.color,hall.id,hall.name,hall.address')
     const closureFields = encodeURIComponent('id,start_date,end_date,reason,source,hall.id,hall.name')
     // Bound the games fetch to a rolling window (recent past → all future) so the
     // payload can't grow without limit as historical fixtures pile up season over
@@ -544,6 +546,23 @@ if (container) {
       const mapsUrl = hall?.maps_url
         || `https://maps.google.com/?q=${encodeURIComponent(hallAddr)}`
       infoList.appendChild(makeInfoRowLink('\uD83D\uDCCD', hallAddr, mapsUrl))
+    }
+
+    // League + official game number (Swiss Volley / Basketplan id without the
+    // vb_/bb_ source prefix)
+    if (g.league) infoList.appendChild(makeInfoRow('\uD83C\uDFC6', g.league))
+    const gameNo = g.game_id ? String(g.game_id).replace(/^(vb|bb)_/, '') : ''
+    if (gameNo) {
+      infoList.appendChild(makeInfoRow('#\uFE0F\u20E3', `${lang === 'de' ? 'Spiel-Nr.' : 'Game no.'} ${gameNo}`))
+    }
+
+    // Referees (volleyball; filled by the Swiss Volley sync \u2014 new-season games
+    // stay empty until SV publishes the assignments)
+    if (Array.isArray(g.referees_json) && g.referees_json.length > 0) {
+      const names = g.referees_json.map((r) => r?.name).filter(Boolean).join(', ')
+      if (names) {
+        infoList.appendChild(makeInfoRow('\uD83D\uDE4B', `${lang === 'de' ? 'Schiedsrichter' : 'Referees'}: ${names}`))
+      }
     }
 
     // Status

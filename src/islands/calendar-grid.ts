@@ -557,12 +557,16 @@ if (container) {
     }
 
     // Referees (volleyball; filled by the Swiss Volley sync \u2014 new-season games
-    // stay empty until SV publishes the assignments)
-    if (Array.isArray(g.referees_json) && g.referees_json.length > 0) {
-      const names = g.referees_json.map((r) => r?.name).filter(Boolean).join(', ')
-      if (names) {
-        infoList.appendChild(makeInfoRow('\uD83D\uDE4B', `${lang === 'de' ? 'Schiedsrichter' : 'Referees'}: ${names}`))
-      }
+    // stay empty until SV publishes the assignments). Array order is the
+    // official role order: index 0 = 1st referee, 1 = 2nd, 2 = 3rd.
+    if (Array.isArray(g.referees_json)) {
+      g.referees_json.forEach((r, i) => {
+        if (!r?.name) return
+        const label = lang === 'de'
+          ? `${i + 1}. Schiedsrichter`
+          : `${['1st', '2nd', '3rd'][i] || `${i + 1}.`} referee`
+        infoList.appendChild(makeInfoRow('\uD83D\uDE4B', `${label}: ${r.name}`))
+      })
     }
 
     // Status

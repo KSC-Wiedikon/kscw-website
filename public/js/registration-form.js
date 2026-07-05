@@ -486,6 +486,7 @@
     // Toggle required attributes based on type
     toggleRequired(vbFields, type === 'volleyball');
     toggleRequired(bbFields, type === 'basketball');
+    if (passiveFields) toggleRequired(passiveFields, type === 'passive');
 
     // AHV required only if under 25 (override the conditional-required)
     updateAhvRequired();
@@ -965,6 +966,9 @@
 
     if (type === 'passive') {
       payload.anrede = anredeHidden ? anredeHidden.value : '';
+      // Fee category: "Passivmitglied" (paying) or "Gratis" (referees/officials).
+      // Fallback covers cached pages that predate the #passive-fee select.
+      payload.beitragskategorie = val('passive-fee') || 'Passivmitglied';
       var lizenzPassive = [];
       form.querySelectorAll('input[name="lizenz_passive"]:checked').forEach(function (cb) {
         lizenzPassive.push(cb.value);

@@ -562,6 +562,8 @@
   "registrationAHVNote": "Diese Angabe benötigen wir zwingend, um in den Jugendkategorien Subventionen vom Bund zu erhalten.",
   "registrationFeeCategory": "Beitragskategorie",
   "registrationFeeCategoryPlaceholder": "Kategorie auswählen…",
+  "registrationPassiveFeeStandard": "Passivmitglied",
+  "registrationPassiveFeeGratis": "Gratis (Schiedsrichter:in / Funktionär:in)",
   "registrationKantonsschule": "Bist du Schüler:in oder Ehemalige:r einer Zürcher Kantonsschule?",
   "registrationKantonsschuleNo": "Nein",
   "registrationKantonsschuleWiedikon": "Ja, Kantonsschule Wiedikon",

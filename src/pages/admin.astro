@@ -209,6 +209,9 @@ import '../styles/global.css';
         scModeInPerson: 'Vor Ort',
         scModeRecorded: 'Aufzeichnung',
         scModeBoth: 'Vor Ort oder Aufzeichnung',
+        scLocation: 'Ort / Adresse (leer = ausgeblendet)',
+        scHostNote: 'Hinweis «Hosted by / Powered by» (leer = ausgeblendet)',
+        scDurationHours: 'Dauer in Stunden (für Kalendereintrag)',
         scFormSlugDe: 'OpnForm-Slug (DE)',
         scFormSlugEn: 'OpnForm-Slug (EN)',
         scActive: 'Aktiv',
@@ -324,6 +327,9 @@ import '../styles/global.css';
         scModeInPerson: 'In person',
         scModeRecorded: 'Recording',
         scModeBoth: 'In person or recording',
+        scLocation: 'Location / address (empty = hidden)',
+        scHostNote: '"Hosted by / Powered by" note (empty = hidden)',
+        scDurationHours: 'Duration in hours (for calendar entry)',
         scFormSlugDe: 'OpnForm slug (DE)',
         scFormSlugEn: 'OpnForm slug (EN)',
         scActive: 'Active',
@@ -2128,6 +2134,11 @@ import '../styles/global.css';
         });
         scModeHtml += '</select></div>';
         formHtml += scModeHtml;
+        // New courses prefill the usual venue/host; saved value is literal —
+        // clearing a field hides that line on the public card.
+        formHtml += fieldInput('location', t('scLocation'), item ? (item.location || '') : 'Sportanlage Irchel (Theory Room), Winterthurerstrasse 190, 8057 Zürich');
+        formHtml += fieldInput('host_note', t('scHostNote'), item ? (item.host_note || '') : 'Hosted by VBC Spada, Powered by KSC Wiedikon');
+        formHtml += fieldNumber('duration_hours', t('scDurationHours'), item ? item.duration_hours : 4, { step: '0.5' });
         formHtml += fieldInput('form_slug_de', t('scFormSlugDe'), item ? (item.form_slug_de || '') : '', { placeholder: 'scorer-2026-07-08-de' });
         formHtml += fieldInput('form_slug_en', t('scFormSlugEn'), item ? (item.form_slug_en || '') : '', { placeholder: 'scorer-2026-07-08-en' });
         formHtml += fieldNumber('sort', t('scSort'), item ? item.sort : 0);
@@ -2585,6 +2596,10 @@ import '../styles/global.css';
           payload.date_iso = form.querySelector('[name="date_iso"]').value || null;
           payload.time = form.querySelector('[name="time"]').value.trim() || null;
           payload.mode = form.querySelector('[name="mode"]').value;
+          payload.location = form.querySelector('[name="location"]').value.trim() || null;
+          payload.host_note = form.querySelector('[name="host_note"]').value.trim() || null;
+          var scDuration = form.querySelector('[name="duration_hours"]').value;
+          payload.duration_hours = scDuration && Number(scDuration) > 0 ? Number(scDuration) : null;
           payload.form_slug_de = normalizeFormSlug(form.querySelector('[name="form_slug_de"]').value) || null;
           payload.form_slug_en = normalizeFormSlug(form.querySelector('[name="form_slug_en"]').value) || null;
           var scSortVal = form.querySelector('[name="sort"]').value;
@@ -2699,10 +2714,11 @@ import '../styles/global.css';
       html += '</select></div>';
       return html;
     }
-    function fieldNumber(name, label, value) {
+    function fieldNumber(name, label, value, opts) {
+      var step = (opts && opts.step) ? ' step="' + escapeAttr(opts.step) + '"' : '';
       return '<div class="admin-field">' +
         '<label for="f-' + name + '">' + escapeHtml(label) + '</label>' +
-        '<input type="number" name="' + name + '" id="f-' + name + '" value="' + escapeAttr(value != null && value !== '' ? String(value) : '') + '" min="0">' +
+        '<input type="number" name="' + name + '" id="f-' + name + '" value="' + escapeAttr(value != null && value !== '' ? String(value) : '') + '" min="0"' + step + '>' +
       '</div>';
     }
     function fieldFile(name, label) {

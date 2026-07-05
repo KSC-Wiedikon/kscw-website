@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.4.0] — 2026-07-06
+
+### Scorer courses: fully editable in the admin panel
+- The venue address, the "Hosted by … / Powered by …" note and the course duration (used for the length of the "add to calendar" entry) were hardcoded in the website and could not be changed without a code deployment. They are now per-course fields in Directus, editable in `/admin` → Scorer courses alongside title, date, time, mode and sign-up forms. Leaving the venue or host note empty hides that line on the public course card; new courses prefill the usual Irchel/Spada defaults.
+
 ## [1.3.1] — 2026-06-30
 
 ### Calendar: instant month navigation

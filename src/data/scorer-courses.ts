@@ -24,6 +24,12 @@ export interface ScorerCourse {
   formSlugDe: string | null;
   /** OpnForm slug for the English form, or null until built. */
   formSlugEn: string | null;
+  /** Venue shown on the card + calendar entry; empty/null = not shown. */
+  location?: string | null;
+  /** "Hosted by / powered by" line under the venue; empty/null = not shown. */
+  hostNote?: string | null;
+  /** Course length in hours (calendar entry end time); null = default 4h. */
+  durationHours?: number | null;
 }
 
 /**

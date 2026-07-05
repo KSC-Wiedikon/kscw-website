@@ -1013,7 +1013,10 @@
         // here; the new backend idempotently re-sets the same ids. Non-fatal —
         // logged if it ever fails so it shows up in the error log.
         if (type === 'basketball' && data && data.id) {
-          var linkBody = { reference_number: data.reference_number };
+          // Email is now a required second factor on the attach route (backend
+          // audit #8, 2026-07-05); send it. Backward-compatible — an older backend
+          // that doesn't require it simply ignores the extra field.
+          var linkBody = { reference_number: data.reference_number, email: payload.email };
           var haveDocs = false;
           for (var lk in docUploads) {
             if (docUploads[lk] && docUploads[lk].fileId) { linkBody[lk] = docUploads[lk].fileId; haveDocs = true; }

@@ -578,7 +578,8 @@
     }
     // basketball
     if (/^du\d|^lions|^rhinos|^damen/.test(n)) return 'weiblich';
-    if (/^hu\d|^mu\d|^herren|^h-classics/.test(n)) return 'männlich';
+    if (/^hu\d|^herren|^h-classics/.test(n)) return 'männlich';
+    // "MU…" = Mixed-U (co-ed minis), not male — falls through to mixed.
     return 'mixed';
   }
 
@@ -610,27 +611,81 @@
   }
 
   // ── Team fetching ─────────────────────────────────────────
-  var teamCache = {};
+  var teamCache = {};   // sport -> teams[] once loaded
+  var teamLoad = {};    // sport -> in-flight promise, so we never fire twice
+
+  // Network fetch + cache. Shared by the page-load prefetch and the on-demand
+  // fetchTeams(). Rejects on network/HTTP failure and leaves the cache unset,
+  // so callers can retry. In-flight requests are deduped: a prefetch still in
+  // flight when the applicant reaches the team step is reused, not refired.
+  function loadTeams(sport) {
+    if (teamCache[sport]) return Promise.resolve(teamCache[sport]);
+    if (teamLoad[sport]) return teamLoad[sport];
+    teamLoad[sport] = fetch(DIRECTUS_URL + '/items/teams?filter[sport][_eq]=' + sport +
+      '&filter[active][_eq]=true&fields=id,name,league&sort=name&limit=-1')
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (data) {
+        teamCache[sport] = (data && data.data) ? data.data : [];
+        teamLoad[sport] = null;
+        return teamCache[sport];
+      })
+      .catch(function (err) {
+        teamLoad[sport] = null;   // uncached → next call retries
+        throw err;
+      });
+    return teamLoad[sport];
+  }
 
   function fetchTeams(sport) {
     var containerId = sport === 'volleyball' ? 'vb-team' : 'bb-team';
     var container = document.getElementById(containerId);
     if (!container) return;
 
-    if (teamCache[sport]) {
-      populateTeams(container, teamCache[sport]);
-      return;
-    }
+    loadTeams(sport)
+      .then(function (teams) { populateTeams(container, teams); })
+      .catch(function (err) {
+        // Flaky mobile connections hit this. The cache stays unset, so the retry
+        // button (or a later funktion/gender change) re-fetches. Surface a visible
+        // error + retry instead of leaving an empty list that dead-ends the
+        // applicant at "no team selected" with no explanation. Also log it: this
+        // failure used to be swallowed silently and was invisible in the logs.
+        logBlock('teams fetch failed (' + sport + '): ' + (err && err.message ? err.message : 'unknown'));
+        showTeamsError(container, sport);
+      });
+  }
 
-    fetch(DIRECTUS_URL + '/items/teams?filter[sport][_eq]=' + sport +
-      '&filter[active][_eq]=true&fields=id,name,league&sort=name&limit=-1')
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (data) {
-        var teams = (data && data.data) ? data.data : [];
-        teamCache[sport] = teams;
-        populateTeams(container, teams);
-      })
-      .catch(function () { /* silent */ });
+  // Warm the team cache at page load, so the list is ready by the time the
+  // applicant reaches the team step — the fetch happens up front (usually on a
+  // better connection, with time to recover) instead of lazily mid-form on a
+  // flaky link. Failures stay uncached; the on-demand fetchTeams() then retries
+  // and surfaces the error/retry UI at the team step.
+  ['volleyball', 'basketball'].forEach(function (sp) {
+    loadTeams(sp).catch(function () { /* handled on-demand at the team step */ });
+  });
+
+  // Inline "couldn't load teams" state with a retry, shown inside the team
+  // dropdown when fetchTeams() fails.
+  function showTeamsError(container, sport) {
+    container.innerHTML = '';
+    var box = document.createElement('div');
+    box.style.cssText = 'padding: 0.75rem 1rem; color: var(--text-secondary); font-size: var(--text-sm);';
+    var msg = document.createElement('div');
+    msg.textContent = locale === 'de'
+      ? 'Teams konnten nicht geladen werden (Netzwerkfehler). Bitte erneut versuchen.'
+      : 'Could not load the team list (network error). Please try again.';
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = locale === 'de' ? 'Erneut versuchen' : 'Try again';
+    btn.style.cssText = 'margin-top: 0.5rem; padding: 0.4rem 0.9rem; cursor: pointer;';
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      container.innerHTML = '';
+      fetchTeams(sport);
+    });
+    box.appendChild(msg);
+    box.appendChild(btn);
+    container.appendChild(box);
   }
 
   function populateTeams(container, teams) {
@@ -657,6 +712,10 @@
     for (var fi = 0; fi < teams.length; fi++) {
       if (isPlayer && gender) {
         var tg = getTeamGender(teams[fi].name, sportFull);
+        // Youth "Mix" leagues (e.g. HU12 → MixU12M) are co-ed; the name-based
+        // heuristic mis-tags them by sex, hiding them from the other sex. Trust
+        // the league label when it says Mixed.
+        if (/mix/i.test(teams[fi].league || '')) tg = 'mixed';
         if (tg !== 'mixed' && tg !== gender) continue;
       }
       filtered.push(teams[fi]);

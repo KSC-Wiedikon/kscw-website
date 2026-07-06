@@ -135,8 +135,19 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.5.1</span>
+          <span class="changelog-badge">v1.5.2</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.5.2 — 2026-07-07</div>
+          <div class="changelog-group">
+            <h3>Anmeldung: Teamliste zuverlässiger laden</h3>
+            <ul>
+              <li>Bei Basketball-/Volleyball-Anmeldungen wurde die Teamliste erst nach Wahl von Sportart und Funktion geladen. Schlug diese Abfrage bei wackliger Verbindung fehl, blieb die Liste leer — ohne Fehlermeldung — und die Anmeldung liess sich nicht abschicken («kein Team gewählt»). Neu werden die Teams schon beim Öffnen des Formulars geladen; bei einem Fehler erscheint ein Hinweis mit «Erneut versuchen»</li>
+              <li>Gemischte Nachwuchs-Kategorien (MU8, MU10, U12) wurden fälschlicherweise nur männlichen Anmeldenden angezeigt — Mädchen sehen sie jetzt ebenfalls</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.5.1 — 2026-07-06</div>
@@ -319,8 +330,19 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.5.1</span>
+          <span class="changelog-badge">v1.5.2</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.5.2 — 2026-07-07</div>
+          <div class="changelog-group">
+            <h3>Registration: reliable team loading</h3>
+            <ul>
+              <li>On basketball/volleyball registrations the team list was fetched only after sport and role were chosen; if that request failed on a flaky connection the list stayed empty with no error, and the form couldn't be submitted ("no team selected"). Teams now load when the form opens, and a "Try again" prompt appears if it fails</li>
+              <li>Mixed youth categories (MU8, MU10, U12) were shown only to male applicants — girls now see them too</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.5.1 — 2026-07-06</div>

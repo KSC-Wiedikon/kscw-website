@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.5.2] — 2026-07-07
+
+### Registration: reliable team loading
+- The team list on the membership form was fetched lazily (only after sport + role were picked) and failed silently on flaky connections, leaving an empty dropdown and an unresolvable "no team selected" error at submit. Teams are now prefetched when the form opens, network failures are surfaced with a "Try again" retry (and logged instead of swallowed), and in-flight requests are deduplicated.
+- Mixed youth basketball categories (MU8, MU10 and the U12 "Mix" league) were mis-tagged as male-only and hidden from female applicants — they now appear for both sexes.
+
 ## [1.5.1] — 2026-07-06
 
 ### Calendar: numbered referees

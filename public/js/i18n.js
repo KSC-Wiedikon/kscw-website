@@ -43,7 +43,7 @@
       return Promise.resolve(cache[lang]);
     }
 
-    return fetch('/js/i18n/' + lang + '.json?v=3')
+    return fetch('/js/i18n/' + lang + '.json?v=4')
       .then(function (res) {
         if (!res.ok) throw new Error('Failed to load translations for ' + lang);
         return res.json();

@@ -883,6 +883,63 @@
     }
   }
 
+  // ── Contact-data validators ────────────────────────────────
+  // Client-side mirror of the server-side normalizers in
+  // POST /kscw/registration: same rules, instant localized feedback,
+  // and canonical values on the wire.
+
+  // IBAN: strip spaces/dots/apostrophes/hyphens, uppercase.
+  function normalizeIbanCompact(raw) {
+    return String(raw || '').replace(/[\s.'-]/g, '').toUpperCase();
+  }
+
+  // ISO 13616 structure + mod-97 checksum.
+  function isValidIban(raw) {
+    var iban = normalizeIbanCompact(raw);
+    if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/.test(iban)) return false;
+    var rearranged = iban.slice(4) + iban.slice(0, 4);
+    var remainder = 0;
+    for (var i = 0; i < rearranged.length; i++) {
+      var ch = rearranged[i];
+      var chDigits = ch >= 'A' ? String(ch.charCodeAt(0) - 55) : ch;
+      for (var j = 0; j < chDigits.length; j++) remainder = (remainder * 10 + Number(chDigits[j])) % 97;
+    }
+    return remainder === 1;
+  }
+
+  // AHV: 756 + 10 digits with an EAN-13 check digit (digit[i] × 1/3
+  // alternating, sum ≡ 0 mod 10). Returns the canonical dotted form
+  // (756.XXXX.XXXX.XX) or '' when the number can't be valid. Excel-style
+  // scientific notation (e.g. 7.5612E+12) has lost digits — always rejected.
+  function ahvCanonical(raw) {
+    var s = String(raw || '');
+    if (/[eE]\d/.test(s)) return '';
+    var digits = s.replace(/\D/g, '');
+    if (!/^756\d{10}$/.test(digits)) return '';
+    var sum = 0;
+    for (var i = 0; i < 13; i++) sum += Number(digits.charAt(i)) * (i % 2 === 0 ? 1 : 3);
+    if (sum % 10 !== 0) return '';
+    return digits.slice(0, 3) + '.' + digits.slice(3, 7) + '.' + digits.slice(7, 11) + '.' + digits.slice(11);
+  }
+
+  // Phone: decorations (apostrophes, /, ., -, brackets) become spaces, then
+  // all whitespace is removed; one leading 0 (national style "079 123 45 67")
+  // is dropped before the dial code. CH numbers must be exactly 9 digits and
+  // are sent grouped ("+41 79 123 45 67"); other countries are sent compact
+  // ("+436501234567", 4–14 digits). Returns '' when the number can't be valid.
+  function canonicalPhone(rawTyped, dial) {
+    var cleaned = String(rawTyped || '').replace(/['’\/().-]/g, ' ').replace(/\s+/g, '');
+    if (!/^\d+$/.test(cleaned)) return '';
+    var national = cleaned.charAt(0) === '0' ? cleaned.slice(1) : cleaned;
+    if (dial === '+41') {
+      if (national.length !== 9) return '';
+      return '+41 ' + national.slice(0, 2) + ' ' + national.slice(2, 5) + ' ' +
+        national.slice(5, 7) + ' ' + national.slice(7);
+    }
+    if (national.length < 4 || national.length > 14) return '';
+    return '+' + String(dial || '').replace(/\D/g, '') + national;
+  }
+
   // ── Form submission ───────────────────────────────────────
   form.addEventListener('submit', function (ev) {
     ev.preventDefault();
@@ -983,17 +1040,52 @@
       }
     }
 
-    setLoading(true);
-
-    // Build full phone number: "+41 79 123 45 67" format
+    // Build full phone number: "+41 79 123 45 67" format (canonical, mirrors
+    // the backend guard). Empty is left to the browser's `required` check.
     var phoneCode = document.getElementById('phone-country');
-    var phoneNum = val('telefon').replace(/^\s+|\s+$/g, '');
+    var phoneNum = val('telefon');
     var dialCode = '';
     if (phoneCode) {
       var selOpt = phoneCode.options[phoneCode.selectedIndex];
       dialCode = selOpt ? selOpt.dataset.dial : '';
     }
     var fullPhone = dialCode ? (dialCode + ' ' + phoneNum) : phoneNum;
+    if (phoneNum) {
+      fullPhone = canonicalPhone(phoneNum, dialCode);
+      if (!fullPhone) {
+        logBlock('blocked: invalid phone number');
+        return showFeedback('error', locale === 'de'
+          ? 'Bitte überprüfe die Telefonnummer — sie scheint ungültig zu sein.'
+          : 'Please check the phone number — it does not look like a valid number.');
+      }
+    }
+
+    // AHV (when given): 756-prefixed 13 digits + EAN-13 check digit; the
+    // canonical dotted form (756.XXXX.XXXX.XX) is what gets sent.
+    var ahvCanon = '';
+    if (type === 'volleyball' || type === 'basketball') {
+      var ahvRaw = val(type === 'volleyball' ? 'vb-ahv' : 'bb-ahv');
+      if (ahvRaw) {
+        ahvCanon = ahvCanonical(ahvRaw);
+        if (!ahvCanon) {
+          logBlock('blocked: invalid AHV number');
+          return showFeedback('error', locale === 'de'
+            ? 'Bitte überprüfe die AHV-Nummer (Format 756.XXXX.XXXX.XX) — die Prüfziffer stimmt nicht.'
+            : 'Please check the AHV number (format 756.XXXX.XXXX.XX) — the check digit does not match.');
+        }
+      }
+    }
+
+    // IBAN (optional): normalized compact form, ISO 13616 mod-97 checked.
+    var ibanCompact = normalizeIbanCompact(val('iban'));
+    if (ibanCompact && !isValidIban(ibanCompact)) {
+      logBlock('blocked: invalid IBAN');
+      return showFeedback('error', locale === 'de'
+        ? 'Bitte überprüfe die IBAN — sie ist keine gültige Kontonummer.'
+        : 'Please check the IBAN — it is not a valid account number.');
+    }
+
+    setLoading(true);
 
     // Build JSON payload
     var payload = {
@@ -1014,6 +1106,9 @@
       locale: locale,
     };
 
+    // Optional IBAN — only sent when the applicant filled it in.
+    if (ibanCompact) payload.iban = ibanCompact;
+
     if (type === 'volleyball') {
       payload.anrede = anredeHidden ? anredeHidden.value : '';
       payload.rolle = val('funktion-vb');
@@ -1021,7 +1116,7 @@
       form.querySelectorAll('input[name="team_vb"]:checked').forEach(function (cb) { vbTeams.push(cb.value); });
       payload.team = vbTeams.join(', ');
       payload.beitragskategorie = val('vb-fee');
-      payload.ahv_nummer = val('vb-ahv');
+      payload.ahv_nummer = ahvCanon;
       payload.kantonsschule = kantonsschuleValue('vb');
       var lizenzVbChecked = [];
       form.querySelectorAll('input[name="lizenz_vb"]:checked').forEach(function (cb) {
@@ -1041,7 +1136,7 @@
       form.querySelectorAll('input[name="team_bb"]:checked').forEach(function (cb) { bbTeams.push(cb.value); });
       payload.team = bbTeams.join(', ');
       payload.beitragskategorie = val('bb-fee');
-      payload.ahv_nummer = val('bb-ahv');
+      payload.ahv_nummer = ahvCanon;
       payload.kantonsschule = kantonsschuleValue('bb');
       // BB licence: scorer (radio, single choice) + referee (checkbox, combinable)
       var bbLicParts = [];

@@ -546,6 +546,8 @@
   "registrationAddress": "Adresse",
   "registrationPLZ": "PLZ",
   "registrationCity": "Ort",
+  "registrationIBAN": "IBAN (freiwillig)",
+  "registrationIBANNote": "Nur für allfällige Rückzahlungen (z. B. Spesen). Wird nie für Einzüge verwendet.",
   "registrationDOB": "Geburtsdatum",
   "registrationNationality": "Nationalität",
   "registrationNationalitySwiss": "Schweiz",

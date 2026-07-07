@@ -99,6 +99,12 @@ const KS_OTHER = [
           </div>
         </div>
 
+        <div class="form-group">
+          <label for="iban" data-i18n="registrationIBAN">{t(locale, 'registrationIBAN')}</label>
+          <input type="text" id="iban" name="iban" class="form-input" placeholder="CH00 0000 0000 0000 0000 0">
+          <small style="color: var(--text-secondary);" data-i18n="registrationIBANNote">{t(locale, 'registrationIBANNote')}</small>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label for="geburtsdatum"><span data-i18n="registrationDOB">{t(locale, 'registrationDOB')}</span> *</label>
@@ -468,7 +474,7 @@ const KS_OTHER = [
   </section>
 
   <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-  <script is:inline src="/js/registration-form.js?v=3.6.0"></script>
+  <script is:inline src="/js/registration-form.js?v=3.7.0"></script>
   <script src="../../islands/scroll-animations.ts"></script>
 </PageLayout>
 

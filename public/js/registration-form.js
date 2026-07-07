@@ -561,8 +561,9 @@
       'expired-callback': function () {
         // Token went stale (valid only ~5 min; this form takes longer to fill).
         // Reset so a fresh token is fetched and the submit handler doesn't
-        // silently bounce the user with an empty token.
-        logBlock('turnstile token expired — auto-resetting');
+        // silently bounce the user with an empty token. Not logged: this is an
+        // expected background refresh, not a block — a real submit-time expiry is
+        // caught and logged at the getResponse() check below.
         try { window.turnstile.reset(turnstileWidgetId); } catch (_) { /* noop */ }
       },
       'timeout-callback': function () {

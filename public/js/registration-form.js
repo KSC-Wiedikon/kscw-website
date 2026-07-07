@@ -513,6 +513,34 @@
 
   typeRadios.forEach(function (r) { r.addEventListener('change', onTypeChange); });
 
+  // ── Name charset guard (soft) ─────────────────────────────
+  // The club's membership system (ClubDesk) imports contacts via CP1252 CSV,
+  // which can't hold Eastern-European/Slavic Latin (ć ł đ ń ž …) or non-Latin
+  // scripts — such names get simplified there (ć→c). We keep the correct name
+  // in wiedisync and just warn the person; submission is never blocked.
+  // CP1252 = ASCII + Latin-1 (≤ U+00FF) + a handful of extras below.
+  var CP1252_EXTRA = {
+    338: 1, 339: 1, 352: 1, 353: 1, 376: 1, 381: 1, 382: 1, 402: 1, 710: 1, 732: 1,
+    8211: 1, 8212: 1, 8216: 1, 8217: 1, 8218: 1, 8220: 1, 8221: 1, 8222: 1, 8224: 1,
+    8225: 1, 8226: 1, 8230: 1, 8240: 1, 8249: 1, 8250: 1, 8364: 1, 8482: 1
+  };
+  function nameHasUnsupportedChar(str) {
+    for (var i = 0; i < str.length; i++) {
+      var cp = str.codePointAt(i);
+      if (cp > 0xFF && !CP1252_EXTRA[cp]) return true;
+      if (cp > 0xFFFF) i++; // surrogate pair
+    }
+    return false;
+  }
+  ['vorname', 'nachname'].forEach(function (id) {
+    var input = document.getElementById(id);
+    var warn = document.querySelector('.name-charset-warn[data-for="' + id + '"]');
+    if (!input || !warn) return;
+    input.addEventListener('input', function () {
+      warn.style.display = nameHasUnsupportedChar(input.value) ? 'block' : 'none';
+    });
+  });
+
   // ── Turnstile ─────────────────────────────────────────────
   var turnstileWidgetId = null;
   var turnstileContainer = document.getElementById('turnstile-container');

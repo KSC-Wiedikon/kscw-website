@@ -64,10 +64,12 @@ const KS_OTHER = [
           <div class="form-group">
             <label for="vorname"><span data-i18n="registrationFirstName">{t(locale, 'registrationFirstName')}</span> *</label>
             <input type="text" id="vorname" name="vorname" class="form-input" required>
+            <small class="name-charset-warn" data-for="vorname" style="color: var(--kscw-gold, #b8860b); display: none;" data-i18n="registrationNameCharsetWarn">{t(locale, 'registrationNameCharsetWarn')}</small>
           </div>
           <div class="form-group">
             <label for="nachname"><span data-i18n="registrationLastName">{t(locale, 'registrationLastName')}</span> *</label>
             <input type="text" id="nachname" name="nachname" class="form-input" required>
+            <small class="name-charset-warn" data-for="nachname" style="color: var(--kscw-gold, #b8860b); display: none;" data-i18n="registrationNameCharsetWarn">{t(locale, 'registrationNameCharsetWarn')}</small>
           </div>
         </div>
 
@@ -466,7 +468,7 @@ const KS_OTHER = [
   </section>
 
   <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-  <script is:inline src="/js/registration-form.js?v=3.5.1"></script>
+  <script is:inline src="/js/registration-form.js?v=3.6.0"></script>
   <script src="../../islands/scroll-animations.ts"></script>
 </PageLayout>
 

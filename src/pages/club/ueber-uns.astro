@@ -94,6 +94,38 @@ const locale = 'de';
     </div>
   </section>
 
+  <!-- Vereinsdokumente / Statuten -->
+  <section class="section">
+    <div class="container">
+      <h2 style="font-size: var(--text-2xl); margin-bottom: var(--space-xl); text-align: center;" data-i18n="aboutDocsTitle">{t(locale, 'aboutDocsTitle')}</h2>
+      <div class="docs-grid">
+        <article class="doc-card">
+          <div class="doc-card-icon" aria-hidden="true">
+            <i data-lucide="file-text" style="width: 26px; height: 26px;"></i>
+          </div>
+          <div class="doc-card-body">
+            <h3 class="doc-card-title" data-i18n="aboutDocsStatuten">{t(locale, 'aboutDocsStatuten')}</h3>
+            <p class="doc-card-desc" data-i18n="aboutDocsStatutenDesc">{t(locale, 'aboutDocsStatutenDesc')}</p>
+            <span class="doc-card-meta">
+              <i data-lucide="file" style="width: 14px; height: 14px;"></i>
+              <span data-i18n="aboutDocsMeta">{t(locale, 'aboutDocsMeta')}</span>
+            </span>
+          </div>
+          <div class="doc-card-actions">
+            <button type="button" class="btn btn-primary doc-view-btn" data-pdf-src="/docs/statuten.pdf" data-pdf-download="KSCW-Statuten-2026.pdf">
+              <i data-lucide="book-open" style="width: 18px; height: 18px;"></i>
+              <span data-i18n="aboutDocsView">{t(locale, 'aboutDocsView')}</span>
+            </button>
+            <a class="btn btn-gold" href="/docs/statuten.pdf" download="KSCW-Statuten-2026.pdf">
+              <i data-lucide="download" style="width: 18px; height: 18px;"></i>
+              <span data-i18n="aboutDocsDownload">{t(locale, 'aboutDocsDownload')}</span>
+            </a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
   <!-- Hallen -->
   <section class="section" style="background: var(--bg-muted, #f9fafb);">
     <div class="container">
@@ -180,6 +212,76 @@ const locale = 'de';
     buttonLabelKey="aboutCTAButton"
     buttonHref="/club/kontakt"
   />
+
+  <!-- PDF reader (Statuten & weitere Dokumente) -->
+  <div id="pdf-reader" class="pdf-reader" hidden>
+    <div class="pdf-reader__backdrop" data-pdf-close></div>
+    <div class="pdf-reader__dialog" role="dialog" aria-modal="true" aria-labelledby="pdf-reader-title">
+      <header class="pdf-reader__bar">
+        <span id="pdf-reader-title" class="pdf-reader__title">Statuten</span>
+        <div class="pdf-reader__tools">
+          <a id="pdf-reader-download" class="pdf-reader__tool" href="/docs/statuten.pdf" download="KSCW-Statuten-2026.pdf">
+            <i data-lucide="download" style="width: 18px; height: 18px;"></i>
+            <span class="pdf-reader__tool-label" data-i18n="aboutDocsDownload">{t(locale, 'aboutDocsDownload')}</span>
+          </a>
+          <button type="button" id="pdf-reader-close" class="pdf-reader__tool pdf-reader__close" data-pdf-close aria-label={t(locale, 'aboutDocsClose')} data-i18n-aria-label="aboutDocsClose">
+            <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+          </button>
+        </div>
+      </header>
+      <div class="pdf-reader__frame-wrap">
+        <iframe id="pdf-reader-frame" class="pdf-reader__frame" title="PDF" src="about:blank"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    (function () {
+      var reader = document.getElementById('pdf-reader');
+      if (!reader) return;
+      var frame = document.getElementById('pdf-reader-frame');
+      var titleEl = document.getElementById('pdf-reader-title');
+      var dl = document.getElementById('pdf-reader-download');
+      var closeBtn = document.getElementById('pdf-reader-close');
+      var lastFocused = null;
+
+      function openReader(src, title, downloadName) {
+        lastFocused = document.activeElement;
+        titleEl.textContent = title || 'PDF';
+        dl.setAttribute('href', src);
+        if (downloadName) dl.setAttribute('download', downloadName);
+        frame.setAttribute('src', src + '#view=FitH');
+        reader.hidden = false;
+        document.body.classList.add('pdf-reader-open');
+        if (closeBtn) closeBtn.focus();
+      }
+      function closeReader() {
+        reader.hidden = true;
+        document.body.classList.remove('pdf-reader-open');
+        frame.setAttribute('src', 'about:blank');
+        if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+      }
+
+      var viewButtons = document.querySelectorAll('.doc-view-btn');
+      for (var i = 0; i < viewButtons.length; i++) {
+        viewButtons[i].addEventListener('click', function () {
+          var src = this.getAttribute('data-pdf-src');
+          if (!src) return;
+          var card = this.closest('.doc-card');
+          var titleNode = card ? card.querySelector('.doc-card-title') : null;
+          var title = titleNode ? titleNode.textContent.trim() : 'PDF';
+          openReader(src, title, this.getAttribute('data-pdf-download') || '');
+        });
+      }
+      var closers = reader.querySelectorAll('[data-pdf-close]');
+      for (var c = 0; c < closers.length; c++) {
+        closers[c].addEventListener('click', closeReader);
+      }
+      document.addEventListener('keydown', function (e) {
+        if ((e.key === 'Escape' || e.key === 'Esc') && !reader.hidden) closeReader();
+      });
+    })();
+  </script>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <script is:inline src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -286,6 +388,176 @@ const locale = 'de';
     color: #475569;
     line-height: 1.6;
   }
+  /* ── Vereinsdokumente / PDF library ───────────────────────── */
+  .docs-grid {
+    display: grid;
+    gap: var(--space-lg);
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .doc-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    background: #ffffff;
+    color: #1e293b;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-xl);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .doc-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+  }
+  .doc-card-icon {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-md, 0.5rem);
+    background: linear-gradient(135deg, var(--kscw-blue, #4A55A2), var(--kscw-gold, #FFC832));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+  }
+  .doc-card-body {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .doc-card-title {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--kscw-blue, #4A55A2);
+    margin-bottom: 4px;
+  }
+  .doc-card-desc {
+    font-size: var(--text-sm);
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: var(--space-sm);
+  }
+  .doc-card-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+  }
+  .doc-card-actions {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  .doc-card-actions .btn { width: 100%; }
+  @media (max-width: 640px) {
+    .doc-card {
+      flex-direction: column;
+      text-align: center;
+      align-items: center;
+    }
+    .doc-card-actions {
+      width: 100%;
+      flex-direction: row;
+    }
+    .doc-card-actions .btn { flex: 1; }
+  }
+
+  /* ── PDF reader modal ─────────────────────────────────────── */
+  .pdf-reader {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(0px, 3vw, 32px);
+  }
+  .pdf-reader[hidden] { display: none; }
+  .pdf-reader__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(2px);
+  }
+  .pdf-reader__dialog {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: min(1000px, 100%);
+    height: min(90vh, 100%);
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+  }
+  .pdf-reader__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: 0.75rem 1rem;
+    background: var(--kscw-blue, #4A55A2);
+    color: #ffffff;
+    flex-shrink: 0;
+  }
+  .pdf-reader__title {
+    font-weight: 700;
+    font-size: var(--text-base);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .pdf-reader__tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .pdf-reader__tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: var(--radius-md, 0.5rem);
+    background: rgba(255,255,255,0.14);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .pdf-reader__tool:hover { background: rgba(255,255,255,0.28); }
+  .pdf-reader__close { padding: 6px; }
+  .pdf-reader__frame-wrap {
+    position: relative;
+    flex: 1 1 auto;
+    background: #525659;
+  }
+  .pdf-reader__frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+  }
+  @media (max-width: 640px) {
+    .pdf-reader { padding: 0; }
+    .pdf-reader__dialog {
+      width: 100%;
+      height: 100%;
+      border-radius: 0;
+    }
+    .pdf-reader__tool-label { display: none; }
+  }
+  :global(body.pdf-reader-open) { overflow: hidden; }
+
   .history-row {
     display: grid;
     grid-template-columns: 1fr 1fr;

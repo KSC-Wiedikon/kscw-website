@@ -2,6 +2,14 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.6.0] — 2026-07-09
+
+### Basketball registration: full Swiss Basketball document flow
+- The membership form now asks basketball applicants which licensing **situation** applies — new licence, transfer from another Swiss club, coming from a club abroad, or returning to Switzerland — and requests exactly the documents Swiss Basketball's licensing procedure needs for that case. Previously only "new player" was handled (plus the two FIBA forms for non-Swiss applicants), so transfers had no way to submit their **release letter (Freibrief)**.
+- New documents are collected when relevant, with auto-filled templates to download: the **Freibrief** (transfer from a Swiss club), the FIBA **parental consent (U18)** and an optional **school-enrolment certificate** (for under-18 international transfers/returners). Whether the National Team Declaration / U18 documents are required is derived from the applicant's date of birth, and the licence application PDF is now pre-ticked for the correct case (new member / club transfer / international transfer).
+- The signed Lizenzantrag (Swiss Basketball licence application) template was updated to the current version.
+- Documents that don't apply to your situation are never shown and never block submission; the optional school certificate never blocks it either.
+
 ## [1.5.2] — 2026-07-07
 
 ### Registration: reliable team loading

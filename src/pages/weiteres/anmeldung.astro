@@ -333,21 +333,52 @@ const KS_OTHER = [
             </div>
           </div>
 
+          <div class="form-group" id="bb-situation-group">
+            <label><span data-i18n="registrationBBSituation">{t(locale, 'registrationBBSituation')}</span> *</label>
+            <small style="color: var(--text-secondary); display: block; margin-bottom: var(--space-sm);" data-i18n="registrationBBSituationHint">{t(locale, 'registrationBBSituationHint')}</small>
+            <div style="display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-xs);">
+              <label class="radio-card">
+                <input type="radio" name="bb_situation" value="neu">
+                <span data-i18n="registrationBBSituationNew">{t(locale, 'registrationBBSituationNew')}</span>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="bb_situation" value="transfer_ch">
+                <span data-i18n="registrationBBSituationTransferCH">{t(locale, 'registrationBBSituationTransferCH')}</span>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="bb_situation" value="transfer_intl">
+                <span data-i18n="registrationBBSituationTransferIntl">{t(locale, 'registrationBBSituationTransferIntl')}</span>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="bb_situation" value="rueckkehr">
+                <span data-i18n="registrationBBSituationReturner">{t(locale, 'registrationBBSituationReturner')}</span>
+              </label>
+            </div>
+          </div>
+
           <div class="form-group" id="bb-docs-group">
             <label data-i18n="registrationBBDocs">{t(locale, 'registrationBBDocs')}</label>
             <small style="color: var(--text-secondary); display: block; margin-bottom: var(--space-sm);" data-i18n="registrationBBDocsHint">{t(locale, 'registrationBBDocsHint')}</small>
             <div class="bb-docs-list">
-              <div class="bb-doc-item">
+              <div class="bb-doc-item" data-doc="lizenz">
                 <span data-i18n="registrationBBDocsLizenz">{t(locale, 'registrationBBDocsLizenz')}</span>
                 <a href="/docs/lizenzantrag-swiss-basketball.pdf" target="_blank" rel="noopener noreferrer" class="bb-doc-download" id="bb-doc-lizenz" data-i18n="registrationBBDocsLizenzDownload">{t(locale, 'registrationBBDocsLizenzDownload')}</a>
               </div>
-              <div class="bb-doc-item bb-doc-foreign" style="display: none;">
+              <div class="bb-doc-item bb-doc-cond" data-doc="freibrief" style="display: none;">
+                <span data-i18n="registrationBBDocsFreibrief">{t(locale, 'registrationBBDocsFreibrief')}</span>
+                <a href="/docs/freibrief-swiss-basketball.pdf" target="_blank" rel="noopener noreferrer" class="bb-doc-download" id="bb-doc-freibrief" data-i18n="registrationBBDocsFreibriefDownload">{t(locale, 'registrationBBDocsFreibriefDownload')}</a>
+              </div>
+              <div class="bb-doc-item bb-doc-cond" data-doc="selfdecl" style="display: none;">
                 <span data-i18n="registrationBBDocsSelfDecl">{t(locale, 'registrationBBDocsSelfDecl')}</span>
                 <a href="/docs/player-self-declaration-fiba.pdf" target="_blank" rel="noopener noreferrer" class="bb-doc-download" id="bb-doc-selfdecl" data-i18n="registrationBBDocsSelfDeclDownload">{t(locale, 'registrationBBDocsSelfDeclDownload')}</a>
               </div>
-              <div class="bb-doc-item bb-doc-foreign" style="display: none;">
+              <div class="bb-doc-item bb-doc-cond" data-doc="natdecl" style="display: none;">
                 <span data-i18n="registrationBBDocsNatDecl">{t(locale, 'registrationBBDocsNatDecl')}</span>
                 <a href="/docs/national-team-declaration-fiba.pdf" target="_blank" rel="noopener noreferrer" class="bb-doc-download" id="bb-doc-natdecl" data-i18n="registrationBBDocsNatDeclDownload">{t(locale, 'registrationBBDocsNatDeclDownload')}</a>
+              </div>
+              <div class="bb-doc-item bb-doc-cond" data-doc="u18parents" style="display: none;">
+                <span data-i18n="registrationBBDocsU18Parents">{t(locale, 'registrationBBDocsU18Parents')}</span>
+                <a href="/docs/u18-parents-authorisation-fiba.pdf" target="_blank" rel="noopener noreferrer" class="bb-doc-download" id="bb-doc-u18parents" data-i18n="registrationBBDocsU18ParentsDownload">{t(locale, 'registrationBBDocsU18ParentsDownload')}</a>
               </div>
             </div>
           </div>
@@ -356,17 +387,30 @@ const KS_OTHER = [
             <label data-i18n="registrationBBDocsUpload">{t(locale, 'registrationBBDocsUpload')}</label>
             <small style="color: var(--text-secondary); display: block; margin-bottom: var(--space-sm);" data-i18n="registrationBBDocsUploadNote">{t(locale, 'registrationBBDocsUploadNote')}</small>
             <div style="display: flex; flex-direction: column; gap: var(--space-md);">
-              <div>
+              <div data-doc-upload="lizenz">
                 <label for="bb-doc-lizenz-upload" style="font-size: var(--text-sm); font-weight: 600; display: block; margin-bottom: var(--space-xs);"><span data-i18n="registrationBBDocsUploadLizenz">{t(locale, 'registrationBBDocsUploadLizenz')}</span> *</label>
                 <input type="file" id="bb-doc-lizenz-upload" name="bb_doc_lizenz" accept=".pdf,.jpg,.jpeg,.png,.webp" data-conditional-required>
               </div>
-              <div class="bb-doc-foreign" style="display: none;">
+              <div class="bb-doc-cond" data-doc-upload="freibrief" style="display: none;">
+                <label for="bb-doc-freibrief-upload" style="font-size: var(--text-sm); font-weight: 600; display: block; margin-bottom: var(--space-xs);"><span data-i18n="registrationBBDocsUploadFreibrief">{t(locale, 'registrationBBDocsUploadFreibrief')}</span> *</label>
+                <input type="file" id="bb-doc-freibrief-upload" name="bb_doc_freibrief" accept=".pdf,.jpg,.jpeg,.png,.webp">
+              </div>
+              <div class="bb-doc-cond" data-doc-upload="selfdecl" style="display: none;">
                 <label for="bb-doc-selfdecl-upload" style="font-size: var(--text-sm); font-weight: 600; display: block; margin-bottom: var(--space-xs);"><span data-i18n="registrationBBDocsUploadSelfDecl">{t(locale, 'registrationBBDocsUploadSelfDecl')}</span> *</label>
                 <input type="file" id="bb-doc-selfdecl-upload" name="bb_doc_selfdecl" accept=".pdf,.jpg,.jpeg,.png,.webp">
               </div>
-              <div class="bb-doc-foreign" style="display: none;">
+              <div class="bb-doc-cond" data-doc-upload="natdecl" style="display: none;">
                 <label for="bb-doc-natdecl-upload" style="font-size: var(--text-sm); font-weight: 600; display: block; margin-bottom: var(--space-xs);"><span data-i18n="registrationBBDocsUploadNatDecl">{t(locale, 'registrationBBDocsUploadNatDecl')}</span> *</label>
                 <input type="file" id="bb-doc-natdecl-upload" name="bb_doc_natdecl" accept=".pdf,.jpg,.jpeg,.png,.webp">
+              </div>
+              <div class="bb-doc-cond" data-doc-upload="u18parents" style="display: none;">
+                <label for="bb-doc-u18parents-upload" style="font-size: var(--text-sm); font-weight: 600; display: block; margin-bottom: var(--space-xs);"><span data-i18n="registrationBBDocsUploadU18Parents">{t(locale, 'registrationBBDocsUploadU18Parents')}</span> *</label>
+                <input type="file" id="bb-doc-u18parents-upload" name="bb_doc_u18parents" accept=".pdf,.jpg,.jpeg,.png,.webp">
+              </div>
+              <div class="bb-doc-cond" data-doc-upload="schoolcert" style="display: none;">
+                <label for="bb-doc-schoolcert-upload" style="font-size: var(--text-sm); font-weight: 600; display: block; margin-bottom: var(--space-xs);"><span data-i18n="registrationBBDocsUploadSchoolCert">{t(locale, 'registrationBBDocsUploadSchoolCert')}</span></label>
+                <small style="color: var(--text-secondary); display: block; margin-bottom: var(--space-xs);" data-i18n="registrationBBDocsSchoolCertNote">{t(locale, 'registrationBBDocsSchoolCertNote')}</small>
+                <input type="file" id="bb-doc-schoolcert-upload" name="bb_doc_schoolcert" accept=".pdf,.jpg,.jpeg,.png,.webp">
               </div>
             </div>
           </div>
@@ -474,7 +518,7 @@ const KS_OTHER = [
   </section>
 
   <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-  <script is:inline src="/js/registration-form.js?v=3.7.0"></script>
+  <script is:inline src="/js/registration-form.js?v=3.8.0"></script>
   <script src="../../islands/scroll-animations.ts"></script>
 </PageLayout>
 

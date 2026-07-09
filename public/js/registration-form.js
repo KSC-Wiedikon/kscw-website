@@ -292,9 +292,17 @@
     natTriggerText.textContent = name;
     natWrapper.classList.remove('open');
     natSearch.value = '';
-    // Trigger foreign docs visibility
-    updateForeignDocs(code);
+    // Nationality feeds into the basketball document set (Player Self Declaration
+    // for foreign new players, etc.).
+    updateBBDocs();
   }
+
+  // Situation selector + date of birth also drive the basketball document set.
+  form.querySelectorAll('input[name="bb_situation"]').forEach(function (r) {
+    r.addEventListener('change', updateBBDocs);
+  });
+  var geburtsdatumEl = document.getElementById('geburtsdatum');
+  if (geburtsdatumEl) geburtsdatumEl.addEventListener('change', updateBBDocs);
 
   if (natTrigger) {
     natTrigger.addEventListener('click', function (e) {
@@ -380,12 +388,78 @@
     });
   }
 
-  // ── Foreign docs toggle (basketball) ─────────────────────────
-  function updateForeignDocs(countryCode) {
-    var foreignDocs = document.querySelectorAll('.bb-doc-foreign');
-    var isForeign = countryCode !== 'CH';
-    for (var i = 0; i < foreignDocs.length; i++) {
-      foreignDocs[i].style.display = isForeign ? '' : 'none';
+  // ── Basketball document set (situation + nationality + age driven) ──
+  // Mirrors Swiss Basketball's "Liste der Dokumente für jeden Fall" (licensing
+  // procedure, lizenzdokument.pdf). The applicant's *situation* — new / Swiss-club
+  // transfer / from abroad / returner — plus nationality and whether they are a
+  // minor (U18, FIBA minor-transfer rules) decide which documents are required.
+  // ID front/back + signed Lizenzantrag are always required and handled elsewhere.
+  // Kept in sync with the backend (wiedisync registration.js bbRequiredDocs()).
+  var BB_SITUATIONS = ['neu', 'transfer_ch', 'transfer_intl', 'rueckkehr'];
+
+  // U18 = a minor (under 18) at the start of the current season (Sept 1). Swiss
+  // Basketball's youth/minor documents (National Team Declaration, parental
+  // consent, school certificate) hinge on this. Derived from date of birth so
+  // the applicant answers nothing extra; borderline ages resolve by season start.
+  function isMinorFromDob(dobStr) {
+    if (!dobStr) return false;
+    var p = String(dobStr).split('-');
+    if (p.length !== 3) return false;
+    var by = +p[0], bm = +p[1], bd = +p[2];
+    if (!by || !bm || !bd) return false;
+    var now = new Date();
+    var seasonStartYear = (now.getMonth() + 1) >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+    var ref = new Date(seasonStartYear, 8, 1); // Sept 1 of the season
+    var age = ref.getFullYear() - by;
+    if ((ref.getMonth() + 1) < bm || ((ref.getMonth() + 1) === bm && ref.getDate() < bd)) age--;
+    return age < 18;
+  }
+
+  // Returns { required: [...docKeys], optional: [...docKeys] } beyond the always-on
+  // id_upload_front / id_upload_back / bb_doc_lizenz. docKeys are the short doc
+  // ids used by data-doc / data-doc-upload attributes and the DOC_INPUTS map.
+  function bbDocSet(situation, natCode, isMinor) {
+    var required = [];
+    var optional = [];
+    var foreign = natCode && natCode !== 'CH';
+    switch (situation) {
+      case 'transfer_ch':
+        required.push('freibrief');
+        break;
+      case 'transfer_intl':
+      case 'rueckkehr':
+        required.push('selfdecl');
+        if (isMinor) { required.push('natdecl', 'u18parents'); optional.push('schoolcert'); }
+        break;
+      case 'neu':
+      default:
+        if (foreign) required.push('selfdecl');
+        if (foreign && isMinor) required.push('natdecl');
+        break;
+    }
+    return { required: required, optional: optional };
+  }
+
+  function currentSituation() {
+    var r = form.querySelector('input[name="bb_situation"]:checked');
+    return r ? r.value : '';
+  }
+
+  // Show/hide the conditional download rows + upload slots to match the current
+  // situation/nationality/age, and mark shown-required uploads. Runs whenever the
+  // situation, nationality, or date of birth changes.
+  function updateBBDocs() {
+    var natCode = natHidden ? (natHidden.dataset.code || '') : '';
+    var minor = isMinorFromDob(val('geburtsdatum'));
+    var set = bbDocSet(currentSituation(), natCode, minor);
+    var shown = {};
+    set.required.forEach(function (k) { shown[k] = 'required'; });
+    set.optional.forEach(function (k) { shown[k] = 'optional'; });
+    var conds = document.querySelectorAll('.bb-doc-cond');
+    for (var i = 0; i < conds.length; i++) {
+      var el = conds[i];
+      var key = el.getAttribute('data-doc') || el.getAttribute('data-doc-upload');
+      el.style.display = shown[key] ? '' : 'none';
     }
   }
 
@@ -986,7 +1060,6 @@
           ? 'Bitte lade den unterschriebenen Lizenzantrag hoch.'
           : 'Please upload the signed licence application.');
       }
-      // Nationality drives whether the two extra FIBA documents are required.
       var natCode = natHidden ? (natHidden.dataset.code || '') : '';
       if (!natCode) {
         logBlock('blocked: bb nationality not selected');
@@ -994,24 +1067,45 @@
           ? 'Bitte wähle deine Nationalität.'
           : 'Please select your nationality.');
       }
-      // Non-Swiss players must additionally upload the signed Player's Self
-      // Declaration + National Team Declaration (Swiss Basketball requirement):
-      // 5 documents in total instead of 3. Without this, a non-Swiss applicant
-      // could submit with only the 3 base documents and it went through silently.
-      if (natCode !== 'CH') {
-        var selfDecl = document.getElementById('bb-doc-selfdecl-upload');
-        if (selfDecl && !selfDecl.files.length) {
-          logBlock('blocked: bb self-declaration missing (non-Swiss)');
-          return showFeedback('error', locale === 'de'
-            ? 'Als nicht-Schweizer Spieler:in musst du zusätzlich die unterschriebene «Player’s Self Declaration» hochladen.'
-            : 'As a non-Swiss player you must also upload the signed "Player’s Self Declaration".');
-        }
-        var natDecl = document.getElementById('bb-doc-natdecl-upload');
-        if (natDecl && !natDecl.files.length) {
-          logBlock('blocked: bb national-team-declaration missing (non-Swiss)');
-          return showFeedback('error', locale === 'de'
-            ? 'Als nicht-Schweizer Spieler:in musst du zusätzlich die unterschriebene «National Team Declaration» hochladen.'
-            : 'As a non-Swiss player you must also upload the signed "National Team Declaration".');
+      // Situation (new / Swiss-club transfer / from abroad / returner) selects the
+      // required document set per Swiss Basketball's licensing procedure.
+      var situation = currentSituation();
+      if (BB_SITUATIONS.indexOf(situation) === -1) {
+        logBlock('blocked: bb situation not selected');
+        return showFeedback('error', locale === 'de'
+          ? 'Bitte wähle deine Situation aus (neue Lizenz, Vereinswechsel …).'
+          : 'Please choose your situation (new licence, club transfer …).');
+      }
+      // Each situation-specific document that is REQUIRED must be uploaded. Without
+      // this, an applicant could submit missing e.g. the Freibrief for a Swiss-club
+      // transfer and it would go through silently.
+      var reqDocs = bbDocSet(situation, natCode, isMinorFromDob(val('geburtsdatum'))).required;
+      var DOC_UPLOAD_IDS = {
+        freibrief: 'bb-doc-freibrief-upload',
+        selfdecl: 'bb-doc-selfdecl-upload',
+        natdecl: 'bb-doc-natdecl-upload',
+        u18parents: 'bb-doc-u18parents-upload',
+      };
+      var DOC_MISSING_MSG = {
+        freibrief: locale === 'de'
+          ? 'Bei einem Vereinswechsel innerhalb der Schweiz musst du den vom bisherigen Club unterschriebenen Freibrief hochladen.'
+          : 'For a transfer from another Swiss club you must upload the release letter (Freibrief) signed by your previous club.',
+        selfdecl: locale === 'de'
+          ? 'Für deine Situation musst du zusätzlich die unterschriebene «Player’s Self Declaration» hochladen.'
+          : 'For your situation you must also upload the signed "Player’s Self Declaration".',
+        natdecl: locale === 'de'
+          ? 'Für Spieler:innen unter 18 musst du zusätzlich die unterschriebene «National Team Declaration» hochladen.'
+          : 'For players under 18 you must also upload the signed "National Team Declaration".',
+        u18parents: locale === 'de'
+          ? 'Für Spieler:innen unter 18 musst du zusätzlich das unterschriebene Einverständnis der Eltern (U18) hochladen.'
+          : 'For players under 18 you must also upload the signed parental consent (U18).',
+      };
+      for (var ri = 0; ri < reqDocs.length; ri++) {
+        var dk = reqDocs[ri];
+        var upEl = document.getElementById(DOC_UPLOAD_IDS[dk]);
+        if (upEl && !upEl.files.length) {
+          logBlock('blocked: bb doc missing (' + dk + ', situation=' + situation + ')');
+          return showFeedback('error', DOC_MISSING_MSG[dk]);
         }
       }
     }
@@ -1145,6 +1239,9 @@
       var refCheck = document.getElementById('bb-ref-check');
       if (refCheck && refCheck.checked) bbLicParts.push('Schiedsrichter');
       payload.lizenz = bbLicParts.join(', ') || '';
+      // Licensing situation drives which Swiss Basketball documents are required
+      // (server re-validates using this + nationality + date of birth).
+      payload.bb_situation = currentSituation();
     }
 
     if (type === 'passive') {
@@ -1226,9 +1323,9 @@
         for (var si = 0; si < stEls.length; si++) stEls[si].textContent = '';
         if (natTriggerText) natTriggerText.textContent = '—';
         if (natHidden) { natHidden.value = ''; delete natHidden.dataset.code; }
-        // Back to the pre-selection default: FIBA doc rows hidden until a
-        // nationality is picked again (updateForeignDocs('') would SHOW them).
-        var fdRows = document.querySelectorAll('.bb-doc-foreign');
+        // form.reset() cleared the situation radios and nationality; collapse all
+        // conditional document rows back to hidden until they're re-selected.
+        var fdRows = document.querySelectorAll('.bb-doc-cond');
         for (var fdi = 0; fdi < fdRows.length; fdi++) fdRows[fdi].style.display = 'none';
         if (phoneCode) phoneCode.value = 'CH';
         vbFields.style.display = 'none';
@@ -1285,8 +1382,11 @@
     { id: 'id-front', key: 'id_upload_front' },
     { id: 'id-back', key: 'id_upload_back' },
     { id: 'bb-doc-lizenz-upload', key: 'bb_doc_lizenz' },
+    { id: 'bb-doc-freibrief-upload', key: 'bb_doc_freibrief' },
     { id: 'bb-doc-selfdecl-upload', key: 'bb_doc_selfdecl' },
     { id: 'bb-doc-natdecl-upload', key: 'bb_doc_natdecl' },
+    { id: 'bb-doc-u18parents-upload', key: 'bb_doc_u18parents' },
+    { id: 'bb-doc-schoolcert-upload', key: 'bb_doc_schoolcert' },
   ];
   var docUploads = {}; // key → { promise, fileId, error }
 
@@ -1425,6 +1525,7 @@
       nationalitaet: natHidden ? natHidden.value : '',
       geschlecht: val('geschlecht'),
       nationalitaetCode: natHidden ? (natHidden.dataset.code || '') : '',
+      situation: currentSituation(),
     };
   }
 
@@ -1508,7 +1609,15 @@
             setField(f, 'KOPIE DES PASSES ODER DER ID BEILAGEN', d.nationalitaet, font, sz);
           }
 
-          try { f.getCheckBox('Neues Mitglied Swiss Basketball').check(); } catch(e) {}
+          // Tick the box matching the applicant's situation (the PDF's transfer
+          // checkboxes); default to "new member" when no situation was picked.
+          var sitBox = {
+            neu: 'Neues Mitglied Swiss Basketball',
+            transfer_ch: 'Klubtransfer',
+            transfer_intl: 'Internationaler Transfer',
+            rueckkehr: 'Internationaler Transfer',
+          }[d.situation] || 'Neues Mitglied Swiss Basketball';
+          try { f.getCheckBox(sitBox).check(); } catch(e) {}
 
           var today = todayDDMMYYYY();
           setField(f, 'Datum', today, font, sz);
@@ -1569,6 +1678,58 @@
           setField(f, 'Text2', 'Suisse', font, sz);
           setField(f, 'Text3', 'Schweiz', font, sz);
           setField(f, 'Date Date Datum', todayDDMMYYYY(), font, sz);
+        } catch (ex) {}
+      });
+    });
+  }
+
+  // Freibrief / Lettre de sortie pre-fill (Swiss Basketball — exact field names).
+  // The release itself is signed by the applicant's PREVIOUS club; we only
+  // pre-fill the player's identity so they hand a partly-filled form to that club.
+  var freibriefLink = document.getElementById('bb-doc-freibrief');
+  if (freibriefLink) {
+    freibriefLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      downloadPrefilled('/docs/freibrief-swiss-basketball.pdf', 'freibrief.pdf', function (pdfDoc, d) {
+        var f = pdfDoc.getForm();
+        var font = d._font; var sz = d._fontSize;
+        try {
+          setField(f, 'undefined', d.nachname, font, sz);            // NOM / NAME
+          // First-name field carries accented multi-language labels; look it up
+          // tolerantly by substring so a codepoint mismatch can't silently skip it.
+          // (Nationality is intentionally left blank — that field is a 3-letter
+          // FIBA country code the applicant/old club fills, not our full name.)
+          var flds = f.getFields();
+          for (var i = 0; i < flds.length; i++) {
+            // Match by name only — the pdf-lib bundle is minified so
+            // constructor.name is mangled; setField() safely no-ops on a
+            // non-text field (getTextField throws, caught) if a name ever collides.
+            if (/PR.NOM|VORNAME/i.test(flds[i].getName())) {
+              setField(f, flds[i].getName(), d.vorname, font, sz);
+              break;
+            }
+          }
+          if (d.geburtsdatum) {
+            var dp = d.geburtsdatum.split('-');
+            setField(f, 'undefined_2', (dp[2] || '') + '.' + (dp[1] || '') + '.' + (dp[0] || ''), font, sz); // DATE DE NAISSANCE
+          }
+        } catch (ex) {}
+      });
+    });
+  }
+
+  // U18 Parents authorisation pre-fill (FIBA parental consent — exact field
+  // names). Signed by the parent; we pre-fill the child's name + new club.
+  var u18Link = document.getElementById('bb-doc-u18parents');
+  if (u18Link) {
+    u18Link.addEventListener('click', function (e) {
+      e.preventDefault();
+      downloadPrefilled('/docs/u18-parents-authorisation-fiba.pdf', 'u18-parents-authorisation.pdf', function (pdfDoc, d) {
+        var f = pdfDoc.getForm();
+        var font = d._font; var sz = d._fontSize;
+        try {
+          setField(f, 'Surname First Name', d.nachname + ' ' + d.vorname, font, sz); // child
+          setField(f, 'to new club', 'KSC Wiedikon', font, sz);
         } catch (ex) {}
       });
     });

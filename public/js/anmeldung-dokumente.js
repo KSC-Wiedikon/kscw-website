@@ -29,8 +29,11 @@
     id_upload_front: de ? 'ID / Pass — Vorderseite' : 'ID / passport — front',
     id_upload_back: de ? 'ID / Pass — Rückseite' : 'ID / passport — back',
     bb_doc_lizenz: de ? 'Lizenzantrag (unterschrieben)' : 'Licence application (signed)',
+    bb_doc_freibrief: de ? 'Freibrief (unterschrieben)' : 'Release letter / Freibrief (signed)',
     bb_doc_selfdecl: "Player's Self Declaration",
     bb_doc_natdecl: 'National Team Declaration',
+    bb_doc_u18parents: de ? 'Einverständnis der Eltern (U18)' : 'Parental consent (U18)',
+    bb_doc_schoolcert: de ? 'Schulbestätigung (optional)' : 'School enrolment certificate (optional)',
   };
   var ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
   var MAX_FILE_SIZE = 10 * 1024 * 1024;

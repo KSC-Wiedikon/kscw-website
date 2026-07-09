@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.8.1] — 2026-07-09
+
+### Admin: scorer registration details — one field per row
+- The expanded sign-up (the **▸** detail view in the scorer-course registrations table) now lists each field on its own line — date, phone, email, address, birthdate, language, participation, KSCW membership, club/team and notes stack vertically instead of wrapping several per line, so a registrant's details are easier to scan.
+
 ## [1.8.0] — 2026-07-09
 
 ### Admin: scorer-course registrations — compact rows, SVRZ pre-fill & bulk email

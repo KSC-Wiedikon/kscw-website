@@ -2,6 +2,13 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.7.0] — 2026-07-09
+
+### Admin: scorer-course registrations, inline with attendance & exam tracking
+- The website admin (`/admin`) now supports deep-linkable tabs — the address bar carries the open section (e.g. `/admin/?tab=scorer_courses`, and `&course=<id>` for one course's registrations), so a view can be bookmarked or shared and the browser Back/Forward buttons move between sections.
+- Scorer-course sign-ups now open **inline** (no pop-up) as an editable table. For each registrant you can tick **present**, **exam sent** and **exam passed**, add a **note**, and fill in a **Swiss Volley licence number** when the applicant didn't provide one. Changes save immediately.
+- The sign-ups themselves stay read-only; the tracking lives in a new Directus collection (`scorer_course_attendance`) keyed to each sign-up — the form provider (OpnForm) has no place to store it. Exposed through the existing `scorer_courses` admin grant; all fields are scalar so the section-scoped-admin guards apply unchanged.
+
 ## [1.6.0] — 2026-07-09
 
 ### Basketball registration: full Swiss Basketball document flow

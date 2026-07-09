@@ -2,6 +2,13 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.8.0] — 2026-07-09
+
+### Admin: scorer-course registrations — compact rows, SVRZ pre-fill & bulk email
+- The inline registrations table (`/admin/?tab=scorer_courses&course=<id>`) now shows a **compact row** — first name, last name, the present / exam-sent / exam-passed toggles, the licence field and delete — so it fits on screen without sideways scrolling. A **▸** arrow (or a click on the name) expands the full sign-up: phone, email, address, birthdate, participation, team, notes and everything else, plus the editable tracking note.
+- The **SV licence** field is **pre-filled** from the sign-up's *SVRZ Licence Number* answer when the applicant provided one and it hasn't been tracked yet (a value you've already entered always wins). Saves as before, only when you edit it.
+- New **Send email** button: it reveals a per-registrant checkbox (all selected by default, with a select-all box), then opens your default mail program with the chosen participants pre-addressed — for quick "message everyone on this course" mails.
+
 ## [1.7.0] — 2026-07-09
 
 ### Admin: scorer-course registrations, inline with attendance & exam tracking

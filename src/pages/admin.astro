@@ -282,6 +282,14 @@ import '../styles/global.css';
         scSaveFailed: 'Fehler',
         scNoSignups: 'Noch keine Anmeldungen.',
         scExportTSV: 'TSV-Export',
+        scColFirstName: 'Vorname',
+        scColLastName: 'Nachname',
+        scDetails: 'Alle Angaben',
+        scEmailBtn: 'E-Mail senden',
+        scEmailCompose: 'Mailprogramm öffnen',
+        scEmailCancel: 'Abbrechen',
+        scEmailNone: 'Keine E-Mail-Adressen ausgewählt.',
+        scSvFromForm: 'Aus dem Formular übernommen (SVRZ-Lizenznummer)',
         mixedTurnier: 'Mixed Turnier',
         mixedTurnierNoEntries: 'Keine Anmeldungen vorhanden.',
         mixedTurnierExportCSV: 'CSV Export',
@@ -415,6 +423,14 @@ import '../styles/global.css';
         scSaveFailed: 'Error',
         scNoSignups: 'No signups yet.',
         scExportTSV: 'Export TSV',
+        scColFirstName: 'First name',
+        scColLastName: 'Last name',
+        scDetails: 'All details',
+        scEmailBtn: 'Send email',
+        scEmailCompose: 'Open mailer',
+        scEmailCancel: 'Cancel',
+        scEmailNone: 'No email addresses selected.',
+        scSvFromForm: 'Pre-filled from the form (SVRZ licence number)',
         mixedTurnier: 'Mixed Turnier',
         mixedTurnierNoEntries: 'No signups found.',
         mixedTurnierExportCSV: 'CSV Export',
@@ -2294,9 +2310,12 @@ import '../styles/global.css';
     }
 
     // Inline editable registrations table for one course (or 'all' combined).
-    // Left columns = read-only OpnForm answers; right columns = the KSCW-owned
-    // tracking (present / exam sent / exam passed / SV licence / notes) stored
-    // in scorer_course_attendance and upserted per cell.
+    // Compact row = first/last name + the KSCW-owned tracking toggles (present /
+    // exam sent / exam passed), the SV-licence input (pre-filled from the form's
+    // SVRZ answer when untracked) and delete; the ▸ arrow expands a detail row
+    // with every remaining OpnForm answer plus the editable notes field. Tracking
+    // lives in scorer_course_attendance, upserted per cell. A "Send email" control
+    // toggles a select column (all checked) and opens the default mailer.
     function renderScorerRegistrations(sources, title, courseId) {
       var content = document.getElementById('admin-content');
       if (!content) return;
@@ -2399,15 +2418,37 @@ import '../styles/global.css';
           content.insertBefore(warn, tableHost);
         }
 
+        // Identify well-known form fields across the DE+EN merged field sets so
+        // the collapsed row can surface first/last name + SVRZ and gather emails.
+        function idsWhere(pred) { return fields.filter(pred).map(function(f) { return f.id; }); }
+        var firstNameIds = idsWhere(function(f) { return /vorname|first\s*name/i.test(String(f.name || '')); });
+        var lastNameIds  = idsWhere(function(f) { return /nachname|last\s*name|surname|familienname/i.test(String(f.name || '')); });
+        var svrzIds      = idsWhere(function(f) { return /svrz/i.test(String(f.name || '')); });
+        var emailIds     = idsWhere(function(f) { return f.type === 'email' || /^e-?mail/i.test(String(f.name || '')); });
+        var shownIds = {}; // fields already surfaced as columns → excluded from the detail panel
+        firstNameIds.concat(lastNameIds).concat(svrzIds).forEach(function(id) { shownIds[id] = 1; });
+        function pickVal(d, ids) {
+          for (var i = 0; i < ids.length; i++) { var v = d[ids[i]]; if (v != null && v !== '') return v; }
+          return '';
+        }
+
+        // Email-selection state (populated as rows render).
+        var selectCells = []; // th/td of the select column — shown only in email mode
+        var selectBoxes = []; // { cb, email } for rows that carry an email
+        var emailMode = false;
+
+        var controls = document.createElement('div');
+        controls.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;';
+        content.insertBefore(controls, tableHost);
+
         if (total > 0) {
           var exp = document.createElement('button');
           exp.className = 'admin-btn admin-btn-sm admin-btn-primary';
-          exp.style.cssText = 'margin-bottom:0.5rem;';
           exp.textContent = t('scExportTSV');
           exp.addEventListener('click', function() {
             exportResponsesCSV(multi ? 'combined' : srcList[0].slug, fields, mergedRows, multi);
           });
-          content.insertBefore(exp, tableHost);
+          controls.appendChild(exp);
         }
 
         if (!mergedRows.length) {
@@ -2418,20 +2459,81 @@ import '../styles/global.css';
           return;
         }
 
+        // Send-email flow: click once to enter select mode (all checked), click
+        // again to open the default mailer with the selected addresses as "to".
+        var emailBtn = null, cancelBtn = null, selectAllCb = null;
+        function countSelected() { return selectBoxes.filter(function(b) { return b.cb.checked; }).length; }
+        function updateEmailBtn() {
+          if (!emailBtn) return;
+          emailBtn.textContent = emailMode ? (t('scEmailCompose') + ' (' + countSelected() + ')') : t('scEmailBtn');
+        }
+        function setEmailMode(on) {
+          emailMode = on;
+          selectCells.forEach(function(c) { c.style.display = on ? '' : 'none'; });
+          if (cancelBtn) cancelBtn.style.display = on ? '' : 'none';
+          emailBtn.classList.toggle('admin-btn-primary', on);
+          updateEmailBtn();
+        }
+        if (emailIds.length) {
+          emailBtn = document.createElement('button');
+          emailBtn.className = 'admin-btn admin-btn-sm';
+          emailBtn.textContent = t('scEmailBtn');
+          emailBtn.addEventListener('click', function() {
+            if (!emailMode) { setEmailMode(true); return; }
+            var emails = [], seen = {};
+            selectBoxes.forEach(function(b) {
+              if (!b.cb.checked) return;
+              var e = String(b.email || '').trim();
+              if (!e || e.indexOf('@') === -1 || seen[e.toLowerCase()]) return;
+              seen[e.toLowerCase()] = 1; emails.push(e);
+            });
+            if (!emails.length) { alert(t('scEmailNone')); return; }
+            window.location.href = 'mailto:' + emails.join(',');
+          });
+          controls.appendChild(emailBtn);
+          cancelBtn = document.createElement('button');
+          cancelBtn.className = 'admin-btn admin-btn-sm';
+          cancelBtn.textContent = t('scEmailCancel');
+          cancelBtn.style.display = 'none';
+          cancelBtn.addEventListener('click', function() { setEmailMode(false); });
+          controls.appendChild(cancelBtn);
+        }
+
         var wrap = document.createElement('div');
         wrap.style.cssText = 'overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-md);';
         var table = document.createElement('table');
         table.style.cssText = 'width:100%;border-collapse:collapse;font-size:var(--text-sm);';
+        var COLSPAN = 9; // select, arrow, first, last, present, examSent, examPassed, sv, actions
+        var cellCss = 'padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);';
+        var headCss = 'text-align:left;padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.04);font-weight:600;white-space:nowrap;';
+
         var thead = document.createElement('thead');
         var thRow = document.createElement('tr');
-        var trackCols = [t('scPresent'), t('scExamSent'), t('scExamPassed'), t('scSvLicense'), t('scNotes'), ''];
-        var headLabels = [t('scColDate')].concat(multi ? [t('scColLang')] : []).concat(fields.map(function(f) { return f.name; })).concat(trackCols);
-        headLabels.forEach(function(label) {
+        function makeTh(label, extraCss) {
           var th = document.createElement('th');
-          th.textContent = label;
-          th.style.cssText = 'text-align:left;padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.04);font-weight:600;white-space:nowrap;';
-          thRow.appendChild(th);
+          if (typeof label === 'string') th.textContent = label; else if (label) th.appendChild(label);
+          th.style.cssText = headCss + (extraCss || '');
+          return th;
+        }
+        selectAllCb = document.createElement('input');
+        selectAllCb.type = 'checkbox';
+        selectAllCb.checked = true;
+        selectAllCb.style.cssText = 'width:16px;height:16px;cursor:pointer;';
+        selectAllCb.addEventListener('change', function() {
+          selectBoxes.forEach(function(b) { if (!b.cb.disabled) b.cb.checked = selectAllCb.checked; });
+          updateEmailBtn();
         });
+        var selTh = makeTh(selectAllCb, 'text-align:center;display:none;');
+        selectCells.push(selTh);
+        thRow.appendChild(selTh);
+        thRow.appendChild(makeTh('', 'width:1.5rem;'));
+        thRow.appendChild(makeTh(t('scColFirstName')));
+        thRow.appendChild(makeTh(t('scColLastName')));
+        thRow.appendChild(makeTh(t('scPresent'), 'text-align:center;'));
+        thRow.appendChild(makeTh(t('scExamSent'), 'text-align:center;'));
+        thRow.appendChild(makeTh(t('scExamPassed'), 'text-align:center;'));
+        thRow.appendChild(makeTh(t('scSvLicense')));
+        thRow.appendChild(makeTh(''));
         thead.appendChild(thRow);
         table.appendChild(thead);
         var tbody = document.createElement('tbody');
@@ -2451,30 +2553,58 @@ import '../styles/global.css';
           var rowMeta = { slug: row.slug, id: row.id, key: key, state: state };
 
           var tr = document.createElement('tr');
-          var dateTd = document.createElement('td');
-          dateTd.textContent = isoToSwissDateTime(d.created_at);
-          dateTd.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);color:var(--text-muted);white-space:nowrap;';
-          tr.appendChild(dateTd);
-          if (multi) {
-            var langTd = document.createElement('td');
-            langTd.textContent = row.lang || '';
-            langTd.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;';
-            tr.appendChild(langTd);
+          var detailTr = document.createElement('tr');
+          detailTr.style.display = 'none';
+          function toggleDetail() {
+            var open = detailTr.style.display === 'none';
+            detailTr.style.display = open ? '' : 'none';
+            arrowTd.textContent = open ? '▾' : '▸';
           }
-          fields.forEach(function(f) {
-            var td = document.createElement('td');
-            var v = d[f.id];
-            td.textContent = (v == null || v === '') ? '—' : fmtAnswer(f, v);
-            td.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);';
-            tr.appendChild(td);
-          });
+
+          // select checkbox (email mode only)
+          var rowEmail = String(pickVal(d, emailIds) || '').trim();
+          var selTd = document.createElement('td');
+          selTd.style.cssText = cellCss + 'text-align:center;display:none;';
+          var selCb = document.createElement('input');
+          selCb.type = 'checkbox';
+          selCb.checked = !!rowEmail;
+          selCb.disabled = !rowEmail;
+          selCb.style.cssText = 'width:16px;height:16px;cursor:pointer;';
+          selCb.addEventListener('change', updateEmailBtn);
+          selTd.appendChild(selCb);
+          if (rowEmail) selectBoxes.push({ cb: selCb, email: rowEmail });
+          selectCells.push(selTd);
+          tr.appendChild(selTd);
+
+          // expand/collapse arrow
+          var arrowTd = document.createElement('td');
+          arrowTd.style.cssText = cellCss + 'text-align:center;cursor:pointer;color:var(--text-muted);user-select:none;';
+          arrowTd.textContent = '▸';
+          arrowTd.title = t('scDetails');
+          arrowTd.addEventListener('click', toggleDetail);
+          tr.appendChild(arrowTd);
+
+          // first / last name (also clickable to expand)
+          var fnV = pickVal(d, firstNameIds);
+          var fnTd = document.createElement('td');
+          fnTd.style.cssText = cellCss + 'cursor:pointer;';
+          fnTd.textContent = (fnV == null || fnV === '') ? '—' : String(fnV);
+          fnTd.addEventListener('click', toggleDetail);
+          tr.appendChild(fnTd);
+
+          var lnV = pickVal(d, lastNameIds);
+          var lnTd = document.createElement('td');
+          lnTd.style.cssText = cellCss + 'cursor:pointer;';
+          lnTd.textContent = (lnV == null || lnV === '') ? '—' : String(lnV);
+          lnTd.addEventListener('click', toggleDetail);
+          tr.appendChild(lnTd);
 
           var statusEl = document.createElement('span');
           statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-left:0.4rem;';
 
           ['present', 'exam_sent', 'exam_passed'].forEach(function(fieldName) {
             var td = document.createElement('td');
-            td.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);text-align:center;';
+            td.style.cssText = cellCss + 'text-align:center;';
             var cb = document.createElement('input');
             cb.type = 'checkbox';
             cb.checked = !!state[fieldName];
@@ -2486,34 +2616,25 @@ import '../styles/global.css';
             tr.appendChild(td);
           });
 
+          // SV licence — pre-fill from the form's SVRZ answer when no tracked value yet
           var svTd = document.createElement('td');
-          svTd.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);';
+          svTd.style.cssText = cellCss;
           var svInp = document.createElement('input');
           svInp.type = 'text';
-          svInp.value = state.sv_license;
+          var formSv = String(pickVal(d, svrzIds) || '').trim();
+          svInp.value = state.sv_license || formSv;
           svInp.placeholder = t('scSvLicense');
           svInp.style.cssText = 'width:110px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+          if (!state.sv_license && formSv) svInp.title = t('scSvFromForm');
           svInp.addEventListener('change', function() {
             saveScorerField(rowMeta, 'sv_license', svInp.value.trim(), statusEl);
           });
           svTd.appendChild(svInp);
           tr.appendChild(svTd);
 
-          var noteTd = document.createElement('td');
-          noteTd.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);';
-          var noteInp = document.createElement('input');
-          noteInp.type = 'text';
-          noteInp.value = state.notes;
-          noteInp.placeholder = t('scNotes');
-          noteInp.style.cssText = 'width:160px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
-          noteInp.addEventListener('change', function() {
-            saveScorerField(rowMeta, 'notes', noteInp.value, statusEl);
-          });
-          noteTd.appendChild(noteInp);
-          tr.appendChild(noteTd);
-
+          // actions (delete + save status)
           var actTd = document.createElement('td');
-          actTd.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);white-space:nowrap;';
+          actTd.style.cssText = cellCss + 'white-space:nowrap;';
           if (row.id != null) {
             var delBtn = document.createElement('button');
             delBtn.className = 'admin-btn admin-btn-sm admin-btn-danger';
@@ -2536,6 +2657,51 @@ import '../styles/global.css';
           tr.appendChild(actTd);
 
           tbody.appendChild(tr);
+
+          // ── collapsed detail row: every remaining form answer + KSCW notes ──
+          var detailTd = document.createElement('td');
+          detailTd.colSpan = COLSPAN;
+          detailTd.style.cssText = 'padding:0.5rem 0.9rem 0.85rem 2.1rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);';
+          var dl = document.createElement('div');
+          dl.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.35rem 1.5rem;margin-bottom:0.6rem;';
+          function addDetail(label, value) {
+            if (value == null || value === '') return;
+            var item = document.createElement('div');
+            item.style.cssText = 'font-size:var(--text-sm);';
+            var lab = document.createElement('span');
+            lab.style.cssText = 'color:var(--text-muted);margin-right:0.35rem;';
+            lab.textContent = label + ':';
+            var val = document.createElement('span');
+            val.textContent = value;
+            item.appendChild(lab); item.appendChild(val);
+            dl.appendChild(item);
+          }
+          addDetail(t('scColDate'), isoToSwissDateTime(d.created_at));
+          if (multi) addDetail(t('scColLang'), row.lang || '');
+          fields.forEach(function(f) {
+            if (shownIds[f.id]) return; // already a column
+            var v = d[f.id];
+            if (v == null || v === '') return;
+            addDetail(f.name, fmtAnswer(f, v));
+          });
+          detailTd.appendChild(dl);
+
+          var noteWrap = document.createElement('label');
+          noteWrap.style.cssText = 'display:flex;align-items:center;gap:0.5rem;font-size:var(--text-sm);color:var(--text-muted);';
+          var noteLbl = document.createElement('span');
+          noteLbl.textContent = t('scNotes') + ':';
+          var noteInp = document.createElement('input');
+          noteInp.type = 'text';
+          noteInp.value = state.notes;
+          noteInp.placeholder = t('scNotes');
+          noteInp.style.cssText = 'flex:1;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+          noteInp.addEventListener('change', function() {
+            saveScorerField(rowMeta, 'notes', noteInp.value, statusEl);
+          });
+          noteWrap.appendChild(noteLbl); noteWrap.appendChild(noteInp);
+          detailTd.appendChild(noteWrap);
+          detailTr.appendChild(detailTd);
+          tbody.appendChild(detailTr);
         });
 
         table.appendChild(tbody);

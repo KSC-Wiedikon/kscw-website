@@ -2663,7 +2663,7 @@ import '../styles/global.css';
           detailTd.colSpan = COLSPAN;
           detailTd.style.cssText = 'padding:0.5rem 0.9rem 0.85rem 2.1rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);';
           var dl = document.createElement('div');
-          dl.style.cssText = 'display:flex;flex-wrap:wrap;gap:0.35rem 1.5rem;margin-bottom:0.6rem;';
+          dl.style.cssText = 'display:flex;flex-direction:column;gap:0.3rem;margin-bottom:0.6rem;';
           function addDetail(label, value) {
             if (value == null || value === '') return;
             var item = document.createElement('div');

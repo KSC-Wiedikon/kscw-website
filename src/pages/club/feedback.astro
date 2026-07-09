@@ -135,8 +135,20 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.7.0</span>
+          <span class="changelog-badge">v1.8.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.8.0 — 2026-07-09</div>
+          <div class="changelog-group">
+            <h3>Admin: Schreiberkurs-Anmeldungen — kompakte Zeilen, SVRZ-Vorbelegung & Sammel-E-Mail</h3>
+            <ul>
+              <li>Die Anmeldungstabelle zeigt neu eine kompakte Zeile — Vorname, Nachname, die Häkchen anwesend / Prüfung gesendet / Prüfung bestanden, das Lizenzfeld und Löschen — und passt so ohne seitliches Scrollen auf den Bildschirm. Ein ▸-Pfeil (oder ein Klick auf den Namen) klappt die vollständige Anmeldung auf: Telefon, E-Mail, Adresse, Geburtsdatum, Teilnahme, Team, Notizen und alles Weitere sowie die bearbeitbare Tracking-Notiz</li>
+              <li>Das Feld SV-Lizenz wird neu aus der Antwort «SVRZ-Lizenznummer» vorbelegt, wenn die Person eine angegeben hat und noch nichts erfasst wurde (ein bereits eingetragener Wert hat immer Vorrang). Gespeichert wird wie bisher nur beim Bearbeiten</li>
+              <li>Neuer Button E-Mail senden: er blendet pro Anmeldung ein Häkchen ein (standardmässig alle ausgewählt, mit «alle»-Häkchen) und öffnet dann das Standard-Mailprogramm mit den gewählten Teilnehmenden als Empfänger — praktisch für «allen in diesem Kurs schreiben»</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.7.0 — 2026-07-09</div>
@@ -355,8 +367,20 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.7.0</span>
+          <span class="changelog-badge">v1.8.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.8.0 — 2026-07-09</div>
+          <div class="changelog-group">
+            <h3>Admin: scorer-course registrations — compact rows, SVRZ pre-fill & bulk email</h3>
+            <ul>
+              <li>The registrations table now shows a compact row — first name, last name, the present / exam-sent / exam-passed toggles, the licence field and delete — so it fits on screen without sideways scrolling. A ▸ arrow (or a click on the name) expands the full sign-up: phone, email, address, birthdate, participation, team, notes and everything else, plus the editable tracking note</li>
+              <li>The SV licence field is pre-filled from the sign-up's "SVRZ Licence Number" answer when the applicant provided one and it hasn't been tracked yet (a value you've already entered always wins). Saves as before, only when you edit it</li>
+              <li>New Send email button: it reveals a per-registrant checkbox (all selected by default, with a select-all box), then opens your default mail program with the chosen participants pre-addressed — handy for "message everyone on this course"</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.7.0 — 2026-07-09</div>

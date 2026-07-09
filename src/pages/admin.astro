@@ -38,6 +38,8 @@ import '../styles/global.css';
     var currentTab = 'news';
     var adminAccess = { isSuperuser: false, sections: [] };
     var SECTION_ORDER = ['news','events','registrations','sponsors','scorer_courses','mixed_turnier'];
+    var _scorerCourses = null; // cached scorer_courses rows for the inline registrations view
+    var _scorerSaveChains = {}; // per-signup save serialization (sub_key -> Promise)
     var adminLang = 'en';
     var quillInstance = null;
     var turnstileWidgetId = null;
@@ -104,6 +106,51 @@ import '../styles/global.css';
         return failClosedAccess();
       }
       return adminAccess;
+    }
+
+    // ── URL ↔ tab state (deep-linkable /admin/?tab=…&course=…) ──
+    function adminUrl(tab, params) {
+      var qs = new URLSearchParams();
+      if (tab) qs.set('tab', tab);
+      if (params) Object.keys(params).forEach(function(k) {
+        if (params[k] != null && params[k] !== '') qs.set(k, params[k]);
+      });
+      var s = qs.toString();
+      return '/admin/' + (s ? '?' + s : '');
+    }
+    function pushAdminUrl(tab, params) {
+      try { history.pushState({ tab: tab }, '', adminUrl(tab, params)); } catch (e) {}
+    }
+    function replaceAdminUrl(tab, params) {
+      try { history.replaceState({ tab: tab }, '', adminUrl(tab, params)); } catch (e) {}
+    }
+    // Which sections this user may actually see (superuser sees all + the grid).
+    function visibleTabs() {
+      var v = SECTION_ORDER.filter(function(s) {
+        return adminAccess.isSuperuser || adminAccess.sections.indexOf(s) !== -1;
+      });
+      return v;
+    }
+    // Resolve the requested tab against what the user is allowed to see.
+    function resolveTab(tab) {
+      var visible = visibleTabs();
+      if (tab === 'admin' && adminAccess.isSuperuser) return 'admin';
+      if (tab && visible.indexOf(tab) !== -1) return tab;
+      return visible.length ? visible[0] : '';
+    }
+    // Back/forward navigation: re-sync the dashboard from the URL without a
+    // full re-render (keeps scroll + avoids re-binding). loadItems() re-reads
+    // the `course` param for the scorer tab, so course deep-links round-trip.
+    function syncTabFromUrl() {
+      if (!document.querySelector('.admin-shell')) return; // not on the dashboard
+      var params = new URLSearchParams(location.search);
+      currentTab = resolveTab(params.get('tab'));
+      document.querySelectorAll('.admin-tab').forEach(function(el) {
+        el.classList.toggle('active', el.getAttribute('data-tab') === currentTab);
+      });
+      var fab = document.getElementById('fab-btn');
+      if (fab) fab.style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier') ? 'none' : '';
+      loadItems();
     }
 
     // ── i18n ─────────────────────────────────────────────────
@@ -220,6 +267,21 @@ import '../styles/global.css';
         scResponsesEn: 'Antworten (EN)',
         scActive_badge: 'Aktiv',
         scInactive_badge: 'Inaktiv',
+        scRegistrations: 'Anmeldungen',
+        scBackToCourses: '← Zurück zu den Kursen',
+        scAllSignups: 'Alle Anmeldungen (DE + EN)',
+        scPresent: 'Anwesend',
+        scExamSent: 'Prüfung gesendet',
+        scExamPassed: 'Prüfung bestanden',
+        scSvLicense: 'SV-Lizenz',
+        scNotes: 'Notizen',
+        scColDate: 'Datum',
+        scColLang: 'Sprache',
+        scSaved: 'Gespeichert',
+        scSaving: 'Speichern…',
+        scSaveFailed: 'Fehler',
+        scNoSignups: 'Noch keine Anmeldungen.',
+        scExportTSV: 'TSV-Export',
         mixedTurnier: 'Mixed Turnier',
         mixedTurnierNoEntries: 'Keine Anmeldungen vorhanden.',
         mixedTurnierExportCSV: 'CSV Export',
@@ -338,6 +400,21 @@ import '../styles/global.css';
         scResponsesEn: 'Responses (EN)',
         scActive_badge: 'Active',
         scInactive_badge: 'Inactive',
+        scRegistrations: 'Registrations',
+        scBackToCourses: '← Back to courses',
+        scAllSignups: 'All signups (DE + EN)',
+        scPresent: 'Present',
+        scExamSent: 'Exam sent',
+        scExamPassed: 'Exam passed',
+        scSvLicense: 'SV licence',
+        scNotes: 'Notes',
+        scColDate: 'Date',
+        scColLang: 'Lang',
+        scSaved: 'Saved',
+        scSaving: 'Saving…',
+        scSaveFailed: 'Error',
+        scNoSignups: 'No signups yet.',
+        scExportTSV: 'Export TSV',
         mixedTurnier: 'Mixed Turnier',
         mixedTurnierNoEntries: 'No signups found.',
         mixedTurnierExportCSV: 'CSV Export',
@@ -702,9 +779,10 @@ import '../styles/global.css';
       var visibleSections = SECTION_ORDER.filter(function(s) {
         return adminAccess.isSuperuser || adminAccess.sections.indexOf(s) !== -1;
       });
-      if (visibleSections.indexOf(currentTab) === -1) {
-        currentTab = visibleSections.length ? visibleSections[0] : '';
-      }
+      // Honour a deep-linked ?tab=… on first paint (falls back to the first
+      // visible tab / keeps last in-memory tab if the URL has none).
+      var urlTab = new URLSearchParams(location.search).get('tab');
+      currentTab = resolveTab(urlTab || currentTab);
       var tabsHtml = visibleSections.map(function(s) {
         return '<button class="admin-tab' + (currentTab === s ? ' active' : '') +
           '" data-tab="' + s + '">' + escapeHtml(TAB_LABELS[s]) + '</button>';
@@ -746,6 +824,7 @@ import '../styles/global.css';
       document.querySelectorAll('.admin-tab').forEach(function(tab) {
         tab.addEventListener('click', function() {
           currentTab = this.getAttribute('data-tab');
+          pushAdminUrl(currentTab); // drops any &course= sub-state
           document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
           this.classList.add('active');
           // Hide FAB for registrations (no manual creation)
@@ -757,6 +836,16 @@ import '../styles/global.css';
       document.getElementById('fab-btn').addEventListener('click', function() {
         openModal(null);
       });
+
+      // Back/forward between tabs (and scorer course deep-links). Bound once.
+      if (!window.__adminPopstateBound) {
+        window.__adminPopstateBound = true;
+        window.addEventListener('popstate', syncTabFromUrl);
+      }
+      // Canonicalise the address bar so the first tab is always shareable and
+      // a later Back lands on it rather than an ambiguous /admin/.
+      replaceAdminUrl(currentTab, { course: new URLSearchParams(location.search).get('course') });
+      document.getElementById('fab-btn').style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier') ? 'none' : '';
 
       loadItems();
     }
@@ -837,7 +926,12 @@ import '../styles/global.css';
         wadmin('scorer_courses', 'items/scorer_courses?sort=sort,date_iso&limit=-1', {})
           .then(function(r) { return r.json(); })
           .then(function(data) {
-            renderScorerCoursesList(data.data || []);
+            _scorerCourses = data.data || [];
+            // Deep-link: ?tab=scorer_courses&course=<id|all> opens that course's
+            // registrations inline; otherwise show the course list.
+            var courseParam = new URLSearchParams(location.search).get('course');
+            if (courseParam) { openScorerCourseInline(courseParam); }
+            else { renderScorerCoursesList(_scorerCourses); }
           })
           .catch(function(err) {
             content.textContent = '';
@@ -2003,6 +2097,8 @@ import '../styles/global.css';
       var content = document.getElementById('admin-content');
       if (!content) return;
       content.textContent = '';
+      var fab = document.getElementById('fab-btn');
+      if (fab) fab.style.display = ''; // course creation available on the list view
 
       if (!items.length) {
         var emptyDiv = document.createElement('div');
@@ -2026,9 +2122,10 @@ import '../styles/global.css';
         bar.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:var(--space-md);';
         var allBtn = document.createElement('button');
         allBtn.className = 'admin-btn admin-btn-sm admin-btn-primary';
-        allBtn.textContent = 'All signups (DE + EN)';
+        allBtn.textContent = t('scAllSignups');
         allBtn.addEventListener('click', function() {
-          openResponsesModal(allSources, 'All scorer-course signups');
+          pushAdminUrl('scorer_courses', { course: 'all' });
+          openScorerCourseInline('all');
         });
         bar.appendChild(allBtn);
         content.appendChild(bar);
@@ -2095,10 +2192,13 @@ import '../styles/global.css';
         if (scSources.length) {
           var respBtn = document.createElement('button');
           respBtn.className = 'admin-btn admin-btn-sm';
-          respBtn.textContent = 'Responses';
-          respBtn.addEventListener('click', (function(srcs, ttl) {
-            return function() { openResponsesModal(srcs, ttl); };
-          })(scSources, (sc.title_en || sc.title_de || sc.slug_id)));
+          respBtn.textContent = t('scRegistrations');
+          respBtn.addEventListener('click', (function(id) {
+            return function() {
+              pushAdminUrl('scorer_courses', { course: id });
+              openScorerCourseInline(id);
+            };
+          })(String(sc.id)));
           actions.appendChild(respBtn);
         }
 
@@ -2127,6 +2227,327 @@ import '../styles/global.css';
       });
 
       content.appendChild(list);
+    }
+
+    // ── Scorer registrations (inline, editable) ───────────────
+    // Resolve a ?course=<id|all> param to its OpnForm sources and render the
+    // inline registrations view. Falls back to the list on a stale/unknown id.
+    function openScorerCourseInline(courseParam) {
+      var courses = _scorerCourses || [];
+      if (String(courseParam) === 'all') {
+        var all = [];
+        courses.forEach(function(sc) {
+          if (sc.form_slug_en) all.push({ slug: sc.form_slug_en, lang: 'EN' });
+          if (sc.form_slug_de) all.push({ slug: sc.form_slug_de, lang: 'DE' });
+        });
+        if (!all.length) { renderScorerCoursesList(courses); return; }
+        renderScorerRegistrations(all, t('scAllSignups'), 'all');
+        return;
+      }
+      var sc = null;
+      for (var i = 0; i < courses.length; i++) {
+        if (String(courses[i].id) === String(courseParam)) { sc = courses[i]; break; }
+      }
+      if (!sc) { renderScorerCoursesList(courses); return; }
+      var sources = [];
+      if (sc.form_slug_en) sources.push({ slug: sc.form_slug_en, lang: 'EN' });
+      if (sc.form_slug_de) sources.push({ slug: sc.form_slug_de, lang: 'DE' });
+      renderScorerRegistrations(sources, (sc.title_en || sc.title_de || sc.slug_id || ''), String(sc.id));
+    }
+
+    function setScorerStatus(el, kind) {
+      if (!el) return;
+      if (kind === 'saving') { el.textContent = t('scSaving'); el.style.color = 'var(--text-muted)'; }
+      else if (kind === 'saved') { el.textContent = '✓ ' + t('scSaved'); el.style.color = '#16a34a'; }
+      else { el.textContent = '✕ ' + t('scSaveFailed'); el.style.color = '#dc2626'; }
+    }
+
+    // Upsert one tracking field for a signup. Serialized per sub_key so a fast
+    // second edit cannot race the create (the POST is what mints the row id;
+    // a following edit then PATCHes it). A failed op sets the status but does
+    // not block later edits. The DB's unique sub_key is the final backstop.
+    function saveScorerField(rowMeta, field, value, statusEl) {
+      var st = rowMeta.state;
+      st[field] = value;
+      setScorerStatus(statusEl, 'saving');
+      var run = function() {
+        if (st.id != null) {
+          var body = {}; body[field] = value;
+          return wadmin('scorer_courses', 'items/scorer_course_attendance/' + st.id, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+          }).then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); });
+        }
+        var create = { sub_key: rowMeta.key, form_slug: rowMeta.slug, submission_id: String(rowMeta.id) };
+        create[field] = value;
+        return wadmin('scorer_courses', 'items/scorer_course_attendance', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(create),
+        }).then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        }).then(function(j) { if (j && j.data && j.data.id != null) st.id = j.data.id; });
+      };
+      var chain = (_scorerSaveChains[rowMeta.key] || Promise.resolve())
+        .then(run)
+        .then(function() { setScorerStatus(statusEl, 'saved'); },
+              function() { setScorerStatus(statusEl, 'error'); });
+      _scorerSaveChains[rowMeta.key] = chain;
+    }
+
+    // Inline editable registrations table for one course (or 'all' combined).
+    // Left columns = read-only OpnForm answers; right columns = the KSCW-owned
+    // tracking (present / exam sent / exam passed / SV licence / notes) stored
+    // in scorer_course_attendance and upserted per cell.
+    function renderScorerRegistrations(sources, title, courseId) {
+      var content = document.getElementById('admin-content');
+      if (!content) return;
+      var fab = document.getElementById('fab-btn');
+      if (fab) fab.style.display = 'none'; // no course creation inside the detail view
+      _scorerSaveChains = {}; // fresh save serialization per view
+
+      var srcList = (sources || [])
+        .map(function(s) { return { slug: normalizeFormSlug(s && s.slug != null ? s.slug : s), lang: (s && s.lang) || '' }; })
+        .filter(function(s) { return !!s.slug; });
+      var seenSlug = {};
+      srcList = srcList.filter(function(s) { if (seenSlug[s.slug]) return false; seenSlug[s.slug] = 1; return true; });
+      var multi = srcList.length > 1;
+
+      content.textContent = '';
+
+      var head = document.createElement('div');
+      head.style.cssText = 'display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:var(--space-md);';
+      var backBtn = document.createElement('button');
+      backBtn.className = 'admin-btn admin-btn-sm';
+      backBtn.textContent = t('scBackToCourses');
+      backBtn.addEventListener('click', function() {
+        pushAdminUrl('scorer_courses');
+        renderScorerCoursesList(_scorerCourses || []);
+      });
+      head.appendChild(backBtn);
+      var h3 = document.createElement('h3');
+      h3.className = 'admin-list-title';
+      h3.style.cssText = 'margin:0;';
+      h3.textContent = title || t('scRegistrations');
+      head.appendChild(h3);
+      content.appendChild(head);
+
+      var summary = document.createElement('div');
+      summary.style.cssText = 'font-size:var(--text-sm);color:var(--text-muted);margin-bottom:0.5rem;';
+      summary.textContent = t('loading');
+      content.appendChild(summary);
+
+      var tableHost = document.createElement('div');
+      content.appendChild(tableHost);
+
+      if (!srcList.length) {
+        summary.textContent = '';
+        var none = document.createElement('div');
+        none.className = 'admin-empty';
+        none.textContent = t('scNoSignups');
+        tableHost.appendChild(none);
+        return;
+      }
+
+      Promise.all([
+        Promise.all(srcList.map(function(src) {
+          return wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(src.slug) + '/submissions?per_page=100', {})
+            .then(function(res) {
+              if (!res.ok) return { src: src, error: 'HTTP ' + res.status };
+              return res.json().then(function(p) { return { src: src, payload: p }; });
+            }).catch(function(e) { return { src: src, error: (e && e.message) || 'error' }; });
+        })),
+        wadmin('scorer_courses', 'items/scorer_course_attendance?limit=-1', {})
+          .then(function(res) { return res.ok ? res.json() : { data: [] }; })
+          .catch(function() { return { data: [] }; })
+      ]).then(function(bundle) {
+        var results = bundle[0];
+        var attRows = (bundle[1] && bundle[1].data) || [];
+
+        var fields = [], byId = {}, mergedRows = [], errors = [];
+        results.forEach(function(rr) {
+          if (rr.error) { errors.push(rr.src.slug + ': ' + rr.error); return; }
+          var p = rr.payload || {};
+          (p.fields || []).forEach(function(f) {
+            if (!f || typeof f.type !== 'string' || f.type.indexOf('nf-') === 0) return;
+            if (!byId[f.id]) { byId[f.id] = f; fields.push(f); }
+          });
+          (p.data || []).forEach(function(r) {
+            var d = (r && r.data) || r || {};
+            mergedRows.push({
+              data: d,
+              id: (r && r.id != null) ? r.id : d.id,
+              slug: rr.src.slug,
+              lang: rr.src.lang,
+            });
+          });
+        });
+        mergedRows.sort(function(a, b) {
+          return String(b.data.created_at || '').localeCompare(String(a.data.created_at || ''));
+        });
+
+        var attByKey = {};
+        attRows.forEach(function(a) { if (a && a.sub_key != null) attByKey[String(a.sub_key)] = a; });
+
+        var total = mergedRows.length;
+        summary.textContent = total + ' ' + (total === 1 ? 'signup' : 'signups')
+          + (multi ? ' (' + srcList.map(function(s) { return s.lang || s.slug; }).join(' + ') + ')' : '');
+
+        if (errors.length) {
+          var warn = document.createElement('div');
+          warn.className = 'admin-empty';
+          warn.style.cssText = 'color:#dc2626;margin-bottom:0.5rem;';
+          warn.textContent = 'Could not load: ' + errors.join('; ');
+          content.insertBefore(warn, tableHost);
+        }
+
+        if (total > 0) {
+          var exp = document.createElement('button');
+          exp.className = 'admin-btn admin-btn-sm admin-btn-primary';
+          exp.style.cssText = 'margin-bottom:0.5rem;';
+          exp.textContent = t('scExportTSV');
+          exp.addEventListener('click', function() {
+            exportResponsesCSV(multi ? 'combined' : srcList[0].slug, fields, mergedRows, multi);
+          });
+          content.insertBefore(exp, tableHost);
+        }
+
+        if (!mergedRows.length) {
+          var empty = document.createElement('div');
+          empty.className = 'admin-empty';
+          empty.textContent = t('scNoSignups');
+          tableHost.appendChild(empty);
+          return;
+        }
+
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-md);';
+        var table = document.createElement('table');
+        table.style.cssText = 'width:100%;border-collapse:collapse;font-size:var(--text-sm);';
+        var thead = document.createElement('thead');
+        var thRow = document.createElement('tr');
+        var trackCols = [t('scPresent'), t('scExamSent'), t('scExamPassed'), t('scSvLicense'), t('scNotes'), ''];
+        var headLabels = [t('scColDate')].concat(multi ? [t('scColLang')] : []).concat(fields.map(function(f) { return f.name; })).concat(trackCols);
+        headLabels.forEach(function(label) {
+          var th = document.createElement('th');
+          th.textContent = label;
+          th.style.cssText = 'text-align:left;padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.04);font-weight:600;white-space:nowrap;';
+          thRow.appendChild(th);
+        });
+        thead.appendChild(thRow);
+        table.appendChild(thead);
+        var tbody = document.createElement('tbody');
+
+        mergedRows.forEach(function(row) {
+          var d = row.data;
+          var key = row.slug + ':' + String(row.id);
+          var srv = attByKey[key] || {};
+          var state = {
+            id: (srv.id != null ? srv.id : null),
+            present: !!srv.present,
+            exam_sent: !!srv.exam_sent,
+            exam_passed: !!srv.exam_passed,
+            sv_license: srv.sv_license || '',
+            notes: srv.notes || '',
+          };
+          var rowMeta = { slug: row.slug, id: row.id, key: key, state: state };
+
+          var tr = document.createElement('tr');
+          var dateTd = document.createElement('td');
+          dateTd.textContent = isoToSwissDateTime(d.created_at);
+          dateTd.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);color:var(--text-muted);white-space:nowrap;';
+          tr.appendChild(dateTd);
+          if (multi) {
+            var langTd = document.createElement('td');
+            langTd.textContent = row.lang || '';
+            langTd.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;';
+            tr.appendChild(langTd);
+          }
+          fields.forEach(function(f) {
+            var td = document.createElement('td');
+            var v = d[f.id];
+            td.textContent = (v == null || v === '') ? '—' : fmtAnswer(f, v);
+            td.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);';
+            tr.appendChild(td);
+          });
+
+          var statusEl = document.createElement('span');
+          statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-left:0.4rem;';
+
+          ['present', 'exam_sent', 'exam_passed'].forEach(function(fieldName) {
+            var td = document.createElement('td');
+            td.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);text-align:center;';
+            var cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = !!state[fieldName];
+            cb.style.cssText = 'width:18px;height:18px;cursor:pointer;';
+            cb.addEventListener('change', function() {
+              saveScorerField(rowMeta, fieldName, cb.checked, statusEl);
+            });
+            td.appendChild(cb);
+            tr.appendChild(td);
+          });
+
+          var svTd = document.createElement('td');
+          svTd.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);';
+          var svInp = document.createElement('input');
+          svInp.type = 'text';
+          svInp.value = state.sv_license;
+          svInp.placeholder = t('scSvLicense');
+          svInp.style.cssText = 'width:110px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+          svInp.addEventListener('change', function() {
+            saveScorerField(rowMeta, 'sv_license', svInp.value.trim(), statusEl);
+          });
+          svTd.appendChild(svInp);
+          tr.appendChild(svTd);
+
+          var noteTd = document.createElement('td');
+          noteTd.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);';
+          var noteInp = document.createElement('input');
+          noteInp.type = 'text';
+          noteInp.value = state.notes;
+          noteInp.placeholder = t('scNotes');
+          noteInp.style.cssText = 'width:160px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+          noteInp.addEventListener('change', function() {
+            saveScorerField(rowMeta, 'notes', noteInp.value, statusEl);
+          });
+          noteTd.appendChild(noteInp);
+          tr.appendChild(noteTd);
+
+          var actTd = document.createElement('td');
+          actTd.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);white-space:nowrap;';
+          if (row.id != null) {
+            var delBtn = document.createElement('button');
+            delBtn.className = 'admin-btn admin-btn-sm admin-btn-danger';
+            delBtn.textContent = t('delete');
+            delBtn.addEventListener('click', function() {
+              if (!confirm(t('confirmDelete'))) return;
+              delBtn.disabled = true;
+              wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(row.slug) + '/submissions/' + encodeURIComponent(row.id), { method: 'DELETE' })
+                .then(function(res) {
+                  if (!res.ok) throw new Error('HTTP ' + res.status);
+                  openScorerCourseInline(courseId); // refresh
+                }).catch(function(err) {
+                  delBtn.disabled = false;
+                  alert(t('deleteError') + (err && err.message ? err.message : 'unknown'));
+                });
+            });
+            actTd.appendChild(delBtn);
+          }
+          actTd.appendChild(statusEl);
+          tr.appendChild(actTd);
+
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        wrap.appendChild(table);
+        tableHost.appendChild(wrap);
+      }).catch(function(err) {
+        summary.textContent = '';
+        var errDiv = document.createElement('div');
+        errDiv.className = 'admin-empty';
+        errDiv.textContent = t('loadError') + (err && err.message ? err.message : 'unknown');
+        tableHost.appendChild(errDiv);
+      });
     }
 
     // ── Modal (Create / Edit) ─────────────────────────────────

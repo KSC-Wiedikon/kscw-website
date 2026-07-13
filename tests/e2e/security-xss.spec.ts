@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { gotoWithLang } from './helpers'
 
 /**
  * Stored-XSS regressions for the 2026-05-31 audit fixes. Runs against the local
@@ -14,7 +15,7 @@ import { test, expect } from '@playwright/test'
  */
 test.describe('Website stored-XSS regressions', () => {
   test('homepage event descriptions are inert text (set:html removed)', async ({ page }) => {
-    await page.goto('/de/')
+    await gotoWithLang(page, '/')
     const descs = page.locator('.event-description')
     const n = await descs.count()
     for (let i = 0; i < n; i++) {
@@ -24,7 +25,7 @@ test.describe('Website stored-XSS regressions', () => {
   })
 
   test('calendar JSON data island cannot break out of <script> and stays valid JSON', async ({ page }) => {
-    await page.goto('/de/weiteres/kalender')
+    await gotoWithLang(page, '/weiteres/kalender')
     const island = page.locator('#events-data')
     await expect(island).toHaveCount(1)
     const raw = await island.evaluate((el) => el.textContent || '')

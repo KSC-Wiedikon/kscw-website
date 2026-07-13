@@ -8,7 +8,7 @@ npm run dev          # local dev server (localhost:4321)
 npm run build        # production build → dist/
 npm run preview      # preview production build
 npm test             # unit tests (vitest run)
-npm run test:e2e     # e2e tests (Playwright, against `astro preview` on :4321)
+npm run test:e2e     # e2e tests (Playwright, against `astro preview` on :4322)
 npm run test:all     # vitest run && playwright test
 ```
 CI (`.github/workflows/test.yml`) runs build + unit + e2e tests on every push to **both** `dev` and `prod`.
@@ -48,7 +48,8 @@ Cloudflare Pages — pushes to `prod` trigger the live deploy.
 
 ## Tests & Security
 - **Unit**: `tests/unit/` (vitest) — i18n completeness/helpers, data integrity, scorer-courses
-- **E2E**: `tests/e2e/` (Playwright, against `astro preview` on `:4321`) — includes `security-xss.spec.ts` and `accessibility.spec.ts` alongside admin/i18n/islands/layout/navigation specs
+- **E2E**: `tests/e2e/` (Playwright, against `astro preview` on `:4322` — its own port, so a running `astro dev` on `:4321` is never silently reused) — includes `security-xss.spec.ts` and `accessibility.spec.ts` alongside admin/i18n/islands/layout/navigation specs.
+  Single-URL site: specs must use canonical paths (`/club/ueber-uns`, never `/de/…` — those are Cloudflare-only 301s that `astro preview` 404s) and pick the language via `tests/e2e/helpers.ts` (`gotoWithLang` / `switchLangTo`), since Playwright's default en-US locale otherwise renders the site in English.
 - **CI workflows** (`.github/workflows/`): `test.yml` (dev+prod pushes), `security-audit.yml`, `bugfix-ai.yml` + `bugfix-deploy-prod.yml` (AI bugfix pipeline)
 - **`SECURITY.md`** is the security baseline (trust boundaries, `/kscw/wadmin/*` model, CSP status, audit log) — read it before touching `admin.astro` or any `public/js` form
 - CSP + security headers live in `public/_headers`

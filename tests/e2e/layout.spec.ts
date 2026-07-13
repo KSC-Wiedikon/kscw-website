@@ -1,22 +1,26 @@
 import { test, expect } from '@playwright/test';
+import { gotoWithLang, type Lang } from './helpers';
 
-const pagesToCheck = [
-  '/de/',
-  '/en/',
-  '/de/club/ueber-uns',
-  '/de/volleyball/',
-  '/de/basketball/',
-  '/de/weiteres/kalender',
-  '/de/sponsoren/',
-  '/de/weiteres/mitgliedschaft',
-  '/de/club/kontakt',
-  '/de/club/feedback',
+// Canonical single-URL paths. The home page is checked in both languages —
+// English swaps longer strings in client-side, which is exactly where a layout
+// overflow would show up (that was the point of the old '/en/' entry).
+const pagesToCheck: Array<[string, Lang]> = [
+  ['/', 'de'],
+  ['/', 'en'],
+  ['/club/ueber-uns', 'de'],
+  ['/volleyball/', 'de'],
+  ['/basketball/', 'de'],
+  ['/weiteres/kalender', 'de'],
+  ['/sponsoren/', 'de'],
+  ['/weiteres/mitgliedschaft', 'de'],
+  ['/club/kontakt', 'de'],
+  ['/club/feedback', 'de'],
 ];
 
 test.describe('layout - no horizontal overflow', () => {
-  for (const pagePath of pagesToCheck) {
-    test(`no horizontal scrollbar on ${pagePath}`, async ({ page }) => {
-      await page.goto(pagePath);
+  for (const [pagePath, lang] of pagesToCheck) {
+    test(`no horizontal scrollbar on ${pagePath} [${lang}]`, async ({ page }) => {
+      await gotoWithLang(page, pagePath, lang);
 
       const hasOverflow = await page.evaluate(() => {
         return document.documentElement.scrollWidth > document.documentElement.clientWidth;
@@ -28,9 +32,9 @@ test.describe('layout - no horizontal overflow', () => {
 });
 
 test.describe('layout - header and footer', () => {
-  for (const pagePath of pagesToCheck) {
-    test(`header and footer visible on ${pagePath}`, async ({ page }) => {
-      await page.goto(pagePath);
+  for (const [pagePath, lang] of pagesToCheck) {
+    test(`header and footer visible on ${pagePath} [${lang}]`, async ({ page }) => {
+      await gotoWithLang(page, pagePath, lang);
       await expect(page.locator('.site-header')).toBeVisible();
       await expect(page.locator('footer')).toBeVisible();
     });
@@ -38,9 +42,9 @@ test.describe('layout - header and footer', () => {
 });
 
 test.describe('layout - images', () => {
-  for (const pagePath of ['/de/', '/de/club/ueber-uns', '/de/sponsoren/']) {
+  for (const pagePath of ['/', '/club/ueber-uns', '/sponsoren/']) {
     test(`images have alt text and load on ${pagePath}`, async ({ page }) => {
-      await page.goto(pagePath);
+      await gotoWithLang(page, pagePath);
 
       const images = page.locator('img');
       const count = await images.count();

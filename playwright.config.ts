@@ -8,15 +8,21 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:4321',
+    baseURL: 'http://localhost:4322',
     trace: 'on-first-retry',
     reducedMotion: 'no-preference',
   },
+  // Own port (4322), never reused. `astro dev` runs on 4321, and with
+  // reuseExistingServer a stray dev server would silently serve the whole suite:
+  // the tests would then run against a dev build whose dev toolbar injects its
+  // own <h1>/<h3> into every page, breaking the heading-hierarchy assertions
+  // for reasons that have nothing to do with the site. Always start our own
+  // preview of the production build instead.
   webServer: {
-    command: 'npx astro preview',
-    url: 'http://localhost:4321',
-    reuseExistingServer: !process.env.CI,
-    timeout: 30_000,
+    command: 'npx astro preview --port 4322',
+    url: 'http://localhost:4322',
+    reuseExistingServer: false,
+    timeout: 60_000,
   },
   projects: [
     {

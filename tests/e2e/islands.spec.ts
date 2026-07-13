@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { gotoWithLang } from './helpers';
 
 test.describe('islands - theme toggle', () => {
   test('clicking theme toggle switches class', async ({ page }) => {
-    await page.goto('/de/');
+    await gotoWithLang(page, '/');
     const html = page.locator('html');
     const toggle = page.locator('.theme-toggle').first();
     await expect(toggle).toBeVisible();
@@ -19,7 +20,7 @@ test.describe('islands - theme toggle', () => {
   });
 
   test('theme persists after reload', async ({ page }) => {
-    await page.goto('/de/');
+    await gotoWithLang(page, '/');
     const toggle = page.locator('.theme-toggle').first();
     await toggle.click();
 
@@ -41,7 +42,7 @@ test.describe('islands - mobile nav', () => {
   test.use({ viewport: { width: 375, height: 667 } });
 
   test('hamburger toggles nav-open class', async ({ page }) => {
-    await page.goto('/de/');
+    await gotoWithLang(page, '/');
     const hamburger = page.locator('.nav-hamburger');
     await hamburger.click();
     await expect(page.locator('body')).toHaveClass(/nav-open/);
@@ -52,7 +53,7 @@ test.describe('islands - mobile nav', () => {
 
 test.describe('islands - scroll animations', () => {
   test('fade-in elements get visible class when scrolled into view', async ({ page }) => {
-    await page.goto('/de/');
+    await gotoWithLang(page, '/');
 
     const fadeElements = page.locator('.fade-in');
     const count = await fadeElements.count();
@@ -69,7 +70,7 @@ test.describe('islands - scroll animations', () => {
 
 test.describe('islands - accordion', () => {
   test('accordion items toggle open class', async ({ page }) => {
-    await page.goto('/de/volleyball/reglemente');
+    await gotoWithLang(page, '/volleyball/reglemente');
     const header = page.locator('.accordion-header').first();
 
     if ((await header.count()) === 0) return;
@@ -84,7 +85,7 @@ test.describe('islands - accordion', () => {
 
 test.describe('islands - event cards', () => {
   test('event cards expand on click', async ({ page }) => {
-    await page.goto('/de/weiteres/kalender');
+    await gotoWithLang(page, '/weiteres/kalender');
     const card = page.locator('.event-card--clickable').first();
 
     if ((await card.count()) === 0) return;
@@ -98,7 +99,7 @@ test.describe('islands - event cards', () => {
 
 test.describe('islands - stat counters', () => {
   test('stat counters show non-zero values after scroll', async ({ page }) => {
-    await page.goto('/de/club/ueber-uns');
+    await gotoWithLang(page, '/club/ueber-uns');
     const statEl = page.locator('.stat-number[data-value]').first();
 
     if ((await statEl.count()) === 0) return;
@@ -116,7 +117,7 @@ test.describe('islands - stat counters', () => {
 
 test.describe('islands - sponsor carousel', () => {
   test('sponsor carousel clones children for infinite scroll', async ({ page }) => {
-    await page.goto('/de/');
+    await gotoWithLang(page, '/');
     const track = page.locator('.sponsor-track');
 
     if ((await track.count()) === 0) return;
@@ -137,7 +138,7 @@ test.describe('islands - sponsor carousel', () => {
 
 test.describe('islands - calendar grid', () => {
   test('calendar renders with day headers', async ({ page }) => {
-    await page.goto('/de/weiteres/kalender');
+    await gotoWithLang(page, '/weiteres/kalender');
     const grid = page.locator('#calendar-grid');
 
     if ((await grid.count()) === 0) return;
@@ -148,7 +149,7 @@ test.describe('islands - calendar grid', () => {
   });
 
   test('calendar prev/next month navigation works', async ({ page }) => {
-    await page.goto('/de/weiteres/kalender');
+    await gotoWithLang(page, '/weiteres/kalender');
     const grid = page.locator('#calendar-grid');
     if ((await grid.count()) === 0) return;
 
@@ -170,7 +171,7 @@ test.describe('islands - calendar grid', () => {
   });
 
   test('calendar Today button returns to current month', async ({ page }) => {
-    await page.goto('/de/weiteres/kalender');
+    await gotoWithLang(page, '/weiteres/kalender');
     const grid = page.locator('#calendar-grid');
     if ((await grid.count()) === 0) return;
 

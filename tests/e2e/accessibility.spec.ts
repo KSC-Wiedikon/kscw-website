@@ -1,11 +1,18 @@
 import { test, expect } from '@playwright/test';
+import { gotoWithLang, type Lang } from './helpers';
 
-const pagesToCheck = ['/de/', '/en/', '/de/club/ueber-uns', '/de/club/kontakt'];
+// Canonical single-URL paths; the home page is covered in both languages.
+const pagesToCheck: Array<[string, Lang]> = [
+  ['/', 'de'],
+  ['/', 'en'],
+  ['/club/ueber-uns', 'de'],
+  ['/club/kontakt', 'de'],
+];
 
 test.describe('accessibility - images have alt text', () => {
-  for (const pagePath of pagesToCheck) {
-    test(`all images have alt on ${pagePath}`, async ({ page }) => {
-      await page.goto(pagePath);
+  for (const [pagePath, lang] of pagesToCheck) {
+    test(`all images have alt on ${pagePath} [${lang}]`, async ({ page }) => {
+      await gotoWithLang(page, pagePath, lang);
       const images = page.locator('img');
       const count = await images.count();
 
@@ -20,9 +27,9 @@ test.describe('accessibility - images have alt text', () => {
 });
 
 test.describe('accessibility - heading hierarchy', () => {
-  for (const pagePath of pagesToCheck) {
-    test(`no skipped heading levels on ${pagePath}`, async ({ page }) => {
-      await page.goto(pagePath);
+  for (const [pagePath, lang] of pagesToCheck) {
+    test(`no skipped heading levels on ${pagePath} [${lang}]`, async ({ page }) => {
+      await gotoWithLang(page, pagePath, lang);
 
       const headingLevels = await page.$$eval(
         'h1, h2, h3, h4, h5, h6',
@@ -45,8 +52,8 @@ test.describe('accessibility - heading hierarchy', () => {
 });
 
 test.describe('accessibility - interactive elements focusable', () => {
-  test('buttons and links are keyboard focusable on /de/', async ({ page }) => {
-    await page.goto('/de/');
+  test('buttons and links are keyboard focusable on the home page', async ({ page }) => {
+    await gotoWithLang(page, '/');
 
     const buttons = page.locator('button:visible');
     const count = await buttons.count();

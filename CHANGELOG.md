@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.9.0] — 2026-07-13
+
+### Admin: Excel export for scorer courses — now including the tracking columns
+- The scorer-course registrations view (`/admin/?tab=scorer_courses&course=<id>`) gained an **Excel export** next to the existing TSV one: a real `.xlsx` with a frozen, bold header row, a filter on every column, and the present / exam-sent / exam-passed ticks written as true Excel booleans so they can be filtered and counted. Licence numbers stay text, so a leading zero is never swallowed.
+- **Fixed:** both exports silently dropped everything KSCW tracks itself — **present**, **exam sent**, **exam passed**, **SV licence** and **notes**. The export was built from the sign-up form's answers alone, while the tracking lives in a separate collection (`scorer_course_attendance`), so an SV licence entered by an admin (the usual case for a new referee) never made it into the file. Exports now carry exactly what the table shows, including edits made just before exporting.
+
 ## [1.8.1] — 2026-07-09
 
 ### Admin: scorer registration details — one field per row

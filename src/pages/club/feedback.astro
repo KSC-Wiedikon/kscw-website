@@ -135,8 +135,19 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.8.1</span>
+          <span class="changelog-badge">v1.9.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.9.0 — 2026-07-13</div>
+          <div class="changelog-group">
+            <h3>Admin: Excel-Export für Schreiberkurse — neu mit den Tracking-Spalten</h3>
+            <ul>
+              <li>Die Anmeldungsansicht eines Schreiberkurses hat neben dem bisherigen TSV-Export neu einen Excel-Export: eine echte .xlsx-Datei mit fixierter, fetter Kopfzeile, Filter auf jeder Spalte und den Häkchen anwesend / Prüfung gesendet / Prüfung bestanden als echte Excel-Wahrheitswerte, die sich filtern und zählen lassen. Lizenznummern bleiben Text, eine führende Null geht also nie verloren</li>
+              <li>Behoben: Beide Exporte liessen alles weg, was das KSCW selbst erfasst — anwesend, Prüfung gesendet, Prüfung bestanden, SV-Lizenz und Notizen. Der Export wurde allein aus den Formularantworten erzeugt, während das Tracking in einer separaten Sammlung liegt — eine vom Admin eingetragene SV-Lizenz (der Normalfall bei neuen Schiedsrichter:innen) landete damit nie in der Datei. Die Exporte enthalten neu genau das, was die Tabelle zeigt, inklusive der Änderungen kurz vor dem Export</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.8.1 — 2026-07-09</div>
@@ -377,8 +388,19 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.8.1</span>
+          <span class="changelog-badge">v1.9.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.9.0 — 2026-07-13</div>
+          <div class="changelog-group">
+            <h3>Admin: Excel export for scorer courses — now including the tracking columns</h3>
+            <ul>
+              <li>The scorer-course registrations view gained an Excel export next to the existing TSV one: a real .xlsx with a frozen, bold header row, a filter on every column, and the present / exam-sent / exam-passed ticks written as true Excel booleans so they can be filtered and counted. Licence numbers stay text, so a leading zero is never swallowed</li>
+              <li>Fixed: both exports silently dropped everything KSCW tracks itself — present, exam sent, exam passed, SV licence and notes. The export was built from the sign-up form's answers alone, while the tracking lives in a separate collection, so an SV licence entered by an admin (the usual case for a new referee) never made it into the file. Exports now carry exactly what the table shows, including edits made just before exporting</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.8.1 — 2026-07-09</div>

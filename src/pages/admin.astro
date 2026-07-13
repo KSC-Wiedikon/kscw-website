@@ -282,6 +282,9 @@ import '../styles/global.css';
         scSaveFailed: 'Fehler',
         scNoSignups: 'Noch keine Anmeldungen.',
         scExportTSV: 'TSV-Export',
+        scExportXLSX: 'Excel-Export',
+        scYes: 'Ja',
+        scNo: 'Nein',
         scColFirstName: 'Vorname',
         scColLastName: 'Nachname',
         scDetails: 'Alle Angaben',
@@ -423,6 +426,9 @@ import '../styles/global.css';
         scSaveFailed: 'Error',
         scNoSignups: 'No signups yet.',
         scExportTSV: 'Export TSV',
+        scExportXLSX: 'Export Excel',
+        scYes: 'Yes',
+        scNo: 'No',
         scColFirstName: 'First name',
         scColLastName: 'Last name',
         scDetails: 'All details',
@@ -2436,17 +2442,60 @@ import '../styles/global.css';
         var selectCells = []; // th/td of the select column — shown only in email mode
         var selectBoxes = []; // { cb, email } for rows that carry an email
         var emailMode = false;
+        var exportMetas = []; // one per rendered row, in table order
+
+        // The KSCW tracking columns (present / exam / SV licence / notes) live in
+        // scorer_course_attendance, not in the OpnForm answers — an export built
+        // from the form payload alone silently drops all of them, and the SV
+        // licence in particular is almost always admin-entered. So export exactly
+        // what the row shows: the live inputs first, then the tracked value, then
+        // the form's own SVRZ answer.
+        function buildScorerExport() {
+          var extraFields = fields.filter(function(f) { return !shownIds[f.id]; });
+          var headers = [t('scColDate')]
+            .concat(multi ? [t('scColLang')] : [])
+            .concat([t('scColFirstName'), t('scColLastName'), t('scPresent'), t('scExamSent'),
+                     t('scExamPassed'), t('scSvLicense'), t('scNotes')])
+            .concat(extraFields.map(function(f) { return f.name; }));
+          var rows = exportMetas.map(function(m) {
+            var d = m.row.data, st = m.state;
+            return [isoToSwissDateTime(d.created_at)]
+              .concat(multi ? [m.row.lang || ''] : [])
+              .concat([
+                String(pickVal(d, firstNameIds) || ''),
+                String(pickVal(d, lastNameIds) || ''),
+                !!st.present,
+                !!st.exam_sent,
+                !!st.exam_passed,
+                m.svInp ? m.svInp.value.trim() : (st.sv_license || m.formSv || ''),
+                m.noteInp ? m.noteInp.value : (st.notes || ''),
+              ])
+              .concat(extraFields.map(function(f) { return fmtAnswer(f, d[f.id]); }));
+          });
+          return { headers: headers, rows: rows };
+        }
 
         var controls = document.createElement('div');
         controls.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;';
         content.insertBefore(controls, tableHost);
 
         if (total > 0) {
+          var nameBase = multi ? 'combined' : srcList[0].slug;
+          var xls = document.createElement('button');
+          xls.className = 'admin-btn admin-btn-sm admin-btn-primary';
+          xls.textContent = t('scExportXLSX');
+          xls.addEventListener('click', function() {
+            var e = buildScorerExport();
+            exportRowsXLSX(nameBase, e.headers, e.rows, title || t('scRegistrations'));
+          });
+          controls.appendChild(xls);
+
           var exp = document.createElement('button');
-          exp.className = 'admin-btn admin-btn-sm admin-btn-primary';
+          exp.className = 'admin-btn admin-btn-sm';
           exp.textContent = t('scExportTSV');
           exp.addEventListener('click', function() {
-            exportResponsesCSV(multi ? 'combined' : srcList[0].slug, fields, mergedRows, multi);
+            var e = buildScorerExport();
+            exportRowsTSV(nameBase, e.headers, e.rows);
           });
           controls.appendChild(exp);
         }
@@ -2702,6 +2751,8 @@ import '../styles/global.css';
           detailTd.appendChild(noteWrap);
           detailTr.appendChild(detailTd);
           tbody.appendChild(detailTr);
+
+          exportMetas.push({ row: row, state: state, formSv: formSv, svInp: svInp, noteInp: noteInp });
         });
 
         table.appendChild(tbody);
@@ -3156,24 +3207,186 @@ import '../styles/global.css';
     function tsvEscape(val) {
       return String(val == null ? '' : val).replace(/[\t\r\n]+/g, ' ').trim();
     }
-    function exportResponsesCSV(nameBase, fields, rows, withLang) {
-      var headers = ['date_iso'].concat(withLang ? ['lang'] : []).concat(fields.map(function(f) { return f.name; }));
-      var lines = [headers.map(tsvEscape).join('\t')];
-      rows.forEach(function(r) {
-        var d = (r && r.data) || r || {};
-        var row = [d.created_at || ''].concat(withLang ? [r.lang || ''] : []).concat(fields.map(function(f) {
-          return fmtAnswer(f, d[f.id]);
-        }));
-        lines.push(row.map(tsvEscape).join('\t'));
-      });
-      var tsv = lines.join('\r\n');
-      var blob = new Blob(['﻿' + tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
+    function downloadBlob(blob, filename) {
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
-      a.download = 'anmeldungen-' + nameBase + '.tsv';
+      a.download = filename;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       URL.revokeObjectURL(url);
+    }
+    // headers: string[]; rows: (string|boolean)[][] — booleans render as Ja/Nein.
+    function exportRowsTSV(nameBase, headers, rows) {
+      var lines = [headers.map(tsvEscape).join('\t')];
+      rows.forEach(function(r) {
+        lines.push(r.map(function(v) {
+          return tsvEscape(typeof v === 'boolean' ? (v ? t('scYes') : t('scNo')) : v);
+        }).join('\t'));
+      });
+      // Leading BOM: Excel/Numbers otherwise read the UTF-8 as latin-1 (Dürig → DÃ¼rig).
+      var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/tab-separated-values;charset=utf-8;' });
+      downloadBlob(blob, 'anmeldungen-' + nameBase + '.tsv');
+    }
+    function exportResponsesCSV(nameBase, fields, rows, withLang) {
+      var headers = ['date_iso'].concat(withLang ? ['lang'] : []).concat(fields.map(function(f) { return f.name; }));
+      exportRowsTSV(nameBase, headers, rows.map(function(r) {
+        var d = (r && r.data) || r || {};
+        return [d.created_at || ''].concat(withLang ? [r.lang || ''] : []).concat(fields.map(function(f) {
+          return fmtAnswer(f, d[f.id]);
+        }));
+      }));
+    }
+
+    // ── Minimal .xlsx writer ────────────────────────────────────
+    // Hand-rolled rather than pulling in a spreadsheet library: SheetJS's npm
+    // builds are abandoned (open prototype-pollution/ReDoS CVEs) and exceljs
+    // needs a bundler, which this is:inline script has no access to. An xlsx is
+    // just a zip of five XML parts, so we emit them directly — no CDN origin to
+    // add to the CSP, no SRI pin to maintain.
+    var CRC_TABLE = null;
+    function crc32(bytes) {
+      if (!CRC_TABLE) {
+        CRC_TABLE = new Uint32Array(256);
+        for (var n = 0; n < 256; n++) {
+          var c = n;
+          for (var k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+          CRC_TABLE[n] = c >>> 0;
+        }
+      }
+      var crc = 0xFFFFFFFF;
+      for (var i = 0; i < bytes.length; i++) crc = CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+      return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+    // Zip with STORE (no compression) — a few hundred rows of XML is small
+    // enough that deflate would only buy kilobytes, and STORE needs no encoder.
+    function zipStore(files, mimeType) {
+      var enc = new TextEncoder();
+      var parts = [], central = [], offset = 0;
+      files.forEach(function(f) {
+        var name = enc.encode(f.name);
+        var data = enc.encode(f.xml);
+        var crc = crc32(data);
+        var lh = new Uint8Array(30 + name.length);
+        var lv = new DataView(lh.buffer);
+        lv.setUint32(0, 0x04034b50, true);
+        lv.setUint16(4, 20, true);    // version needed
+        lv.setUint16(6, 0, true);     // flags
+        lv.setUint16(8, 0, true);     // compression: store
+        lv.setUint16(10, 0, true);    // mod time
+        lv.setUint16(12, 0x21, true); // mod date = 1980-01-01 (fixed → byte-identical exports)
+        lv.setUint32(14, crc, true);
+        lv.setUint32(18, data.length, true);
+        lv.setUint32(22, data.length, true);
+        lv.setUint16(26, name.length, true);
+        lv.setUint16(28, 0, true);    // extra field length
+        lh.set(name, 30);
+        parts.push(lh, data);
+
+        var ch = new Uint8Array(46 + name.length);
+        var cv = new DataView(ch.buffer);
+        cv.setUint32(0, 0x02014b50, true);
+        cv.setUint16(4, 20, true);   // version made by
+        cv.setUint16(6, 20, true);   // version needed
+        cv.setUint16(10, 0, true);   // compression: store
+        cv.setUint16(12, 0, true);
+        cv.setUint16(14, 0x21, true);
+        cv.setUint32(16, crc, true);
+        cv.setUint32(20, data.length, true);
+        cv.setUint32(24, data.length, true);
+        cv.setUint16(28, name.length, true);
+        cv.setUint32(42, offset, true); // local header offset
+        ch.set(name, 46);
+        central.push(ch);
+        offset += lh.length + data.length;
+      });
+      var cdSize = central.reduce(function(a, c) { return a + c.length; }, 0);
+      var eocd = new Uint8Array(22);
+      var ev = new DataView(eocd.buffer);
+      ev.setUint32(0, 0x06054b50, true);
+      ev.setUint16(8, files.length, true);
+      ev.setUint16(10, files.length, true);
+      ev.setUint32(12, cdSize, true);
+      ev.setUint32(16, offset, true);
+      return new Blob(parts.concat(central, [eocd]), { type: mimeType });
+    }
+    function xmlEsc(s) {
+      return String(s == null ? '' : s)
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '') // control chars are illegal in XML 1.0
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    }
+    function colName(i) { // 0 → A, 25 → Z, 26 → AA
+      var s = '', n = i + 1;
+      while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+      return s;
+    }
+    // headers: string[]; rows: (string|boolean)[][] — booleans become real Excel
+    // booleans so the tracking columns can be filtered/counted in the sheet.
+    function exportRowsXLSX(nameBase, headers, rows, sheetName) {
+      function cell(col, rowNum, v, styleId) {
+        var ref = colName(col) + rowNum;
+        var s = styleId ? ' s="' + styleId + '"' : '';
+        if (typeof v === 'boolean') return '<c r="' + ref + '"' + s + ' t="b"><v>' + (v ? 1 : 0) + '</v></c>';
+        var str = String(v == null ? '' : v);
+        if (!str) return '';
+        return '<c r="' + ref + '"' + s + ' t="inlineStr"><is><t xml:space="preserve">' + xmlEsc(str) + '</t></is></c>';
+      }
+      var xmlRows = ['<row r="1">' + headers.map(function(h, i) { return cell(i, 1, h, 1); }).join('') + '</row>'];
+      rows.forEach(function(r, i) {
+        var n = i + 2;
+        xmlRows.push('<row r="' + n + '">' + r.map(function(v, c) { return cell(c, n, v, 0); }).join('') + '</row>');
+      });
+      var lastCol = colName(Math.max(headers.length - 1, 0));
+      var lastRow = rows.length + 1;
+      // Text columns can hold long free-text answers; a flat width beats Excel's default.
+      var cols = '<cols><col min="1" max="' + Math.max(headers.length, 1) + '" width="22" customWidth="1"/></cols>';
+      var sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        + '<sheetViews><sheetView workbookViewId="0">'
+        + '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
+        + '</sheetView></sheetViews>'
+        + cols
+        + '<sheetData>' + xmlRows.join('') + '</sheetData>'
+        + '<autoFilter ref="A1:' + lastCol + lastRow + '"/>'
+        + '</worksheet>';
+      var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        + '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font>'
+        + '<font><b/><sz val="11"/><name val="Calibri"/></font></fonts>'
+        + '<fills count="2"><fill><patternFill patternType="none"/></fill>'
+        + '<fill><patternFill patternType="gray125"/></fill></fills>'
+        + '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+        + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+        + '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
+        + '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>'
+        + '</styleSheet>';
+      var safeSheet = xmlEsc(String(sheetName || 'Anmeldungen').replace(/[\\/?*[\]:]/g, ' ').substring(0, 31).trim() || 'Anmeldungen');
+      var blob = zipStore([
+        { name: '[Content_Types].xml', xml: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+          + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+          + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+          + '<Default Extension="xml" ContentType="application/xml"/>'
+          + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+          + '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+          + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+          + '</Types>' },
+        { name: '_rels/.rels', xml: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+          + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+          + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+          + '</Relationships>' },
+        { name: 'xl/workbook.xml', xml: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+          + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+          + ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+          + '<sheets><sheet name="' + safeSheet + '" sheetId="1" r:id="rId1"/></sheets></workbook>' },
+        { name: 'xl/_rels/workbook.xml.rels', xml: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+          + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+          + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+          + '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+          + '</Relationships>' },
+        { name: 'xl/styles.xml', xml: styles },
+        { name: 'xl/worksheets/sheet1.xml', xml: sheet },
+      ], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      downloadBlob(blob, 'anmeldungen-' + nameBase + '.xlsx');
     }
 
     // ── Upload file to Directus ─────────────────────────────

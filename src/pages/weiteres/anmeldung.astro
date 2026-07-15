@@ -142,6 +142,7 @@ const KS_OTHER = [
             <select id="funktion-vb" name="funktion_vb" class="form-select" data-conditional-required>
               <option value="" disabled selected data-i18n="registrationFunktionPlaceholder">{t(locale, 'registrationFunktionPlaceholder')}</option>
               <option value="Spieler*in" data-i18n="registrationFunktionPlayer">{t(locale, 'registrationFunktionPlayer')}</option>
+              <option value="Guest" data-i18n="registrationFunktionGuest">{t(locale, 'registrationFunktionGuest')}</option>
               <option value="Trainer*in" data-i18n="registrationFunktionCoach">{t(locale, 'registrationFunktionCoach')}</option>
               <option value="Teamverantwortliche*r" data-i18n="registrationFunktionTR">{t(locale, 'registrationFunktionTR')}</option>
               <option value="Andere" data-i18n="registrationFunktionOther">{t(locale, 'registrationFunktionOther')}</option>
@@ -177,7 +178,7 @@ const KS_OTHER = [
             <small style="color: var(--text-secondary);" data-i18n="registrationAHVNote">{t(locale, 'registrationAHVNote')}</small>
           </div>
 
-          <div class="form-group">
+          <div class="form-group js-guest-hide">
             <label for="kantonsschule-vb"><span data-i18n="registrationKantonsschule">{t(locale, 'registrationKantonsschule')}</span> *</label>
             <select id="kantonsschule-vb" name="kantonsschule_vb" class="form-select" data-conditional-required>
               <option value="" disabled selected>—</option>
@@ -195,7 +196,7 @@ const KS_OTHER = [
             </select>
           </div>
 
-          <div class="form-group">
+          <div class="form-group js-guest-hide">
             <label data-i18n="registrationLicence">{t(locale, 'registrationLicence')}</label>
             <div class="toggle-group">
               <label class="toggle-label">
@@ -232,6 +233,7 @@ const KS_OTHER = [
             <select id="funktion-bb" name="funktion_bb" class="form-select" data-conditional-required>
               <option value="" disabled selected data-i18n="registrationFunktionPlaceholder">{t(locale, 'registrationFunktionPlaceholder')}</option>
               <option value="Spieler*in" data-i18n="registrationFunktionPlayer">{t(locale, 'registrationFunktionPlayer')}</option>
+              <option value="Guest" data-i18n="registrationFunktionGuest">{t(locale, 'registrationFunktionGuest')}</option>
               <option value="Trainer*in" data-i18n="registrationFunktionCoach">{t(locale, 'registrationFunktionCoach')}</option>
               <option value="Teamverantwortliche*r" data-i18n="registrationFunktionTR">{t(locale, 'registrationFunktionTR')}</option>
               <option value="Andere" data-i18n="registrationFunktionOther">{t(locale, 'registrationFunktionOther')}</option>
@@ -268,7 +270,7 @@ const KS_OTHER = [
             <small style="color: var(--text-secondary);" data-i18n="registrationAHVNote">{t(locale, 'registrationAHVNote')}</small>
           </div>
 
-          <div class="form-group">
+          <div class="form-group js-guest-hide">
             <label for="kantonsschule-bb"><span data-i18n="registrationKantonsschule">{t(locale, 'registrationKantonsschule')}</span> *</label>
             <select id="kantonsschule-bb" name="kantonsschule_bb" class="form-select" data-conditional-required>
               <option value="" disabled selected>—</option>
@@ -286,7 +288,7 @@ const KS_OTHER = [
             </select>
           </div>
 
-          <div class="form-group">
+          <div class="form-group js-guest-hide">
             <label data-i18n="registrationLicenceBBScorer">{t(locale, 'registrationLicenceBBScorer')}</label>
             <div style="display: flex; gap: var(--space-lg); flex-wrap: wrap; margin-top: var(--space-xs);">
               <label class="radio-card">
@@ -308,7 +310,7 @@ const KS_OTHER = [
             </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group js-guest-hide">
             <label data-i18n="registrationLicenceBBReferee">{t(locale, 'registrationLicenceBBReferee')}</label>
             <div class="toggle-group">
               <label class="toggle-label">
@@ -318,7 +320,7 @@ const KS_OTHER = [
             </div>
           </div>
 
-          <div class="form-group">
+          <div class="form-group js-guest-hide">
             <label><span data-i18n="registrationIDUpload">{t(locale, 'registrationIDUpload')}</span> *</label>
             <small style="color: var(--text-secondary); display: block; margin-bottom: var(--space-sm);" data-i18n="registrationIDUploadNote">{t(locale, 'registrationIDUploadNote')}</small>
             <div style="display: flex; gap: var(--space-md); flex-wrap: wrap;">
@@ -333,7 +335,7 @@ const KS_OTHER = [
             </div>
           </div>
 
-          <div class="form-group" id="bb-situation-group">
+          <div class="form-group js-guest-hide" id="bb-situation-group">
             <label><span data-i18n="registrationBBSituation">{t(locale, 'registrationBBSituation')}</span> *</label>
             <small style="color: var(--text-secondary); display: block; margin-bottom: var(--space-sm);" data-i18n="registrationBBSituationHint">{t(locale, 'registrationBBSituationHint')}</small>
             <div style="display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-xs);">
@@ -356,7 +358,7 @@ const KS_OTHER = [
             </div>
           </div>
 
-          <div class="form-group" id="bb-docs-group">
+          <div class="form-group js-guest-hide" id="bb-docs-group">
             <label data-i18n="registrationBBDocs">{t(locale, 'registrationBBDocs')}</label>
             <small style="color: var(--text-secondary); display: block; margin-bottom: var(--space-sm);" data-i18n="registrationBBDocsHint">{t(locale, 'registrationBBDocsHint')}</small>
             <div class="bb-docs-list">
@@ -383,7 +385,7 @@ const KS_OTHER = [
             </div>
           </div>
 
-          <div class="form-group" id="bb-docs-upload-group">
+          <div class="form-group js-guest-hide" id="bb-docs-upload-group">
             <label data-i18n="registrationBBDocsUpload">{t(locale, 'registrationBBDocsUpload')}</label>
             <small style="color: var(--text-secondary); display: block; margin-bottom: var(--space-sm);" data-i18n="registrationBBDocsUploadNote">{t(locale, 'registrationBBDocsUploadNote')}</small>
             <div style="display: flex; flex-direction: column; gap: var(--space-md);">
@@ -518,7 +520,7 @@ const KS_OTHER = [
   </section>
 
   <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-  <script is:inline src="/js/registration-form.js?v=3.8.0"></script>
+  <script is:inline src="/js/registration-form.js?v=3.9.0"></script>
   <script src="../../islands/scroll-animations.ts"></script>
 </PageLayout>
 

@@ -528,8 +528,13 @@
     // other sport's AHV input — which sits in a display:none section — stays
     // `required` while hidden, and the browser silently refuses to submit the
     // form ("an invalid form control is not focusable"): no message, no log.
-    var vbRequired = selType === 'volleyball' && isUnderAge(dobVal, 23);
-    var bbRequired = selType === 'basketball' && isUnderAge(dobVal, 25);
+    // A guest skips the licence apparatus entirely → never require/show AHV,
+    // regardless of age. (funktionVb/funktionBb are hoisted; undefined on the
+    // first call before the sport is picked, which reads as "not a guest".)
+    var vbGuest = funktionVb && funktionVb.value === 'Guest';
+    var bbGuest = funktionBb && funktionBb.value === 'Guest';
+    var vbRequired = selType === 'volleyball' && !vbGuest && isUnderAge(dobVal, 23);
+    var bbRequired = selType === 'basketball' && !bbGuest && isUnderAge(dobVal, 25);
     var vbAhv = document.getElementById('vb-ahv');
     var bbAhv = document.getElementById('bb-ahv');
     var vbGroup = document.getElementById('vb-ahv-group');
@@ -572,6 +577,11 @@
     var bbTeamW = document.getElementById('bb-team-wrapper');
     if (vbTeamW) vbTeamW.style.display = 'none';
     if (bbTeamW) bbTeamW.style.display = 'none';
+
+    // Funktion is reset to blank above (not a guest) — restore any player-only
+    // fields that a previous guest selection hid on the now-selected sport.
+    if (type === 'volleyball') applyGuestVisibility('volleyball', false);
+    else if (type === 'basketball') applyGuestVisibility('basketball', false);
   }
 
   function toggleRequired(container, isRequired) {
@@ -686,13 +696,51 @@
     return 'mixed';
   }
 
+  // Player-only fields a guest never fills: licence toggles, cantonal school and
+  // (for BB) the ID / licence-document uploads + situation. They carry the
+  // `.js-guest-hide` class in the form. Hide them and strip `required` for a
+  // guest so a hidden required control can't silently block submit; restore for a
+  // player. AHV visibility is owned by updateAhvRequired (guest-guarded there).
+  function applyGuestVisibility(sport, isGuest) {
+    var fieldset = sport === 'volleyball' ? vbFields : bbFields;
+    if (!fieldset) return;
+    var groups = fieldset.querySelectorAll('.js-guest-hide');
+    for (var i = 0; i < groups.length; i++) {
+      groups[i].style.display = isGuest ? 'none' : '';
+      var reqs = groups[i].querySelectorAll('[data-conditional-required]');
+      for (var j = 0; j < reqs.length; j++) {
+        if (isGuest) reqs[j].removeAttribute('required');
+        else reqs[j].setAttribute('required', '');
+      }
+    }
+    // Conditional sub-groups (cantonal-school "other", VB referee level) have
+    // their own show-on-trigger handlers; force them closed for a guest so a
+    // previously-opened one can't linger visible/required after the switch.
+    if (isGuest) {
+      [sport === 'volleyball' ? 'ks-other-vb-group' : 'ks-other-bb-group',
+       sport === 'volleyball' ? 'vb-ref-level-group' : null].forEach(function (id) {
+        if (!id) return;
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.style.display = 'none';
+        el.querySelectorAll('[required]').forEach(function (r) { r.removeAttribute('required'); });
+      });
+    }
+  }
+
   function onFunktionChange(sport) {
     var funktionEl = sport === 'volleyball' ? funktionVb : funktionBb;
     var teamWrapper = document.getElementById(sport === 'volleyball' ? 'vb-team-wrapper' : 'bb-team-wrapper');
     if (!funktionEl || !teamWrapper) return;
 
     var funktion = funktionEl.value;
-    var showTeam = funktion === 'Spieler*in' || funktion === 'Trainer*in' || funktion === 'Teamverantwortliche*r';
+    var isGuest = funktion === 'Guest';
+    applyGuestVisibility(sport, isGuest);
+    // AHV requiredness now depends on funktion (guest → never) — recompute.
+    updateAhvRequired();
+
+    // A guest picks a team like a player, just at a reduced fee (no licence).
+    var showTeam = isGuest || funktion === 'Spieler*in' || funktion === 'Trainer*in' || funktion === 'Teamverantwortliche*r';
     teamWrapper.style.display = showTeam ? '' : 'none';
 
     if (showTeam) {
@@ -1040,7 +1088,11 @@
       return showFeedback('error', i18n.t('registrationValidationCaptcha'));
     }
 
-    if (type === 'basketball') {
+    // A guest trains with the team but isn't licensed to play → skip the whole
+    // basketball licence/ID/document gate (mirrors the server-side isGuest guard).
+    var isGuest = (type === 'volleyball' && val('funktion-vb') === 'Guest')
+      || (type === 'basketball' && val('funktion-bb') === 'Guest');
+    if (type === 'basketball' && !isGuest) {
       var front = document.getElementById('id-front');
       if (!front.files.length) {
         logBlock('blocked: bb ID front missing');

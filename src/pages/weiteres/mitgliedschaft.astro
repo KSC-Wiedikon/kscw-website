@@ -53,8 +53,8 @@ const locale = 'de';
   <!-- Mitgliederbeiträge -->
   <section class="section-alt">
     <div class="container">
+      <div style="max-width: 640px; margin: 0 auto;">
       <SectionHeader title={t(locale, 'membershipFees')} titleKey="membershipFees" />
-      <div style="max-width: 640px;">
         <!-- Volleyball Fees -->
         <h3 style="margin-bottom: var(--space-md);">
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 256 256" fill="var(--kscw-gold)" style="display: inline; vertical-align: middle; margin-right: 8px;"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm87.63,96H181.37a104.18,104.18,0,0,0-35.78-78.23A88.18,88.18,0,0,1,215.63,120ZM44.53,155.87A87.95,87.95,0,0,1,77.27,56.13L94.39,85.78a104.14,104.14,0,0,0-49.86,70.09ZM58.9,182.43a88,88,0,0,1,43.49-82.79L118.76,128,77.27,199.87A88.62,88.62,0,0,1,58.9,182.43Zm150.84-21.85a88,88,0,0,1-93.49,3.78L132.62,136h83A87.16,87.16,0,0,1,209.74,160.58Z"/></svg>
@@ -236,8 +236,8 @@ const locale = 'de';
   <!-- Anmeldung -->
   <section class="section">
     <div class="container">
+      <div style="max-width: 720px; margin: 0 auto;">
       <SectionHeader title={t(locale, 'membershipRegistration')} titleKey="membershipRegistration" />
-      <div style="max-width: 720px;">
         <p style="font-size: 1.125rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: var(--space-lg);">
           <span data-i18n="membershipRegistrationText">{t(locale, 'membershipRegistrationText')}</span>
         </p>
@@ -289,6 +289,15 @@ const locale = 'de';
               <span data-i18n="membershipRegisterBB">{t(locale, 'membershipRegisterBB')}</span>
             </a>
           </div>
+        </div>
+
+        <!-- Als Gast mitmachen -->
+        <div style="margin-bottom: var(--space-xl); padding-top: var(--space-xl); border-top: 1px solid var(--border); text-align: center;">
+          <h3 style="margin-bottom: var(--space-sm);" data-i18n="membershipGuestTitle">{t(locale, 'membershipGuestTitle')}</h3>
+          <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto var(--space-md);" data-i18n="membershipGuestText">{t(locale, 'membershipGuestText')}</p>
+          <a href="/weiteres/anmeldung" class="btn btn-outline" style="font-size: 1rem; padding: var(--space-md) var(--space-xl);">
+            <span data-i18n="membershipRegisterGuest">{t(locale, 'membershipRegisterGuest')}</span>
+          </a>
         </div>
 
         <!-- Passivmitglied werden -->

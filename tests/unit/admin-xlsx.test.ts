@@ -9,7 +9,7 @@ import { crc32 } from 'node:zlib';
 // is easy to get wrong and produces a file no reader will open).
 const SRC = readFileSync('src/pages/admin.astro', 'utf8');
 const START = 'var CRC_TABLE = null;';
-const END = "downloadBlob(blob, 'anmeldungen-' + nameBase + '.xlsx');";
+const END = "'schreiberkurs-teilnehmerliste-' + nameBase + '.xlsx');";
 
 function loadWriter() {
   const start = SRC.indexOf(START);
@@ -18,14 +18,15 @@ function loadWriter() {
   expect(end, 'xlsx writer end marker missing').toBeGreaterThan(-1);
   const code = SRC.slice(start, end + END.length) + '\n}\n';
   let captured: { blob: Blob; name: string } | null = null;
-  const factory = new Function('downloadBlob', `${code}\nreturn { exportRowsXLSX, colName, xmlEsc };`);
+  const factory = new Function('downloadBlob',
+    `${code}\nreturn { exportSvrzXLSX, splitSwissAddress, safeFileName, zipStore, colName, xmlEsc, SVRZ_HEADERS };`);
   const api = factory((blob: Blob, name: string) => { captured = { blob, name }; });
   return {
     ...api,
-    async build(headers: unknown[], rows: unknown[][], sheet?: string) {
+    async build(rows: unknown[][], expert?: string) {
       captured = null;
-      api.exportRowsXLSX('test', headers, rows, sheet);
-      if (!captured) throw new Error('exportRowsXLSX did not produce a download');
+      api.exportSvrzXLSX('test', rows, expert);
+      if (!captured) throw new Error('exportSvrzXLSX did not produce a download');
       const { blob, name } = captured as { blob: Blob; name: string };
       return { name, type: blob.type, bytes: Buffer.from(await blob.arrayBuffer()) };
     },
@@ -33,13 +34,14 @@ function loadWriter() {
 }
 
 /** Minimal STORE-only zip reader — walks the central directory, so it fails loudly
- *  on wrong offsets/sizes, and CRC-checks every part against node's zlib. */
-function readZip(buf: Buffer): Record<string, string> {
+ *  on wrong offsets/sizes, and CRC-checks every part against node's zlib. Returns
+ *  raw bytes: decoding here would hide exactly the binary corruption we check for. */
+function readZip(buf: Buffer): Record<string, Buffer> {
   const eocd = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
   expect(eocd, 'no end-of-central-directory record').toBeGreaterThan(-1);
   const count = buf.readUInt16LE(eocd + 10);
   let ptr = buf.readUInt32LE(eocd + 16);
-  const out: Record<string, string> = {};
+  const out: Record<string, Buffer> = {};
   for (let i = 0; i < count; i++) {
     expect(buf.readUInt32LE(ptr), 'bad central directory signature').toBe(0x02014b50);
     const method = buf.readUInt16LE(ptr + 10);
@@ -58,23 +60,31 @@ function readZip(buf: Buffer): Record<string, string> {
     const dataStart = local + 30 + localNameLen + extraLen;
     const data = buf.subarray(dataStart, dataStart + size);
     expect(crc32(data), `${name}: CRC does not match its bytes`).toBe(storedCrc);
-    out[name] = data.toString('utf8');
+    out[name] = Buffer.from(data);
     ptr += 46 + nameLen + buf.readUInt16LE(ptr + 30) + buf.readUInt16LE(ptr + 32);
   }
   return out;
 }
 
-const HEADERS = ['Datum', 'Vorname', 'Anwesend', 'SV-Lizenz', 'Notizen'];
+/** The worksheet part of a freshly built workbook, as text. */
+function sheetOf(parts: Record<string, Buffer>): string {
+  return parts['xl/worksheets/sheet1.xml'].toString('utf8');
+}
+
+// One entry per SVRZ column: Kursdatum, Prüfungsdatum, Prüfungsresultat, Vereinsname,
+// Lizenz-Nr., Name, Vorname, Strasse, PLZ, Wohnort, Telefon, E-Mail, Geb. Datum.
 const ROWS = [
-  ['07.07.2026 09:42', 'Davide', true, '337646', 'Trainer <VBC> & "Spada"'],
-  ['05.07.2026 12:00', 'Melina', false, '', 'Dürig 🏐'],
+  ['19.08.2026', '20.08.2026', 'Bestanden', 'KSC Wiedikon', '337646', 'Dürig <&"> 🏐', 'Melina',
+    'Bahnhofstrasse 1', '8001', 'Zürich', '079 123 45 67', 'melina@example.ch', '07.02.1999'],
+  ['19.08.2026', '', '', 'VBC Spada', '', 'Rossi', 'Davide',
+    'Seestrasse 12', '8002', 'Zürich', '', 'davide@example.ch', '14.11.2001'],
 ];
 
-describe('admin .xlsx export', () => {
+describe('admin .xlsx export (SVRZ Teilnehmerliste)', () => {
   it('produces a readable zip: every part CRC-checks and the offsets resolve', async () => {
     const { build } = loadWriter();
-    const { name, type, bytes } = await build(HEADERS, ROWS);
-    expect(name).toBe('anmeldungen-test.xlsx');
+    const { name, type, bytes } = await build(ROWS, 'Anne Muster');
+    expect(name).toBe('schreiberkurs-teilnehmerliste-test.xlsx');
     expect(type).toBe('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     expect(bytes.subarray(0, 4)).toEqual(Buffer.from([0x50, 0x4b, 0x03, 0x04])); // "PK\3\4"
 
@@ -85,41 +95,131 @@ describe('admin .xlsx export', () => {
     ]);
   });
 
-  it('writes the tracking toggles as real booleans and everything else as text', async () => {
+  it('reproduces the SVRZ letterhead, header row and hint row verbatim', async () => {
+    const { build, SVRZ_HEADERS } = loadWriter();
+    const sheet = sheetOf(readZip((await build(ROWS, 'Anne Muster')).bytes));
+    expect(sheet).toContain('Schreiberwesen');
+    expect(sheet).toContain('RSK Swiss Volley Region Zürich');
+    expect(sheet).toContain('Schreiberkurs Teilnehmerliste');
+    expect(sheet).toContain('Schreiberexperte: Anne Muster');
+    expect(sheet).toContain('Bestanden / Nicht bestanden');
+    expect(sheet).toContain('Bitte vollständig ausfüllen');
+    // SVRZ transcribes by column position — a reordered header breaks their read.
+    expect(SVRZ_HEADERS).toEqual(['Kursdatum', 'Prüfungsdatum', 'Prüfungsresultat', 'Vereinsname',
+      'Lizenz-Nr.', 'Name', 'Vorname', 'Strasse', 'PLZ', 'Wohnort', 'Telefon', 'E-Mail', 'Geb. Datum']);
+    SVRZ_HEADERS.forEach((h: string, i: number) => {
+      const col = String.fromCharCode(65 + i);
+      expect(sheet, `${h} must sit in column ${col} of row 7`)
+        .toMatch(new RegExp(`<c r="${col}7" s="7"[^>]*><is><t[^>]*>${h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}<`));
+    });
+    expect(sheet).toContain('<mergeCell ref="A5:M5"/>'); // expert line spans the sheet
+    expect(sheet).toContain('<mergeCell ref="E8:M8"/>');
+  });
+
+  it('writes data from row 9 down, banded, with dates as Swiss text', async () => {
     const { build } = loadWriter();
-    const sheet = readZip((await build(HEADERS, ROWS)).bytes)['xl/worksheets/sheet1.xml'];
-    // Present=true → C2, Present=false → C3. Booleans stay filterable/countable in Excel.
-    expect(sheet).toContain('<c r="C2" t="b"><v>1</v></c>');
-    expect(sheet).toContain('<c r="C3" t="b"><v>0</v></c>');
-    // A licence number stays a string so a leading zero can never be eaten.
-    expect(sheet).toMatch(/<c r="D2"[^>]*t="inlineStr"><is><t[^>]*>337646</);
-    // Empty cells are omitted; explicit r= refs keep the later columns aligned.
-    expect(sheet).not.toContain('r="D3"');
-    expect(sheet).toMatch(/<c r="E3"/);
-    // Header row is bold (style 1) and frozen.
-    expect(sheet).toMatch(/<c r="A1" s="1"/);
+    const sheet = sheetOf(readZip((await build(ROWS)).bytes));
+    // Dates stay text: a serial + numFmt would render dd/mm/yyyy in Excel, which is
+    // exactly the slashed format the platform forbids.
+    expect(sheet).toMatch(/<c r="A9" s="9"[^>]*><is><t[^>]*>19\.08\.2026</);
+    expect(sheet).toMatch(/<c r="C9" s="9"[^>]*><is><t[^>]*>Bestanden</);
+    expect(sheet).toMatch(/<c r="D9" s="10"[^>]*><is><t[^>]*>KSC Wiedikon</);
+    expect(sheet).toMatch(/<c r="A10" s="11"/); // second row drops the band fill
+    expect(sheet).toMatch(/<c r="D10" s="12"/);
+    // Unlike a plain table writer, empty cells are still emitted — they carry the box border.
+    expect(sheet).toContain('<c r="B10" s="11"/>');
     expect(sheet).toContain('state="frozen"');
+  });
+
+  it('leaves the expert line bare when no expert is known', async () => {
+    const { build } = loadWriter();
+    const sheet = sheetOf(readZip((await build(ROWS)).bytes));
+    expect(sheet).toContain('Schreiberexperte:');
+    expect(sheet).not.toContain('Schreiberexperte: ');
   });
 
   it('escapes XML metacharacters rather than emitting broken markup', async () => {
     const { build, xmlEsc } = loadWriter();
-    const sheet = readZip((await build(HEADERS, ROWS)).bytes)['xl/worksheets/sheet1.xml'];
-    expect(sheet).toContain('Trainer &lt;VBC&gt; &amp; &quot;Spada&quot;');
-    expect(sheet).toContain('Dürig 🏐');
-    expect(xmlEsc('a\u0007b')).toBe('ab'); // control chars are illegal in XML 1.0
-  });
-
-  it('keeps the sheet name within Excel limits', async () => {
-    const { build } = loadWriter();
-    const parts = readZip((await build(HEADERS, ROWS, 'Schreiberkurs 2026 / Zürich [DE]:*?')).bytes);
-    const sheetName = parts['xl/workbook.xml'].match(/<sheet name="([^"]*)"/)?.[1] ?? '';
-    expect(sheetName.length).toBeLessThanOrEqual(31);
-    expect(sheetName).not.toMatch(/[\\/?*[\]:]/); // characters Excel rejects in a tab name
+    const sheet = sheetOf(readZip((await build(ROWS)).bytes));
+    expect(sheet).toContain('Dürig &lt;&amp;&quot;&gt; 🏐');
+    expect(xmlEsc(`a${String.fromCharCode(7)}b`)).toBe('ab'); // control chars are illegal in XML 1.0
   });
 
   it('handles a course with no signups', async () => {
     const { build } = loadWriter();
-    const parts = readZip((await build(HEADERS, [])).bytes);
-    expect(parts['xl/worksheets/sheet1.xml']).toContain('<c r="A1" s="1"'); // header row only
+    const sheet = sheetOf(readZip((await build([])).bytes));
+    expect(sheet).toContain('Schreiberkurs Teilnehmerliste'); // blank form, still valid
+    expect(sheet).not.toContain('r="A9"');
+  });
+});
+
+describe('splitSwissAddress', () => {
+  it.each([
+    ['Bahnhofstrasse 1, 8001 Zürich', { street: 'Bahnhofstrasse 1', zip: '8001', city: 'Zürich' }],
+    ['Seestrasse 12 8002 Zürich', { street: 'Seestrasse 12', zip: '8002', city: 'Zürich' }], // no comma
+    ['Im Grüene 3, 8055 Zürich Wiedikon', { street: 'Im Grüene 3', zip: '8055', city: 'Zürich Wiedikon' }],
+    ['Hauptstr. 5, 79539 Lörrach', { street: 'Hauptstr. 5', zip: '79539', city: 'Lörrach' }], // 5-digit DE
+    ['  Bahnhofstrasse   1 ,  8001   Zürich ', { street: 'Bahnhofstrasse 1', zip: '8001', city: 'Zürich' }],
+  ] as Array<[string, { street: string; zip: string; city: string }]>)('splits %s', (input, expected) => {
+    expect(loadWriter().splitSwissAddress(input)).toEqual(expected);
+  });
+
+  // A wrong guess would put a house number in the PLZ column of an official list,
+  // so anything not matching the postcode shape stays whole in Strasse.
+  it.each([
+    'Bahnhofstrasse 1',
+    '8001 Zürich',
+    'Bahnhofstrasse 1, 8001 Zürich, Schweiz',
+  ])('falls back to the street column for %s', (input) => {
+    const got = loadWriter().splitSwissAddress(input);
+    expect(got.zip).toBe('');
+    expect(got.city).toBe('');
+    expect(got.street).toBe(input.trim().replace(/\s+/g, ' '));
+  });
+
+  it('returns empty parts for a missing address', () => {
+    expect(loadWriter().splitSwissAddress('')).toEqual({ street: '', zip: '', city: '' });
+    expect(loadWriter().splitSwissAddress(null)).toEqual({ street: '', zip: '', city: '' });
+  });
+});
+
+describe('scoresheet bundle', () => {
+  it('carries binary payloads through the zip byte-for-byte', async () => {
+    const { zipStore } = loadWriter();
+    // Real PDF/PNG magic plus bytes that are invalid UTF-8 (0xFF 0xFE): if the
+    // writer ever text-encodes a scoresheet these come back as U+FFFD and the
+    // file is silently corrupt, which a text-only fixture would not catch.
+    const pdf = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x37, 0x0a, 0xff, 0xfe, 0x00, 0x01]);
+    const blob = zipStore([
+      { name: 'liste.xml', xml: '<a/>' },
+      { name: 'spielblaetter/Dürig Melina.pdf', bytes: pdf },
+    ], 'application/zip');
+    const parts = readZip(Buffer.from(await blob.arrayBuffer())); // CRC-checks every entry
+    expect(Object.keys(parts)).toContain('spielblaetter/Dürig Melina.pdf'); // UTF-8 name survives
+    expect(parts['spielblaetter/Dürig Melina.pdf']).toEqual(Buffer.from(pdf));
+  });
+
+  it('marks zip entry names as UTF-8 so umlauts are not mojibake', async () => {
+    const { zipStore } = loadWriter();
+    const buf = Buffer.from(await zipStore([{ name: 'Dürig.pdf', bytes: new Uint8Array([1, 2]) }], 'application/zip').arrayBuffer());
+    expect(buf.readUInt16LE(6) & 0x0800, 'local header UTF-8 flag').toBe(0x0800);
+    const eocd = buf.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
+    const cd = buf.readUInt32LE(eocd + 16);
+    expect(buf.readUInt16LE(cd + 8) & 0x0800, 'central directory UTF-8 flag').toBe(0x0800);
+  });
+
+  it.each([
+    ['Müller/Anna:*?', 'MüllerAnna'],
+    ['  Dürig   Melina  ', 'Dürig Melina'],
+    ['../../etc/passwd', 'etcpasswd'], // separators and leading dots both go → cannot escape the folder
+    ['///', 'fallback-id'],
+    ['', 'fallback-id'],
+  ])('safeFileName(%s)', (input, expected) => {
+    expect(loadWriter().safeFileName(input, 'fallback-id')).toBe(expected);
+  });
+
+  it('truncates absurd names instead of emitting an unopenable path', () => {
+    const { safeFileName } = loadWriter();
+    expect(safeFileName('ä'.repeat(500), 'x')).toHaveLength(80);
   });
 });

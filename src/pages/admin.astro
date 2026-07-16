@@ -251,6 +251,7 @@ import '../styles/global.css';
         scTitleDe: 'Titel (DE)',
         scTitleEn: 'Titel (EN)',
         scDateIso: 'Datum (JJJJ-MM-TT, leer = noch offen)',
+        scScorerExpert: 'Schreiberexperte (für den SVRZ-Export)',
         scTime: 'Uhrzeit (HH:MM)',
         scMode: 'Modus',
         scModeInPerson: 'Vor Ort',
@@ -273,6 +274,11 @@ import '../styles/global.css';
         scPresent: 'Anwesend',
         scExamSent: 'Prüfung gesendet',
         scExamPassed: 'Prüfung bestanden',
+        scExamDate: 'Prüfungsdatum',
+        scScoresheet: 'Spielblatt',
+        scScoresheetOpen: 'Hochgeladenes Spielblatt öffnen',
+        scScoresheetMissing: 'Noch kein Spielblatt hochgeladen',
+        scScoresheetFetchFailed: 'Spielblätter konnten nicht geladen werden:',
         scSvLicense: 'SV-Lizenz',
         scNotes: 'Notizen',
         scColDate: 'Datum',
@@ -395,6 +401,7 @@ import '../styles/global.css';
         scTitleDe: 'Title (DE)',
         scTitleEn: 'Title (EN)',
         scDateIso: 'Date (YYYY-MM-DD, empty = TBA)',
+        scScorerExpert: 'Scorer expert (for the SVRZ export)',
         scTime: 'Time (HH:MM)',
         scMode: 'Mode',
         scModeInPerson: 'In person',
@@ -417,6 +424,11 @@ import '../styles/global.css';
         scPresent: 'Present',
         scExamSent: 'Exam sent',
         scExamPassed: 'Exam passed',
+        scExamDate: 'Exam date',
+        scScoresheet: 'Scoresheet',
+        scScoresheetOpen: 'Open the uploaded scoresheet',
+        scScoresheetMissing: 'No scoresheet uploaded yet',
+        scScoresheetFetchFailed: 'Could not load these scoresheets:',
         scSvLicense: 'SV licence',
         scNotes: 'Notes',
         scColDate: 'Date',
@@ -2431,6 +2443,13 @@ import '../styles/global.css';
         var lastNameIds  = idsWhere(function(f) { return /nachname|last\s*name|surname|familienname/i.test(String(f.name || '')); });
         var svrzIds      = idsWhere(function(f) { return /svrz/i.test(String(f.name || '')); });
         var emailIds     = idsWhere(function(f) { return f.type === 'email' || /^e-?mail/i.test(String(f.name || '')); });
+        // Only the SVRZ export reads these — they stay out of shownIds so the
+        // detail panel keeps listing them like any other answer.
+        var addressIds   = idsWhere(function(f) { return /^(adresse|address)/i.test(String(f.name || '')); });
+        var phoneIds     = idsWhere(function(f) { return f.type === 'phone_number' || /natel|telefon|phone|handy|mobile/i.test(String(f.name || '')); });
+        var dobIds       = idsWhere(function(f) { return /geburtsdatum|birth/i.test(String(f.name || '')); });
+        var kscwIds      = idsWhere(function(f) { return /kscw/i.test(String(f.name || '')); });
+        var clubIds      = idsWhere(function(f) { return /club/i.test(String(f.name || '')); });
         var shownIds = {}; // fields already surfaced as columns → excluded from the detail panel
         firstNameIds.concat(lastNameIds).concat(svrzIds).forEach(function(id) { shownIds[id] = 1; });
         function pickVal(d, ids) {
@@ -2475,6 +2494,54 @@ import '../styles/global.css';
           return { headers: headers, rows: rows };
         }
 
+        // Each row's Kursdatum comes from the course behind its form, so the
+        // combined ("all") view still dates every row correctly.
+        var courseBySlug = {};
+        (_scorerCourses || []).forEach(function(sc) {
+          ['form_slug_de', 'form_slug_en'].forEach(function(k) {
+            var slug = normalizeFormSlug(sc[k]);
+            if (slug) courseBySlug[slug] = sc;
+          });
+        });
+        // Row 5 of the sheet holds a single expert name. In the combined view the
+        // courses can disagree, and guessing one would put a wrong name on an
+        // official list — so it is left blank unless every source agrees.
+        function svrzExpert() {
+          var names = {};
+          srcList.forEach(function(s) {
+            var sc = courseBySlug[s.slug];
+            var n = sc && String(sc.scorer_expert || '').trim();
+            if (n) names[n] = 1;
+          });
+          var found = Object.keys(names);
+          return found.length === 1 ? found[0] : '';
+        }
+        function buildSvrzExport() {
+          return exportMetas.map(function(m) {
+            var d = m.row.data, st = m.state;
+            var sc = courseBySlug[m.row.slug] || {};
+            var addr = splitSwissAddress(pickVal(d, addressIds));
+            // KSCW members answer Ja/Yes and never type a club; everyone else
+            // names their own in "Club und team".
+            var isKscw = /^(ja|yes)$/i.test(String(pickVal(d, kscwIds) || '').trim());
+            return [
+              isoToSwissDate(sc.date_iso),
+              isoToSwissDate(m.examInp ? m.examInp.value : st.exam_date),
+              st.exam_passed ? 'Bestanden' : '',
+              isKscw ? 'KSC Wiedikon' : String(pickVal(d, clubIds) || '').trim(),
+              m.svInp ? m.svInp.value.trim() : (st.sv_license || m.formSv || ''),
+              String(pickVal(d, lastNameIds) || ''),
+              String(pickVal(d, firstNameIds) || ''),
+              addr.street,
+              addr.zip,
+              addr.city,
+              String(pickVal(d, phoneIds) || ''),
+              String(pickVal(d, emailIds) || ''),
+              isoToSwissDate(pickVal(d, dobIds)),
+            ];
+          });
+        }
+
         var controls = document.createElement('div');
         controls.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;';
         content.insertBefore(controls, tableHost);
@@ -2485,8 +2552,18 @@ import '../styles/global.css';
           xls.className = 'admin-btn admin-btn-sm admin-btn-primary';
           xls.textContent = t('scExportXLSX');
           xls.addEventListener('click', function() {
-            var e = buildScorerExport();
-            exportRowsXLSX(nameBase, e.headers, e.rows, title || t('scRegistrations'));
+            var refs = exportMetas.filter(function(m) { return m.state.exam_file; }).map(function(m) {
+              var d = m.row.data;
+              return {
+                id: m.state.exam_file,
+                label: [String(pickVal(d, lastNameIds) || ''), String(pickVal(d, firstNameIds) || '')]
+                  .filter(Boolean).join(' ') || String(m.row.id),
+              };
+            });
+            xls.disabled = true;
+            Promise.resolve(exportSvrzBundle(nameBase, buildSvrzExport(), svrzExpert(), refs))
+              .catch(function() { alert(t('scScoresheetFetchFailed')); })
+              .then(function() { xls.disabled = false; });
           });
           controls.appendChild(xls);
 
@@ -2552,7 +2629,7 @@ import '../styles/global.css';
         wrap.style.cssText = 'overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-md);';
         var table = document.createElement('table');
         table.style.cssText = 'width:100%;border-collapse:collapse;font-size:var(--text-sm);';
-        var COLSPAN = 9; // select, arrow, first, last, present, examSent, examPassed, sv, actions
+        var COLSPAN = 10; // select, arrow, first, last, present, examSent, examPassed, sheet, sv, actions
         var cellCss = 'padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);';
         var headCss = 'text-align:left;padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.04);font-weight:600;white-space:nowrap;';
 
@@ -2581,6 +2658,7 @@ import '../styles/global.css';
         thRow.appendChild(makeTh(t('scPresent'), 'text-align:center;'));
         thRow.appendChild(makeTh(t('scExamSent'), 'text-align:center;'));
         thRow.appendChild(makeTh(t('scExamPassed'), 'text-align:center;'));
+        thRow.appendChild(makeTh(t('scScoresheet'), 'text-align:center;'));
         thRow.appendChild(makeTh(t('scSvLicense')));
         thRow.appendChild(makeTh(''));
         thead.appendChild(thRow);
@@ -2596,6 +2674,8 @@ import '../styles/global.css';
             present: !!srv.present,
             exam_sent: !!srv.exam_sent,
             exam_passed: !!srv.exam_passed,
+            exam_date: srv.exam_date || '',
+            exam_file: srv.exam_file || '',
             sv_license: srv.sv_license || '',
             notes: srv.notes || '',
           };
@@ -2664,6 +2744,38 @@ import '../styles/global.css';
             td.appendChild(cb);
             tr.appendChild(td);
           });
+
+          // Scoresheet — read-only here; the participant uploads it themselves.
+          var sheetTd = document.createElement('td');
+          sheetTd.style.cssText = cellCss + 'text-align:center;';
+          if (state.exam_file) {
+            var sheetBtn = document.createElement('button');
+            sheetBtn.type = 'button';
+            sheetBtn.textContent = '✓';
+            sheetBtn.title = t('scScoresheetOpen');
+            sheetBtn.style.cssText = 'background:none;border:none;padding:0;color:#16a34a;font-weight:700;font-size:var(--text-sm);cursor:pointer;';
+            sheetBtn.addEventListener('click', function() {
+              scoresheetResponse(state.exam_file)
+                .then(function(res) {
+                  if (!res.ok) throw new Error('HTTP ' + res.status);
+                  return res.blob();
+                })
+                .then(function(blob) {
+                  var url = URL.createObjectURL(blob);
+                  window.open(url, '_blank', 'noopener');
+                  // The tab has to load it before the URL dies; a blob URL revoked
+                  // on the next tick opens an empty window instead.
+                  setTimeout(function() { URL.revokeObjectURL(url); }, 60000);
+                })
+                .catch(function() { alert(t('scScoresheetFetchFailed')); });
+            });
+            sheetTd.appendChild(sheetBtn);
+          } else {
+            sheetTd.textContent = '—';
+            sheetTd.style.color = 'var(--text-muted)';
+            sheetTd.title = t('scScoresheetMissing');
+          }
+          tr.appendChild(sheetTd);
 
           // SV licence — pre-fill from the form's SVRZ answer when no tracked value yet
           var svTd = document.createElement('td');
@@ -2735,6 +2847,22 @@ import '../styles/global.css';
           });
           detailTd.appendChild(dl);
 
+          // Prüfungsdatum — normally stamped by the participant's upload, but kept
+          // editable: paper exams and re-sits never pass through the upload page.
+          var examWrap = document.createElement('label');
+          examWrap.style.cssText = 'display:flex;align-items:center;gap:0.5rem;font-size:var(--text-sm);color:var(--text-muted);margin-bottom:0.5rem;';
+          var examLbl = document.createElement('span');
+          examLbl.textContent = t('scExamDate') + ':';
+          var examInp = document.createElement('input');
+          examInp.type = 'date';
+          examInp.value = (state.exam_date || '').substring(0, 10);
+          examInp.style.cssText = 'padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+          examInp.addEventListener('change', function() {
+            saveScorerField(rowMeta, 'exam_date', examInp.value || null, statusEl);
+          });
+          examWrap.appendChild(examLbl); examWrap.appendChild(examInp);
+          detailTd.appendChild(examWrap);
+
           var noteWrap = document.createElement('label');
           noteWrap.style.cssText = 'display:flex;align-items:center;gap:0.5rem;font-size:var(--text-sm);color:var(--text-muted);';
           var noteLbl = document.createElement('span');
@@ -2752,7 +2880,7 @@ import '../styles/global.css';
           detailTr.appendChild(detailTd);
           tbody.appendChild(detailTr);
 
-          exportMetas.push({ row: row, state: state, formSv: formSv, svInp: svInp, noteInp: noteInp });
+          exportMetas.push({ row: row, state: state, formSv: formSv, svInp: svInp, noteInp: noteInp, examInp: examInp });
         });
 
         table.appendChild(tbody);
@@ -2801,6 +2929,8 @@ import '../styles/global.css';
         formHtml += fieldInput('title_en', t('scTitleEn'), item ? (item.title_en || '') : '', true);
         formHtml += fieldDate('date_iso', t('scDateIso'), item ? ((item.date_iso || '').substring(0, 10)) : '');
         formHtml += fieldInput('time', t('scTime'), item ? (item.time || '') : '', { placeholder: '19:30' });
+        // Fills the SVRZ Teilnehmerliste header — nothing public reads it.
+        formHtml += fieldInput('scorer_expert', t('scScorerExpert'), item ? (item.scorer_expert || '') : '');
         var scModes = [
           { v: 'in_person', l: t('scModeInPerson') },
           { v: 'recorded', l: t('scModeRecorded') },
@@ -3259,18 +3389,20 @@ import '../styles/global.css';
     }
     // Zip with STORE (no compression) — a few hundred rows of XML is small
     // enough that deflate would only buy kilobytes, and STORE needs no encoder.
+    // Scoresheets ride along as `bytes` (PDF/JPEG/PNG); they are already
+    // compressed formats, so STORE costs them nothing either.
     function zipStore(files, mimeType) {
       var enc = new TextEncoder();
       var parts = [], central = [], offset = 0;
       files.forEach(function(f) {
         var name = enc.encode(f.name);
-        var data = enc.encode(f.xml);
+        var data = f.bytes ? f.bytes : enc.encode(f.xml);
         var crc = crc32(data);
         var lh = new Uint8Array(30 + name.length);
         var lv = new DataView(lh.buffer);
         lv.setUint32(0, 0x04034b50, true);
         lv.setUint16(4, 20, true);    // version needed
-        lv.setUint16(6, 0, true);     // flags
+        lv.setUint16(6, 0x0800, true); // flags: names are UTF-8 (participant umlauts)
         lv.setUint16(8, 0, true);     // compression: store
         lv.setUint16(10, 0, true);    // mod time
         lv.setUint16(12, 0x21, true); // mod date = 1980-01-01 (fixed → byte-identical exports)
@@ -3287,6 +3419,7 @@ import '../styles/global.css';
         cv.setUint32(0, 0x02014b50, true);
         cv.setUint16(4, 20, true);   // version made by
         cv.setUint16(6, 20, true);   // version needed
+        cv.setUint16(8, 0x0800, true); // flags: names are UTF-8 (participant umlauts)
         cv.setUint16(10, 0, true);   // compression: store
         cv.setUint16(12, 0, true);
         cv.setUint16(14, 0x21, true);
@@ -3320,48 +3453,10 @@ import '../styles/global.css';
       while (n > 0) { var m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
       return s;
     }
-    // headers: string[]; rows: (string|boolean)[][] — booleans become real Excel
-    // booleans so the tracking columns can be filtered/counted in the sheet.
-    function exportRowsXLSX(nameBase, headers, rows, sheetName) {
-      function cell(col, rowNum, v, styleId) {
-        var ref = colName(col) + rowNum;
-        var s = styleId ? ' s="' + styleId + '"' : '';
-        if (typeof v === 'boolean') return '<c r="' + ref + '"' + s + ' t="b"><v>' + (v ? 1 : 0) + '</v></c>';
-        var str = String(v == null ? '' : v);
-        if (!str) return '';
-        return '<c r="' + ref + '"' + s + ' t="inlineStr"><is><t xml:space="preserve">' + xmlEsc(str) + '</t></is></c>';
-      }
-      var xmlRows = ['<row r="1">' + headers.map(function(h, i) { return cell(i, 1, h, 1); }).join('') + '</row>'];
-      rows.forEach(function(r, i) {
-        var n = i + 2;
-        xmlRows.push('<row r="' + n + '">' + r.map(function(v, c) { return cell(c, n, v, 0); }).join('') + '</row>');
-      });
-      var lastCol = colName(Math.max(headers.length - 1, 0));
-      var lastRow = rows.length + 1;
-      // Text columns can hold long free-text answers; a flat width beats Excel's default.
-      var cols = '<cols><col min="1" max="' + Math.max(headers.length, 1) + '" width="22" customWidth="1"/></cols>';
-      var sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-        + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-        + '<sheetViews><sheetView workbookViewId="0">'
-        + '<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
-        + '</sheetView></sheetViews>'
-        + cols
-        + '<sheetData>' + xmlRows.join('') + '</sheetData>'
-        + '<autoFilter ref="A1:' + lastCol + lastRow + '"/>'
-        + '</worksheet>';
-      var styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
-        + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
-        + '<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font>'
-        + '<font><b/><sz val="11"/><name val="Calibri"/></font></fonts>'
-        + '<fills count="2"><fill><patternFill patternType="none"/></fill>'
-        + '<fill><patternFill patternType="gray125"/></fill></fills>'
-        + '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
-        + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
-        + '<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'
-        + '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs>'
-        + '</styleSheet>';
+    // One worksheet + styles part → the six entries of an OPC package.
+    function xlsxParts(sheet, styles, sheetName) {
       var safeSheet = xmlEsc(String(sheetName || 'Anmeldungen').replace(/[\\/?*[\]:]/g, ' ').substring(0, 31).trim() || 'Anmeldungen');
-      var blob = zipStore([
+      return [
         { name: '[Content_Types].xml', xml: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
           + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
           + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
@@ -3385,8 +3480,203 @@ import '../styles/global.css';
           + '</Relationships>' },
         { name: 'xl/styles.xml', xml: styles },
         { name: 'xl/worksheets/sheet1.xml', xml: sheet },
-      ], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      downloadBlob(blob, 'anmeldungen-' + nameBase + '.xlsx');
+      ];
+    }
+
+    // ── SVRZ "Schreiberkurs Teilnehmerliste" export ──────────────
+    // Column order, wording and layout are dictated by the RSK Swiss Volley
+    // Region Zürich template — SVRZ reads these sheets by eye and transcribes
+    // them, so the letterhead, the grey header band and the 13 fixed columns are
+    // reproduced rather than restyled. Always German: it is SVRZ's form, not our
+    // UI, so it does not follow the admin language.
+    var SVRZ_HEADERS = ['Kursdatum', 'Prüfungsdatum', 'Prüfungsresultat', 'Vereinsname', 'Lizenz-Nr.',
+      'Name', 'Vorname', 'Strasse', 'PLZ', 'Wohnort', 'Telefon', 'E-Mail', 'Geb. Datum'];
+    var SVRZ_WIDTHS = [14.48, 14.48, 18.62, 20.69, 12.41, 20.69, 20.69, 20.69, 5.37, 20.69, 16.63, 20.69, 14.48];
+    var SVRZ_CENTERED = { 0: 1, 1: 1, 2: 1, 12: 1 }; // dates + result; the rest reads left
+
+    // The form collects one free-text address ("Bahnhofstrasse 1, 8001 Zürich")
+    // but SVRZ wants street / PLZ / town split apart. The 4-5 digit postcode is
+    // the only dependable anchor, so anything not matching that shape is handed
+    // back whole in `street` rather than being quietly mangled into wrong columns.
+    function splitSwissAddress(v) {
+      var s = String(v == null ? '' : v).trim().replace(/\s+/g, ' ');
+      if (!s) return { street: '', zip: '', city: '' };
+      var m = /^(.*?)[,\s]+(\d{4,5})\s+([^,]+)$/.exec(s);
+      if (!m) return { street: s, zip: '', city: '' };
+      return { street: m[1].replace(/,+$/, '').trim(), zip: m[2], city: m[3].trim() };
+    }
+
+    // Strip anything a zip entry name (or a filesystem) should not carry, and keep
+    // it short enough that "…/spielblaetter/<name>" survives Windows' path limit.
+    function safeFileName(s, fallback) {
+      var out = String(s == null ? '' : s)
+        .replace(/[\/\\:*?"<>|\x00-\x1F]/g, '').replace(/\s+/g, ' ').trim()
+        .replace(/^\.+/, '').substring(0, 80).trim();
+      return out || fallback;
+    }
+
+    function svrzStylesXml() {
+      var xfs = [
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>',
+        '<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>',
+        '<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>',
+        '<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/>',
+        '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>',
+        '<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>',
+        '<xf numFmtId="0" fontId="1" fillId="0" borderId="3" xfId="0" applyFont="1" applyBorder="1"/>',
+        '<xf numFmtId="0" fontId="1" fillId="2" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>',
+        '<xf numFmtId="0" fontId="4" fillId="0" borderId="2" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>',
+        '<xf numFmtId="0" fontId="0" fillId="3" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>',
+        '<xf numFmtId="0" fontId="0" fillId="3" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>',
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>',
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="2" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>',
+      ];
+      return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        + '<fonts count="5">'
+        + '<font><sz val="12"/><color theme="1"/><name val="Open Sans"/><family val="2"/></font>'
+        + '<font><b/><sz val="12"/><color theme="1"/><name val="Open Sans"/><family val="2"/></font>'
+        + '<font><sz val="11"/><color theme="1"/><name val="Open Sans Light"/><family val="2"/></font>'
+        + '<font><b/><sz val="24"/><color theme="1"/><name val="Open Sans"/><family val="2"/></font>'
+        + '<font><i/><sz val="9"/><color theme="1"/><name val="Open Sans"/><family val="2"/></font>'
+        + '</fonts>'
+        + '<fills count="4">'
+        + '<fill><patternFill patternType="none"/></fill>'
+        + '<fill><patternFill patternType="gray125"/></fill>'
+        + '<fill><patternFill patternType="solid"><fgColor rgb="FFB6B6B6"/><bgColor indexed="64"/></patternFill></fill>'
+        + '<fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/><bgColor indexed="64"/></patternFill></fill>'
+        + '</fills>'
+        + '<borders count="4">'
+        + '<border><left/><right/><top/><bottom/><diagonal/></border>'
+        + '<border><left/><right/><top/><bottom style="thin"/><diagonal/></border>'
+        + '<border><left style="thin"/><right style="thin"/><top style="thin"/><bottom style="thin"/><diagonal/></border>'
+        + '<border><left/><right/><top style="thin"/><bottom style="thin"/><diagonal/></border>'
+        + '</borders>'
+        + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+        + '<cellXfs count="' + xfs.length + '">' + xfs.join('') + '</cellXfs>'
+        + '</styleSheet>';
+    }
+
+    // rows: string[][], each already in SVRZ column order (13 wide).
+    function svrzSheetXml(rows, expert) {
+      var N = SVRZ_HEADERS.length;
+      // Empty cells still carry the banding and box borders, so — unlike the
+      // plain writer — they are emitted rather than skipped.
+      function cell(ref, styleId, v) {
+        var str = String(v == null ? '' : v);
+        if (!str) return '<c r="' + ref + '" s="' + styleId + '"/>';
+        return '<c r="' + ref + '" s="' + styleId + '" t="inlineStr"><is><t xml:space="preserve">'
+          + xmlEsc(str) + '</t></is></c>';
+      }
+      function rowXml(n, ht, cells) {
+        return '<row r="' + n + '" ht="' + ht + '" customHeight="1">' + cells.join('') + '</row>';
+      }
+      // A full-width row under one style — the merged header bands need every
+      // cell styled or the rule stops at column A.
+      function bandRow(n, ht, styleId, text) {
+        var cells = [];
+        for (var i = 0; i < N; i++) cells.push(cell(colName(i) + n, styleId, i === 0 ? (text || '') : ''));
+        return rowXml(n, ht, cells);
+      }
+
+      var xr = [];
+      var head = [];
+      for (var i = 0; i < N; i++) {
+        var isFirst = i === 0, isLast = i === N - 1;
+        head.push(cell(colName(i) + '1', isFirst ? 1 : (isLast ? 2 : 3),
+          isFirst ? 'Schreiberwesen' : (isLast ? 'RSK Swiss Volley Region Zürich' : '')));
+      }
+      xr.push(rowXml(1, '22.05', head));
+      xr.push('<row r="2" ht="22.05" customHeight="1"/>');
+      xr.push(rowXml(3, '29.15', [cell('A3', 4, 'Schreiberkurs Teilnehmerliste')]));
+      xr.push(bandRow(4, '28.35', 0, ''));
+      xr.push(bandRow(5, '22.7', 5, 'Schreiberexperte:' + (expert ? ' ' + expert : '')));
+      xr.push(bandRow(6, '22.7', 6, ''));
+      xr.push(rowXml(7, '22.7', SVRZ_HEADERS.map(function(h, c) { return cell(colName(c) + '7', 7, h); })));
+      // SVRZ's own hint row, verbatim from their template.
+      var hints = [];
+      for (var j = 0; j < N; j++) {
+        hints.push(cell(colName(j) + '8', 8,
+          j === 2 ? 'Bestanden / Nicht bestanden' : (j === 4 ? 'Bitte vollständig ausfüllen' : '')));
+      }
+      xr.push(rowXml(8, '12.75', hints));
+
+      rows.forEach(function(r, idx) {
+        var n = idx + 9;
+        var band = idx % 2 === 0; // row 9 is shaded in the template, then alternating
+        var cells = r.slice(0, N).map(function(v, c) {
+          var centered = !!SVRZ_CENTERED[c];
+          var style = band ? (centered ? 9 : 10) : (centered ? 11 : 12);
+          return cell(colName(c) + n, style, v);
+        });
+        xr.push(rowXml(n, '22.7', cells));
+      });
+
+      var cols = '<cols>' + SVRZ_WIDTHS.map(function(w, c) {
+        return '<col min="' + (c + 1) + '" max="' + (c + 1) + '" width="' + w + '" customWidth="1"/>';
+      }).join('') + '</cols>';
+      var sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        + '<sheetViews><sheetView workbookViewId="0">'
+        + '<pane ySplit="8" topLeftCell="A9" activePane="bottomLeft" state="frozen"/>'
+        + '</sheetView></sheetViews>'
+        + cols
+        + '<sheetData>' + xr.join('') + '</sheetData>'
+        + '<mergeCells count="4"><mergeCell ref="A4:M4"/><mergeCell ref="A5:M5"/>'
+        + '<mergeCell ref="A6:M6"/><mergeCell ref="E8:M8"/></mergeCells>'
+        + '</worksheet>';
+      return sheet;
+    }
+    var SVRZ_XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+    function svrzWorkbookBlob(rows, expert) {
+      return zipStore(xlsxParts(svrzSheetXml(rows, expert), svrzStylesXml(), 'Teilnehmerliste'), SVRZ_XLSX_MIME);
+    }
+    function exportSvrzXLSX(nameBase, rows, expert) {
+      downloadBlob(svrzWorkbookBlob(rows, expert),
+        'schreiberkurs-teilnehmerliste-' + nameBase + '.xlsx');
+    }
+
+    // Scoresheets are private files carrying personal data, so they are not
+    // readable at /assets anonymously — and an <a href> cannot attach a bearer
+    // token. Authorization lives in the wadmin proxy (see SECURITY.md), so every
+    // read goes through it and the bytes reach the browser as a blob.
+    function scoresheetResponse(id) {
+      return wadmin('scorer_courses', 'assets/' + encodeURIComponent(id), {});
+    }
+
+    // The Teilnehmerliste alone is only half of what SVRZ needs — the scoresheets
+    // back it up. One download beats N: the list plus every uploaded sheet, zipped.
+    // Sheets live behind the admin-only /assets route, so each needs the token.
+    async function exportSvrzBundle(nameBase, rows, expert, sheetRefs) {
+      if (!sheetRefs.length) { exportSvrzXLSX(nameBase, rows, expert); return; }
+      var fetched = await Promise.all(sheetRefs.map(async function(ref) {
+        try {
+          var res = await scoresheetResponse(ref.id);
+          if (!res.ok) return { ref: ref, error: 'HTTP ' + res.status };
+          var buf = await res.arrayBuffer();
+          return { ref: ref, bytes: new Uint8Array(buf), type: res.headers.get('content-type') || '' };
+        } catch (e) { return { ref: ref, error: (e && e.message) || 'error' }; }
+      }));
+
+      var files = [{
+        name: 'schreiberkurs-teilnehmerliste-' + nameBase + '.xlsx',
+        bytes: new Uint8Array(await svrzWorkbookBlob(rows, expert).arrayBuffer()),
+      }];
+      var failed = [], used = {};
+      fetched.forEach(function(f) {
+        if (f.error) { failed.push(f.ref.label + ' (' + f.error + ')'); return; }
+        var ext = /pdf/i.test(f.type) ? '.pdf' : (/png/i.test(f.type) ? '.png' : (/jpe?g/i.test(f.type) ? '.jpg' : ''));
+        var base = safeFileName(f.ref.label, f.ref.id);
+        var name = base + ext;
+        // Two participants can share a name; a colliding zip entry would silently
+        // shadow one of them, so disambiguate rather than lose a scoresheet.
+        for (var i = 2; used[name.toLowerCase()]; i++) name = base + ' (' + i + ')' + ext;
+        used[name.toLowerCase()] = 1;
+        files.push({ name: 'spielblaetter/' + name, bytes: f.bytes });
+      });
+      downloadBlob(zipStore(files, 'application/zip'), 'schreiberkurs-' + nameBase + '.zip');
+      // A missing sheet must not pass as a complete submission to SVRZ.
+      if (failed.length) alert(t('scScoresheetFetchFailed') + '\n\n' + failed.join('\n'));
     }
 
     // ── Upload file to Directus ─────────────────────────────
@@ -3435,6 +3725,7 @@ import '../styles/global.css';
           payload.title_de = form.querySelector('[name="title_de"]').value.trim();
           payload.title_en = form.querySelector('[name="title_en"]').value.trim();
           payload.date_iso = form.querySelector('[name="date_iso"]').value || null;
+          payload.scorer_expert = form.querySelector('[name="scorer_expert"]').value.trim() || null;
           payload.time = form.querySelector('[name="time"]').value.trim() || null;
           payload.mode = form.querySelector('[name="mode"]').value;
           payload.location = form.querySelector('[name="location"]').value.trim() || null;

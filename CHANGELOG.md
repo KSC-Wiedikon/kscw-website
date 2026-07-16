@@ -2,6 +2,29 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.13.0] — 2026-07-17
+
+### Exam result is Yes / No, and emails either way
+- The **"Prüfung bestanden" checkbox is now two buttons, Yes and No**. A checkbox holds two states and the question has three: passed, not passed, and nobody has looked yet. The third is the common one — every row on the platform today — and reading it as a fail would print **"Nicht bestanden"** against undecided people on an official SVRZ list. Undecided now exports as an empty cell, which is what it means.
+- Both answers ask first, then email the participant the result automatically. The confirmation box carries an optional **note** — what went wrong, what to look out for — which is included in the email.
+- Clicking the answer already showing **clears it back to undecided**, silently: there is no longer a result, so there is no email to send. (The earlier one has already gone out; only a person can follow that up.)
+- Recorded separately from the old `exam_passed`, which is kept — dropping the checkbox is no reason to discard what was recorded through it.
+
+### Admin can upload a corrected scoresheet
+- The tick under **Prüfung hochgeladen** opens a menu instead of the file: show the participant's sheet, show the correction, upload or replace one. Once a correction can exist, "open" is no longer one unambiguous action.
+- **The participant's sheet is never overwritten.** It is what they submitted; a correction is a separate claim on top of it, and both stay readable. The menu names **who** corrected it and when — resolved from the admin's login server-side, so it cannot be forged — and the tick turns amber so corrected rows are scannable.
+- The result email **attaches the corrected sheet as a PDF** when one exists. Not the participant's own: they uploaded that and have it already.
+
+### SVRZ export: PDFs named by licence number
+- Zip entries are now `schreiberpruefung_<licence>.pdf`, the correction winning over the original. Licence numbers are reduced to digits the way the upload route does, so the same licence cannot name two files differently depending on who typed it.
+- **Phone photos are converted to PDF**, so SVRZ receives PDFs throughout. The export **warns before running** if anyone is missing a licence number — SVRZ needs it on the Teilnehmerliste regardless.
+
+### Scoresheet uploads no longer accept HEIC
+- PDF, JPG and PNG only. Chrome and Firefox cannot decode HEIC, so such a sheet could be neither previewed in `/admin` nor folded into the PDF the export ships — we would have stored a file nobody downstream can open. Refusing at upload tells the participant while they can still re-shoot it; iOS Safari transcodes to JPEG through a file input anyway.
+
+### Fixed
+- **The exam-passed email's body text was invisible.** It renders on a dark navy card and the body paragraph set no colour, so it fell back to the client default — near-black on navy. Shipped that way in 1.11.0; found by rendering the template rather than reading it. Nobody had received it yet.
+
 ## [1.12.0] — 2026-07-16
 
 ### Sign-up deadline on scorer courses

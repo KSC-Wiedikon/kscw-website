@@ -135,8 +135,37 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.10.0</span>
+          <span class="changelog-badge">v1.11.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.11.0 — 2026-07-16</div>
+          <div class="changelog-group">
+            <h3>Prüfung: Matchblatt selbst hochladen</h3>
+            <ul>
+              <li>Neue Seite <a href="/weiteres/schreiberkurse/pruefung">Schreiberkurse → Prüfung</a>, auf der Kursteilnehmende ihr Matchblatt aus der praktischen Prüfung selbst hochladen — ohne Login, ohne Konto. Sie ist von der Schreiberkurs-Seite verlinkt</li>
+              <li>Wer hochladen darf, entscheidet die Anmeldeliste: Du gibst die E-Mail-Adresse an, mit der du dich für den Kurs angemeldet hast — nur eine Adresse, die tatsächlich auf einer Kursliste steht, kommt durch. Danach begrüsst dich die Seite mit Namen und fragt bei mehreren Kursen nach, für welchen du hochlädst</li>
+              <li>Die SVRZ-Lizenznummer wird beim Upload abgefragt — damit melden wir die Prüfung beim SVRZ an — und ist vorausgefüllt, wenn wir sie schon kennen. Leerzeichen und Punkte sind egal (337 646 → 337646)</li>
+              <li>PDF, JPG, PNG oder HEIC bis 10 MB; ein Handyfoto des Matchblatts genügt. Der Dateityp wird am tatsächlichen Inhalt geprüft, nicht am Namen. Ein erneuter Upload ersetzt das bisherige Blatt</li>
+              <li>Der Upload setzt das Prüfungsdatum auf den Tag des Uploads und trägt die Lizenznummer ein — wer sein Blatt hochlädt, vervollständigt damit seine eigene Zeile auf der SVRZ-Teilnehmerliste. Beides bleibt im Admin von Hand korrigierbar</li>
+              <li>Matchblätter sind privat: Sie liegen ausserhalb des öffentlichen Dateibereichs und lassen sich nur aus dem Admin öffnen, nie über eine URL</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Admin: «Prüfung bestanden» fragt nach und benachrichtigt</h3>
+            <ul>
+              <li>Das Setzen von «Prüfung bestanden» fragt neu nach und schickt der teilnehmenden Person danach automatisch eine zweisprachige Bestätigungs-E-Mail. Die Adresse stammt aus ihrer Anmeldung, nie aus dem Browser. Das Entfernen des Häkchens ist still — es ist eine Korrektur und verschickt nichts</li>
+              <li>Die Rückfrage warnt, wenn für diese Person nie ein Matchblatt hochgeladen wurde — das übliche Zeichen für ein Häkchen in der falschen Zeile</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Schreiberkurse und Mitgliedschaft nutzen die ganze Breite</h3>
+            <ul>
+              <li>Schreiberkurse: Einleitung und Anmeldetext klebten auf breiten Bildschirmen am linken Rand — sie sind neu zentriert, und die Ressourcen-Karten verteilen sich über die volle Breite statt in einer schmalen Spalte zu stapeln</li>
+              <li>Mitgliedschaft: Die Seite lief in einer schmalen Spalte mit leerer rechter Bildschirmhälfte. Volleyball-Beiträge, Lizenzgebühren und Basketball-Beiträge stehen neu nebeneinander, die drei Anmeldeschritte lesen sich von links nach rechts, und «Als Gast mitmachen» / «Passivmitglied werden» stehen nebeneinander. Auf dem Handy bleibt alles gestapelt</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.10.0 — 2026-07-16</div>
@@ -409,8 +438,37 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.10.0</span>
+          <span class="changelog-badge">v1.11.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.11.0 — 2026-07-16</div>
+          <div class="changelog-group">
+            <h3>Exam: upload your own scoresheet</h3>
+            <ul>
+              <li>New page <a href="/weiteres/schreiberkurse/pruefung">Scorer courses → Exam</a> where course participants upload the scoresheet from their practical exam themselves — no login, no account. It's linked from the scorer courses page</li>
+              <li>Who may upload is decided by the sign-up list: you enter the email address you registered the course with, and only an address actually on a scorer course's list gets through. The page then greets you by name and, if you're on more than one course, asks which one</li>
+              <li>Your SVRZ licence number is asked at upload — it's what lets us register the exam with the SVRZ — and is pre-filled when we already have it. Spaces and dots are fine (337 646 → 337646)</li>
+              <li>PDF, JPG, PNG or HEIC up to 10 MB; a phone photo of the sheet is fine. The file type is checked by its actual content rather than its name. Uploading again replaces the previous sheet</li>
+              <li>The upload sets Prüfungsdatum to the day the sheet arrives and fills in the licence number — so uploading your sheet completes your own row on the SVRZ participant list. Admins can still correct both by hand</li>
+              <li>Scoresheets are private: they're stored outside the public file area and can only be opened from /admin, never by URL</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Admin: ticking "Prüfung bestanden" now confirms and notifies</h3>
+            <ul>
+              <li>Ticking «Prüfung bestanden» now asks for confirmation and then automatically emails the participant a bilingual confirmation. The address comes from their sign-up, never from the browser. Unticking is silent — it's a correction, and sends nothing</li>
+              <li>The confirmation warns if no scoresheet was ever uploaded for that person, which is the usual sign of a tick on the wrong row</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Scorer courses and Membership use the whole screen</h3>
+            <ul>
+              <li>Scorer courses: the intro and sign-up text sat hard against the left edge on a wide screen — they're now centred, and the resource cards spread across the full width instead of stacking in a narrow column</li>
+              <li>Membership: the page ran down one narrow column with the right half of the screen empty. Volleyball fees, licence fees and basketball fees now sit side by side, the three registration steps read left-to-right, and «Als Gast mitmachen» / «Passivmitglied werden» sit next to each other. Everything still stacks on a phone</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.10.0 — 2026-07-16</div>

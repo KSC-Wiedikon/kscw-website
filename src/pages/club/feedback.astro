@@ -135,8 +135,27 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.13.0</span>
+          <span class="changelog-badge">v1.14.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.14.0 — 2026-07-17</div>
+          <div class="changelog-group">
+            <h3>Spielblatt-Spalte: Symbol mit Farbe statt Häkchen</h3>
+            <ul>
+              <li>Statt des Häkchens steht neu ein <strong>Matchblatt-Symbol, dessen Farbe den Stand zeigt</strong>: grau — kein Spielblatt, grün — Spielblatt vorhanden, blau — es gibt zusätzlich eine Korrektur. Eine Legende unter der Tabelle erklärt die Farben</li>
+              <li><strong>Das Symbol ist auch grau anklickbar.</strong> Spielblätter kommen auch per E-Mail oder auf Papier — bisher hatte die Spalte dafür keinen Platz. Neu gibt es «Spielblatt hochladen (selbst erhalten)», und es wird als das Blatt der Teilnehmer:in abgelegt, nicht als Korrektur von nichts</li>
+              <li>Ist bereits ein Spielblatt da, wird das direkte Hochladen abgelehnt: Wer ein vorhandenes Blatt ändern will, lädt eine Korrektur hoch — die behält beides und hält fest, wer sie gemacht hat</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Spielblatt herunterladen</h3>
+            <ul>
+              <li>Neu im Menü: <strong>Spielblatt herunterladen</strong> — gespeichert als <code>schreiberpruefung_337646.pdf</code>, gleich benannt wie im SVRZ-ZIP</li>
+              <li><strong>Beim Anzeigen kommt neu immer ein PDF</strong>, egal was das Handy der Teilnehmer:in produziert hat. Vorher öffnete ein Handyfoto als blosses Bild, und «Speichern unter» schlug eine kryptische Blob-Nummer als Dateinamen vor. Die gespeicherte Originaldatei bleibt unverändert</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.13.0 — 2026-07-17</div>
@@ -485,8 +504,27 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.13.0</span>
+          <span class="changelog-badge">v1.14.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.14.0 — 2026-07-17</div>
+          <div class="changelog-group">
+            <h3>Scoresheet column: a coloured icon instead of a tick</h3>
+            <ul>
+              <li>The tick is now a <strong>Matchblatt icon whose colour is the state</strong>: grey — no scoresheet, green — one is on file, blue — a correction exists on top of it. A legend under the table explains the colours</li>
+              <li><strong>The icon is clickable even when grey.</strong> Scoresheets also arrive by email or on paper, and the column had nowhere to put one. There is now "Upload scoresheet (received directly)", filed as the participant's own sheet rather than as a correction to nothing</li>
+              <li>If a scoresheet is already there, uploading one directly is refused: to change an existing sheet you upload a correction, which keeps both and records who made it</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Download a scoresheet</h3>
+            <ul>
+              <li>New in the menu: <strong>Download scoresheet</strong> — saved as <code>schreiberpruefung_337646.pdf</code>, the same name the SVRZ zip uses</li>
+              <li><strong>Opening a sheet now always gives a PDF</strong>, whatever the participant's phone produced. Previously a phone photo opened as a bare image and "save as" offered a cryptic blob id as the filename. The stored original is left untouched</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.13.0 — 2026-07-17</div>

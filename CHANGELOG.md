@@ -2,6 +2,17 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.14.0] — 2026-07-17
+
+### The scoresheet column is a Matchblatt icon, and it says what it knows
+- The tick is now a **Matchblatt icon whose colour is the state**: grey — no sheet, green — a sheet is on file, blue — a correction exists on top of it. A legend under the table spells that out, since a colour nobody can decode is decoration.
+- **The icon is live even when grey.** Sheets also arrive by email or on paper, and the cell had nowhere to put one: the column was read-only unless the participant had used the upload page. The menu on an empty row now offers **Spielblatt hochladen (selbst erhalten)**, which files it as the participant's own sheet — not as a correction to nothing.
+- Uploading the sheet itself is **refused once one exists**. To change a sheet that is already there, upload a correction: that keeps both and records who. An admin should not be able to quietly replace a submission.
+
+### Download a scoresheet
+- New **Spielblatt herunterladen** in the menu, saving as `schreiberpruefung_<licence>.pdf` — the same name the SVRZ zip uses, so a sheet saved here and the same sheet out of the zip are recognisably the same file.
+- **Opening a sheet now always gives a PDF**, whatever the participant's phone produced — the same conversion the zip does, so what you read is what SVRZ receives. Previously a phone photo opened as a bare image and "save as" offered the blob's id as a filename. The stored original is untouched: it is the evidence of what they submitted.
+
 ## [1.13.0] — 2026-07-17
 
 ### Exam result is Yes / No, and emails either way

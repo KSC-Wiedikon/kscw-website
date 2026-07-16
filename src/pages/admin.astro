@@ -287,9 +287,15 @@ import '../styles/global.css';
         scScoresheetMissing: 'Noch kein Spielblatt hochgeladen',
         scScoresheetFetchFailed: 'Spielblätter konnten nicht geladen werden:',
         scScoresheetShow: 'Spielblatt anzeigen',
+        scScoresheetDownload: 'Spielblatt herunterladen',
         scScoresheetShowCorrected: 'Korrigiertes Spielblatt anzeigen',
+        scScoresheetDownloadCorrected: 'Korrigiertes Spielblatt herunterladen',
+        scScoresheetUploadOriginal: 'Spielblatt hochladen (selbst erhalten)',
         scScoresheetUploadCorrection: 'Korrigiertes Spielblatt hochladen',
         scScoresheetReplaceCorrection: 'Korrektur ersetzen',
+        scLegendNone: 'Kein Spielblatt',
+        scLegendUploaded: 'Spielblatt vorhanden',
+        scLegendCorrected: 'Korrigiert',
         scScoresheetCorrectedBy: 'Korrigiert von {who}',
         scScoresheetNotConverted: 'Diese Spielblätter liessen sich nicht in ein PDF umwandeln und liegen im Original im ZIP:',
         scCorrectionTooLarge: 'Die Datei ist grösser als 10 MB. Bitte eine kleinere Datei verwenden.',
@@ -469,9 +475,15 @@ import '../styles/global.css';
         scScoresheetMissing: 'No scoresheet uploaded yet',
         scScoresheetFetchFailed: 'Could not load these scoresheets:',
         scScoresheetShow: 'Show scoresheet',
+        scScoresheetDownload: 'Download scoresheet',
         scScoresheetShowCorrected: 'Show corrected scoresheet',
+        scScoresheetDownloadCorrected: 'Download corrected scoresheet',
+        scScoresheetUploadOriginal: 'Upload scoresheet (received directly)',
         scScoresheetUploadCorrection: 'Upload corrected scoresheet',
         scScoresheetReplaceCorrection: 'Replace correction',
+        scLegendNone: 'No scoresheet',
+        scLegendUploaded: 'Scoresheet on file',
+        scLegendCorrected: 'Corrected',
         scScoresheetCorrectedBy: 'Corrected by {who}',
         scScoresheetNotConverted: 'These scoresheets could not be converted to PDF and are in the zip as the original file:',
         scCorrectionTooLarge: 'That file is larger than 10 MB. Please use a smaller one.',
@@ -3085,36 +3097,42 @@ import '../styles/global.css';
           paintResult();
           tr.appendChild(resultTd);
 
-          // Scoresheet — the participant uploads it; an admin may add a correction on top.
-          // The tick opens a menu rather than the file: once a correction can exist, "open"
-          // is no longer one unambiguous action.
+          // Scoresheet — a Matchblatt icon whose colour IS the state: grey nothing, green
+          // a sheet, blue a sheet plus a correction. Always a live button, including grey:
+          // sheets also arrive by email or on paper, and the cell is where an admin puts
+          // one. It opens a menu rather than the file, since once a correction can exist
+          // "open" is no longer one unambiguous action.
           var sheetTd = document.createElement('td');
           sheetTd.style.cssText = cellCss + 'text-align:center;';
           var sheetBtn = document.createElement('button');
+          sheetBtn.type = 'button';
+          // Static literal, not user data — the row's own values go in via textContent.
+          sheetBtn.innerHTML = SHEET_ICON;
           function paintSheet() {
             var corrected = !!state.exam_file_corrected;
-            sheetBtn.textContent = corrected ? '✓•' : '✓';
-            // Amber, not green: the row still has a sheet, but it is no longer only the
-            // participant's — visible while scanning, without opening every menu.
-            sheetBtn.style.cssText = 'background:none;border:none;padding:0;font-weight:700;'
-              + 'font-size:var(--text-sm);cursor:pointer;color:' + (corrected ? '#d97706' : '#16a34a') + ';';
-            sheetBtn.title = corrected
+            var have = !!state.exam_file;
+            sheetBtn.style.cssText = 'background:none;border:none;padding:0.15rem;cursor:pointer;'
+              + 'line-height:0;color:' + (corrected ? SHEET_BLUE : (have ? SHEET_GREEN : SHEET_GREY)) + ';';
+            var label = corrected
               ? t('scScoresheetCorrectedBy').split('{who}').join(state.exam_file_corrected_by || '?')
-              : t('scScoresheetOpen');
+              : (have ? t('scScoresheetOpen') : t('scScoresheetMissing'));
+            sheetBtn.title = label;
+            // The colour carries the meaning, and a screen reader gets none of it.
+            sheetBtn.setAttribute('aria-label', label);
           }
-          if (state.exam_file || state.exam_file_corrected) {
-            sheetBtn.type = 'button';
-            paintSheet();
-            sheetBtn.addEventListener('click', function(e) {
-              e.stopPropagation();
-              openSheetMenu(sheetBtn, rowMeta, state, paintSheet, statusEl);
+          paintSheet();
+          sheetBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            // Same name the SVRZ zip uses, falling back to the person when no licence
+            // has been entered — so a sheet saved here and the same sheet out of the
+            // zip are recognisably the same file.
+            openSheetMenu(sheetBtn, rowMeta, state, paintSheet, statusEl, function() {
+              var lic = licenceDigits(svInp ? svInp.value : (state.sv_license || formSv || ''));
+              var who = [String(lnV || ''), String(fnV || '')].filter(Boolean).join(' ');
+              return 'schreiberpruefung_' + safeFileName(lic || who, String(rowMeta.id));
             });
-            sheetTd.appendChild(sheetBtn);
-          } else {
-            sheetTd.textContent = '—';
-            sheetTd.style.color = 'var(--text-muted)';
-            sheetTd.title = t('scScoresheetMissing');
-          }
+          });
+          sheetTd.appendChild(sheetBtn);
           tr.appendChild(sheetTd);
 
           // SV licence — pre-fill from the form's SVRZ answer when no tracked value yet
@@ -3228,6 +3246,26 @@ import '../styles/global.css';
         table.appendChild(tbody);
         wrap.appendChild(table);
         tableHost.appendChild(wrap);
+
+        // Legend — the Matchblatt icon's colour is the only thing carrying its state, and
+        // a colour nobody can decode is decoration. Sits under the table, out of the way
+        // of the rows but on the same screen as the thing it explains.
+        var legend = document.createElement('div');
+        legend.style.cssText = 'display:flex;gap:1.2rem;flex-wrap:wrap;align-items:center;'
+          + 'margin-top:0.6rem;font-size:var(--text-xs);color:var(--text-muted);';
+        [[SHEET_GREY, t('scLegendNone')], [SHEET_GREEN, t('scLegendUploaded')], [SHEET_BLUE, t('scLegendCorrected')]]
+          .forEach(function(spec) {
+            var e = document.createElement('span');
+            e.style.cssText = 'display:inline-flex;align-items:center;gap:0.35rem;';
+            var ic = document.createElement('span');
+            ic.style.cssText = 'line-height:0;color:' + spec[0] + ';';
+            ic.innerHTML = SHEET_ICON; // static literal
+            var tx = document.createElement('span');
+            tx.textContent = spec[1];
+            e.appendChild(ic); e.appendChild(tx);
+            legend.appendChild(e);
+          });
+        tableHost.appendChild(legend);
       }).catch(function(err) {
         summary.textContent = '';
         var errDiv = document.createElement('div');
@@ -4119,14 +4157,34 @@ import '../styles/global.css';
       return wadmin('scorer_courses', 'assets/' + encodeURIComponent(id), {});
     }
 
+    // Anything opened or saved from the menu is a PDF, whatever the participant's phone
+    // produced — the same conversion the SVRZ zip does, so what you read here is what
+    // SVRZ receives. The STORED file is untouched: it is the evidence of what they
+    // submitted, and rewriting it in place would be editing that.
+    //
+    // Returns { blob, ext } — ext so a download can be named honestly even in the
+    // fallback below, rather than calling a JPEG .pdf.
+    async function scoresheetAsPdf(id) {
+      var res = await scoresheetResponse(id);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var type = res.headers.get('content-type') || '';
+      var bytes = new Uint8Array(await res.arrayBuffer());
+      if (/pdf/i.test(type)) return { blob: new Blob([bytes], { type: 'application/pdf' }), ext: '.pdf' };
+      try {
+        return { blob: new Blob([await imageBytesToPdf(bytes, type)], { type: 'application/pdf' }), ext: '.pdf' };
+      } catch (e) {
+        // Undecodable — a legacy HEIC from before the upload rules, say. Hand back the
+        // original: seeing the sheet in the wrong format beats not seeing it at all.
+        var ext = /png/i.test(type) ? '.png' : (/jpe?g/i.test(type) ? '.jpg'
+          : (/avif/i.test(type) ? '.avif' : (/heic|heif/i.test(type) ? '.heic' : '')));
+        return { blob: new Blob([bytes], { type: type || 'application/octet-stream' }), ext: ext };
+      }
+    }
+
     function openScoresheet(id) {
-      return scoresheetResponse(id)
-        .then(function(res) {
-          if (!res.ok) throw new Error('HTTP ' + res.status);
-          return res.blob();
-        })
-        .then(function(blob) {
-          var url = URL.createObjectURL(blob);
+      return scoresheetAsPdf(id)
+        .then(function(r) {
+          var url = URL.createObjectURL(r.blob);
           window.open(url, '_blank', 'noopener');
           // The tab has to load it before the URL dies; a blob URL revoked on the next
           // tick opens an empty window instead.
@@ -4134,6 +4192,28 @@ import '../styles/global.css';
         })
         .catch(function() { alert(t('scScoresheetFetchFailed')); });
     }
+
+    // A blob URL carries no filename, so "save as" off the opened tab offers the blob's
+    // uuid. This names the file the way the SVRZ zip does.
+    function downloadScoresheet(id, nameBase) {
+      return scoresheetAsPdf(id)
+        .then(function(r) { downloadBlob(r.blob, nameBase + r.ext); })
+        .catch(function() { alert(t('scScoresheetFetchFailed')); });
+    }
+
+    // Matchblatt icon (lucide "clipboard-list" geometry — the admin draws its icons as
+    // inline SVG rather than running lucide's DOM pass, which would have to be re-run for
+    // every table rebuild). currentColor, so the button's colour is the whole state.
+    var SHEET_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"'
+      + ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'
+      + ' aria-hidden="true" focusable="false">'
+      + '<rect x="8" y="2" width="8" height="4" rx="1"/>'
+      + '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>'
+      + '<path d="M9 12h6"/><path d="M9 16h6"/>'
+      + '</svg>';
+    var SHEET_GREY = 'var(--text-muted)';
+    var SHEET_GREEN = '#16a34a';
+    var SHEET_BLUE = '#3b82f6';
 
     // ── scoresheet menu ─────────────────────────────────────────
     // One menu at a time, closed by any click elsewhere. Registered once, not per row:
@@ -4150,11 +4230,11 @@ import '../styles/global.css';
     window.addEventListener('scroll', closeSheetMenu, true);
     window.addEventListener('resize', closeSheetMenu);
 
-    // A correction is STORED as PDF, converted here rather than on the server. Three
-    // things fall out of doing it at this end: the result mail can attach the correction
-    // as a byte passthrough (Node has no canvas to convert an image with), the SVRZ zip
-    // needs no second conversion path for it, and "show corrected" always opens something
-    // a browser will render. A PDF passes through untouched.
+    // An admin-uploaded sheet is STORED as PDF, converted here rather than on the server.
+    // Three things fall out of doing it at this end: the result mail can attach the
+    // correction as a byte passthrough (Node has no canvas to convert an image with), the
+    // SVRZ zip needs no second conversion path for it, and opening one always gives
+    // something a browser will render. A PDF passes through untouched.
     async function correctionToPdfBlob(file) {
       var bytes = new Uint8Array(await file.arrayBuffer());
       // Sniff the bytes, not file.type — the picker's type comes from the extension, and
@@ -4165,10 +4245,14 @@ import '../styles/global.css';
       return new Blob([await imageBytesToPdf(bytes, file.type || 'image/jpeg')], { type: 'application/pdf' });
     }
 
-    // Admin uploads a corrected sheet. Bytes go up raw (octet-stream) — the server sniffs
-    // the real type from the magic bytes anyway, so a multipart wrapper would only add a
-    // parser and a filename we would not trust.
-    function uploadCorrection(rowMeta, state, repaint, statusEl) {
+    // Admin uploads a sheet. `slot` is 'original' — the participant's own sheet, when it
+    // reached us by email or on paper instead of the upload page — or 'corrected', an
+    // admin's correction on top of one that already exists. The server enforces which is
+    // allowed; this only asks.
+    //
+    // Bytes go up raw (octet-stream): the server sniffs the real type from the magic bytes
+    // anyway, so a multipart wrapper would add a parser and a filename we would not trust.
+    function uploadSheet(rowMeta, state, repaint, statusEl, slot) {
       var inp = document.createElement('input');
       inp.type = 'file';
       // Mirrors what sniffType accepts server-side. HEIC is absent on purpose: nothing
@@ -4189,18 +4273,24 @@ import '../styles/global.css';
             throw new Error('415 unsupported');
           }).then(function(pdfBlob) {
             return wadmin('scorer_courses',
-              'scoresheet-correction/' + encodeURIComponent(rowMeta.slug) + '/' + encodeURIComponent(rowMeta.id),
+              'scoresheet/' + encodeURIComponent(rowMeta.slug) + '/' + encodeURIComponent(rowMeta.id)
+                + '?slot=' + encodeURIComponent(slot),
               { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: pdfBlob }
             );
           }).then(function(res) {
             return res.json().catch(function() { return {}; }).then(function(body) {
               if (!res.ok) throw new Error((body && body.error) || ('HTTP ' + res.status));
               var d = (body && body.data) || {};
-              // Take the attribution the SERVER stored rather than assuming who we are —
-              // it is the only copy that counts, and it is what the next reader will see.
-              state.exam_file_corrected = d.id || '';
-              state.exam_file_corrected_by = d.by || '';
-              state.exam_file_corrected_on = d.on || '';
+              // Take what the SERVER stored rather than assuming — it is the only copy
+              // that counts, and it is what the next reader will see.
+              if (d.slot === 'original') {
+                state.exam_file = d.id || '';
+                if (d.exam_date) state.exam_date = d.exam_date;
+              } else {
+                state.exam_file_corrected = d.id || '';
+                state.exam_file_corrected_by = d.by || '';
+                state.exam_file_corrected_on = d.on || '';
+              }
               repaint();
               setScorerStatus(statusEl, 'saved');
             });
@@ -4219,7 +4309,9 @@ import '../styles/global.css';
       inp.click();
     }
 
-    function openSheetMenu(anchor, rowMeta, state, repaint, statusEl) {
+    // nameBase() is a callback, not a string: the licence field is editable, so the name
+    // must be read at click time or a number typed since the table rendered is missed.
+    function openSheetMenu(anchor, rowMeta, state, repaint, statusEl, nameBase) {
       closeSheetMenu();
       var menu = document.createElement('div');
       // ⚠ position:fixed on <body>, NOT absolute in the cell. The table lives in an
@@ -4258,14 +4350,32 @@ import '../styles/global.css';
 
       // The participant's sheet stays reachable even once corrected — it is what they
       // actually submitted, and the correction is a claim on top of it, not a redaction.
+      // Each sheet that exists gets both verbs; guessing which one you meant to save
+      // would be wrong about half the time.
       if (state.exam_file) {
         item(t('scScoresheetShow'), function() { openScoresheet(state.exam_file); });
+        item(t('scScoresheetDownload'), function() { downloadScoresheet(state.exam_file, nameBase()); });
       }
       if (state.exam_file_corrected) {
         item(t('scScoresheetShowCorrected'), function() { openScoresheet(state.exam_file_corrected); });
+        item(t('scScoresheetDownloadCorrected'), function() {
+          downloadScoresheet(state.exam_file_corrected, nameBase() + '_korrigiert');
+        });
       }
-      item(state.exam_file_corrected ? t('scScoresheetReplaceCorrection') : t('scScoresheetUploadCorrection'),
-        function() { uploadCorrection(rowMeta, state, repaint, statusEl); });
+      // With no sheet at all, the only sensible upload is the sheet itself — the one that
+      // arrived by email or on paper. Offering "upload a correction" here too, as this
+      // first did, invites a correction to nothing: there is no original to correct, and
+      // the result would be a row whose only sheet is filed as somebody's amendment.
+      if (!state.exam_file) {
+        item(t('scScoresheetUploadOriginal'), function() {
+          uploadSheet(rowMeta, state, repaint, statusEl, 'original');
+        });
+      }
+      // A correction is only meaningful once there is something to correct.
+      if (state.exam_file || state.exam_file_corrected) {
+        item(state.exam_file_corrected ? t('scScoresheetReplaceCorrection') : t('scScoresheetUploadCorrection'),
+          function() { uploadSheet(rowMeta, state, repaint, statusEl, 'corrected'); });
+      }
 
       // Append before measuring — offsetHeight is 0 while it is out of the document.
       document.body.appendChild(menu);

@@ -32,4 +32,5 @@ docs/sessions.md
 docs/infra.md
 .playwright-mcp/
 test-results/
+playwright-report/
 .worktrees/

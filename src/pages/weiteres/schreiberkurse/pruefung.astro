@@ -1,0 +1,199 @@
+---
+// Scorer-exam scoresheet upload. Anonymous by design — course participants are mostly
+// not KSCW members and have no login. The gate is the email they registered with:
+// /kscw/scorer-exam/lookup checks it against the OpnForm signup lists and mints a
+// short-lived signed ticket, and only that ticket authorizes the upload.
+//
+// Canonical path is the ASCII /weiteres/schreiberkurse/pruefung, matching every other
+// slug on the site; public/_redirects 301s the umlaut spelling onto it.
+import PageLayout from '../../../layouts/PageLayout.astro';
+import { t } from '../../../lib/i18n';
+
+const locale = 'de';
+---
+<PageLayout
+  title="Matchblatt hochladen — Schreiberkurse — KSC Wiedikon"
+  titleKey="scorerExamMetaTitle"
+  description="Lade dein ausgefülltes Matchblatt für die Schreiber-Prüfung des KSC Wiedikon hoch."
+  descriptionKey="scorerExamMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'scorerExamTitle')}
+  pageTitleKey="scorerExamTitle"
+  pageSubtitle={t(locale, 'scorerExamSubtitle')}
+  pageSubtitleKey="scorerExamSubtitle"
+>
+  <section class="section">
+    <div class="container">
+      <div class="exam-wrap">
+        <p class="exam-intro" data-i18n="scorerExamIntro">{t(locale, 'scorerExamIntro')}</p>
+
+        <!-- Step 1 — identify -->
+        <div class="card exam-card" id="exam-step-email">
+          <div class="card-body">
+            <h2 class="exam-step-title" data-i18n="scorerExamStepEmail">{t(locale, 'scorerExamStepEmail')}</h2>
+            <form id="exam-email-form" novalidate>
+              <div class="form-group">
+                <label class="form-label" for="exam-email" data-i18n="scorerExamEmailLabel">{t(locale, 'scorerExamEmailLabel')}</label>
+                <input
+                  class="form-input"
+                  type="email"
+                  id="exam-email"
+                  name="email"
+                  autocomplete="email"
+                  required
+                  placeholder={t(locale, 'scorerExamEmailPlaceholder')}
+                  data-i18n-placeholder="scorerExamEmailPlaceholder"
+                />
+                <p class="exam-help" data-i18n="scorerExamEmailHelp">{t(locale, 'scorerExamEmailHelp')}</p>
+              </div>
+              <div id="exam-turnstile" class="form-group"></div>
+              <button type="submit" class="btn btn-blue" id="exam-email-submit">
+                <span data-i18n="scorerExamContinue">{t(locale, 'scorerExamContinue')}</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Step 2 — upload (revealed after a successful lookup) -->
+        <div class="card exam-card" id="exam-step-file" hidden>
+          <div class="card-body">
+            <h2 class="exam-step-title" data-i18n="scorerExamStepFile">{t(locale, 'scorerExamStepFile')}</h2>
+            <p id="exam-greeting" class="exam-greeting"></p>
+            <div class="form-group" id="exam-course-group" hidden>
+              <label class="form-label" for="exam-course" data-i18n="scorerExamPickCourse">{t(locale, 'scorerExamPickCourse')}</label>
+              <select class="form-select" id="exam-course"></select>
+            </div>
+            <div id="exam-already" class="exam-notice" hidden></div>
+            <form id="exam-file-form" novalidate>
+              <div class="form-group">
+                <label class="form-label" for="exam-licence" data-i18n="scorerExamLicenceLabel">{t(locale, 'scorerExamLicenceLabel')}</label>
+                <input
+                  class="form-input"
+                  type="text"
+                  id="exam-licence"
+                  name="licence"
+                  inputmode="numeric"
+                  autocomplete="off"
+                  required
+                  placeholder={t(locale, 'scorerExamLicencePlaceholder')}
+                  data-i18n-placeholder="scorerExamLicencePlaceholder"
+                />
+                <p class="exam-help" data-i18n="scorerExamLicenceHelp">{t(locale, 'scorerExamLicenceHelp')}</p>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="exam-file" data-i18n="scorerExamFileLabel">{t(locale, 'scorerExamFileLabel')}</label>
+                <input
+                  class="form-input"
+                  type="file"
+                  id="exam-file"
+                  name="file"
+                  accept="application/pdf,image/jpeg,image/png,image/heic,image/heif,image/avif,.pdf,.jpg,.jpeg,.png,.heic"
+                  required
+                />
+                <p class="exam-help" data-i18n="scorerExamFileHelp">{t(locale, 'scorerExamFileHelp')}</p>
+              </div>
+              <button type="submit" class="btn btn-gold" id="exam-file-submit">
+                <span data-i18n="scorerExamUpload">{t(locale, 'scorerExamUpload')}</span>
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Step 3 — done -->
+        <div class="card exam-card" id="exam-step-done" hidden>
+          <div class="card-body exam-done">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg>
+            <h2 data-i18n="scorerExamSuccess">{t(locale, 'scorerExamSuccess')}</h2>
+            <p class="exam-help" data-i18n="scorerExamSuccessHint">{t(locale, 'scorerExamSuccessHint')}</p>
+            <div class="exam-done-actions">
+              <button type="button" class="btn btn-outline btn-sm" id="exam-again">
+                <span data-i18n="scorerExamUploadAnother">{t(locale, 'scorerExamUploadAnother')}</span>
+              </button>
+              <a href="/weiteres/schreiberkurse" class="btn btn-outline btn-sm">
+                <span data-i18n="scorerExamBackToCourses">{t(locale, 'scorerExamBackToCourses')}</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div id="exam-feedback" class="exam-feedback" role="status" aria-live="polite" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+  <script is:inline src="/js/scorer-exam-upload.js"></script>
+  <script src="../../../islands/scroll-animations.ts"></script>
+</PageLayout>
+
+<style>
+  /* A form is one of the few places a narrow measure genuinely helps — the eye should
+     not travel 1400px between a label and its input. Centred, not left-hugging. */
+  .exam-wrap {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  .exam-intro {
+    font-size: 1.125rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-xl);
+  }
+  .exam-card {
+    margin-bottom: var(--space-lg);
+  }
+  .exam-step-title {
+    font-size: var(--text-lg);
+    margin: 0 0 var(--space-lg);
+  }
+  .exam-help {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin: var(--space-sm) 0 0;
+  }
+  .exam-greeting {
+    font-weight: 600;
+    margin: 0 0 var(--space-lg);
+  }
+  .exam-notice {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: rgba(212, 160, 23, 0.12);
+    border: 1px solid var(--kscw-gold);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-lg);
+  }
+  .exam-feedback {
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+  }
+  .exam-feedback[data-kind='error'] {
+    background: rgba(220, 38, 38, 0.1);
+    border: 1px solid #dc2626;
+    color: #b91c1c;
+  }
+  .exam-done {
+    text-align: center;
+  }
+  .exam-done svg {
+    margin: 0 auto var(--space-md);
+  }
+  .exam-done-actions {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: var(--space-lg);
+  }
+  /* The file input is the one control the design system doesn't style. */
+  input[type='file'].form-input {
+    padding: var(--space-sm);
+    cursor: pointer;
+  }
+  button[disabled] {
+    opacity: 0.6;
+    cursor: progress;
+  }
+</style>

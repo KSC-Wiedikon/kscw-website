@@ -279,6 +279,11 @@ import '../styles/global.css';
         scScoresheetOpen: 'Hochgeladenes Spielblatt öffnen',
         scScoresheetMissing: 'Noch kein Spielblatt hochgeladen',
         scScoresheetFetchFailed: 'Spielblätter konnten nicht geladen werden:',
+        scScorerRow: 'diese Person',
+        scExamPassedConfirm: 'Prüfung als bestanden erfassen?\n\n{name} erhält automatisch eine Bestätigungs-E-Mail.',
+        scExamPassedNoSheet: 'Achtung: für {name} wurde noch kein Spielblatt hochgeladen.\n\nTrotzdem als bestanden erfassen? {name} erhält eine Bestätigungs-E-Mail.',
+        scExamPassedMailSent: 'Bestätigung gesendet an',
+        scExamPassedMailFailed: 'Als bestanden erfasst — die Bestätigungs-E-Mail konnte aber nicht gesendet werden.',
         scSvLicense: 'SV-Lizenz',
         scNotes: 'Notizen',
         scColDate: 'Datum',
@@ -429,6 +434,11 @@ import '../styles/global.css';
         scScoresheetOpen: 'Open the uploaded scoresheet',
         scScoresheetMissing: 'No scoresheet uploaded yet',
         scScoresheetFetchFailed: 'Could not load these scoresheets:',
+        scScorerRow: 'this person',
+        scExamPassedConfirm: 'Record the exam as passed?\n\n{name} will automatically receive a confirmation email.',
+        scExamPassedNoSheet: 'Careful: no scoresheet has been uploaded for {name} yet.\n\nRecord as passed anyway? {name} will receive a confirmation email.',
+        scExamPassedMailSent: 'Confirmation sent to',
+        scExamPassedMailFailed: 'Recorded as passed — but the confirmation email could not be sent.',
         scSvLicense: 'SV licence',
         scNotes: 'Notes',
         scColDate: 'Date',
@@ -2327,6 +2337,41 @@ import '../styles/global.css';
       _scorerSaveChains[rowMeta.key] = chain;
     }
 
+    // "Prüfung bestanden" → the participant gets a confirmation mail. The recipient is
+    // resolved SERVER-side from the OpnForm submission (wadmin.js); we deliberately do
+    // not pass an address, so this route cannot be used to aim KSCW's sender anywhere.
+    //
+    // Queued behind the same per-row chain as the save, so the mail cannot overtake the
+    // exam_passed write and report a state the DB does not have yet. A failure here is
+    // surfaced but never reverts the tick: the exam IS passed, only the mail failed, and
+    // silently unticking would lose the admin's work.
+    function sendExamPassedMail(rowMeta, statusEl) {
+      var run = function() {
+        return wadmin('scorer_courses',
+          'opnform/forms/' + encodeURIComponent(rowMeta.slug)
+            + '/submissions/' + encodeURIComponent(rowMeta.id) + '/exam-passed-email',
+          { method: 'POST' }
+        ).then(function(res) {
+          return res.json().catch(function() { return {}; }).then(function(body) {
+            if (!res.ok) throw new Error(body.error || ('HTTP ' + res.status));
+            if (statusEl) {
+              statusEl.textContent = '✉ ' + t('scExamPassedMailSent') + ' ' + (body.to || '');
+              statusEl.style.color = '#16a34a';
+            }
+          });
+        });
+      };
+      var chain = (_scorerSaveChains[rowMeta.key] || Promise.resolve())
+        .then(run)
+        .catch(function() {
+          if (statusEl) {
+            statusEl.textContent = '✕ ' + t('scExamPassedMailFailed');
+            statusEl.style.color = '#dc2626';
+          }
+        });
+      _scorerSaveChains[rowMeta.key] = chain;
+    }
+
     // Inline editable registrations table for one course (or 'all' combined).
     // Compact row = first/last name + the KSCW-owned tracking toggles (present /
     // exam sent / exam passed), the SV-licence input (pre-filled from the form's
@@ -2739,6 +2784,19 @@ import '../styles/global.css';
             cb.checked = !!state[fieldName];
             cb.style.cssText = 'width:18px;height:18px;cursor:pointer;';
             cb.addEventListener('change', function() {
+              // Ticking "exam passed" emails the participant, so it asks first — and it
+              // warns when no scoresheet was ever uploaded, since that is the usual sign
+              // of a mis-click on the wrong row. UNticking is a silent correction: no
+              // prompt, and above all no second email.
+              if (fieldName === 'exam_passed' && cb.checked) {
+                var who = [String(fnV || ''), String(lnV || '')].filter(Boolean).join(' ') || t('scScorerRow');
+                var msg = (state.exam_file ? t('scExamPassedConfirm') : t('scExamPassedNoSheet'))
+                  .split('{name}').join(who);
+                if (!window.confirm(msg)) { cb.checked = false; return; }
+                saveScorerField(rowMeta, fieldName, true, statusEl);
+                sendExamPassedMail(rowMeta, statusEl);
+                return;
+              }
               saveScorerField(rowMeta, fieldName, cb.checked, statusEl);
             });
             td.appendChild(cb);

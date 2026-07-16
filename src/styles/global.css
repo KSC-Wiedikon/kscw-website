@@ -377,6 +377,19 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0 var(--space-lg);
 }
 
+/* Prose measure. `.container` is centred but 1440px wide, so a bare `max-width` on a
+   child pins it to the LEFT edge and reads as broken on a wide desktop — that is what
+   these two exist to prevent. `.measure` caps line length for readability; pair it with
+   `.measure-center` to actually centre the block. Tiles and grids want neither: let them
+   have the full container. */
+.measure {
+  max-width: 70ch;
+}
+.measure-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .section {
   padding: var(--space-3xl) 0;
 }

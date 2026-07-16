@@ -2,6 +2,24 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.11.0] — 2026-07-16
+
+### Participants upload their own exam scoresheet
+- New page **[/weiteres/schreiberkurse/pruefung](https://kscw.ch/weiteres/schreiberkurse/pruefung)** where a course participant uploads the scoresheet from their practical exam themselves — no login, no account. It is linked from the Schreiberkurse page, and the announced umlaut address (`…/prüfung`) leads to the same place.
+- **Who may upload is decided by the sign-up list**: you enter the email address you registered the course with, and only an address that is actually on a scorer course's list gets through. The page then greets you by name and, if you're on more than one course, asks which one.
+- **SVRZ licence number** is asked at upload — it's what lets us register the exam with the SVRZ — and is pre-filled when we already have it. Spaces and dots are accepted (`337 646` → `337646`).
+- PDF, JPG, PNG or HEIC up to 10 MB; a phone photo of the sheet is fine. The file type is checked by its actual content rather than its name, and anything else is refused. Uploading again replaces the previous sheet instead of piling up copies.
+- The upload sets **Prüfungsdatum** to the day the sheet arrives, and fills in the licence number — so a participant uploading their sheet completes their own row on the SVRZ Teilnehmerliste. Admins can still correct both by hand.
+- Scoresheets are **private**: they are stored outside the public file area and can only be opened from `/admin`, never by URL.
+
+### Admin: ticking "Prüfung bestanden" now confirms and notifies
+- Ticking **Prüfung bestanden** asks for confirmation first and then emails the participant a bilingual confirmation automatically. The address comes from their sign-up, never from the browser. **Un**ticking is silent — it's a correction, and sends nothing.
+- The confirmation warns if no scoresheet was ever uploaded for that person, which is the usual sign of a tick on the wrong row.
+
+### Schreiberkurse and Mitgliedschaft use the whole screen
+- **Schreiberkurse**: the intro and sign-up text sat hard against the left edge on a wide screen — they're now centred, and the resource cards spread across the full width instead of stacking in a narrow column.
+- **Mitgliedschaft**: the page ran down one narrow column with the right half of the screen empty. The volleyball fees, licence fees and basketball fees now sit side by side, the three registration steps read left-to-right, and *Als Gast mitmachen* / *Passivmitglied werden* sit next to each other. Everything still stacks on a phone.
+
 ## [1.10.0] — 2026-07-16
 
 ### Admin: the Excel export is now SVRZ's own participant list

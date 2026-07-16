@@ -135,8 +135,29 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.9.0</span>
+          <span class="changelog-badge">v1.10.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.10.0 — 2026-07-16</div>
+          <div class="changelog-group">
+            <h3>Admin: Der Excel-Export ist neu die Teilnehmerliste des SVRZ</h3>
+            <ul>
+              <li>Der Excel-Export eines Schreiberkurses erzeugt keine generische Tabelle mehr, sondern die «Schreiberkurs Teilnehmerliste» des SVRZ selbst: Briefkopf der RSK Swiss Volley Region Zürich, graues Kopfband und die 13 fixen Spalten (Kursdatum, Prüfungsdatum, Prüfungsresultat, Vereinsname, Lizenz-Nr., Name, Vorname, Strasse, PLZ, Wohnort, Telefon, E-Mail, Geb. Datum) — direkt weiterleitbar, ohne etwas abzutippen. Die Datei ist immer deutsch: Es ist das Formular des SVRZ, nicht unsere Oberfläche, und folgt deshalb nicht der Admin-Sprache. Der TSV-Export bleibt unverändert</li>
+              <li>Jede Zeile wird mit dem Datum des Kurses hinter ihrem eigenen Anmeldeformular versehen — die kombinierte DE-+-EN-Ansicht listet also alle Teilnehmenden mit dem richtigen Kursdatum. Für rein englische, rein deutsche und kombinierte Kurse gleichermassen</li>
+              <li>Das Anmeldeformular fragt die Adresse in einer Zeile ab; der Export teilt sie in Strasse / PLZ / Wohnort auf. Folgt eine Zeile nicht der üblichen Form «Strasse 1, 8001 Zürich», bleibt sie ganz in der Spalte Strasse — lieber das, als dass eine Hausnummer auf einer offiziellen Liste unter PLZ landet</li>
+              <li>Prüfungsresultat zeigt «Bestanden» nur bei Teilnehmenden, die auch als bestanden markiert sind — niemand gilt als durchgefallen, bloss weil die Prüfung noch aussteht</li>
+              <li>Neues Feld Schreiberexperte beim Schreiberkurs, das auf der Kopfzeile der Liste erscheint. In der kombinierten Ansicht bleibt es leer, solange nicht alle Kurse übereinstimmen — statt einen geratenen Namen auf ein offizielles Dokument zu setzen</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Admin: Spielblätter der Prüfung</h3>
+            <ul>
+              <li>Die Anmeldungstabelle hat neu eine Spalte Spielblatt, die zeigt, ob das Prüfungs-Spielblatt einer teilnehmenden Person hochgeladen wurde; in der ▸-Detailansicht lässt sich neu das Prüfungsdatum bearbeiten</li>
+              <li>Der Excel-Export lädt die Teilnehmerliste neu zusammen mit allen hochgeladenen Spielblättern als ein einziges ZIP herunter</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.9.0 — 2026-07-13</div>
@@ -388,8 +409,29 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.9.0</span>
+          <span class="changelog-badge">v1.10.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.10.0 — 2026-07-16</div>
+          <div class="changelog-group">
+            <h3>Admin: the Excel export is now SVRZ's own participant list</h3>
+            <ul>
+              <li>The Excel export on a scorer course no longer produces a generic table — it produces SVRZ's own «Schreiberkurs Teilnehmerliste»: the RSK Swiss Volley Region Zürich letterhead, the grey header band and their 13 fixed columns (Kursdatum, Prüfungsdatum, Prüfungsresultat, Vereinsname, Lizenz-Nr., Name, Vorname, Strasse, PLZ, Wohnort, Telefon, E-Mail, Geb. Datum), ready to send on without retyping. The file is always in German — it is SVRZ's form, not our interface, so it does not follow the admin language. The TSV export is unchanged</li>
+              <li>Each row is dated from the course behind its own sign-up form, so the combined DE + EN view lists every participant with the right course date. Works the same for an English-only, a German-only or a combined course</li>
+              <li>The sign-up form asks for the address in one line; the export splits it into Strasse / PLZ / Wohnort. If a line doesn't follow the usual «Strasse 1, 8001 Zürich» shape it is left whole in the Strasse column rather than risk a house number landing under PLZ on an official list</li>
+              <li>Prüfungsresultat reads «Bestanden» only for participants actually ticked as passed — nobody is labelled as having failed merely because they haven't sat the exam yet</li>
+              <li>New Schreiberexperte field on a scorer course, printed on the list's header line. In the combined view it stays blank unless every course agrees, rather than putting a guessed name on an official document</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Admin: exam scoresheets</h3>
+            <ul>
+              <li>The registrations table gained a Spielblatt column showing whether a participant's exam scoresheet has been uploaded, and the ▸ detail view gained an editable Prüfungsdatum</li>
+              <li>The Excel export now downloads the participant list together with every uploaded scoresheet as a single zip</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.9.0 — 2026-07-13</div>

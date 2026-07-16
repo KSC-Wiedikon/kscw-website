@@ -2,6 +2,19 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.10.0] — 2026-07-16
+
+### Admin: the Excel export is now SVRZ's own participant list
+- The **Excel export** on a scorer course (`/admin/?tab=scorer_courses&course=<id>`) no longer produces a generic table — it produces **SVRZ's own «Schreiberkurs Teilnehmerliste»**: the RSK Swiss Volley Region Zürich letterhead, the grey header band and their 13 fixed columns (Kursdatum, Prüfungsdatum, Prüfungsresultat, Vereinsname, Lizenz-Nr., Name, Vorname, Strasse, PLZ, Wohnort, Telefon, E-Mail, Geb. Datum), ready to send on without retyping. The file is always in German — it is SVRZ's form, not our interface, so it does not follow the admin language. The **TSV export is unchanged**.
+- Each row is dated from the course behind its own sign-up form, so the combined **DE + EN** view lists every participant with the right course date. Works the same for an English-only, a German-only or a combined course.
+- The sign-up form asks for the address in one line; the export **splits it** into Strasse / PLZ / Wohnort. If a line doesn't follow the usual «Strasse 1, 8001 Zürich» shape it is left whole in the Strasse column rather than risk a house number landing under PLZ on an official list.
+- **Prüfungsresultat** reads *Bestanden* only for participants actually ticked as passed — nobody is labelled as having failed merely because they haven't sat the exam yet.
+- New **Schreiberexperte** field on a scorer course, printed on the list's header line. In the combined view it stays blank unless every course agrees, rather than putting a guessed name on an official document.
+
+### Admin: exam scoresheets
+- The registrations table gained a **Spielblatt** column showing whether a participant's exam scoresheet has been uploaded, and the **▸** detail view gained an editable **Prüfungsdatum**.
+- The Excel export now downloads the participant list **together with every uploaded scoresheet** as a single zip.
+
 ## [1.9.0] — 2026-07-13
 
 ### Admin: Excel export for scorer courses — now including the tracking columns

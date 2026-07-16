@@ -135,8 +135,42 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.12.0</span>
+          <span class="changelog-badge">v1.13.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.13.0 — 2026-07-17</div>
+          <div class="changelog-group">
+            <h3>Prüfungsergebnis: Ja / Nein — mit E-Mail und Anmerkung</h3>
+            <ul>
+              <li>Das Häkchen «Prüfung bestanden» ist zwei Knöpfen gewichen: <strong>Ja</strong> und <strong>Nein</strong>. Ein Häkchen kannte nur zwei Zustände, die Frage hat aber drei — bestanden, nicht bestanden, und noch nicht angeschaut. Der dritte ist der häufigste, und er darf auf der SVRZ-Teilnehmerliste nicht als «Nicht bestanden» erscheinen</li>
+              <li>Beide Antworten fragen zuerst nach und schicken der Teilnehmer:in danach automatisch eine E-Mail mit dem Ergebnis. Im Bestätigungsfenster lässt sich eine <strong>Anmerkung</strong> mitgeben — etwa was gefehlt hat oder worauf zu achten ist; sie wird in der E-Mail mitgeschickt</li>
+              <li>Ein nochmaliger Klick auf die bereits gesetzte Antwort setzt das Ergebnis zurück auf «noch nicht entschieden» — ohne E-Mail, denn es gibt dann kein Ergebnis mehr zu melden</li>
+              <li>Auf der Teilnehmerliste steht neu «Bestanden» oder «Nicht bestanden»; wer noch nicht geprüft wurde, bleibt leer</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Korrigiertes Spielblatt hochladen</h3>
+            <ul>
+              <li>Das grüne Häkchen in der Spalte «Prüfung hochgeladen» öffnet neu ein Menü: das Spielblatt anzeigen, ein <strong>korrigiertes Spielblatt hochladen</strong> — und, sobald eines existiert, beide nebeneinander anschauen</li>
+              <li>Das Blatt der Teilnehmer:in wird dabei nie überschrieben: Es ist das, was sie eingereicht hat, und die Korrektur kommt oben drauf. Das Menü zeigt, <strong>wer</strong> korrigiert hat und wann, und das Häkchen wird orange — so sind korrigierte Zeilen auf einen Blick erkennbar</li>
+              <li>Die Ergebnis-E-Mail hat das korrigierte Blatt als PDF im Anhang, sofern eines hochgeladen wurde</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>SVRZ-Export: Spielblätter als PDF, benannt nach Lizenznummer</h3>
+            <ul>
+              <li>Im ZIP heissen die Spielblätter neu <code>schreiberpruefung_337646.pdf</code> — nach der Lizenznummer statt nach dem Namen. Fehlt bei jemandem die Nummer, sagt der Export das vor dem Herunterladen, denn der SVRZ braucht sie ohnehin auf der Liste</li>
+              <li>Handyfotos werden für den Export in ein PDF umgewandelt, sodass der SVRZ durchgehend PDFs bekommt. Liegt eine Korrektur vor, wandert sie statt des Originals ins ZIP</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Upload: kein HEIC mehr</h3>
+            <ul>
+              <li>Beim Hochladen des Matchblatts sind PDF, JPG und PNG erlaubt — <strong>HEIC nicht mehr</strong>. Das iPhone-Format lässt sich weder im Admin anzeigen noch für den SVRZ in ein PDF umwandeln; wir hätten also eine Datei gespeichert, die niemand öffnen kann. Beim Hochladen über den iPhone-Fotozugriff wird ohnehin automatisch ein JPG daraus</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.12.0 — 2026-07-16</div>
@@ -451,8 +485,42 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.12.0</span>
+          <span class="changelog-badge">v1.13.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.13.0 — 2026-07-17</div>
+          <div class="changelog-group">
+            <h3>Exam result: Yes / No — with an email and a note</h3>
+            <ul>
+              <li>The "Exam passed" checkbox has given way to two buttons: <strong>Yes</strong> and <strong>No</strong>. A checkbox knows two states and the question has three — passed, not passed, and nobody has looked yet. The third is the most common one, and it must not show up on the SVRZ Teilnehmerliste as "Nicht bestanden"</li>
+              <li>Both answers ask first, then automatically email the participant the result. The confirmation box takes an optional <strong>note</strong> — what was missing, or what to watch out for — and it travels with the email</li>
+              <li>Clicking the answer that is already set clears the result back to "not decided yet" — with no email, since there is no longer a result to report</li>
+              <li>The Teilnehmerliste now reads "Bestanden" or "Nicht bestanden"; anyone not yet assessed stays blank</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Upload a corrected scoresheet</h3>
+            <ul>
+              <li>The green tick in the "Exam uploaded" column now opens a menu: show the scoresheet, <strong>upload a corrected one</strong> — and, once one exists, view both side by side</li>
+              <li>The participant's own sheet is never overwritten: it is what they submitted, and the correction sits on top of it. The menu shows <strong>who</strong> corrected it and when, and the tick turns amber, so corrected rows are visible at a glance</li>
+              <li>The result email carries the corrected sheet as a PDF attachment, when one has been uploaded</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>SVRZ export: scoresheets as PDFs, named after the licence number</h3>
+            <ul>
+              <li>In the zip, scoresheets are now called <code>schreiberpruefung_337646.pdf</code> — after the licence number rather than the person. If someone's number is missing, the export says so before it downloads, since SVRZ needs it on the list anyway</li>
+              <li>Phone photos are converted to PDF for the export, so SVRZ receives PDFs throughout. Where a correction exists, it goes into the zip instead of the original</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Upload: no more HEIC</h3>
+            <ul>
+              <li>Scoresheet uploads accept PDF, JPG and PNG — <strong>no longer HEIC</strong>. The iPhone format can be neither previewed in the admin nor converted to a PDF for SVRZ, so we would have been storing a file nobody can open. Uploading via the iPhone photo picker turns it into a JPG anyway</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.12.0 — 2026-07-16</div>

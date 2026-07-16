@@ -132,9 +132,19 @@ describe('scorer exam upload — page', () => {
 
   it('accepts only the formats the server will sniff-approve', () => {
     const accept = /accept="([^"]+)"/.exec(page)?.[1] ?? '';
-    for (const type of ['application/pdf', 'image/jpeg', 'image/png', 'image/heic']) {
+    for (const type of ['application/pdf', 'image/jpeg', 'image/png']) {
       expect(accept).toContain(type);
     }
+  });
+
+  // The picker must not offer what the server rejects (sniffType dropped HEIC: nothing
+  // downstream can decode it). Offering it would invite an upload that only fails at
+  // the end — and on iOS, leaving HEIC out of `accept` is also what nudges Safari into
+  // transcoding the photo to JPEG on the way out.
+  it('does not offer HEIC, which the server refuses', () => {
+    const accept = /accept="([^"]+)"/.exec(page)?.[1] ?? '';
+    expect(accept).not.toContain('heic');
+    expect(accept).not.toContain('heif');
   });
 
   it('keeps the announced umlaut URL working via a 301 to the ASCII slug', () => {

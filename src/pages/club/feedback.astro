@@ -135,8 +135,21 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.11.0</span>
+          <span class="changelog-badge">v1.12.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.12.0 — 2026-07-16</div>
+          <div class="changelog-group">
+            <h3>Schreiberkurse: Anmeldeschluss</h3>
+            <ul>
+              <li>Ein Schreiberkurs kann neu einen Anmeldeschluss haben — Datum und Uhrzeit, im Admin pro Kurs gesetzt. Bleibt das Feld leer, ist der Kurs wie bisher bis zum Kursdatum offen</li>
+              <li>Solange der Anmeldeschluss in der Zukunft liegt, steht auf der Kurskarte «Anmeldung möglich bis 12.08.2026 00:00» — der Stichtag ist also sichtbar, bevor er greift</li>
+              <li>Danach verschwindet die Karte nicht, sondern wird gesperrt: Statt des Anmeldeknopfs steht «Anmeldung geschlossen», während Datum, Ort und «Zum Kalender hinzufügen» bleiben — wer bereits angemeldet ist, braucht sie noch. Die Karte verschwindet erst nach dem Kursdatum, wie bisher</li>
+              <li>Mit dem Speichern wird auch das Anmeldeformular selbst geschlossen: Eine verspätete Anmeldung wird damit wirklich abgewiesen und nicht nur ausgeblendet — der Link aus einer alten E-Mail nimmt also keine Anmeldungen mehr entgegen</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.11.0 — 2026-07-16</div>
@@ -438,8 +451,21 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.11.0</span>
+          <span class="changelog-badge">v1.12.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.12.0 — 2026-07-16</div>
+          <div class="changelog-group">
+            <h3>Scorer courses: sign-up deadline</h3>
+            <ul>
+              <li>A scorer course can now carry a registration deadline — a date and time, set per course in the admin. Leave it empty and the course stays open right up to the course date, exactly as before</li>
+              <li>While the deadline is still ahead, the course card reads "Sign-ups possible until 12.08.2026 00:00", so the cut-off is visible before it bites</li>
+              <li>Once it passes the card locks rather than disappears: the sign-up button is replaced by "Registration closed", while the date, venue and "Add to calendar" stay — people who already signed up still need those. The card only leaves the page after the course date, as before</li>
+              <li>Saving also closes the sign-up form itself, so a late sign-up is genuinely turned away rather than merely hidden — the link from an old email no longer quietly accepts submissions</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.11.0 — 2026-07-16</div>

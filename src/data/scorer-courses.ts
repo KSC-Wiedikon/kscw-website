@@ -30,6 +30,11 @@ export interface ScorerCourse {
   hostNote?: string | null;
   /** Course length in hours (calendar entry end time); null = default 4h. */
   durationHours?: number | null;
+  /**
+   * UTC instant after which sign-up closes, ISO-8601. Null = open right up to
+   * the course date. Entered in /admin as Europe/Zurich wall-clock.
+   */
+  registrationCloses?: string | null;
 }
 
 /**
@@ -76,6 +81,24 @@ export function normalizeFormSlug(value: string | null | undefined): string | nu
   const m = v.match(/\/forms\/([^/?#]+)/i);
   const slug = (m ? m[1] : v).replace(/^\/+/, '').replace(/[/?#].*$/, '').trim();
   return slug || null;
+}
+
+/**
+ * Sign-up closed once `registrationCloses` is in the past. A closed course is
+ * still listed — only its sign-up button goes away (the card keeps the date,
+ * venue and calendar link for people who already signed up); the card itself
+ * disappears once the course date passes, via getUpcomingScorerCourses.
+ *
+ * No deadline set → never closed. An unparseable value is treated as "open"
+ * rather than silently hiding a live sign-up button.
+ */
+export function isRegistrationClosed(
+  c: ScorerCourse,
+  now: Date = new Date(),
+): boolean {
+  if (!c.registrationCloses) return false;
+  const closesAt = Date.parse(c.registrationCloses);
+  return Number.isFinite(closesAt) && closesAt <= now.getTime();
 }
 
 /**

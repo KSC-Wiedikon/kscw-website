@@ -83,6 +83,36 @@ export function formatTime(time: string): string {
 }
 
 /**
+ * Format a true ISO instant as Swiss `dd.mm.yyyy HH:MM` (24h) in Europe/Zurich.
+ * For moments that carry a time of day — a sign-up deadline, a submission
+ * timestamp — where {@link formatDate} would drop the half that matters.
+ * Hardcoded to `de-CH` for the same reason as {@link formatDate}: 'en-CH' gives
+ * slashes and 'en-US' an am/pm clock, both inconsistent with the rest of the
+ * site. de-CH renders "12.08.2026, 00:00"; the comma is dropped to match the
+ * platform's `dd.mm.yyyy HH:MM`.
+ * @param iso Full ISO timestamp (a date-only string has no meaningful time and
+ *   renders at its Zurich noon anchor — use formatDate for those)
+ * @returns Formatted instant (e.g., "12.08.2026 00:00")
+ */
+export function formatDateTime(iso: string): string {
+  if (!iso) return '–';
+
+  try {
+    return toClubInstant(iso).toLocaleString('de-CH', {
+      timeZone: CLUB_TZ,
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).replace(',', '');
+  } catch {
+    return '–';
+  }
+}
+
+/**
  * Determine if a game is a win for KSCW
  * @param homeScore Home team score
  * @param awayScore Away team score

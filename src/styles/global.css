@@ -2500,6 +2500,23 @@ tr:hover td {
   font-style: italic;
   margin: calc(var(--space-xs) * -1) 0 0;
 }
+/* Sign-up deadline still ahead — shown alongside the course info. */
+.scorer-deadline {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+/* Sign-up deadline passed — replaces the sign-up button on the card. Reads as
+   a stated fact, not an error: muted, not red. */
+.scorer-closed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin: 0;
+}
 /* Mobile: long sign-up/calendar/doc labels must wrap inside the card
    instead of overflowing (.btn is white-space: nowrap by default). */
 @media (max-width: 768px) {

@@ -444,6 +444,8 @@
   "scorerSignupIntro": "Sign up here for an upcoming scorer course.",
   "scorerSignupSoon": "Date to be announced — sign-up opens soon.",
   "scorerSignupOpensSoon": "Sign-up opens soon.",
+  "scorerSignupClosed": "Registration closed",
+  "scorerSignupUntil": "Sign-ups possible until {date}",
   "scorerSignupCta": "Sign up for this course",
   "scorerSignupCalendar": "Add to calendar",
   "scorerModeInPerson": "In person",

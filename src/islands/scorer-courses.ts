@@ -8,8 +8,8 @@
 // Admin edits appear on next
 // page load — no rebuild. Degrades silently if Directus is unreachable.
 
-import { getUpcomingScorerCourses, localeSlug, normalizeFormSlug, type ScorerCourse } from '../data/scorer-courses';
-import { formatDate } from '../lib/utils';
+import { getUpcomingScorerCourses, isRegistrationClosed, localeSlug, normalizeFormSlug, type ScorerCourse } from '../data/scorer-courses';
+import { formatDate, formatDateTime } from '../lib/utils';
 import { getDirectusUrl } from '../lib/directus';
 
 // Location, host note ("Hosted by / Powered by") and duration are per-course
@@ -30,8 +30,8 @@ if (container) {
   const i18n = (window as any).i18n;
   const getLang = (): 'de' | 'en' =>
     ((i18n && i18n.getLang && i18n.getLang()) === 'en' ? 'en' : 'de');
-  const tr = (key: string): string =>
-    (i18n && i18n.t ? i18n.t(key) : key);
+  const tr = (key: string, params?: Record<string, string>): string =>
+    (i18n && i18n.t ? i18n.t(key, params) : key);
 
   const section = container.closest<HTMLElement>('[data-scorer-section]');
   const base = getDirectusUrl();
@@ -68,6 +68,9 @@ if (container) {
     hostNote: typeof r.host_note === 'string' ? r.host_note.trim() || null : null,
     durationHours: Number.isFinite(Number(r.duration_hours)) && Number(r.duration_hours) > 0
       ? Number(r.duration_hours)
+      : null,
+    registrationCloses: typeof r.registration_closes === 'string'
+      ? r.registration_closes || null
       : null,
   });
 
@@ -165,35 +168,56 @@ if (container) {
         if (course.hostNote) body.appendChild(el('p', { class: 'scorer-host' }, course.hostNote));
       }
 
-      if (slug || course.dateISO) {
-        const actions = el('div', { class: 'scorer-actions' });
+      // Evaluated per render (not per load) so a page left open across the
+      // deadline locks on the next language switch or re-render rather than
+      // keeping a stale open button.
+      const closed = isRegistrationClosed(course);
 
-        if (slug) {
-          const cta = el('a', {
-            class: 'btn btn-primary',
-            href: signupUrl,
-            target: '_blank',
-            rel: 'noopener noreferrer',
-          });
-          labelBtn(cta, 'user-plus', tr('scorerSignupCta'));
-          actions.appendChild(cta);
-        }
-
-        if (course.dateISO) {
-          const calBtn = el('a', {
-            class: 'btn btn-outline',
-            href: gcalUrl(course, title, signupUrl),
-            target: '_blank',
-            rel: 'noopener noreferrer',
-          });
-          labelBtn(calBtn, 'calendar-plus', tr('scorerSignupCalendar'));
-          actions.appendChild(calBtn);
-        }
-
-        body.appendChild(actions);
+      // Deadline still ahead — say when it falls, so the date is visible before
+      // it bites rather than only as an "it's over" note afterwards.
+      if (course.registrationCloses && !closed) {
+        body.appendChild(el('p', { class: 'scorer-deadline' },
+          tr('scorerSignupUntil', { date: formatDateTime(course.registrationCloses) })));
       }
 
-      if (!slug && course.dateISO) {
+      if (closed) {
+        // Sits where the sign-up button was, so the card reads as "this is shut"
+        // rather than leaving the calendar button as the apparent call to action.
+        // The card's own state only — OpnForm holds the matching closes_at and is
+        // what actually turns a late submission away.
+        const note = el('p', { class: 'scorer-closed' });
+        note.appendChild(icon('lock'));
+        note.appendChild(el('span', {}, tr('scorerSignupClosed')));
+        body.appendChild(note);
+      }
+
+      const actions = el('div', { class: 'scorer-actions' });
+
+      if (slug && !closed) {
+        const cta = el('a', {
+          class: 'btn btn-primary',
+          href: signupUrl,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        });
+        labelBtn(cta, 'user-plus', tr('scorerSignupCta'));
+        actions.appendChild(cta);
+      }
+
+      if (course.dateISO) {
+        const calBtn = el('a', {
+          class: 'btn btn-outline',
+          href: gcalUrl(course, title, signupUrl),
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        });
+        labelBtn(calBtn, 'calendar-plus', tr('scorerSignupCalendar'));
+        actions.appendChild(calBtn);
+      }
+
+      if (actions.children.length) body.appendChild(actions);
+
+      if (!closed && !slug && course.dateISO) {
         // Date is set but no sign-up form yet — say so without re-claiming
         // the date is TBD. When the date itself is null the header span
         // already shows the full "date to be announced" message.
@@ -250,7 +274,7 @@ if (container) {
   });
 
   const load = () =>
-    fetch(`${base}/items/scorer_courses?filter[active][_eq]=true&fields=slug_id,title_de,title_en,date_iso,time,mode,form_slug_de,form_slug_en,location,host_note,duration_hours,sort&sort=sort&limit=-1`)
+    fetch(`${base}/items/scorer_courses?filter[active][_eq]=true&fields=slug_id,title_de,title_en,date_iso,time,mode,form_slug_de,form_slug_en,location,host_note,duration_hours,registration_closes,sort&sort=sort&limit=-1`)
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const rows = Array.isArray(json?.data) ? (json.data as Record<string, unknown>[]) : [];

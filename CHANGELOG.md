@@ -2,6 +2,14 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.12.0] — 2026-07-16
+
+### Sign-up deadline on scorer courses
+- A scorer course can now carry a **registration deadline** (`/admin/?tab=scorer_courses` → edit a course). Entered as a date and time in Swiss time; leaving it empty keeps the course open right up to the course date, exactly as before.
+- While the deadline is still ahead, the course card on **[/weiteres/schreiberkurse](https://kscw.ch/weiteres/schreiberkurse)** says **«Anmeldung möglich bis 12.08.2026 00:00»**, so the cut-off is visible before it bites rather than only afterwards.
+- Once it passes the card **locks rather than disappears**: the sign-up button is replaced by *Anmeldung geschlossen*, while the date, venue and *Zum Kalender hinzufügen* stay — people who already signed up still need those. The card itself only leaves the page once the course date has passed, as it always did.
+- Saving the deadline also **closes the sign-up form itself**, so a late sign-up is actually turned away rather than merely hidden — the link from an old email no longer quietly accepts submissions. If a deadline has been changed directly in OpnForm, the admin form says so instead of silently overwriting it unnoticed.
+
 ## [1.11.0] — 2026-07-16
 
 ### Participants upload their own exam scoresheet

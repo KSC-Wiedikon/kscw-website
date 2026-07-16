@@ -444,6 +444,8 @@
   "scorerSignupIntro": "Melde dich hier für einen kommenden Schreiberkurs an.",
   "scorerSignupSoon": "Datum wird noch bekannt gegeben — Anmeldung folgt in Kürze.",
   "scorerSignupOpensSoon": "Anmeldung folgt in Kürze.",
+  "scorerSignupClosed": "Anmeldung geschlossen",
+  "scorerSignupUntil": "Anmeldung möglich bis {date}",
   "scorerSignupCta": "Zur Anmeldung",
   "scorerSignupCalendar": "Zum Kalender hinzufügen",
   "scorerModeInPerson": "Vor Ort",

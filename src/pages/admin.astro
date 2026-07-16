@@ -262,6 +262,12 @@ import '../styles/global.css';
         scDurationHours: 'Dauer in Stunden (für Kalendereintrag)',
         scFormSlugDe: 'OpnForm-Slug (DE)',
         scFormSlugEn: 'OpnForm-Slug (EN)',
+        scRegistrationCloses: 'Anmeldeschluss (leer = offen bis zum Kursdatum)',
+        scRegistrationClosesHint: 'Schweizer Zeit. Danach zeigt die Kurskarte «Anmeldung geschlossen»; das Formular wird beim Speichern ebenfalls geschlossen.',
+        scClosesSynced: 'OpnForm-Formulare stimmen mit dem Anmeldeschluss überein.',
+        scClosesDrift: 'Achtung: In OpnForm gesetzter Schluss weicht ab — Speichern überschreibt ihn.',
+        scClosesUnknown: 'OpnForm-Schluss konnte nicht gelesen werden.',
+        scClosesPushFailed: 'Kurs gespeichert, aber OpnForm konnte nicht aktualisiert werden — das Formular nimmt weiterhin Anmeldungen an.',
         scActive: 'Aktiv',
         scSort: 'Reihenfolge',
         scResponsesDe: 'Antworten (DE)',
@@ -417,6 +423,12 @@ import '../styles/global.css';
         scDurationHours: 'Duration in hours (for calendar entry)',
         scFormSlugDe: 'OpnForm slug (DE)',
         scFormSlugEn: 'OpnForm slug (EN)',
+        scRegistrationCloses: 'Registration closes (empty = open until the course date)',
+        scRegistrationClosesHint: 'Swiss time. After this the course card shows "Registration closed"; saving also closes the form itself.',
+        scClosesSynced: 'OpnForm forms match this deadline.',
+        scClosesDrift: 'Heads up: the deadline set in OpnForm differs — saving will overwrite it.',
+        scClosesUnknown: 'Could not read the OpnForm deadline.',
+        scClosesPushFailed: 'Course saved, but OpnForm could not be updated — the form is still accepting sign-ups.',
         scActive: 'Active',
         scSort: 'Sort order',
         scResponsesDe: 'Responses (DE)',
@@ -539,6 +551,103 @@ import '../styles/global.css';
       if (!s) return '';
       var t = s.match(/[T ](\d{2}):(\d{2})/);
       return isoToSwissDate(s) + (t ? ' ' + t[1] + ':' + t[2] : '');
+    }
+
+    // ── Europe/Zurich wall-clock ⇄ UTC instant ───────────────────
+    // Deadlines are stored as true UTC instants but entered and read as Zurich
+    // local time. The CET/CEST offset is resolved per-date via Intl rather than
+    // hard-coded, so a deadline set across a DST boundary stays on the wall
+    // clock the admin typed. Mirrors zurichToUTC in src/islands/scorer-courses.ts.
+    function zurichParts(d) {
+      var dtf = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Zurich', hour12: false,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+      });
+      var p = {};
+      dtf.formatToParts(d).forEach(function(x) { if (x.type !== 'literal') p[x.type] = x.value; });
+      if (p.hour === '24') p.hour = '00'; // Intl renders midnight as 24 in some engines
+      return p;
+    }
+    // UTC ISO instant -> 'yyyy-mm-ddTHH:MM' for <input type="datetime-local">.
+    function isoToZurichInput(iso) {
+      if (!iso) return '';
+      var d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      var p = zurichParts(d);
+      return p.year + '-' + p.month + '-' + p.day + 'T' + p.hour + ':' + p.minute;
+    }
+    // 'yyyy-mm-ddTHH:MM' read as Zurich wall-clock -> UTC ISO instant.
+    function zurichInputToISO(v) {
+      var m = String(v || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+      if (!m) return null;
+      var asUTC = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], 0);
+      var p = zurichParts(new Date(asUTC));
+      var zurichAsUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+      return new Date(asUTC - (zurichAsUTC - asUTC)).toISOString();
+    }
+
+    // ── Registration deadline ⇄ OpnForm closes_at ────────────────
+    // scorer_courses.registration_closes is the source of truth and drives the
+    // public card's lock. That lock is cosmetic — each linked OpnForm carries a
+    // mirror of the deadline in its own closes_at, and that mirror is what turns a
+    // late sign-up away. Saving pushes; the drift line reports when the two have
+    // been allowed to disagree.
+    function courseFormSlugs(item) {
+      return [normalizeFormSlug(item && item.form_slug_de), normalizeFormSlug(item && item.form_slug_en)]
+        .filter(Boolean);
+    }
+    function sameInstant(a, b) {
+      if (!a && !b) return true;
+      if (!a || !b) return false;
+      var ta = Date.parse(a), tb = Date.parse(b);
+      // OpnForm keeps closes_at to the minute — ignore sub-minute round-trip noise.
+      return isFinite(ta) && isFinite(tb) && Math.abs(ta - tb) < 60000;
+    }
+    function readFormCloses(slug) {
+      return wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(slug) + '/closes', {})
+        .then(function(res) {
+          if (!res.ok) return { slug: slug, error: true };
+          return res.json().then(function(j) { return { slug: slug, closes_at: (j && j.closes_at) || null }; });
+        })
+        .catch(function() { return { slug: slug, error: true }; });
+    }
+    function renderClosesDrift(item) {
+      var host = document.getElementById('sc-closes-drift');
+      var slugs = courseFormSlugs(item);
+      if (!host || !slugs.length) return;
+      Promise.all(slugs.map(readFormCloses)).then(function(results) {
+        var field = document.querySelector('#modal-form [name="registration_closes"]');
+        var courseISO = field ? zurichInputToISO(field.value) : null;
+        var drift = false;
+        var parts = results.map(function(r) {
+          if (r.error) { drift = true; return r.slug + ': ?'; }
+          if (!sameInstant(r.closes_at, courseISO)) drift = true;
+          return r.slug + ': ' + (r.closes_at ? isoToSwissDateTime(isoToZurichInput(r.closes_at)) : '—');
+        });
+        var anyError = results.some(function(r) { return r.error; });
+        var msg = anyError ? t('scClosesUnknown') : (drift ? t('scClosesDrift') : t('scClosesSynced'));
+        host.textContent = '';
+        var small = document.createElement('small');
+        small.className = 'admin-hint' + (drift ? ' admin-hint-warn' : '');
+        small.textContent = msg + ' (' + parts.join(' · ') + ')';
+        host.appendChild(small);
+        host.style.display = '';
+      });
+    }
+    // Resolves with the slugs that could NOT be updated — never rejects, so a
+    // failed push degrades to a warning on an already-saved course rather than
+    // making the save itself look like it failed.
+    function pushClosesToForms(slugs, closesISO) {
+      if (!slugs.length) return Promise.resolve([]);
+      return Promise.all(slugs.map(function(slug) {
+        return wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(slug) + '/closes', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ closes_at: closesISO }),
+        }).then(function(res) { return res.ok ? null : slug; })
+          .catch(function() { return slug; });
+      })).then(function(res) { return res.filter(Boolean); });
     }
     // Render one OpnForm answer for table/export. Date fields (and any
     // ISO-date-looking value, e.g. birthdate "1999-02-07T00:00:00+01:00")
@@ -3008,6 +3117,14 @@ import '../styles/global.css';
         formHtml += fieldNumber('duration_hours', t('scDurationHours'), item ? item.duration_hours : 4, { step: '0.5' });
         formHtml += fieldInput('form_slug_de', t('scFormSlugDe'), item ? (item.form_slug_de || '') : '', { placeholder: 'scorer-2026-07-08-de' });
         formHtml += fieldInput('form_slug_en', t('scFormSlugEn'), item ? (item.form_slug_en || '') : '', { placeholder: 'scorer-2026-07-08-en' });
+        // Entered as Zurich wall-clock; stored as a UTC instant. Saving mirrors it
+        // onto each linked OpnForm's closes_at — the card lock alone is cosmetic,
+        // OpnForm is what turns a late submission away. #sc-closes-drift is filled
+        // in after render once the live form values come back.
+        formHtml += fieldDateTime('registration_closes', t('scRegistrationCloses'),
+          item ? isoToZurichInput(item.registration_closes) : '',
+          { note: t('scRegistrationClosesHint') });
+        formHtml += '<div class="admin-field" id="sc-closes-drift" style="display:none;"></div>';
         formHtml += fieldNumber('sort', t('scSort'), item ? item.sort : 0);
         formHtml += fieldCheckbox('active', t('scActive'), item ? item.active !== false : true, { toggle: true });
       } else {
@@ -3082,6 +3199,14 @@ import '../styles/global.css';
       // User-generated content (Quill editor) is sanitized separately on save.
       modal.innerHTML = formHtml;
       modal.style.display = 'flex';
+
+      // Show what each linked OpnForm currently closes at. The course field is the
+      // source of truth and saving overwrites the forms, so this is purely a heads-up
+      // for the case where someone edited the deadline in OpnForm directly — better a
+      // visible disagreement than two writers silently racing.
+      if (isScorerCourse && item) {
+        renderClosesDrift(item);
+      }
 
       // Initialize Quill (not used for sponsors)
       quillInstance = null;
@@ -3792,6 +3917,8 @@ import '../styles/global.css';
           payload.duration_hours = scDuration && Number(scDuration) > 0 ? Number(scDuration) : null;
           payload.form_slug_de = normalizeFormSlug(form.querySelector('[name="form_slug_de"]').value) || null;
           payload.form_slug_en = normalizeFormSlug(form.querySelector('[name="form_slug_en"]').value) || null;
+          // datetime-local yields Zurich wall-clock; the column is a UTC instant.
+          payload.registration_closes = zurichInputToISO(form.querySelector('[name="registration_closes"]').value);
           var scSortVal = form.querySelector('[name="sort"]').value;
           payload.sort = scSortVal ? Number(scSortVal) : 0;
           payload.active = form.querySelector('[name="active"]').checked;
@@ -3864,6 +3991,19 @@ import '../styles/global.css';
           var errData = await res.json().catch(function() { return {}; });
           throw new Error(errData.errors ? errData.errors[0].message : 'HTTP ' + res.status);
         }
+
+        // Mirror the deadline onto the linked OpnForms. Deliberately after the course
+        // save and non-fatal: the course row is the source of truth and is already
+        // stored, so a push failure is reported without pretending the save failed —
+        // but it is reported, because until it lands the form still takes sign-ups.
+        if (isScorerCourse) {
+          var pushSlugs = courseFormSlugs(payload);
+          if (pushSlugs.length) {
+            var failed = await pushClosesToForms(pushSlugs, payload.registration_closes);
+            if (failed.length) alert(t('scClosesPushFailed') + ' (' + failed.join(', ') + ')');
+          }
+        }
+
         closeModal();
         loadItems();
       } catch(err) {
@@ -3894,6 +4034,16 @@ import '../styles/global.css';
       return '<div class="admin-field">' +
         '<label for="f-' + name + '">' + escapeHtml(label) + '</label>' +
         '<input type="date" name="' + name + '" id="f-' + name + '" value="' + escapeAttr(value || '') + '">' +
+      '</div>';
+    }
+    // Value/return are Zurich wall-clock ('yyyy-mm-ddTHH:MM') — convert at the
+    // payload boundary with zurichInputToISO/isoToZurichInput, not here.
+    function fieldDateTime(name, label, value, opts) {
+      var note = (opts && opts.note) ? opts.note : '';
+      return '<div class="admin-field">' +
+        '<label for="f-' + name + '">' + escapeHtml(label) + '</label>' +
+        '<input type="datetime-local" name="' + name + '" id="f-' + name + '" value="' + escapeAttr(value || '') + '">' +
+        (note ? '<small class="admin-hint">' + escapeHtml(note) + '</small>' : '') +
       '</div>';
     }
     function fieldSelect(name, label, options, selected) {
@@ -4687,6 +4837,7 @@ import '../styles/global.css';
   .admin-field input[type="email"],
   .admin-field input[type="password"],
   .admin-field input[type="date"],
+  .admin-field input[type="datetime-local"],
   .admin-field input[type="number"],
   .admin-field select,
   .admin-field textarea {
@@ -4711,6 +4862,18 @@ import '../styles/global.css';
   .admin-field input[type="file"] {
     font-size: var(--text-sm);
     color: var(--text-secondary);
+  }
+  .admin-hint {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin-top: var(--space-xs);
+  }
+  /* OpnForm closes_at disagrees with the course deadline — the site would lock
+     the card at a different moment than the form stops accepting. */
+  .admin-hint-warn {
+    color: var(--danger);
+    font-weight: 600;
   }
   .admin-field-check label {
     display: flex;

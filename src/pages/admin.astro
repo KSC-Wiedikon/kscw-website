@@ -175,6 +175,8 @@ import '../styles/global.css';
         delete: 'Löschen',
         archive: 'Archivieren',
         publish: 'Publizieren',
+        confirmTitle: 'Bestätigen',
+        confirmOk: 'OK',
         confirmArchive: 'Diese News archivieren? Sie wird von der öffentlichen Seite entfernt.',
         confirmPublish: 'Diese News publizieren? Sie wird auf der öffentlichen Seite sichtbar.',
         archiveError: 'Fehler beim Aktualisieren: ',
@@ -278,10 +280,9 @@ import '../styles/global.css';
         scBackToCourses: '← Zurück zu den Kursen',
         scAllSignups: 'Alle Anmeldungen (DE + EN)',
         scPresent: 'Anwesend',
-        scExamSent: 'Prüfung gesendet',
         scExamPassed: 'Prüfung bestanden',
         scExamDate: 'Prüfungsdatum',
-        scScoresheet: 'Spielblatt',
+        scExamUploaded: 'Prüfung hochgeladen',
         scScoresheetOpen: 'Hochgeladenes Spielblatt öffnen',
         scScoresheetMissing: 'Noch kein Spielblatt hochgeladen',
         scScoresheetFetchFailed: 'Spielblätter konnten nicht geladen werden:',
@@ -336,6 +337,8 @@ import '../styles/global.css';
         delete: 'Delete',
         archive: 'Archive',
         publish: 'Publish',
+        confirmTitle: 'Confirm',
+        confirmOk: 'OK',
         confirmArchive: 'Archive this news item? It will be removed from the public site.',
         confirmPublish: 'Publish this news item? It will be visible on the public site.',
         archiveError: 'Error updating: ',
@@ -439,10 +442,9 @@ import '../styles/global.css';
         scBackToCourses: '← Back to courses',
         scAllSignups: 'All signups (DE + EN)',
         scPresent: 'Present',
-        scExamSent: 'Exam sent',
         scExamPassed: 'Exam passed',
         scExamDate: 'Exam date',
-        scScoresheet: 'Scoresheet',
+        scExamUploaded: 'Exam uploaded',
         scScoresheetOpen: 'Open the uploaded scoresheet',
         scScoresheetMissing: 'No scoresheet uploaded yet',
         scScoresheetFetchFailed: 'Could not load these scoresheets:',
@@ -1263,21 +1265,25 @@ import '../styles/global.css';
               archiveBtn.className = 'admin-btn admin-btn-sm';
               archiveBtn.textContent = willArchive ? t('archive') : t('publish');
               archiveBtn.addEventListener('click', function() {
-                if (!confirm(willArchive ? t('confirmArchive') : t('confirmPublish'))) return;
-                archiveBtn.disabled = true;
-                wadmin(collection, 'items/' + collection + '/' + item.id, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ is_published: !willArchive }),
-                })
-                  .then(function(res) {
-                    if (!res.ok) throw new Error('HTTP ' + res.status);
-                    loadItems();
+                confirmModal(willArchive ? t('confirmArchive') : t('confirmPublish'), {
+                  confirmLabel: willArchive ? t('archive') : t('publish'),
+                }).then(function(ok) {
+                  if (!ok) return;
+                  archiveBtn.disabled = true;
+                  wadmin(collection, 'items/' + collection + '/' + item.id, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_published: !willArchive }),
                   })
-                  .catch(function(err) {
-                    archiveBtn.disabled = false;
-                    alert(t('archiveError') + err.message);
-                  });
+                    .then(function(res) {
+                      if (!res.ok) throw new Error('HTTP ' + res.status);
+                      loadItems();
+                    })
+                    .catch(function(err) {
+                      archiveBtn.disabled = false;
+                      alert(t('archiveError') + err.message);
+                    });
+                });
               });
               actions.appendChild(archiveBtn);
             }
@@ -1286,13 +1292,14 @@ import '../styles/global.css';
             deleteBtn.className = 'admin-btn admin-btn-sm admin-btn-danger';
             deleteBtn.textContent = t('delete');
             deleteBtn.addEventListener('click', function() {
-              if (confirm(t('confirmDelete'))) {
+              confirmModal(t('confirmDelete'), { danger: true, confirmLabel: t('delete') }).then(function(ok) {
+                if (!ok) return;
                 wadmin(collection, 'items/' + collection + '/' + item.id, { method: 'DELETE' })
                   .then(function(res) {
                     if (!res.ok) throw new Error('HTTP ' + res.status);
                     loadItems();
                   }).catch(function(err) { alert(t('deleteError') + err.message); });
-              }
+              });
             });
             actions.appendChild(deleteBtn);
 
@@ -1733,9 +1740,12 @@ import '../styles/global.css';
       var rejectBtn = document.getElementById('reg-reject');
       if (rejectBtn) {
         rejectBtn.addEventListener('click', function() {
-          if (confirm(t('registrationsConfirmReject'))) {
-            updateRegistrationStatus(item.id, 'rejected');
-          }
+          confirmModal(t('registrationsConfirmReject'), {
+            danger: true,
+            confirmLabel: t('registrationsReject'),
+          }).then(function(ok) {
+            if (ok) updateRegistrationStatus(item.id, 'rejected');
+          });
         });
       }
 
@@ -2229,13 +2239,14 @@ import '../styles/global.css';
         deleteBtn.className = 'admin-btn admin-btn-sm admin-btn-danger';
         deleteBtn.textContent = t('delete');
         deleteBtn.addEventListener('click', function() {
-          if (confirm(t('sponsorConfirmDelete'))) {
+          confirmModal(t('sponsorConfirmDelete'), { danger: true, confirmLabel: t('delete') }).then(function(ok) {
+            if (!ok) return;
             wadmin('sponsors', 'items/sponsors/' + sp.id, { method: 'DELETE' })
               .then(function(res) {
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 loadItems();
               }).catch(function(err) { alert(t('deleteError') + err.message); });
-          }
+          });
         });
         actions.appendChild(deleteBtn);
 
@@ -2365,13 +2376,14 @@ import '../styles/global.css';
         deleteBtn.className = 'admin-btn admin-btn-sm admin-btn-danger';
         deleteBtn.textContent = t('delete');
         deleteBtn.addEventListener('click', function() {
-          if (confirm(t('scorerCoursesConfirmDelete'))) {
+          confirmModal(t('scorerCoursesConfirmDelete'), { danger: true, confirmLabel: t('delete') }).then(function(ok) {
+            if (!ok) return;
             wadmin('scorer_courses', 'items/scorer_courses/' + sc.id, { method: 'DELETE' })
               .then(function(res) {
                 if (!res.ok) throw new Error('HTTP ' + res.status);
                 loadItems();
               }).catch(function(err) { alert(t('deleteError') + err.message); });
-          }
+          });
         });
         actions.appendChild(deleteBtn);
 
@@ -2627,7 +2639,7 @@ import '../styles/global.css';
           var extraFields = fields.filter(function(f) { return !shownIds[f.id]; });
           var headers = [t('scColDate')]
             .concat(multi ? [t('scColLang')] : [])
-            .concat([t('scColFirstName'), t('scColLastName'), t('scPresent'), t('scExamSent'),
+            .concat([t('scColFirstName'), t('scColLastName'), t('scPresent'),
                      t('scExamPassed'), t('scSvLicense'), t('scNotes')])
             .concat(extraFields.map(function(f) { return f.name; }));
           var rows = exportMetas.map(function(m) {
@@ -2638,7 +2650,6 @@ import '../styles/global.css';
                 String(pickVal(d, firstNameIds) || ''),
                 String(pickVal(d, lastNameIds) || ''),
                 !!st.present,
-                !!st.exam_sent,
                 !!st.exam_passed,
                 m.svInp ? m.svInp.value.trim() : (st.sv_license || m.formSv || ''),
                 m.noteInp ? m.noteInp.value : (st.notes || ''),
@@ -2783,7 +2794,7 @@ import '../styles/global.css';
         wrap.style.cssText = 'overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-md);';
         var table = document.createElement('table');
         table.style.cssText = 'width:100%;border-collapse:collapse;font-size:var(--text-sm);';
-        var COLSPAN = 10; // select, arrow, first, last, present, examSent, examPassed, sheet, sv, actions
+        var COLSPAN = 9; // select, arrow, first, last, present, examPassed, sheet, sv, actions
         var cellCss = 'padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);';
         var headCss = 'text-align:left;padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.04);font-weight:600;white-space:nowrap;';
 
@@ -2810,9 +2821,8 @@ import '../styles/global.css';
         thRow.appendChild(makeTh(t('scColFirstName')));
         thRow.appendChild(makeTh(t('scColLastName')));
         thRow.appendChild(makeTh(t('scPresent'), 'text-align:center;'));
-        thRow.appendChild(makeTh(t('scExamSent'), 'text-align:center;'));
         thRow.appendChild(makeTh(t('scExamPassed'), 'text-align:center;'));
-        thRow.appendChild(makeTh(t('scScoresheet'), 'text-align:center;'));
+        thRow.appendChild(makeTh(t('scExamUploaded'), 'text-align:center;'));
         thRow.appendChild(makeTh(t('scSvLicense')));
         thRow.appendChild(makeTh(''));
         thead.appendChild(thRow);
@@ -2826,7 +2836,6 @@ import '../styles/global.css';
           var state = {
             id: (srv.id != null ? srv.id : null),
             present: !!srv.present,
-            exam_sent: !!srv.exam_sent,
             exam_passed: !!srv.exam_passed,
             exam_date: srv.exam_date || '',
             exam_file: srv.exam_file || '',
@@ -2885,7 +2894,7 @@ import '../styles/global.css';
           var statusEl = document.createElement('span');
           statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-left:0.4rem;';
 
-          ['present', 'exam_sent', 'exam_passed'].forEach(function(fieldName) {
+          ['present', 'exam_passed'].forEach(function(fieldName) {
             var td = document.createElement('td');
             td.style.cssText = cellCss + 'text-align:center;';
             var cb = document.createElement('input');
@@ -2901,9 +2910,13 @@ import '../styles/global.css';
                 var who = [String(fnV || ''), String(lnV || '')].filter(Boolean).join(' ') || t('scScorerRow');
                 var msg = (state.exam_file ? t('scExamPassedConfirm') : t('scExamPassedNoSheet'))
                   .split('{name}').join(who);
-                if (!window.confirm(msg)) { cb.checked = false; return; }
-                saveScorerField(rowMeta, fieldName, true, statusEl);
-                sendExamPassedMail(rowMeta, statusEl);
+                // Unlike the blocking confirm this replaced, the box shows ticked
+                // while the modal is open — so cancelling has to put it back.
+                confirmModal(msg).then(function(ok) {
+                  if (!ok) { cb.checked = false; return; }
+                  saveScorerField(rowMeta, fieldName, true, statusEl);
+                  sendExamPassedMail(rowMeta, statusEl);
+                });
                 return;
               }
               saveScorerField(rowMeta, fieldName, cb.checked, statusEl);
@@ -2968,16 +2981,18 @@ import '../styles/global.css';
             delBtn.className = 'admin-btn admin-btn-sm admin-btn-danger';
             delBtn.textContent = t('delete');
             delBtn.addEventListener('click', function() {
-              if (!confirm(t('confirmDelete'))) return;
-              delBtn.disabled = true;
-              wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(row.slug) + '/submissions/' + encodeURIComponent(row.id), { method: 'DELETE' })
-                .then(function(res) {
-                  if (!res.ok) throw new Error('HTTP ' + res.status);
-                  openScorerCourseInline(courseId); // refresh
-                }).catch(function(err) {
-                  delBtn.disabled = false;
-                  alert(t('deleteError') + (err && err.message ? err.message : 'unknown'));
-                });
+              confirmModal(t('confirmDelete'), { danger: true, confirmLabel: t('delete') }).then(function(ok) {
+                if (!ok) return;
+                delBtn.disabled = true;
+                wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(row.slug) + '/submissions/' + encodeURIComponent(row.id), { method: 'DELETE' })
+                  .then(function(res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    openScorerCourseInline(courseId); // refresh
+                  }).catch(function(err) {
+                    delBtn.disabled = false;
+                    alert(t('deleteError') + (err && err.message ? err.message : 'unknown'));
+                  });
+              });
             });
             actTd.appendChild(delBtn);
           }
@@ -3317,6 +3332,81 @@ import '../styles/global.css';
       quillInstance = null;
     }
 
+    // ── Confirm dialog ─────────────────────────────────────────
+    // Promise-based stand-in for window.confirm — resolves true on confirm,
+    // false on cancel, Escape or a backdrop click.
+    //
+    // Builds its own overlay instead of reusing the shared #admin-modal: half
+    // the callers confirm from inside an already-open modal (the responses
+    // table), and rendering into that container would tear down the very table
+    // the caller returns to on cancel.
+    //
+    // opts: { title, confirmLabel, cancelLabel, danger }
+    function confirmModal(message, opts) {
+      var o = opts || {};
+      return new Promise(function(resolve) {
+        var overlay = document.createElement('div');
+        overlay.className = 'admin-modal-overlay admin-confirm-overlay';
+        overlay.style.display = 'flex';
+
+        var content = document.createElement('div');
+        content.className = 'admin-modal-content admin-confirm-content';
+
+        var header = document.createElement('div');
+        header.className = 'admin-modal-header';
+        var heading = document.createElement('h2');
+        heading.textContent = o.title || t('confirmTitle');
+        header.appendChild(heading);
+
+        var body = document.createElement('div');
+        body.className = 'admin-modal-body';
+        // A message can carry a participant name straight from a public OpnForm
+        // submission, so it is set as text, never as markup. pre-wrap preserves
+        // the blank line these strings use to separate question from consequence.
+        body.style.whiteSpace = 'pre-wrap';
+        body.textContent = message == null ? '' : String(message);
+
+        var footer = document.createElement('div');
+        footer.className = 'admin-modal-footer';
+        var cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'admin-btn';
+        cancelBtn.textContent = o.cancelLabel || t('cancel');
+        var okBtn = document.createElement('button');
+        okBtn.type = 'button';
+        okBtn.className = 'admin-btn ' + (o.danger ? 'admin-btn-danger' : 'admin-btn-primary');
+        okBtn.textContent = o.confirmLabel || t('confirmOk');
+        footer.appendChild(cancelBtn);
+        footer.appendChild(okBtn);
+
+        content.appendChild(header);
+        content.appendChild(body);
+        content.appendChild(footer);
+        overlay.appendChild(content);
+        document.body.appendChild(overlay);
+
+        var lastFocus = document.activeElement;
+        var settled = false;
+        function finish(result) {
+          if (settled) return;
+          settled = true;
+          document.removeEventListener('keydown', onKey);
+          overlay.remove();
+          if (lastFocus && lastFocus.focus) lastFocus.focus();
+          resolve(result);
+        }
+        function onKey(e) {
+          if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+          else if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+        }
+        document.addEventListener('keydown', onKey);
+        cancelBtn.addEventListener('click', function() { finish(false); });
+        okBtn.addEventListener('click', function() { finish(true); });
+        overlay.addEventListener('click', function(e) { if (e.target === overlay) finish(false); });
+        okBtn.focus();
+      });
+    }
+
     // ── OpnForm responses (admin) ──────────────────────────────
     // `sources` is either a bare slug string (single form, e.g. events) or
     // an array of { slug, lang } (e.g. a scorer course's DE+EN form pair).
@@ -3485,16 +3575,18 @@ import '../styles/global.css';
             delBtn.className = 'admin-btn admin-btn-sm admin-btn-danger';
             delBtn.textContent = t('delete');
             delBtn.addEventListener('click', function() {
-              if (!confirm(t('confirmDelete'))) return;
-              delBtn.disabled = true;
-              wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(row.slug) + '/submissions/' + encodeURIComponent(row.id), { method: 'DELETE' })
-                .then(function(res) {
-                  if (!res.ok) throw new Error('HTTP ' + res.status);
-                  openResponsesModal(sources, eventTitle); // refresh
-                }).catch(function(err) {
-                  delBtn.disabled = false;
-                  alert(t('deleteError') + (err && err.message ? err.message : 'unknown'));
-                });
+              confirmModal(t('confirmDelete'), { danger: true, confirmLabel: t('delete') }).then(function(ok) {
+                if (!ok) return;
+                delBtn.disabled = true;
+                wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(row.slug) + '/submissions/' + encodeURIComponent(row.id), { method: 'DELETE' })
+                  .then(function(res) {
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    openResponsesModal(sources, eventTitle); // refresh
+                  }).catch(function(err) {
+                    delBtn.disabled = false;
+                    alert(t('deleteError') + (err && err.message ? err.message : 'unknown'));
+                  });
+              });
             });
             actTd.appendChild(delBtn);
           }
@@ -5005,6 +5097,23 @@ import '../styles/global.css';
     bottom: calc(var(--space-xl) * -1);
     background: var(--bg-white);
     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  }
+
+  /* ── Confirm dialog ────────────────────────────────────────── */
+  /* Its own layer above --z-modal: a confirm is often raised from inside an
+     already-open modal and has to sit on top of it, not behind it. */
+  .admin-confirm-overlay {
+    z-index: calc(var(--z-modal) + 5);
+  }
+  .admin-confirm-content {
+    max-width: 460px;
+  }
+  /* The footer rule above is written for a footer nested inside .admin-modal-body
+     (the edit form), where it pulls itself out to the content edges. Here it is a
+     direct child of the content, so those pull-outs would overhang it. */
+  .admin-confirm-content .admin-modal-footer {
+    margin: 0;
+    position: static;
   }
 
   /* ── Quill Overrides ───────────────────────────────────────── */

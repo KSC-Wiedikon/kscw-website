@@ -13,6 +13,13 @@
 /en/volleyball/mixed-tournament   /volleyball   301
 /en/volleyball/mixed-turnier      /volleyball   301
 
+# Scorer-exam upload: the page was announced with the umlaut spelling, but every slug on
+# this site is ASCII, so /pruefung is canonical and the umlaut 301s onto it. Both the
+# percent-encoded and the raw form are listed — browsers send the encoded one, but link
+# checkers, QR readers and pasted-from-chat URLs do turn up raw.
+/weiteres/schreiberkurse/pr%C3%BCfung   /weiteres/schreiberkurse/pruefung   301
+/weiteres/schreiberkurse/prüfung        /weiteres/schreiberkurse/pruefung   301
+
 # Everything else: same slug, just drop the locale prefix.
 /de/*   /:splat   301
 /en/*   /:splat   301

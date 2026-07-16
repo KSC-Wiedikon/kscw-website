@@ -2,6 +2,21 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.15.0] — 2026-07-17
+
+### Registrations sorted by surname, surname first
+- The signup table now leads with **Last name** and is **sorted by it**. It was newest-signup-first, which is the order they arrived in and no order at all when you are looking for a person. Sorted with Swiss collation, so **Dürig** sits between Demir and Mayer rather than after Z.
+
+### "Email sent to …" is a toast
+- The mail confirmation was a few pixels of grey text in the row, gone on the next redraw and easy to miss — poor for the one action here that reaches a real person. It is now a toast in the corner, showing the address the server actually sent to. A failure says *the result is recorded, only the mail failed*, and lingers longer, because it has to be read rather than just noticed.
+
+### SVRZ Wohnort: looked up, not invented
+- **Postcode and town are filled from the member records** when a signup didn't give them. The form asked for "Adresse" as one free-text box and most people read that as "street": 16 of 25 gave no town at all.
+- Where nothing is known — not from the signup, not from the members — the list says **Zürich** without a postcode. That is a guess and it is the last resort: only about 70% of members live in Zürich, so guessing first would have been wrong for roughly one in three. The lookup found **Wädenswil** and **Stallikon** among people who would otherwise have been labelled Zürich.
+- **The export says so before it runs.** A missing licence number and a guessed town are both listed for confirmation. A guessed Wohnort looks exactly like data once it is sitting in a spreadsheet cell.
+- Implausible member data is dropped rather than forwarded: one record carries postcode `0849` (Swiss postcodes start at 1000) with the town `ZH` (a canton). Junk on an official list is worse than a blank, because it looks like an answer.
+- The form has since been split into **Strasse / PLZ / Ort**, which is read directly when present. Signups made before the split still parse as they did.
+
 ## [1.14.0] — 2026-07-17
 
 ### The scoresheet column is a Matchblatt icon, and it says what it knows

@@ -135,8 +135,33 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.14.0</span>
+          <span class="changelog-badge">v1.15.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.15.0 — 2026-07-17</div>
+          <div class="changelog-group">
+            <h3>Anmeldungen: nach Nachname sortiert</h3>
+            <ul>
+              <li>Die Anmeldeliste beginnt neu mit <strong>Nachname</strong> und ist danach sortiert. Bisher stand die neuste Anmeldung zuoberst — das ist die Reihenfolge des Eingangs und keine Ordnung, wenn man jemanden sucht. Sortiert mit Schweizer Sortierung: <strong>Dürig</strong> steht zwischen Demir und Mayer, nicht hinter Z</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>«E-Mail gesendet an …» als Toast</h3>
+            <ul>
+              <li>Die Bestätigung stand bisher als winziger grauer Text in der Zeile und war beim nächsten Neuaufbau weg. Neu erscheint sie als Meldung unten rechts, mit der Adresse, an die tatsächlich gesendet wurde. Schlägt der Versand fehl, steht dort, dass <em>das Ergebnis erfasst ist und nur die E-Mail nicht rausging</em> — und die Meldung bleibt länger stehen</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>SVRZ-Wohnort: nachgeschlagen statt geraten</h3>
+            <ul>
+              <li><strong>PLZ und Wohnort werden aus den Mitgliederdaten ergänzt</strong>, wenn die Anmeldung keine enthält. Das Formular fragte «Adresse» in einem einzigen Feld, und die meisten lasen das als «Strasse»: 16 von 25 gaben gar keinen Ort an</li>
+              <li>Ist nichts bekannt — weder aus der Anmeldung noch aus den Mitgliederdaten — steht auf der Liste <strong>«Zürich»</strong> ohne PLZ. Das ist eine Annahme und bewusst die letzte Stufe: Nur rund 70% der Mitglieder wohnen in Zürich. Die Suche fand unter anderem <strong>Wädenswil</strong> und <strong>Stallikon</strong> — Personen, die sonst fälschlich als Zürich auf der Liste gestanden hätten</li>
+              <li><strong>Der Export sagt es vorher.</strong> Fehlende Lizenznummern und geratene Wohnorte werden vor dem Herunterladen aufgelistet — ein geratener Ort sieht in einer Tabellenzelle sonst genau wie eine Angabe aus</li>
+              <li>Das Formular ist inzwischen in <strong>Strasse / PLZ / Ort</strong> aufgeteilt und wird direkt gelesen. Ältere Anmeldungen werden weiterhin wie bisher ausgewertet</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.14.0 — 2026-07-17</div>
@@ -504,8 +529,33 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.14.0</span>
+          <span class="changelog-badge">v1.15.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.15.0 — 2026-07-17</div>
+          <div class="changelog-group">
+            <h3>Registrations sorted by surname</h3>
+            <ul>
+              <li>The signup table now leads with <strong>Last name</strong> and is sorted by it. It was newest-first, which is the order they arrived in and no order at all when you're looking for a person. Sorted with Swiss collation, so <strong>Dürig</strong> sits between Demir and Mayer rather than after Z</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>"Email sent to …" is now a toast</h3>
+            <ul>
+              <li>The confirmation used to be a few pixels of grey text in the row, gone on the next redraw. It now appears as a message in the corner, showing the address the server actually sent to. On a failure it says <em>the result is recorded and only the email failed</em>, and stays longer</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>SVRZ Wohnort: looked up, not invented</h3>
+            <ul>
+              <li><strong>Postcode and town are filled from the member records</strong> when a signup didn't give them. The form asked for "Adresse" in a single box and most people read that as "street": 16 of 25 gave no town at all</li>
+              <li>Where nothing is known — not from the signup, not from the members — the list says <strong>"Zürich"</strong> with no postcode. That's a guess and deliberately the last resort: only about 70% of members live in Zürich. The lookup found <strong>Wädenswil</strong> and <strong>Stallikon</strong> among people who'd otherwise have been labelled Zürich</li>
+              <li><strong>The export says so first.</strong> Missing licence numbers and guessed towns are listed for confirmation before it downloads — a guessed town looks exactly like data once it's in a spreadsheet cell</li>
+              <li>The form has since been split into <strong>Strasse / PLZ / Ort</strong> and is read directly. Older signups are still parsed as before</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.14.0 — 2026-07-17</div>

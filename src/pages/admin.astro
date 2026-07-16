@@ -316,7 +316,9 @@ import '../styles/global.css';
         scExamFailedConfirm: 'Prüfung als nicht bestanden erfassen?\n\n{name} erhält automatisch eine E-Mail mit diesem Ergebnis.',
         scExamResultMailSent: 'E-Mail gesendet an',
         scExamResultMailFailed: 'Ergebnis erfasst — die E-Mail konnte aber nicht gesendet werden.',
-        scExportNoLicence: 'Für {count} Person(en) fehlt die SV-Lizenznummer. Der SVRZ braucht sie auf der Teilnehmerliste, und ihre Spielblätter werden im ZIP nach Namen statt nach Nummer benannt.\n\n{names}\n\nTrotzdem exportieren?',
+        scExportNoLicence: 'Für {count} Person(en) fehlt die SV-Lizenznummer. Der SVRZ braucht sie auf der Teilnehmerliste, und ihre Spielblätter werden im ZIP nach Namen statt nach Nummer benannt.\n\n{names}',
+        scExportGuessedCity: 'Für {count} Person(en) ist kein Wohnort bekannt — weder aus der Anmeldung noch aus den Mitgliederdaten. Auf der Teilnehmerliste steht bei ihnen «{city}» ohne PLZ. Das ist eine Annahme, keine Angabe:\n\n{names}',
+        scExportAnyway: 'Trotzdem exportieren?',
         scSvLicense: 'SV-Lizenz',
         scNotes: 'Notizen',
         scColDate: 'Datum',
@@ -504,7 +506,9 @@ import '../styles/global.css';
         scExamFailedConfirm: 'Record the exam as not passed?\n\n{name} will automatically receive an email with this result.',
         scExamResultMailSent: 'Email sent to',
         scExamResultMailFailed: 'Result recorded — but the email could not be sent.',
-        scExportNoLicence: 'The SV licence number is missing for {count} person(s). SVRZ needs it on the Teilnehmerliste, and their scoresheets will be named after the person rather than the number in the zip.\n\n{names}\n\nExport anyway?',
+        scExportNoLicence: 'The SV licence number is missing for {count} person(s). SVRZ needs it on the Teilnehmerliste, and their scoresheets will be named after the person rather than the number in the zip.\n\n{names}',
+        scExportGuessedCity: 'No town is known for {count} person(s) — neither from their signup nor from the member records. The Teilnehmerliste will say "{city}" for them, with no postcode. That is an assumption, not a stated address:\n\n{names}',
+        scExportAnyway: 'Export anyway?',
         scSvLicense: 'SV licence',
         scNotes: 'Notes',
         scColDate: 'Date',
@@ -2528,9 +2532,51 @@ import '../styles/global.css';
     // exam_passed write and report a state the DB does not have yet. A failure here is
     // surfaced but never reverts the tick: the exam IS passed, only the mail failed, and
     // silently unticking would lose the admin's work.
+    // ── toasts ──────────────────────────────────────────────────
+    // "E-Mail gesendet an …" used to land in the row's status span: a few pixels of grey
+    // text in a wide table, gone on the next re-render, and easy to miss entirely — which
+    // is poor for the one action here that reaches a real person. A toast puts it where
+    // the eye goes and does not have to fight the table for room.
+    var _toastHost = null;
+    function showToast(message, kind) {
+      if (!_toastHost) {
+        _toastHost = document.createElement('div');
+        // Above the modal layer: a mail is usually sent from behind a confirm, and a
+        // confirmation nobody sees is not a confirmation.
+        _toastHost.style.cssText = 'position:fixed;right:1rem;bottom:1rem;'
+          + 'z-index:calc(var(--z-modal) + 2);display:flex;flex-direction:column-reverse;'
+          + 'gap:0.5rem;align-items:flex-end;pointer-events:none;';
+        document.body.appendChild(_toastHost);
+      }
+      var colour = kind === 'error' ? '#dc2626' : '#16a34a';
+      var el = document.createElement('div');
+      el.style.cssText = 'pointer-events:auto;cursor:pointer;max-width:380px;'
+        + 'padding:0.65rem 0.9rem;border-radius:var(--radius-sm);'
+        + 'background:var(--bg-elevated,#1c1c1e);border:1px solid var(--border);'
+        + 'border-left:3px solid ' + colour + ';color:var(--text-primary);'
+        + 'font-size:var(--text-sm);box-shadow:0 8px 24px rgba(0,0,0,0.45);'
+        + 'opacity:0;transform:translateY(6px);transition:opacity .18s ease,transform .18s ease;';
+      // textContent, never markup: the message carries an address typed into a public form.
+      el.textContent = message;
+      _toastHost.appendChild(el);
+      // Next frame, or the transition has nothing to animate from.
+      requestAnimationFrame(function() { el.style.opacity = '1'; el.style.transform = 'none'; });
+      var gone = false;
+      function dismiss() {
+        if (gone) return;
+        gone = true;
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(6px)';
+        setTimeout(function() { el.remove(); }, 200);
+      }
+      el.addEventListener('click', dismiss);
+      // A failure needs longer than a success: it has to be read, not just noticed.
+      setTimeout(dismiss, kind === 'error' ? 9000 : 5000);
+    }
+
     // `note` is the optional line the admin typed in the confirm modal. It travels in the
     // body and is escaped server-side before it reaches the mail HTML.
-    function sendExamResultMail(rowMeta, result, note, statusEl) {
+    function sendExamResultMail(rowMeta, result, note) {
       var run = function() {
         return wadmin('scorer_courses',
           'opnform/forms/' + encodeURIComponent(rowMeta.slug)
@@ -2543,25 +2589,49 @@ import '../styles/global.css';
         ).then(function(res) {
           return res.json().catch(function() { return {}; }).then(function(body) {
             if (!res.ok) throw new Error(body.error || ('HTTP ' + res.status));
-            if (statusEl) {
-              statusEl.textContent = '✉ ' + t('scExamResultMailSent') + ' ' + (body.to || '');
-              statusEl.style.color = '#16a34a';
-            }
+            // The address comes back from the server, which resolved it from the signup —
+            // showing it is how you confirm the mail went where you meant.
+            showToast('✉ ' + t('scExamResultMailSent') + ' ' + (body.to || ''), 'success');
           });
         });
       };
       var chain = (_scorerSaveChains[rowMeta.key] || Promise.resolve())
         .then(run)
         .catch(function() {
-          if (statusEl) {
-            // The result IS recorded — only the mail failed. Say exactly that, so nobody
-            // re-clicks trying to fix a record that was never broken.
-            statusEl.textContent = '✕ ' + t('scExamResultMailFailed');
-            statusEl.style.color = '#dc2626';
-          }
+          // The result IS recorded — only the mail failed. Say exactly that, so nobody
+          // re-clicks trying to fix a record that was never broken.
+          showToast('✕ ' + t('scExamResultMailFailed'), 'error');
         });
       _scorerSaveChains[rowMeta.key] = chain;
     }
+
+    // Address fields are matched by the form's field NAME, which makes these patterns a
+    // live dependency on wording OpnForm owns and this repo cannot see. Rename a field and
+    // the column silently empties — no error, just blanks, and downstream a guessed town
+    // that looks like data once it is in a spreadsheet cell.
+    //
+    // Every alternative below is a label that has actually been used, not a guess at one:
+    //   strasse — "Strasse und Nummer" (DE), "Street and number" (EN)
+    //   plz     — "PLZ" (DE), "ZIP Code" (EN)
+    //   ort     — "Ort" (DE), "Place" (EN)   ← "Place" was missing, and every English
+    //             signup fell through to a guessed Zürich while the person had typed one
+    //   adresse — "Adresse" / "Address", the single free-text box used before the split.
+    //             Pre-split submissions answer under the id it was renamed to, so this is
+    //             only a fallback; see resolveAddress for how the two shapes are told apart.
+    //
+    // tests/unit/admin-address-fields.test.ts pins these against the real labels.
+    var ADDR_PATTERNS = {
+      strasse: /^(strasse|str\.|street)/i,
+      plz: /^(plz|postleitzahl|postcode|zip)/i,
+      ort: /^(ort|wohnort|stadt|city|town|place|locality)/i,
+      adresse: /^(adresse|address)/i,
+    };
+
+    // Where a signup gave no town and the member records have none either, the SVRZ list
+    // says Zürich. The club is a Zürich club and it is the likeliest answer — but it IS a
+    // guess, and roughly 3 in 10 members live elsewhere, so it is only ever reached after
+    // the form, the free-text parse and the member lookup have all come up empty.
+    var SVRZ_FALLBACK_CITY = 'Zürich';
 
     // Mirrors normalizeLicence in scorer-exam.js — same rule, so a licence names its file
     // identically whether the participant typed it at upload or an admin typed it here.
@@ -2663,10 +2733,23 @@ import '../styles/global.css';
         })),
         wadmin('scorer_courses', 'items/scorer_course_attendance?limit=-1', {})
           .then(function(res) { return res.ok ? res.json() : { data: [] }; })
-          .catch(function() { return { data: [] }; })
+          .catch(function() { return { data: [] }; }),
+        // Postcode + town for signups that gave neither — most people read the form's
+        // "Adresse" as "street". Keyed by slug then submission id. Fails soft: without it
+        // the export falls back exactly as it did before, so a lookup outage costs
+        // precision, not the export.
+        Promise.all(srcList.map(function(src) {
+          return wadmin('scorer_courses',
+            'opnform/forms/' + encodeURIComponent(src.slug) + '/member-addresses', {})
+            .then(function(res) { return res.ok ? res.json() : { data: {} }; })
+            .then(function(j) { return { slug: src.slug, map: (j && j.data) || {} }; })
+            .catch(function() { return { slug: src.slug, map: {} }; });
+        }))
       ]).then(function(bundle) {
         var results = bundle[0];
         var attRows = (bundle[1] && bundle[1].data) || [];
+        var memberAddr = {};
+        (bundle[2] || []).forEach(function(r) { memberAddr[r.slug] = r.map || {}; });
 
         var fields = [], byId = {}, mergedRows = [], errors = [];
         results.forEach(function(rr) {
@@ -2686,10 +2769,6 @@ import '../styles/global.css';
             });
           });
         });
-        mergedRows.sort(function(a, b) {
-          return String(b.data.created_at || '').localeCompare(String(a.data.created_at || ''));
-        });
-
         var attByKey = {};
         attRows.forEach(function(a) { if (a && a.sub_key != null) attByKey[String(a.sub_key)] = a; });
 
@@ -2714,7 +2793,10 @@ import '../styles/global.css';
         var emailIds     = idsWhere(function(f) { return f.type === 'email' || /^e-?mail/i.test(String(f.name || '')); });
         // Only the SVRZ export reads these — they stay out of shownIds so the
         // detail panel keeps listing them like any other answer.
-        var addressIds   = idsWhere(function(f) { return /^(adresse|address)/i.test(String(f.name || '')); });
+        var addressIds   = idsWhere(function(f) { return ADDR_PATTERNS.adresse.test(String(f.name || '')); });
+        var strasseIds   = idsWhere(function(f) { return ADDR_PATTERNS.strasse.test(String(f.name || '')); });
+        var plzIds       = idsWhere(function(f) { return ADDR_PATTERNS.plz.test(String(f.name || '')); });
+        var ortIds       = idsWhere(function(f) { return ADDR_PATTERNS.ort.test(String(f.name || '')); });
         var phoneIds     = idsWhere(function(f) { return f.type === 'phone_number' || /natel|telefon|phone|handy|mobile/i.test(String(f.name || '')); });
         var dobIds       = idsWhere(function(f) { return /geburtsdatum|birth/i.test(String(f.name || '')); });
         var kscwIds      = idsWhere(function(f) { return /kscw/i.test(String(f.name || '')); });
@@ -2725,6 +2807,26 @@ import '../styles/global.css';
           for (var i = 0; i < ids.length; i++) { var v = d[ids[i]]; if (v != null && v !== '') return v; }
           return '';
         }
+
+        // Sorted by surname. This list is worked against a paper Teilnehmerliste and read
+        // out at a course, both of which go by surname; it was newest-signup-first, which
+        // is the order they arrived in and no order at all when you are hunting for a
+        // person. Sorted here rather than at fetch: the name lives in an OpnForm answer
+        // keyed by field id, so only this side knows which id is the surname.
+        //
+        // de-CH collation, so Ä sorts with A rather than after Z, and `numeric` keeps a
+        // "Meier 2" style suffix in human order. Runs after the id detection above —
+        // sorting before it would have had nothing to sort on.
+        var nameCollator = new Intl.Collator('de-CH', { sensitivity: 'base', numeric: true });
+        mergedRows.sort(function(a, b) {
+          var byLast = nameCollator.compare(
+            String(pickVal(a.data, lastNameIds) || ''),
+            String(pickVal(b.data, lastNameIds) || ''));
+          if (byLast !== 0) return byLast;
+          return nameCollator.compare(
+            String(pickVal(a.data, firstNameIds) || ''),
+            String(pickVal(b.data, firstNameIds) || ''));
+        });
 
         // Email-selection state (populated as rows render).
         var selectCells = []; // th/td of the select column — shown only in email mode
@@ -2784,11 +2886,49 @@ import '../styles/global.css';
           var found = Object.keys(names);
           return found.length === 1 ? found[0] : '';
         }
+        // SVRZ needs a postcode and a town, and the form asked for neither: "Adresse" was
+        // one free-text box, and 16 of 25 people read it as "street". This resolves the
+        // best answer available, most-trustworthy first:
+        //
+        //   1. the split Strasse/PLZ/Ort fields, if the form has them — stated, not parsed
+        //   2. a postcode parsed out of the old free-text answer — stated, just cramped
+        //   3. the member record, matched by name server-side — the club's own data
+        //   4. "Zürich" with no postcode — a guess, and known to be wrong ~30% of the time
+        //      (only 485 of 691 members with an Ort live there; two of the seven this
+        //      lookup resolves are in Wädenswil and Stallikon). Last resort by design:
+        //      every step above exists to make this one rare.
+        function resolveAddress(m) {
+          var d = m.row.data;
+          var plz = String(pickVal(d, plzIds) || '').trim();
+          var ort = String(pickVal(d, ortIds) || '').trim();
+
+          // ⚠ A FILLED PLZ/Ort is the discriminator, not the field's name. The DE form was
+          // split by RENAMING "Adresse" to "Strasse und Nummer" — same field id — so every
+          // pre-split submission still answers under what is now called the street field,
+          // and some of those answers are a whole address ("Hadlaubstrasse 68, 8006
+          // Zürich"). Trusting the name would file that entire string as the street and
+          // leave PLZ blank, breaking the rows that parse correctly today. PLZ and Ort are
+          // required on the split form, so their presence marks a post-split submission.
+          if (plz || ort) {
+            return { street: String(pickVal(d, strasseIds) || '').trim(), zip: plz, city: ort, guessed: false };
+          }
+
+          // Pre-split: one free-text box, whatever it is called now. Parse it.
+          var parsed = splitSwissAddress(pickVal(d, strasseIds) || pickVal(d, addressIds));
+          if (parsed.zip || parsed.city) return { street: parsed.street, zip: parsed.zip, city: parsed.city, guessed: false };
+
+          var hit = (memberAddr[m.row.slug] || {})[String(m.row.id)];
+          if (hit && (hit.plz || hit.ort)) {
+            return { street: parsed.street, zip: String(hit.plz || ''), city: String(hit.ort || ''), guessed: false };
+          }
+          return { street: parsed.street, zip: '', city: SVRZ_FALLBACK_CITY, guessed: true };
+        }
+
         function buildSvrzExport() {
           return exportMetas.map(function(m) {
             var d = m.row.data, st = m.state;
             var sc = courseBySlug[m.row.slug] || {};
-            var addr = splitSwissAddress(pickVal(d, addressIds));
+            var addr = resolveAddress(m);
             // KSCW members answer Ja/Yes and never type a club; everyone else
             // names their own in "Club und team".
             var isKscw = /^(ja|yes)$/i.test(String(pickVal(d, kscwIds) || '').trim());
@@ -2842,14 +2982,32 @@ import '../styles/global.css';
                 label: name,
               };
             });
-            // SVRZ needs the licence number on the Teilnehmerliste anyway, so a missing
-            // one is a gap to close before sending — not a filename to invent. Warn and
-            // let it through: it is your call, and a partial export still beats none.
+            // Two things worth knowing BEFORE this list goes to SVRZ, in one prompt rather
+            // than two: a missing licence number, and a town we guessed. Both let you
+            // through — it is your call, and a partial list still beats none — but neither
+            // happens silently. A guessed Wohnort in particular is the kind of thing that
+            // looks like data once it is sitting in a spreadsheet cell.
             var noLicence = refs.filter(function(r) { return !r.licence; });
-            var go = noLicence.length
-              ? confirmModal(t('scExportNoLicence')
+            var guessed = exportMetas.filter(function(m) { return resolveAddress(m).guessed; })
+              .map(function(m) {
+                var d = m.row.data;
+                return [String(pickVal(d, lastNameIds) || ''), String(pickVal(d, firstNameIds) || '')]
+                  .filter(Boolean).join(' ') || String(m.row.id);
+              });
+            var warn = [];
+            if (noLicence.length) {
+              warn.push(t('scExportNoLicence')
                 .split('{count}').join(String(noLicence.length))
-                .split('{names}').join(noLicence.map(function(r) { return r.label; }).join('\n')))
+                .split('{names}').join(noLicence.map(function(r) { return r.label; }).join('\n')));
+            }
+            if (guessed.length) {
+              warn.push(t('scExportGuessedCity')
+                .split('{count}').join(String(guessed.length))
+                .split('{city}').join(SVRZ_FALLBACK_CITY)
+                .split('{names}').join(guessed.join('\n')));
+            }
+            var go = warn.length
+              ? confirmModal(warn.join('\n\n———\n\n') + '\n\n' + t('scExportAnyway'))
               : Promise.resolve(true);
             go.then(function(ok) {
               if (!ok) return;
@@ -2947,8 +3105,9 @@ import '../styles/global.css';
         selectCells.push(selTh);
         thRow.appendChild(selTh);
         thRow.appendChild(makeTh('', 'width:1.5rem;'));
-        thRow.appendChild(makeTh(t('scColFirstName')));
+        // Surname first — it is the sort key and what you scan down.
         thRow.appendChild(makeTh(t('scColLastName')));
+        thRow.appendChild(makeTh(t('scColFirstName')));
         thRow.appendChild(makeTh(t('scPresent'), 'text-align:center;'));
         thRow.appendChild(makeTh(t('scExamPassed'), 'text-align:center;'));
         thRow.appendChild(makeTh(t('scExamUploaded'), 'text-align:center;'));
@@ -3011,20 +3170,21 @@ import '../styles/global.css';
           arrowTd.addEventListener('click', toggleDetail);
           tr.appendChild(arrowTd);
 
-          // first / last name (also clickable to expand)
-          var fnV = pickVal(d, firstNameIds);
-          var fnTd = document.createElement('td');
-          fnTd.style.cssText = cellCss + 'cursor:pointer;';
-          fnTd.textContent = (fnV == null || fnV === '') ? '—' : String(fnV);
-          fnTd.addEventListener('click', toggleDetail);
-          tr.appendChild(fnTd);
-
+          // Last / first name (also clickable to expand). Surname leads: it is what the
+          // table is sorted by, and a sorted column you have to read past is wasted.
           var lnV = pickVal(d, lastNameIds);
           var lnTd = document.createElement('td');
           lnTd.style.cssText = cellCss + 'cursor:pointer;';
           lnTd.textContent = (lnV == null || lnV === '') ? '—' : String(lnV);
           lnTd.addEventListener('click', toggleDetail);
           tr.appendChild(lnTd);
+
+          var fnV = pickVal(d, firstNameIds);
+          var fnTd = document.createElement('td');
+          fnTd.style.cssText = cellCss + 'cursor:pointer;';
+          fnTd.textContent = (fnV == null || fnV === '') ? '—' : String(fnV);
+          fnTd.addEventListener('click', toggleDetail);
+          tr.appendChild(fnTd);
 
           var statusEl = document.createElement('span');
           statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-left:0.4rem;';
@@ -3085,7 +3245,7 @@ import '../styles/global.css';
               state.exam_result = answer;
               paintResult();
               saveScorerField(rowMeta, 'exam_result', answer, statusEl);
-              sendExamResultMail(rowMeta, answer, r.note, statusEl);
+              sendExamResultMail(rowMeta, answer, r.note);
             });
           }
           [[yesBtn, 'passed', t('scExamYes')], [noBtn, 'failed', t('scExamNo')]].forEach(function(spec) {

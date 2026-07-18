@@ -4,14 +4,21 @@ import { t } from '../../lib/i18n';
 
 const locale = 'de';
 
-// Zürich Kantonsschulen for the "other cantonal school" dropdown. Excludes
-// KS Wiedikon on purpose — that's the dedicated KWI option above (which stores
-// "KS Wiedikon"). Shown only when "Yes, other cantonal school" is selected.
+// All current Zürich cantonal schools (Mittelschulen) for the "other cantonal
+// school" dropdown, alphabetical. Excludes KS Wiedikon on purpose — that's the
+// dedicated KWI option above (which stores "KS Wiedikon"). Shown only when
+// "Yes, other cantonal school" is selected. Notes: Rämibühl is three separate
+// schools sharing the campus (Literar-/Real-/MN-Gymnasium); Oerlikon + Birch are
+// the two campuses of KS Zürich Nord (2019 merger) — kept as students still use
+// those names; Dübendorf opens Aug 2026 as a KS Stadelhofen branch.
 const KS_OTHER = [
   'KS Birch', 'KS Büelrain', 'KS Bülach', 'KS Dübendorf', 'KS Enge',
-  'KS Freudenberg', 'KS Hottingen', 'KS Küsnacht', 'KS Limmattal', 'KS Oerlikon',
-  'KS Riesbach', 'KS Rychenberg', 'KS Rämibühl', 'KS Stadelhofen', 'KS Uster',
-  'KS Wetzikon', 'KS Zürich Nord', 'Liceo Artistico',
+  'KS Freudenberg', 'KS Hohe Promenade', 'KS Hottingen', 'KS Im Lee',
+  'KS Küsnacht', 'KS Limmattal', 'KS Oerlikon',
+  'KS Rämibühl (Literargymnasium)', 'KS Rämibühl (MN-Gymnasium)', 'KS Rämibühl (Realgymnasium)',
+  'KS Riesbach', 'KS Rychenberg', 'KS Stadelhofen', 'KS Uetikon am See',
+  'KS Uster', 'KS Wetzikon', 'KS Zimmerberg', 'KS Zürich Nord',
+  'Liceo Artistico',
 ];
 ---
 <PageLayout

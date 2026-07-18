@@ -593,7 +593,7 @@
   "registrationAddress": "Address",
   "registrationPLZ": "Postal code",
   "registrationCity": "City",
-  "registrationIBAN": "IBAN (optional)",
+  "registrationIBAN": "IBAN",
   "registrationIBANNote": "Only used to pay money back to you (e.g. expense reimbursements), never to collect payments.",
   "registrationDOB": "Date of birth",
   "registrationNationality": "Nationality",

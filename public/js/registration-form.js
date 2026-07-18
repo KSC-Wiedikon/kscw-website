@@ -1222,9 +1222,15 @@
       }
     }
 
-    // IBAN (optional): normalized compact form, ISO 13616 mod-97 checked.
+    // IBAN (required): normalized compact form, ISO 13616 mod-97 checked.
     var ibanCompact = normalizeIbanCompact(val('iban'));
-    if (ibanCompact && !isValidIban(ibanCompact)) {
+    if (!ibanCompact) {
+      logBlock('blocked: IBAN missing');
+      return showFeedback('error', locale === 'de'
+        ? 'Bitte gib deine IBAN an.'
+        : 'Please enter your IBAN.');
+    }
+    if (!isValidIban(ibanCompact)) {
       logBlock('blocked: invalid IBAN');
       return showFeedback('error', locale === 'de'
         ? 'Bitte überprüfe die IBAN — sie ist keine gültige Kontonummer.'
@@ -1252,8 +1258,8 @@
       locale: locale,
     };
 
-    // Optional IBAN — only sent when the applicant filled it in.
-    if (ibanCompact) payload.iban = ibanCompact;
+    // IBAN (required) — validated non-empty above, always sent.
+    payload.iban = ibanCompact;
 
     if (type === 'volleyball') {
       payload.anrede = anredeHidden ? anredeHidden.value : '';

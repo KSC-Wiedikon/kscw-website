@@ -2,6 +2,28 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.15.1] — 2026-07-25
+
+### The National Team Declaration is gone — FIBA stopped accepting it
+- Swiss Basketball opened the 2026-27 licence season on 23 July and replaced the **National Team Declaration** with the **Acknowledgment of National Team Restriction**. FIBA accepts only the new document. Every U18 foreign player who used our form was filing a form that would be rejected, so the old PDF is removed rather than left alongside the new one.
+- The prefill was rewritten for the new form's fields. Two are deliberately left blank: the **federation of origin**, which we cannot know, and the **date of transfer**, which Swiss Basketball and FIBA set — a plausible guess in either box is worse than an empty one someone has to fill.
+
+### Licence forms no longer break on a name with the wrong accent
+- Filling any Swiss Basketball or FIBA form used to **fail outright for names like Šarčević, Győző, Öztürk or Łukasz**. The PDF fonts encode WinAnsi only, and one unsupported letter aborted the whole document — the applicant then silently received a **blank** form and no explanation. Accents WinAnsi does cover (ä ö ü é à ç ß Š ž) are kept exactly; only the letters it genuinely cannot carry lose their diacritic.
+- A prefill that fails now says so in the error log instead of quietly handing over an empty PDF.
+
+### Downloads no longer arrive truncated
+- The download link released the file **the instant the click fired**, racing the browser writing it to disk. The bigger the document the likelier a half-written, unreadable PDF — and the new Acknowledgment form is ~590 KB, the largest of them. Affected both the public form and the admin's generated documents.
+
+### The admin's Lizenzantrag had its fields off by one
+- **Every generated Lizenzantrag put the data in the wrong boxes**: the email address in NAME, the surname in VORNAME, the street in the narrow PLZ box, and so on down the form. Verified against the field positions in the PDF itself. The public form was always correct; only the admin's copy was shifted.
+
+### The Freibrief is no longer demanded from people who owe none
+- Swiss Basketball waives the release letter when the player **held no licence in the last two seasons** or plays **U12 or below**. We asked everyone transferring from a Swiss club, sending some of them to chase a certificate their old club had no reason to issue. The form now asks about licence history — shown only when it can matter — and derives the youth categories from the date of birth already given. An unknown date of birth still requires the Freibrief: wrongly waiving it produces an incomplete dossier.
+
+### Also
+- Forms carry the **current season** rather than a hard-coded `2025/2026`, rolling over in July with Swiss Basketball's administrative year.
+
 ## [1.15.0] — 2026-07-17
 
 ### Registrations sorted by surname, surname first

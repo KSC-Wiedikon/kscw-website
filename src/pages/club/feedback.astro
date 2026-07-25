@@ -135,8 +135,50 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.15.0</span>
+          <span class="changelog-badge">v1.15.1</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.15.1 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>Die «National Team Declaration» ist weg — die FIBA nimmt sie nicht mehr</h3>
+            <ul>
+              <li>Swiss Basketball hat am 23. Juli die Lizenzsaison 2026-27 eröffnet und die <strong>National Team Declaration</strong> durch das <strong>Acknowledgment of National Team Restriction</strong> ersetzt. Die FIBA akzeptiert ausschliesslich das neue Dokument. Wer bei uns als U18 mit ausländischem Pass ein Formular herunterlud, reichte damit ein Papier ein, das zurückgewiesen worden wäre — das alte PDF ist deshalb entfernt und steht nicht mehr daneben</li>
+              <li>Das Vorausfüllen wurde auf die Felder des neuen Formulars umgestellt. Zwei bleiben bewusst leer: der <strong>Herkunftsverband</strong>, den wir nicht kennen können, und das <strong>Transferdatum</strong>, das Swiss Basketball und die FIBA setzen — eine plausible Vermutung im Feld ist schlimmer als ein leeres, das jemand ausfüllen muss</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Lizenzformulare scheitern nicht mehr an Namen mit dem falschen Akzent</h3>
+            <ul>
+              <li>Das Ausfüllen der Swiss-Basketball- und FIBA-Formulare <strong>schlug bei Namen wie Šarčević, Győző, Öztürk oder Łukasz komplett fehl</strong>. Die Schriften im PDF können nur WinAnsi, und ein einziger nicht darstellbarer Buchstabe brach das ganze Dokument ab — die anmeldende Person erhielt daraufhin wortlos ein <strong>leeres</strong> Formular. Akzente, die WinAnsi kann (ä ö ü é à ç ß Š ž), bleiben unverändert; nur die Zeichen, die es wirklich nicht trägt, verlieren ihr Diakritikum</li>
+              <li>Scheitert das Vorausfüllen doch, steht das neu im Fehlerprotokoll, statt still ein leeres PDF auszuliefern</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Downloads kommen nicht mehr abgeschnitten an</h3>
+            <ul>
+              <li>Der Download gab die Datei <strong>im selben Moment wieder frei, in dem der Klick ausgelöst wurde</strong> — im Wettlauf mit dem Browser, der sie noch schrieb. Je grösser das Dokument, desto wahrscheinlicher ein halb geschriebenes, unlesbares PDF; das neue Acknowledgment ist mit rund 590 KB das grösste davon. Betroffen waren das öffentliche Formular und die im Admin erzeugten Dokumente</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Der Lizenzantrag aus dem Admin hatte die Felder um eins verschoben</h3>
+            <ul>
+              <li><strong>Jeder im Admin erzeugte Lizenzantrag trug die Daten in den falschen Feldern</strong>: die E-Mail-Adresse im Feld NAME, der Nachname im Feld VORNAME, die Strasse im schmalen PLZ-Kästchen und so weiter durch das ganze Formular. Geprüft an den tatsächlichen Feldpositionen im PDF. Das öffentliche Formular war immer richtig — verschoben war nur die Kopie im Admin</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Der Freibrief wird nicht mehr von Leuten verlangt, die keinen brauchen</h3>
+            <ul>
+              <li>Swiss Basketball verzichtet auf den Freibrief, wenn in den <strong>letzten zwei Saisons keine Lizenz</strong> bestand oder die Kategorie <strong>U12 oder tiefer</strong> ist. Wir verlangten ihn von allen, die aus einem Schweizer Club wechseln — und schickten damit Leute los, um bei ihrem alten Club ein Dokument zu holen, das dieser gar nicht ausstellen muss. Das Formular fragt neu nach der Lizenzgeschichte, und zwar nur dann, wenn es überhaupt eine Rolle spielt; die Jugendkategorien ergeben sich aus dem ohnehin angegebenen Geburtsdatum. Fehlt das Geburtsdatum, bleibt der Freibrief Pflicht: ihn fälschlich zu erlassen, erzeugt ein unvollständiges Dossier</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Ausserdem</h3>
+            <ul>
+              <li>Die Formulare tragen neu die <strong>laufende Saison</strong> statt eines fest eingetragenen <code>2025/2026</code> — der Wechsel erfolgt im Juli mit dem Verwaltungsjahr von Swiss Basketball</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.15.0 — 2026-07-17</div>
@@ -529,8 +571,50 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.15.0</span>
+          <span class="changelog-badge">v1.15.1</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.15.1 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>The National Team Declaration is gone — FIBA stopped accepting it</h3>
+            <ul>
+              <li>Swiss Basketball opened the 2026-27 licence season on 23 July and replaced the <strong>National Team Declaration</strong> with the <strong>Acknowledgment of National Team Restriction</strong>. FIBA accepts only the new document. Every U18 player with a foreign passport who used our form was filing a paper that would have been rejected, so the old PDF is removed rather than left sitting next to the new one</li>
+              <li>The prefill was rewritten for the new form's fields. Two are deliberately left blank: the <strong>federation of origin</strong>, which we cannot know, and the <strong>date of transfer</strong>, which Swiss Basketball and FIBA set — a plausible guess in either box is worse than an empty one someone has to fill in</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Licence forms no longer break on a name with the wrong accent</h3>
+            <ul>
+              <li>Filling any Swiss Basketball or FIBA form <strong>failed outright for names like Šarčević, Győző, Öztürk or Łukasz</strong>. The fonts in these PDFs only speak WinAnsi, and a single unsupported letter aborted the whole document — the applicant then silently received a <strong>blank</strong> form. Accents WinAnsi does cover (ä ö ü é à ç ß Š ž) are kept exactly as written; only the characters it genuinely cannot carry lose their diacritic</li>
+              <li>If the prefill does fail, it now says so in the error log instead of quietly handing over an empty PDF</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Downloads no longer arrive truncated</h3>
+            <ul>
+              <li>The download released the file <strong>the instant the click fired</strong>, racing the browser still writing it to disk. The bigger the document, the likelier a half-written, unreadable PDF — and the new Acknowledgment form is ~590 KB, the largest of them. This affected both the public form and the documents generated in the admin</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>The admin's Lizenzantrag had its fields off by one</h3>
+            <ul>
+              <li><strong>Every Lizenzantrag generated in the admin put the data in the wrong boxes</strong>: the email address in NAME, the surname in VORNAME, the street in the narrow PLZ box, and so on down the form. Verified against the actual field positions inside the PDF. The public form was always correct — only the admin's copy was shifted</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>The Freibrief is no longer demanded from people who owe none</h3>
+            <ul>
+              <li>Swiss Basketball waives the release letter when there was <strong>no licence in the last two seasons</strong> or the category is <strong>U12 or below</strong>. We asked everyone transferring from a Swiss club, sending people off to chase a certificate their old club has no reason to issue. The form now asks about licence history — and only when it can actually matter; the youth categories follow from the date of birth already given. With no date of birth the Freibrief stays required: waiving it wrongly produces an incomplete dossier</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Also</h3>
+            <ul>
+              <li>Forms now carry the <strong>current season</strong> rather than a hard-coded <code>2025/2026</code>, rolling over in July with Swiss Basketball's administrative year</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.15.0 — 2026-07-17</div>

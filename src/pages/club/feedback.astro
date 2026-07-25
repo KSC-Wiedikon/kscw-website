@@ -135,8 +135,27 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.15.4</span>
+          <span class="changelog-badge">v1.16.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.16.0 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>Doppelbürger:innen können alle ihre Staatsangehörigkeiten angeben</h3>
+            <ul>
+              <li>Die Nationalität war eine Einfachauswahl — wer zwei Pässe hat, musste einen davon weglassen, und genau der weggelassene entscheidet oft darüber, welche Dokumente Swiss Basketball und die FIBA verlangen. Neu ist es eine <strong>Mehrfachauswahl mit Chips</strong>: Alle auswählen, die erste Wahl gilt als Hauptnationalität</li>
+              <li><strong>Ein Schweizer Pass irgendwo in der Liste macht die Person für die Dokumentenregeln zur Schweizerin</strong> — nicht nur dann, wenn er zufällig zuerst steht. Die FIBA behandelt Doppelbürger:innen mit Schweizer Nationalität als Schweizer:innen; wer CH/IT hatte und Italien zuerst nannte, wurde bisher nach Dokumenten für ausländische Spieler:innen gefragt, die niemand verlangt hat. Formular und Server wenden bewusst dieselbe Regel an — verlangt das Formular weniger als der Server, wird die Anmeldung erst abgewiesen, wenn alles bereits hochgeladen ist</li>
+              <li>Im Lizenzantrag wird <strong>Schweiz</strong> angekreuzt, sobald ein Schweizer Pass vorliegt, unabhängig von der Reihenfolge: Gefragt ist, ob die Person Schweizerin ist, nicht welcher Pass zuerst kommt</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Herkunftsverband</h3>
+            <ul>
+              <li>Neues Feld für den <strong>ersten</strong> nationalen Verband, bei dem die Person eine Lizenz hatte — den braucht Swiss Basketball, um die Freigabe anzufordern. Nicht der zuletzt zuständige Verband: Das ist eine andere Frage mit einer anderen Antwort für alle, die mehr als einmal gewechselt haben</li>
+              <li><strong>«Keiner» ist eine echte Antwort, kein leeres Feld.</strong> Sie sagt, dass dies die erste Lizenz ist und nichts angefordert werden muss — genau das muss der Verein wissen. Ein leeres Feld sagt nur, dass niemand etwas eingetragen hat</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.15.4 — 2026-07-25</div>
@@ -624,8 +643,27 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.15.4</span>
+          <span class="changelog-badge">v1.16.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.16.0 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>Dual nationals can enter every passport they hold</h3>
+            <ul>
+              <li>Nationality was a single choice, forcing anyone with two passports to pick one and discard the other — and the discarded one is often what decides which documents Swiss Basketball and FIBA want. It is now a <strong>multi-select with chips</strong>: pick all of them, and the first counts as the primary</li>
+              <li><strong>A Swiss passport anywhere in the list makes the applicant Swiss</strong> for the document rules, not only when it happens to be listed first. FIBA treats a dual national holding Swiss nationality as Swiss, so a CH/IT player who listed Italy first was asked for foreign-player documents nobody required. The form and the server apply the same rule deliberately — a form that asks for less than the server enforces rejects the submission after everything has already been uploaded</li>
+              <li>The licence application ticks <strong>Schweiz</strong> for anyone holding a Swiss passport, whatever position it sits in: the form asks whether the player is Swiss, not which passport comes first</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Federation of origin</h3>
+            <ul>
+              <li>New field for the <strong>first</strong> national federation the player held a licence with — the one Swiss Basketball needs to request a transfer certificate. Not the most recent one, which is a different question with a different answer for anyone who has moved more than once</li>
+              <li><strong>"None" is an explicit answer, not a blank.</strong> It says this is a first licence and there is nothing to request, which is what the club needs to know; an empty field only says nobody filled it in</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.15.4 — 2026-07-25</div>

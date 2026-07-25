@@ -135,8 +135,20 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.15.2</span>
+          <span class="changelog-badge">v1.15.3</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.15.3 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>Korrektur: Der Freibrief-Verzicht aus 1.15.1 ist wieder ausgeschaltet</h3>
+            <ul>
+              <li>1.15.1 verlangte den Freibrief dort nicht mehr, wo Swiss Basketball darauf verzichtet — keine Lizenz in den letzten zwei Saisons oder Kategorie U12 und tiefer. <strong>Das war nur die halbe Änderung.</strong> Der Server prüft dieselbe Liste unabhängig davon und verlangt den Freibrief weiterhin bei jedem Wechsel aus einem Schweizer Club. Eine Anmeldung ohne ihn wird deshalb rundweg abgewiesen — mit «Erforderliche Dokumente fehlen. Bitte lade die Seite neu und versuche es erneut.», einem Hinweis, der nicht weiterhilft, weil Neuladen nichts ändert</li>
+              <li>Die Wirkung war das Gegenteil der Absicht: Wer bisher bloss nach einem Dokument gefragt wurde, das er gar nicht schuldet, <strong>konnte sich überhaupt nicht mehr anmelden</strong> — und zwar genau die Gruppe, der die Änderung helfen sollte, was bei einem Juniorenverein häufig vorkommt</li>
+              <li>Das Formular verlangt den Freibrief wieder von allen Wechseln aus einem Schweizer Club, wie vor 1.15.1, und die Frage nach der Lizenzgeschichte ist ausgeblendet. Die Regel selbst bleibt richtig und bleibt im Code — sie wird gemeinsam mit der passenden Änderung auf dem Server wieder eingeschaltet, nicht vorher</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.15.2 — 2026-07-25</div>
@@ -600,8 +612,20 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.15.2</span>
+          <span class="changelog-badge">v1.15.3</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.15.3 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>Correction: the Freibrief waiver from 1.15.1 is switched off again</h3>
+            <ul>
+              <li>1.15.1 stopped asking for the Freibrief where Swiss Basketball waives it — no licence in the last two seasons, or category U12 and below. <strong>That was only half the change.</strong> The server checks the same list independently and still requires the release letter for every transfer from a Swiss club, so a submission without one is rejected outright with "Erforderliche Dokumente fehlen. Bitte lade die Seite neu und versuche es erneut." — advice that cannot help, since reloading changes nothing</li>
+              <li>The effect was the opposite of the intent: applicants who were merely being asked for a document they did not owe <strong>could not register at all</strong> — and it applied to exactly the group the change was meant to help, which for a youth club is a common case</li>
+              <li>The form asks every Swiss-club transfer for the Freibrief again, as it did before 1.15.1, and the licence-history question is hidden. The rule itself is still correct and stays in the code — it switches back on together with the matching server-side change, not before</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.15.2 — 2026-07-25</div>

@@ -2,6 +2,13 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.15.3] — 2026-07-25
+
+### Correction: the Freibrief waiver from 1.15.1 is switched off again
+- 1.15.1 stopped asking for the Freibrief where Swiss Basketball waives it — no licence in the last two seasons, or category U12 and below. **That was only half the change.** The server checks the same list independently and still requires the release letter for every transfer from a Swiss club, so a submission without one is rejected outright with "Erforderliche Dokumente fehlen. Bitte lade die Seite neu und versuche es erneut." — advice that cannot help, because reloading changes nothing.
+- The effect was the opposite of the intent: applicants who were merely being asked for a document they did not owe **could not register at all**. It applied exactly to the group the change was meant to help, which for a youth club is a common case.
+- The form asks for the Freibrief from every Swiss-club transfer again, as it did before 1.15.1, and the licence-history question is hidden. The rule itself is still correct and stays in the code — it switches back on together with the matching server-side change, not before.
+
 ## [1.15.2] — 2026-07-25
 
 ### An ID download could delete the original without ever saving it

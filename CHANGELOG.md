@@ -2,6 +2,21 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.15.2] — 2026-07-25
+
+### An ID download could delete the original without ever saving it
+- Downloading an applicant's ID **deletes it from the server afterwards** — we keep the scan no longer than we need it, which also makes the delete irreversible. It ran per file with no check that the download had actually worked: on an expired token or a 401 it saved **the error message** under the applicant's name and deleted the real scan a line later. Every byte is now fetched and verified before anything is removed.
+- The saved file also had **no extension**, so even a successful download would not open on a double-click. It now follows the file's actual type.
+
+### The remaining downloads no longer truncate
+- The previous release fixed the licence forms; the same fault was in **four other download paths**, including **individual scoresheets** and the **SVRZ bundle** — the largest file the admin produces, and the one where a truncated download is least likely to be noticed before it is sent on. All downloads now go through one helper that holds the file until the browser has written it.
+
+### Photographed documents are no longer saved sideways
+- A phone records a photo's rotation as metadata rather than in the pixels, and the conversion to PDF discarded it — so an upload could end up rotated in the PDF while looking upright on the phone that took it.
+
+### Also
+- The **ClubDesk export is now covered by tests**. ClubDesk maps columns by position, so a header added or removed without the matching change to the row shifts every field after it — surname into Vorname, street into PLZ — and the file still looks perfectly well-formed. The column list and the formula-injection guard are now pinned.
+
 ## [1.15.1] — 2026-07-25
 
 ### The National Team Declaration is gone — FIBA stopped accepting it

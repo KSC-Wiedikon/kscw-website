@@ -432,7 +432,23 @@
   // approximates it as "under 12 at season start", the same convention used for
   // U18 above. Deliberately strict: an unknown date of birth keeps the Freibrief
   // required, because wrongly waiving it produces an incomplete dossier.
+  // The Freibrief waiver is DISABLED until the backend agrees with it.
+  //
+  // wiedisync's bbRequiredDocs() (directus/extensions/kscw-endpoints/src/bb-docs.js)
+  // still lists bb_doc_freibrief for every transfer_ch, and POST /kscw/registration
+  // rejects a submission whose required documents are missing with HTTP 400
+  // "Erforderliche Dokumente fehlen". Waiving it client-side therefore does not
+  // spare anyone the document — it stops them registering at all, and the error
+  // tells them to reload the page, which cannot help. Exactly the applicants the
+  // waiver was meant to help (U12 transfers, players who have not been licensed
+  // for two seasons) would be the ones locked out.
+  //
+  // Flip this on in the same change that ships the matching backend rule; the
+  // question and the derivation below are already in place and correct.
+  var FREIBRIEF_WAIVER_ENABLED = false;
+
   function isYouthFreibriefExempt(dobStr) {
+    if (!FREIBRIEF_WAIVER_ENABLED) return false;
     var age = ageAtSeasonStart(dobStr);
     return age !== null && age < 12;
   }
@@ -449,7 +465,7 @@
         // Swiss Basketball waives the release letter in two cases: no licence in
         // the last two seasons (asked on the form — the previous club has nothing
         // to release), and categories U12 and below.
-        if (recentLicence !== 'nein' && !isYouthFreibriefExempt(dobStr)) required.push('freibrief');
+        if (!FREIBRIEF_WAIVER_ENABLED || (recentLicence !== 'nein' && !isYouthFreibriefExempt(dobStr))) required.push('freibrief');
         break;
       case 'transfer_intl':
       case 'rueckkehr':
@@ -488,7 +504,9 @@
     // only when the player isn't already exempt by category.
     var recentGroup = document.getElementById('bb-recent-licence-group');
     if (recentGroup) {
-      var ask = situation === 'transfer_ch' && !isYouthFreibriefExempt(dob);
+      // Hidden while the waiver is off: the answer changes nothing, and the
+      // question's hint promises a waiver the backend would not honour.
+      var ask = FREIBRIEF_WAIVER_ENABLED && situation === 'transfer_ch' && !isYouthFreibriefExempt(dob);
       recentGroup.style.display = ask ? '' : 'none';
     }
 
@@ -1176,7 +1194,7 @@
       // answer decides whether the Freibrief is required at all.
       var dobVal = val('geburtsdatum');
       var recent = currentRecentLicence();
-      if (situation === 'transfer_ch' && !isYouthFreibriefExempt(dobVal) && !recent) {
+      if (FREIBRIEF_WAIVER_ENABLED && situation === 'transfer_ch' && !isYouthFreibriefExempt(dobVal) && !recent) {
         logBlock('blocked: bb recent-licence question unanswered');
         return showFeedback('error', locale === 'de'
           ? 'Bitte gib an, ob du in den letzten zwei Saisons eine Swiss-Basketball-Lizenz hattest.'

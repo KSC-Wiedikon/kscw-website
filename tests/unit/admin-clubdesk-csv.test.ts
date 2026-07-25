@@ -115,10 +115,17 @@ describe('ClubDesk CSV export', () => {
   });
 
   it('transliterates what CP1252 cannot hold, byte for byte', () => {
-    const start = SRC.indexOf('var CD_CP1252_EXTRA');
-    expect(start, 'CP1252 encoder not found').toBeGreaterThan(-1);
-    const end = SRC.indexOf('\n    }', SRC.indexOf('function toCp1252Bytes')) + '\n    }'.length;
-    const enc = new Function(`${SRC.slice(start, end)}\nreturn toCp1252Bytes;`)() as (s: string) => Uint8Array;
+    // The CP1252 table and the transliteration table are shared with pdfSafe, so
+    // the encoder needs both that block and the function itself.
+    const ts = SRC.indexOf('var CP1252_EXTRA');
+    expect(ts, 'CP1252 table not found').toBeGreaterThan(-1);
+    const te = SRC.indexOf('\n    }', SRC.indexOf('function pdfSafe')) + '\n    }'.length;
+    const cs = SRC.indexOf('function toCp1252Bytes');
+    expect(cs, 'toCp1252Bytes not found').toBeGreaterThan(-1);
+    const ce = SRC.indexOf('\n    }', cs) + '\n    }'.length;
+    const enc = new Function(
+      `${SRC.slice(ts, te)}\n${SRC.slice(cs, ce)}\nreturn toCp1252Bytes;`,
+    )() as (s: string) => Uint8Array;
     const bytes = (s: string) => Array.from(enc(s));
 
     // Latin-1 range survives as single bytes — the whole point of CP1252 here.
@@ -132,6 +139,10 @@ describe('ClubDesk CSV export', () => {
     expect(String.fromCharCode(...bytes('Šarčević'))).toBe('\u008Aarcevic');
     expect(String.fromCharCode(...bytes('Łukasz'))).toBe('Lukasz');
     expect(String.fromCharCode(...bytes('Đoković'))).toBe('Dokovic');
+    // Letters with no CP1252 slot and no decomposition are named in the shared
+    // table, so they resolve rather than becoming '?' in the member register.
+    expect(String.fromCharCode(...bytes('Işık'))).toBe('Isik');
+    expect(String.fromCharCode(...bytes('Altınbaş'))).toBe('Altinbas');
     // Nothing Latin to fall back on → '?', never a broken byte.
     expect(bytes('北京')).toEqual([0x3F, 0x3F]);
     // Every byte must be a single octet — a stray >0xFF would corrupt the file.

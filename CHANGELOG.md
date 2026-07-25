@@ -2,6 +2,13 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.16.3] — 2026-07-25
+
+### One member, one spelling — the accent tables had drifted apart
+- Accented names are rewritten in three places: the licence PDFs from the sign-up form, the licence PDFs from the admin, and the ClubDesk export. Each had grown **its own table** of which letters to fold, and they disagreed — a Turkish member came out **`Isik` on the licence form and `Is?k` in the member register**, from a single registration. Letters affected: `ı` (Turkish dotless i), `ħ`, `ŧ`.
+- All of them now share one table, and the ClubDesk sync on the server side was given the same set, so nothing lands in the register as a `?` any more. Names CP1252 can carry are untouched as always (**ä ö ü é à ç ß Š ž Ø Æ**).
+- Tests pin the tables against each other in both repos: change one without the others and the build fails, rather than a member quietly acquiring a second spelling.
+
 ## [1.16.2] — 2026-07-25
 
 ### The ClubDesk export was mangling every accented name

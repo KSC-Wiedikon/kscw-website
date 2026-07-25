@@ -135,8 +135,20 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.16.2</span>
+          <span class="changelog-badge">v1.16.3</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.16.3 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>Ein Mitglied, eine Schreibweise — die Akzent-Tabellen waren auseinandergelaufen</h3>
+            <ul>
+              <li>Namen mit Akzent werden an drei Stellen umgeschrieben: in den Lizenzformularen aus dem Anmeldeformular, in denen aus dem Admin und im ClubDesk-Export. Jede Stelle hatte <strong>ihre eigene Tabelle</strong> dafür, welche Buchstaben ersetzt werden — und sie waren sich uneinig. Aus einer einzigen Anmeldung wurde so <strong><code>Isik</code> auf dem Lizenzformular und <code>Is?k</code> im Mitgliederregister</strong>. Betroffen: <code>ı</code> (türkisches i ohne Punkt), <code>ħ</code>, <code>ŧ</code></li>
+              <li>Alle nutzen neu dieselbe Tabelle, und die ClubDesk-Synchronisation auf dem Server hat denselben Satz erhalten. Damit landet nichts mehr als <code>?</code> im Register. Was CP1252 kann, bleibt wie immer unverändert (<strong>ä ö ü é à ç ß Š ž Ø Æ</strong>)</li>
+              <li>Tests halten die Tabellen in beiden Projekten gegeneinander fest: Wer eine ändert, ohne die anderen anzupassen, bekommt einen Fehlschlag — statt dass ein Mitglied still eine zweite Schreibweise erhält</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.16.2 — 2026-07-25</div>
@@ -672,8 +684,20 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.16.2</span>
+          <span class="changelog-badge">v1.16.3</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.16.3 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>One member, one spelling — the accent tables had drifted apart</h3>
+            <ul>
+              <li>Accented names are rewritten in three places: the licence PDFs from the sign-up form, the licence PDFs from the admin, and the ClubDesk export. Each had grown <strong>its own table</strong> of which letters to fold, and they disagreed — a Turkish member came out <strong><code>Isik</code> on the licence form and <code>Is?k</code> in the member register</strong>, from a single registration. Letters affected: <code>ı</code> (Turkish dotless i), <code>ħ</code>, <code>ŧ</code></li>
+              <li>They now share one table, and the ClubDesk sync on the server was given the same set, so nothing lands in the register as a <code>?</code> any more. Names CP1252 can carry are untouched as always (<strong>ä ö ü é à ç ß Š ž Ø Æ</strong>)</li>
+              <li>Tests pin the tables against each other in both repos: change one without the others and the build fails, rather than a member quietly acquiring a second spelling</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.16.2 — 2026-07-25</div>

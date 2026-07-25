@@ -2015,24 +2015,52 @@ import '../styles/global.css';
       }, 60000);
     }
 
-    // PDF standard fonts encode WinAnsi/CP1252 only, and pdf-lib throws on
-    // anything outside it — one Croatian or Polish name aborted the whole
-    // generate-and-download, so the admin got nothing. Keep the accents WinAnsi
-    // covers (ä ö ü é à ç ß Š ž) and fold only the ones it cannot (č ć ř ę ł đ).
-    var CP1252_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹Œ Ž  ‘’“”•–—˜™š›œ žŸ';
-    var PDF_NON_DECOMPOSING = { 'ł':'l','Ł':'L','đ':'d','Đ':'D','ø':'o','Ø':'O','ı':'i','ħ':'h','Ħ':'H','ŧ':'t','Ŧ':'T' };
+    // ── CP1252, the one table ────────────────────────────────────────────
+    // Two things in this page have the same constraint: the PDF standard fonts
+    // pdf-lib fills licence forms with, and the ClubDesk CSV export. Both speak
+    // WinAnsi/CP1252 and nothing else. They used to carry separate tables with
+    // DIFFERENT transliteration coverage, so a Turkish member came out "Isik" on
+    // the licence form and "Is?k" in the member register — same person, two
+    // spellings, from one registration. One table now serves both.
+    //
+    // Codepoints 0x80-0x9F are the CP1252 additions (Š ž Œ € …), which is why the
+    // map carries the byte: the CSV encoder needs it, the PDF side only needs to
+    // know the character is representable.
+    var CP1252_EXTRA = {
+      '€': 0x80, '‚': 0x82, 'ƒ': 0x83, '„': 0x84, '…': 0x85,
+      '†': 0x86, '‡': 0x87, 'ˆ': 0x88, '‰': 0x89, 'Š': 0x8A,
+      '‹': 0x8B, 'Œ': 0x8C, 'Ž': 0x8E, '‘': 0x91, '’': 0x92,
+      '“': 0x93, '”': 0x94, '•': 0x95, '–': 0x96, '—': 0x97,
+      '˜': 0x98, '™': 0x99, 'š': 0x9A, '›': 0x9B, 'œ': 0x9C,
+      'ž': 0x9E, 'Ÿ': 0x9F
+    };
+    // Letters with no CP1252 slot AND no combining-mark decomposition — stripping
+    // accents gets you nowhere, so they need naming. (ø/Ø are deliberately absent:
+    // CP1252 holds them at 0xF8/0xD8, so they never reach this table.)
+    var CP1252_TRANSLIT = {
+      'đ': 'd', 'Đ': 'D', 'ł': 'l', 'Ł': 'L',
+      'ı': 'i', 'ħ': 'h', 'Ħ': 'H', 'ŧ': 't', 'Ŧ': 'T'
+    };
+    function cp1252Representable(ch) {
+      var c = ch.codePointAt(0);
+      return (c >= 0x20 && c <= 0x7e) || (c >= 0xa0 && c <= 0xff) || CP1252_EXTRA[ch] !== undefined;
+    }
+
+    // Text for a pdf-lib form field. Outside WinAnsi pdf-lib throws, and the throw
+    // lands in save() — it took down the whole document, not one field, so the
+    // admin got nothing at all.
     function pdfSafe(value) {
-      var str = String(value == null ? '' : value);
       var out = '';
-      for (var i = 0; i < str.length; i++) {
-        var ch = str.charAt(i), c = ch.charCodeAt(0);
-        if ((c >= 0x20 && c <= 0x7e) || (c >= 0xa0 && c <= 0xff) || CP1252_EXTRA.indexOf(ch) !== -1) { out += ch; continue; }
-        if (PDF_NON_DECOMPOSING[ch]) { out += PDF_NON_DECOMPOSING[ch]; continue; }
+      var chars = Array.from(String(value == null ? '' : value));
+      for (var i = 0; i < chars.length; i++) {
+        var ch = chars[i];
+        if (cp1252Representable(ch)) { out += ch; continue; }
+        if (CP1252_TRANSLIT[ch]) { out += CP1252_TRANSLIT[ch]; continue; }
         var folded = '';
-        try { folded = ch.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch(e) { folded = ''; }
-        for (var j = 0; j < folded.length; j++) {
-          var f = folded.charCodeAt(j);
-          if ((f >= 0x20 && f <= 0x7e) || (f >= 0xa0 && f <= 0xff)) out += folded.charAt(j);
+        try { folded = ch.normalize('NFKD').replace(/[̀-ͯ]/g, ''); } catch(e) { folded = ''; }
+        var fchars = Array.from(folded);
+        for (var j = 0; j < fchars.length; j++) {
+          if (cp1252Representable(fchars[j])) out += fchars[j];
         }
       }
       return out;
@@ -2262,33 +2290,23 @@ import '../styles/global.css';
       downloadBlob(blob, 'kscw_anmeldungen_' + new Date().toISOString().substring(0, 10) + '.csv');
     }
 
-    // Mirror of wiedisync's toCp1252Buffer (clubdesk-update.js) \u2014 the two write
-    // into the same member register and must agree on what a name looks like.
-    // Letters CP1252 can hold are encoded as-is; the rest lose their diacritic
-    // (\u0107 \u2192 c, \u0144 \u2192 n) or map explicitly where NFKD gives nothing (\u0142 \u2192 l, \u0111 \u2192 d).
-    // Anything with no Latin form at all becomes '?' rather than a broken byte.
-    var CD_CP1252_EXTRA = {
-      '\u20AC': 0x80, '\u201A': 0x82, '\u0192': 0x83, '\u201E': 0x84, '\u2026': 0x85,
-      '\u2020': 0x86, '\u2021': 0x87, '\u02C6': 0x88, '\u2030': 0x89, '\u0160': 0x8A,
-      '\u2039': 0x8B, '\u0152': 0x8C, '\u017D': 0x8E, '\u2018': 0x91, '\u2019': 0x92,
-      '\u201C': 0x93, '\u201D': 0x94, '\u2022': 0x95, '\u2013': 0x96, '\u2014': 0x97,
-      '\u02DC': 0x98, '\u2122': 0x99, '\u0161': 0x9A, '\u203A': 0x9B, '\u0153': 0x9C,
-      '\u017E': 0x9E, '\u0178': 0x9F
-    };
-    var CD_CP1252_TRANSLIT = { '\u0111': 'd', '\u0110': 'D', '\u0142': 'l', '\u0141': 'L' };
+    // Bytes for the ClubDesk CSV. Same repertoire and same transliteration as
+    // pdfSafe above, so one registration yields one spelling everywhere; mirrors
+    // wiedisync's toCp1252Buffer (clubdesk-update.js), which writes into the same
+    // member register from the scripted sync.
     function toCp1252Bytes(str) {
       var bytes = [];
       function pushChar(ch) {
         var cp = ch.codePointAt(0);
         if (cp <= 0x7F || (cp >= 0xA0 && cp <= 0xFF)) { bytes.push(cp); return true; }
-        if (CD_CP1252_EXTRA[ch] !== undefined) { bytes.push(CD_CP1252_EXTRA[ch]); return true; }
+        if (CP1252_EXTRA[ch] !== undefined) { bytes.push(CP1252_EXTRA[ch]); return true; }
         return false;
       }
       var chars = Array.from(String(str == null ? '' : str));
       for (var i = 0; i < chars.length; i++) {
         var ch = chars[i];
         if (pushChar(ch)) continue;
-        var base = CD_CP1252_TRANSLIT[ch] || ch.normalize('NFKD').replace(/[\u0300-\u036F]/g, '');
+        var base = CP1252_TRANSLIT[ch] || ch.normalize('NFKD').replace(/[̀-ͯ]/g, '');
         var ok = base.length > 0;
         var mark = bytes.length;
         var baseChars = Array.from(base);

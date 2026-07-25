@@ -297,8 +297,12 @@
     updateBBDocs();
   }
 
-  // Situation selector + date of birth also drive the basketball document set.
+  // Situation selector, licence history and date of birth all drive the
+  // basketball document set.
   form.querySelectorAll('input[name="bb_situation"]').forEach(function (r) {
+    r.addEventListener('change', updateBBDocs);
+  });
+  form.querySelectorAll('input[name="bb_recent_licence"]').forEach(function (r) {
     r.addEventListener('change', updateBBDocs);
   });
   var geburtsdatumEl = document.getElementById('geburtsdatum');
@@ -397,34 +401,55 @@
   // Kept in sync with the backend (wiedisync registration.js bbRequiredDocs()).
   var BB_SITUATIONS = ['neu', 'transfer_ch', 'transfer_intl', 'rueckkehr'];
 
-  // U18 = a minor (under 18) at the start of the current season (Sept 1). Swiss
-  // Basketball's youth/minor documents (National Team Declaration, parental
-  // consent, school certificate) hinge on this. Derived from date of birth so
-  // the applicant answers nothing extra; borderline ages resolve by season start.
-  function isMinorFromDob(dobStr) {
-    if (!dobStr) return false;
+  // Age at the start of the current season (Sept 1), or null when the date of
+  // birth is missing or unparseable. Swiss Basketball states its document rules in
+  // category terms (U18, U12 …); deriving the age here means the applicant answers
+  // nothing extra and borderline birthdays resolve consistently at season start.
+  function ageAtSeasonStart(dobStr) {
+    if (!dobStr) return null;
     var p = String(dobStr).split('-');
-    if (p.length !== 3) return false;
+    if (p.length !== 3) return null;
     var by = +p[0], bm = +p[1], bd = +p[2];
-    if (!by || !bm || !bd) return false;
+    if (!by || !bm || !bd) return null;
     var now = new Date();
     var seasonStartYear = (now.getMonth() + 1) >= 7 ? now.getFullYear() : now.getFullYear() - 1;
     var ref = new Date(seasonStartYear, 8, 1); // Sept 1 of the season
     var age = ref.getFullYear() - by;
     if ((ref.getMonth() + 1) < bm || ((ref.getMonth() + 1) === bm && ref.getDate() < bd)) age--;
-    return age < 18;
+    return age;
+  }
+
+  // U18 = a minor at season start. Swiss Basketball's youth/minor documents
+  // (Acknowledgment of National Team Restriction, parental consent, school
+  // certificate) hinge on this.
+  function isMinorFromDob(dobStr) {
+    var age = ageAtSeasonStart(dobStr);
+    return age !== null && age < 18;
+  }
+
+  // The Freibrief is waived for categories U12 and below. Swiss Basketball assigns
+  // the category and its procedure document doesn't state the cut-off, so this
+  // approximates it as "under 12 at season start", the same convention used for
+  // U18 above. Deliberately strict: an unknown date of birth keeps the Freibrief
+  // required, because wrongly waiving it produces an incomplete dossier.
+  function isYouthFreibriefExempt(dobStr) {
+    var age = ageAtSeasonStart(dobStr);
+    return age !== null && age < 12;
   }
 
   // Returns { required: [...docKeys], optional: [...docKeys] } beyond the always-on
   // id_upload_front / id_upload_back / bb_doc_lizenz. docKeys are the short doc
   // ids used by data-doc / data-doc-upload attributes and the DOC_INPUTS map.
-  function bbDocSet(situation, natCode, isMinor) {
+  function bbDocSet(situation, natCode, isMinor, dobStr, recentLicence) {
     var required = [];
     var optional = [];
     var foreign = natCode && natCode !== 'CH';
     switch (situation) {
       case 'transfer_ch':
-        required.push('freibrief');
+        // Swiss Basketball waives the release letter in two cases: no licence in
+        // the last two seasons (asked on the form — the previous club has nothing
+        // to release), and categories U12 and below.
+        if (recentLicence !== 'nein' && !isYouthFreibriefExempt(dobStr)) required.push('freibrief');
         break;
       case 'transfer_intl':
       case 'rueckkehr':
@@ -448,10 +473,26 @@
   // Show/hide the conditional download rows + upload slots to match the current
   // situation/nationality/age, and mark shown-required uploads. Runs whenever the
   // situation, nationality, or date of birth changes.
+  function currentRecentLicence() {
+    var r = form.querySelector('input[name="bb_recent_licence"]:checked');
+    return r ? r.value : '';
+  }
+
   function updateBBDocs() {
     var natCode = natHidden ? (natHidden.dataset.code || '') : '';
     var minor = isMinorFromDob(val('geburtsdatum'));
-    var set = bbDocSet(currentSituation(), natCode, minor);
+    var dob = val('geburtsdatum');
+    var situation = currentSituation();
+
+    // The licence-history question only matters for a Swiss-club transfer, and
+    // only when the player isn't already exempt by category.
+    var recentGroup = document.getElementById('bb-recent-licence-group');
+    if (recentGroup) {
+      var ask = situation === 'transfer_ch' && !isYouthFreibriefExempt(dob);
+      recentGroup.style.display = ask ? '' : 'none';
+    }
+
+    var set = bbDocSet(situation, natCode, minor, dob, currentRecentLicence());
     var shown = {};
     set.required.forEach(function (k) { shown[k] = 'required'; });
     set.optional.forEach(function (k) { shown[k] = 'optional'; });
@@ -1131,7 +1172,17 @@
       // Each situation-specific document that is REQUIRED must be uploaded. Without
       // this, an applicant could submit missing e.g. the Freibrief for a Swiss-club
       // transfer and it would go through silently.
-      var reqDocs = bbDocSet(situation, natCode, isMinorFromDob(val('geburtsdatum'))).required;
+      // A Swiss-club transfer must say whether a licence was held recently — the
+      // answer decides whether the Freibrief is required at all.
+      var dobVal = val('geburtsdatum');
+      var recent = currentRecentLicence();
+      if (situation === 'transfer_ch' && !isYouthFreibriefExempt(dobVal) && !recent) {
+        logBlock('blocked: bb recent-licence question unanswered');
+        return showFeedback('error', locale === 'de'
+          ? 'Bitte gib an, ob du in den letzten zwei Saisons eine Swiss-Basketball-Lizenz hattest.'
+          : 'Please tell us whether you held a Swiss Basketball licence in the last two seasons.');
+      }
+      var reqDocs = bbDocSet(situation, natCode, isMinorFromDob(dobVal), dobVal, recent).required;
       var DOC_UPLOAD_IDS = {
         freibrief: 'bb-doc-freibrief-upload',
         selfdecl: 'bb-doc-selfdecl-upload',
@@ -1146,8 +1197,8 @@
           ? 'Für deine Situation musst du zusätzlich die unterschriebene «Player’s Self Declaration» hochladen.'
           : 'For your situation you must also upload the signed "Player’s Self Declaration".',
         natdecl: locale === 'de'
-          ? 'Für Spieler:innen unter 18 musst du zusätzlich die unterschriebene «National Team Declaration» hochladen.'
-          : 'For players under 18 you must also upload the signed "National Team Declaration".',
+          ? 'Für Spieler:innen unter 18 musst du zusätzlich das unterschriebene «Acknowledgment of National Team Restriction» hochladen.'
+          : 'For players under 18 you must also upload the signed "Acknowledgment of National Team Restriction".',
         u18parents: locale === 'de'
           ? 'Für Spieler:innen unter 18 musst du zusätzlich das unterschriebene Einverständnis der Eltern (U18) hochladen.'
           : 'For players under 18 you must also upload the signed parental consent (U18).',
@@ -1222,9 +1273,15 @@
       }
     }
 
-    // IBAN (optional): normalized compact form, ISO 13616 mod-97 checked.
+    // IBAN (required): normalized compact form, ISO 13616 mod-97 checked.
     var ibanCompact = normalizeIbanCompact(val('iban'));
-    if (ibanCompact && !isValidIban(ibanCompact)) {
+    if (!ibanCompact) {
+      logBlock('blocked: IBAN missing');
+      return showFeedback('error', locale === 'de'
+        ? 'Bitte gib deine IBAN an.'
+        : 'Please enter your IBAN.');
+    }
+    if (!isValidIban(ibanCompact)) {
       logBlock('blocked: invalid IBAN');
       return showFeedback('error', locale === 'de'
         ? 'Bitte überprüfe die IBAN — sie ist keine gültige Kontonummer.'
@@ -1252,8 +1309,8 @@
       locale: locale,
     };
 
-    // Optional IBAN — only sent when the applicant filled it in.
-    if (ibanCompact) payload.iban = ibanCompact;
+    // IBAN (required) — validated non-empty above, always sent.
+    payload.iban = ibanCompact;
 
     if (type === 'volleyball') {
       payload.anrede = anredeHidden ? anredeHidden.value : '';
@@ -1294,6 +1351,9 @@
       // Licensing situation drives which Swiss Basketball documents are required
       // (server re-validates using this + nationality + date of birth).
       payload.bb_situation = currentSituation();
+      // Only meaningful for a Swiss-club transfer; recorded so the club can see
+      // why a Freibrief is absent from an otherwise complete dossier.
+      if (currentSituation() === 'transfer_ch') payload.bb_recent_licence = currentRecentLicence();
     }
 
     if (type === 'passive') {
@@ -1602,10 +1662,21 @@
       var a = document.createElement('a');
       a.href = url;
       a.download = filename;
+      // The anchor must be in the document and the object URL must outlive the
+      // click: revoking it synchronously races the browser's download, which
+      // truncates the file — the bigger the PDF, the likelier a half-written,
+      // unreadable download (the Acknowledgment form is ~590 KB).
+      a.style.display = 'none';
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
-    }).catch(function () {
-      // Fallback: just open the blank PDF
+      setTimeout(function () {
+        try { document.body.removeChild(a); } catch (_) { /* already gone */ }
+        URL.revokeObjectURL(url);
+      }, 60000);
+    }).catch(function (err) {
+      // Fallback: open the blank PDF so the applicant still gets the form, but
+      // record why the prefill failed — this path used to fail silently.
+      logBlock('pdf prefill failed (' + pdfUrl + '): ' + (err && err.message ? err.message : 'unknown'));
       window.open(pdfUrl, '_blank');
     });
   }
@@ -1617,14 +1688,67 @@
       String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear();
   }
 
+  // Current Swiss Basketball season as "YYYY/YYYY". Their administrative season
+  // rolls over in July (2026-27 opened 23.07.2026), matching the July cut-off
+  // isMinorFromDob() uses — so a form downloaded in August already says the new
+  // season rather than the one that just ended.
+  function currentSeasonLabel() {
+    var now = new Date();
+    var start = (now.getMonth() + 1) >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+    return start + '/' + (start + 1);
+  }
+
+  // Characters the PDF standard fonts (Helvetica et al.) can actually encode.
+  // pdf-lib embeds them with WinAnsi — the same CP1252 repertoire the ClubDesk
+  // name guard above checks against, so it reuses that map rather than keeping
+  // a second copy in sync. Writing anything outside the set throws, which used
+  // to take down the whole download rather than one field (see winAnsiSafe).
+  function encodableInWinAnsi(ch) {
+    var cp = ch.codePointAt(0);
+    if (cp >= 0x20 && cp <= 0x7e) return true;    // ASCII printable
+    if (cp >= 0xa0 && cp <= 0xff) return true;    // Latin-1 supplement (ä ö ü é à ç ß …)
+    return !!CP1252_EXTRA[cp];                    // CP1252 additions (Œ Š Ž ƒ € …)
+  }
+
+  // Fold a name into something Helvetica can render, character by character, so
+  // accents WinAnsi already covers (é ü ö à) are kept verbatim and only the ones
+  // it cannot (č ć ř ę ł đ ğ ő …) lose their diacritic. Without this, a single
+  // Croatian or Polish name made pdfDoc.save() throw and the applicant silently
+  // received a BLANK form — the download path's catch falls back to the empty
+  // PDF, so it looked like the prefill had simply broken.
+  var NON_DECOMPOSING = { 'ł': 'l', 'Ł': 'L', 'đ': 'd', 'Đ': 'D', 'ø': 'o', 'Ø': 'O', 'ı': 'i', 'ħ': 'h', 'Ħ': 'H', 'ŧ': 't', 'Ŧ': 'T' };
+  function winAnsiSafe(value) {
+    var str = String(value == null ? '' : value);
+    var out = '';
+    for (var i = 0; i < str.length; i++) {
+      var ch = str.charAt(i);
+      if (encodableInWinAnsi(ch)) { out += ch; continue; }
+      if (NON_DECOMPOSING[ch]) { out += NON_DECOMPOSING[ch]; continue; }
+      // Strip the combining marks NFD splits off (č → c + ̌ → c).
+      var folded = '';
+      try {
+        folded = ch.normalize('NFD').replace(/[̀-ͯ]/g, '');
+      } catch (e) { folded = ''; }
+      for (var j = 0; j < folded.length; j++) {
+        if (encodableInWinAnsi(folded.charAt(j))) out += folded.charAt(j);
+      }
+    }
+    return out;
+  }
+
   // Helper: set text field with font at smaller size
   function setField(form, fieldName, value, font, fontSize) {
+    var safe = winAnsiSafe(value);
     try {
       var field = form.getTextField(fieldName);
-      field.setText(value);
+      field.setText(safe);
       field.setFontSize(fontSize);
       if (font) field.updateAppearances(font);
-    } catch (e) { /* field not found or read-only */ }
+    } catch (e) {
+      // Field absent or read-only is normal (forms differ per case); an encoding
+      // error here would mean winAnsiSafe missed something, so make it findable.
+      if (e && /encode/i.test(e.message || '')) logBlock('pdf field encode failed (' + fieldName + '): ' + e.message);
+    }
   }
 
   // Lizenzantrag pre-fill (Swiss Basketball — exact field names from PDF)
@@ -1693,7 +1817,7 @@
           setField(f, 'First Name', d.vorname, font, sz);
           setField(f, 'Nationality', d.nationalitaet, font, sz);
           setField(f, 'Current Club', 'KSC Wiedikon', font, sz);
-          setField(f, 'Season', '2025/2026', font, sz);
+          setField(f, 'Season', currentSeasonLabel(), font, sz);
           if (d.geburtsdatum) {
             var dp = d.geburtsdatum.split('-');
             setField(f, 'Text1.0.0', dp[2] || '', font, sz);
@@ -1707,29 +1831,32 @@
     });
   }
 
-  // National Team Declaration pre-fill (FIBA — exact field names)
+  // Acknowledgment of National Team Restriction pre-fill (FIBA — exact field
+  // names). Replaces the former "National Team Declaration", which FIBA stopped
+  // accepting for the 2026-27 season (Swiss Basketball licence mail, 22.07.2026).
+  // Two fields are deliberately left blank: the federation of origin (we don't
+  // know where the player is coming from) and the transfer date (set by Swiss
+  // Basketball / FIBA, not by us).
   var natDeclLink = document.getElementById('bb-doc-natdecl');
   if (natDeclLink) {
     natDeclLink.addEventListener('click', function (e) {
       e.preventDefault();
-      downloadPrefilled('/docs/national-team-declaration-fiba.pdf', 'national-team-declaration.pdf', function (pdfDoc, d) {
+      downloadPrefilled('/docs/acknowledgment-national-team-restriction-fiba.pdf', 'acknowledgment-national-team-restriction.pdf', function (pdfDoc, d) {
         var f = pdfDoc.getForm();
         var font = d._font; var sz = d._fontSize;
         try {
-          setField(f, 'Last Name Nom Nachname', d.nachname, font, sz);
-          setField(f, 'First Name Prénom Vorname', d.vorname, font, sz);
-          setField(f, 'Nationality Nationalité Nationalität', d.nationalitaet, font, sz);
-          setField(f, 'Player Joueureuse Spielerin', d.vorname + ' ' + d.nachname, font, sz);
-          setField(f, 'New Club Nouveau club Neuer Club', 'KSC Wiedikon', font, sz);
-          setField(f, 'National Federation Fédération nationale', 'Swiss Basketball', font, sz);
+          var fullName = d.vorname + ' ' + d.nachname;
+          setField(f, 'Player full name', fullName, font, sz);
+          setField(f, 'Nationality  nationalities', d.nationalitaet, font, sz);
+          setField(f, 'National Member Federation of destination', 'Swiss Basketball', font, sz);
           if (d.geburtsdatum) {
             var dp = d.geburtsdatum.split('-');
-            setField(f, 'Date of birth Date de Naissance Geburtsdatum', dp[2] + '.' + dp[1] + '.' + dp[0], font, sz);
+            setField(f, 'Date of birth DDMMYYYY', dp[2] + '/' + dp[1] + '/' + dp[0], font, sz);
           }
-          setField(f, 'Text1', 'Switzerland', font, sz);
-          setField(f, 'Text2', 'Suisse', font, sz);
-          setField(f, 'Text3', 'Schweiz', font, sz);
-          setField(f, 'Date Date Datum', todayDDMMYYYY(), font, sz);
+          // Signature block: player's name and date; the parent/legal
+          // representative fills their own half by hand.
+          setField(f, 'Name', fullName, font, sz);
+          setField(f, 'Date', todayDDMMYYYY(), font, sz);
         } catch (ex) {}
       });
     });

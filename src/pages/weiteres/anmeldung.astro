@@ -107,8 +107,8 @@ const KS_OTHER = [
         </div>
 
         <div class="form-group">
-          <label for="iban" data-i18n="registrationIBAN">{t(locale, 'registrationIBAN')}</label>
-          <input type="text" id="iban" name="iban" class="form-input" placeholder="CH00 0000 0000 0000 0000 0">
+          <label for="iban"><span data-i18n="registrationIBAN">{t(locale, 'registrationIBAN')}</span> *</label>
+          <input type="text" id="iban" name="iban" class="form-input" placeholder="CH00 0000 0000 0000 0000 0" required>
           <small style="color: var(--text-secondary);" data-i18n="registrationIBANNote">{t(locale, 'registrationIBANNote')}</small>
         </div>
 
@@ -365,6 +365,24 @@ const KS_OTHER = [
             </div>
           </div>
 
+          <!-- Only shown for a transfer from another Swiss club: Swiss Basketball
+               waives the Freibrief when the player held no licence in the last two
+               seasons, so asking here spares them chasing a club that owes nothing. -->
+          <div class="form-group js-guest-hide" id="bb-recent-licence-group" style="display: none;">
+            <label><span data-i18n="registrationBBRecentLicence">{t(locale, 'registrationBBRecentLicence')}</span> *</label>
+            <small style="color: var(--text-secondary); display: block; margin-bottom: var(--space-sm);" data-i18n="registrationBBRecentLicenceHint">{t(locale, 'registrationBBRecentLicenceHint')}</small>
+            <div style="display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-xs);">
+              <label class="radio-card">
+                <input type="radio" name="bb_recent_licence" value="ja">
+                <span data-i18n="registrationBBRecentLicenceYes">{t(locale, 'registrationBBRecentLicenceYes')}</span>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="bb_recent_licence" value="nein">
+                <span data-i18n="registrationBBRecentLicenceNo">{t(locale, 'registrationBBRecentLicenceNo')}</span>
+              </label>
+            </div>
+          </div>
+
           <div class="form-group js-guest-hide" id="bb-docs-group">
             <label data-i18n="registrationBBDocs">{t(locale, 'registrationBBDocs')}</label>
             <small style="color: var(--text-secondary); display: block; margin-bottom: var(--space-sm);" data-i18n="registrationBBDocsHint">{t(locale, 'registrationBBDocsHint')}</small>
@@ -383,7 +401,7 @@ const KS_OTHER = [
               </div>
               <div class="bb-doc-item bb-doc-cond" data-doc="natdecl" style="display: none;">
                 <span data-i18n="registrationBBDocsNatDecl">{t(locale, 'registrationBBDocsNatDecl')}</span>
-                <a href="/docs/national-team-declaration-fiba.pdf" target="_blank" rel="noopener noreferrer" class="bb-doc-download" id="bb-doc-natdecl" data-i18n="registrationBBDocsNatDeclDownload">{t(locale, 'registrationBBDocsNatDeclDownload')}</a>
+                <a href="/docs/acknowledgment-national-team-restriction-fiba.pdf" target="_blank" rel="noopener noreferrer" class="bb-doc-download" id="bb-doc-natdecl" data-i18n="registrationBBDocsNatDeclDownload">{t(locale, 'registrationBBDocsNatDeclDownload')}</a>
               </div>
               <div class="bb-doc-item bb-doc-cond" data-doc="u18parents" style="display: none;">
                 <span data-i18n="registrationBBDocsU18Parents">{t(locale, 'registrationBBDocsU18Parents')}</span>

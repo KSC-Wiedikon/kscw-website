@@ -31,7 +31,7 @@
     bb_doc_lizenz: de ? 'Lizenzantrag (unterschrieben)' : 'Licence application (signed)',
     bb_doc_freibrief: de ? 'Freibrief (unterschrieben)' : 'Release letter / Freibrief (signed)',
     bb_doc_selfdecl: "Player's Self Declaration",
-    bb_doc_natdecl: 'National Team Declaration',
+    bb_doc_natdecl: 'Acknowledgment of National Team Restriction',
     bb_doc_u18parents: de ? 'Einverständnis der Eltern (U18)' : 'Parental consent (U18)',
     bb_doc_schoolcert: de ? 'Schulbestätigung (optional)' : 'School enrolment certificate (optional)',
   };

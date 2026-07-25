@@ -13,8 +13,11 @@ const END = '      return out;\n    }';
 
 function loadWriter() {
   const start = SRC.indexOf(START);
-  const end = SRC.indexOf(END);
   expect(start, 'pdf writer start marker missing').toBeGreaterThan(-1);
+  // Search the end marker from `start`, not from byte 0: `return out;` closing a
+  // function is not unique in admin.astro, and an earlier match silently yields an
+  // empty slice — the writer then "passes" by never being extracted at all.
+  const end = SRC.indexOf(END, start);
   expect(end, 'pdf writer end marker missing').toBeGreaterThan(-1);
   const code = SRC.slice(start, end + END.length);
   return new Function(`${code}\nreturn { buildImagePdf, pdfNum };`)() as {

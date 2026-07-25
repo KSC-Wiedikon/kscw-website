@@ -1985,8 +1985,48 @@ import '../styles/global.css';
       var a = document.createElement('a');
       a.href = url;
       a.download = filename;
+      // The anchor must be in the document and the object URL must outlive the
+      // click — revoking it synchronously races the browser's download and
+      // truncates the file, producing an unreadable PDF (worse the larger it is).
+      a.style.display = 'none';
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      setTimeout(function() {
+        try { document.body.removeChild(a); } catch(e) {}
+        URL.revokeObjectURL(url);
+      }, 60000);
+    }
+
+    // PDF standard fonts encode WinAnsi/CP1252 only, and pdf-lib throws on
+    // anything outside it — one Croatian or Polish name aborted the whole
+    // generate-and-download, so the admin got nothing. Keep the accents WinAnsi
+    // covers (ä ö ü é à ç ß Š ž) and fold only the ones it cannot (č ć ř ę ł đ).
+    var CP1252_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹Œ Ž  ‘’“”•–—˜™š›œ žŸ';
+    var PDF_NON_DECOMPOSING = { 'ł':'l','Ł':'L','đ':'d','Đ':'D','ø':'o','Ø':'O','ı':'i','ħ':'h','Ħ':'H','ŧ':'t','Ŧ':'T' };
+    function pdfSafe(value) {
+      var str = String(value == null ? '' : value);
+      var out = '';
+      for (var i = 0; i < str.length; i++) {
+        var ch = str.charAt(i), c = ch.charCodeAt(0);
+        if ((c >= 0x20 && c <= 0x7e) || (c >= 0xa0 && c <= 0xff) || CP1252_EXTRA.indexOf(ch) !== -1) { out += ch; continue; }
+        if (PDF_NON_DECOMPOSING[ch]) { out += PDF_NON_DECOMPOSING[ch]; continue; }
+        var folded = '';
+        try { folded = ch.normalize('NFD').replace(/[̀-ͯ]/g, ''); } catch(e) { folded = ''; }
+        for (var j = 0; j < folded.length; j++) {
+          var f = folded.charCodeAt(j);
+          if ((f >= 0x20 && f <= 0x7e) || (f >= 0xa0 && f <= 0xff)) out += folded.charAt(j);
+        }
+      }
+      return out;
+    }
+
+    // Current Swiss Basketball season as "YYYY/YYYY". Their administrative
+    // season rolls over in July (2026-27 opened 23.07.2026), so a form generated
+    // in August already carries the new season rather than the one that ended.
+    function currentSeasonLabel() {
+      var now = new Date();
+      var start = (now.getMonth() + 1) >= 7 ? now.getFullYear() : now.getFullYear() - 1;
+      return start + '/' + (start + 1);
     }
 
     async function generateLizenzantrag(item) {
@@ -1996,14 +2036,19 @@ import '../styles/global.css';
       var pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
       var form = pdfDoc.getForm();
 
-      // Fill text fields (try/catch each in case field names change)
-      try { form.getTextField('undefined').setText('KSC Wiedikon'); } catch(e) {}
-      try { form.getTextField('undefined_3').setText(data.nachname); } catch(e) {}
-      try { form.getTextField('undefined_4').setText(data.vorname); } catch(e) {}
-      try { form.getTextField('undefined_5').setText(data.adresse); } catch(e) {}
-      try { form.getTextField('undefined_6').setText(data.plz); } catch(e) {}
-      try { form.getTextField('undefined_7').setText(data.ort); } catch(e) {}
-      try { form.getTextField('undefined_2').setText(data.email); } catch(e) {}
+      // Fill text fields (try/catch each in case field names change).
+      // The generic "undefined_N" names map to the form's rows top-to-bottom —
+      // verified against the field rectangles in the PDF: _2 sits at the NAME
+      // label, _3 at VORNAME, _4 at STRASSE, _5/_6 are the narrow PLZ and wide
+      // ORT boxes, _7 is E-MAIL. This mapping was previously shifted by one,
+      // which put the email in the name box and the street into the PLZ box.
+      try { form.getTextField('undefined').setText(pdfSafe('KSC Wiedikon')); } catch(e) {}
+      try { form.getTextField('undefined_2').setText(pdfSafe(data.nachname)); } catch(e) {}
+      try { form.getTextField('undefined_3').setText(pdfSafe(data.vorname)); } catch(e) {}
+      try { form.getTextField('undefined_4').setText(pdfSafe(data.adresse)); } catch(e) {}
+      try { form.getTextField('undefined_5').setText(pdfSafe(data.plz)); } catch(e) {}
+      try { form.getTextField('undefined_6').setText(pdfSafe(data.ort)); } catch(e) {}
+      try { form.getTextField('undefined_7').setText(pdfSafe(data.email)); } catch(e) {}
 
       // Date of birth (split to avoid timezone issues)
       if (data.geburtsdatum) {
@@ -2025,7 +2070,7 @@ import '../styles/global.css';
           form.getCheckBox('Schweiz').check();
         } else {
           form.getCheckBox('Andere').check();
-          form.getTextField('KOPIE DES PASSES ODER DER ID BEILAGEN').setText(data.nationalitaet);
+          form.getTextField('KOPIE DES PASSES ODER DER ID BEILAGEN').setText(pdfSafe(data.nationalitaet));
         }
       } catch(e) {}
 
@@ -2055,30 +2100,33 @@ import '../styles/global.css';
       var pdf1Bytes = await fetch('/docs/player-self-declaration.pdf').then(function(r) { return r.arrayBuffer(); });
       var pdf1 = await PDFLib.PDFDocument.load(pdf1Bytes);
       var form1 = pdf1.getForm();
-      try { form1.getTextField('Last Name').setText(data.nachname); } catch(e) {}
-      try { form1.getTextField('First Name').setText(data.vorname); } catch(e) {}
-      try { form1.getTextField('Nationality').setText(data.nationalitaet); } catch(e) {}
-      try { form1.getTextField('Current Club').setText('KSC Wiedikon'); } catch(e) {}
-      try { form1.getTextField('Season').setText('2025/2026'); } catch(e) {}
+      try { form1.getTextField('Last Name').setText(pdfSafe(data.nachname)); } catch(e) {}
+      try { form1.getTextField('First Name').setText(pdfSafe(data.vorname)); } catch(e) {}
+      try { form1.getTextField('Nationality').setText(pdfSafe(data.nationalitaet)); } catch(e) {}
+      try { form1.getTextField('Current Club').setText(pdfSafe('KSC Wiedikon')); } catch(e) {}
+      try { form1.getTextField('Season').setText(currentSeasonLabel()); } catch(e) {}
       form1.flatten();
       downloadPdfBlob(await pdf1.save(), 'SelfDeclaration_' + data.nachname + '_' + data.vorname + '.pdf');
 
-      // National Team Declaration
-      var pdf2Bytes = await fetch('/docs/national-team-declaration.pdf').then(function(r) { return r.arrayBuffer(); });
+      // Acknowledgment of National Team Restriction — replaces the former
+      // "National Team Declaration", which FIBA no longer accepts as of the
+      // 2026-27 season (Swiss Basketball licence mail, 22.07.2026).
+      var pdf2Bytes = await fetch('/docs/acknowledgment-national-team-restriction-fiba.pdf').then(function(r) { return r.arrayBuffer(); });
       var pdf2 = await PDFLib.PDFDocument.load(pdf2Bytes);
       var form2 = pdf2.getForm();
-      try { form2.getTextField('Last Name Nom Nachname').setText(data.nachname); } catch(e) {}
-      try { form2.getTextField('First Name Prénom Vorname').setText(data.vorname); } catch(e) {}
+      var fullName = data.vorname + ' ' + data.nachname;
+      try { form2.getTextField('Player full name').setText(pdfSafe(fullName)); } catch(e) {}
       try {
         if (data.geburtsdatum) {
           var parts = data.geburtsdatum.split('-');
-          form2.getTextField('Date of birth Date de Naissance Geburtsdatum').setText(parts[2] + '.' + parts[1] + '.' + parts[0]);
+          form2.getTextField('Date of birth DDMMYYYY').setText(parts[2] + '/' + parts[1] + '/' + parts[0]);
         }
       } catch(e) {}
-      try { form2.getTextField('Nationality Nationalité Nationalität').setText(data.nationalitaet); } catch(e) {}
-      try { form2.getTextField('New Club Nouveau club Neuer Club').setText('KSC Wiedikon'); } catch(e) {}
+      try { form2.getTextField('Nationality  nationalities').setText(pdfSafe(data.nationalitaet)); } catch(e) {}
+      try { form2.getTextField('National Member Federation of destination').setText('Swiss Basketball'); } catch(e) {}
+      try { form2.getTextField('Name').setText(pdfSafe(fullName)); } catch(e) {}
       form2.flatten();
-      downloadPdfBlob(await pdf2.save(), 'NationalTeamDecl_' + data.nachname + '_' + data.vorname + '.pdf');
+      downloadPdfBlob(await pdf2.save(), 'NationalTeamRestriction_' + data.nachname + '_' + data.vorname + '.pdf');
     }
 
     function exportCSV(items) {

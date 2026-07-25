@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.16.2] — 2026-07-25
+
+### The ClubDesk export was mangling every accented name
+- The file was written as **UTF-8**, but ClubDesk's CSV interface is **Windows-1252** — its own export is CP1252 and the scripted member sync transcodes before uploading. Importing our UTF-8 file by hand turned `Dürig` into `DÃ¼rig` in the member register, and the leading byte-order mark left the first column header reading `ï»¿Nachname`, which may not map at all.
+- The export is now CP1252 with no BOM, using the same transliteration the scripted sync uses: letters CP1252 holds are written as-is (**ä ö ü é à ç ß Š ž**), and the few it cannot lose their diacritic (**ć → c**, **ł → l**, **đ → d**) rather than arriving as mojibake. Both writers now put the same spelling into the register.
+
 ## [1.16.1] — 2026-07-25
 
 ### The federation picker names the actual federation, per sport

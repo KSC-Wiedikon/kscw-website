@@ -101,12 +101,44 @@ describe('ClubDesk CSV export', () => {
     expect(at('Geburtsdatum')).toContain('dob');
   });
 
-  it('writes a UTF-8 BOM and semicolon separator', () => {
+  it('encodes Windows-1252 with no BOM, semicolon-separated', () => {
     const seg = exportCsvSection();
-    // Without the BOM, Excel reads the UTF-8 as latin-1 and Dürig becomes DÃ¼rig.
-    expect(SRC.slice(SRC.indexOf('function exportCSV(items)'))).toMatch(/'\\uFEFF'|'\uFEFF'/);
-    expect(seg + SRC.slice(SRC.indexOf('.map(csvEscape)'), SRC.indexOf('.map(csvEscape)') + 400))
-      .toContain("join(';')");
+    const tail = SRC.slice(SRC.indexOf('.map(csvEscape)'), SRC.indexOf('.map(csvEscape)') + 1200);
+    expect(seg + tail).toContain("join(';')");
+    // ClubDesk's CSV interface is CP1252, not UTF-8 — its own export is CP1252 and
+    // the scripted sync-up transcodes before upload. A UTF-8 attachment mangles
+    // every accented name in the member register (Dürig → DÃ¼rig).
+    expect(tail).toContain('toCp1252Bytes(csv)');
+    expect(tail).toContain('charset=windows-1252');
+    // A BOM would leave the first header reading "ï»¿Nachname" and fail to map.
+    expect(tail).not.toContain('\uFEFF');
+  });
+
+  it('transliterates what CP1252 cannot hold, byte for byte', () => {
+    const start = SRC.indexOf('var CD_CP1252_EXTRA');
+    expect(start, 'CP1252 encoder not found').toBeGreaterThan(-1);
+    const end = SRC.indexOf('\n    }', SRC.indexOf('function toCp1252Bytes')) + '\n    }'.length;
+    const enc = new Function(`${SRC.slice(start, end)}\nreturn toCp1252Bytes;`)() as (s: string) => Uint8Array;
+    const bytes = (s: string) => Array.from(enc(s));
+
+    // Latin-1 range survives as single bytes — the whole point of CP1252 here.
+    expect(bytes('Dürig')).toEqual([0x44, 0xFC, 0x72, 0x69, 0x67]);
+    expect(bytes('Müller')).toEqual([0x4D, 0xFC, 0x6C, 0x6C, 0x65, 0x72]);
+    // CP1252-only slots (Š, ž) keep their own byte rather than being folded.
+    expect(bytes('Š')).toEqual([0x8A]);
+    expect(bytes('ž')).toEqual([0x9E]);
+    // No CP1252 slot → lose the diacritic, matching wiedisync's sync-up so both
+    // writers put the same spelling into the register.
+    expect(String.fromCharCode(...bytes('Šarčević'))).toBe('\u008Aarcevic');
+    expect(String.fromCharCode(...bytes('Łukasz'))).toBe('Lukasz');
+    expect(String.fromCharCode(...bytes('Đoković'))).toBe('Dokovic');
+    // Nothing Latin to fall back on → '?', never a broken byte.
+    expect(bytes('北京')).toEqual([0x3F, 0x3F]);
+    // Every byte must be a single octet — a stray >0xFF would corrupt the file.
+    for (const b of bytes('Dürig Šarčević Łukasz 北京 €')) {
+      expect(b).toBeLessThanOrEqual(0xFF);
+      expect(b).toBeGreaterThanOrEqual(0);
+    }
   });
 
   it('neutralises spreadsheet formula injection', () => {

@@ -233,37 +233,113 @@
 
   function countryName(c) { return c[locale] || c.de; }
 
+  // Emoji flag from the ISO alpha-2 code (A -> U+1F1E6). Decorative only: the
+  // country name is always rendered beside it, which is what makes this degrade
+  // gracefully on Windows, where Chrome/Edge draw the two regional-indicator
+  // letters ("CH") instead of a flag glyph.
+  function countryFlag(code) {
+    if (!/^[A-Z]{2}$/.test(code || '')) return '';
+    return String.fromCodePoint(
+      0x1F1E6 + code.charCodeAt(0) - 65,
+      0x1F1E6 + code.charCodeAt(1) - 65
+    );
+  }
+
   // Build sorted lists: favorites first, then alphabetical rest
   var favorites = COUNTRIES.filter(function (c) { return FAVORITE_CODES.indexOf(c.code) !== -1; });
   favorites.sort(function (a, b) { return FAVORITE_CODES.indexOf(a.code) - FAVORITE_CODES.indexOf(b.code); });
   var rest = COUNTRIES.filter(function (c) { return FAVORITE_CODES.indexOf(c.code) === -1; });
   rest.sort(function (a, b) { return countryName(a).localeCompare(countryName(b), locale); });
 
-  // ── Searchable nationality dropdown ──────────────────────────
-  var natWrapper = document.querySelector('.nationality-wrapper');
+  // ── Searchable nationality dropdown (multi-select) ───────────
+  // Dual/multiple nationals pick every passport they hold. Selection ORDER is
+  // meaningful: the first pick is the primary one, and it is the single value
+  // ClubDesk's Nationalität picklist receives.
+  var natWrapper = document.getElementById('nationality-wrapper');
   var natTrigger = document.getElementById('nationality-trigger');
   var natTriggerText = document.getElementById('nationality-trigger-text');
   var natDropdown = document.getElementById('nationality-dropdown');
   var natSearch = document.getElementById('nationality-search');
   var natOptions = document.getElementById('nationality-options');
   var natHidden = document.getElementById('nationalitaet');
+  var natCodesHidden = document.getElementById('nationalitaet_codes');
+  var natChips = document.getElementById('nationality-chips');
+
+  // Ordered ISO alpha-2 codes, in the order the applicant picked them.
+  var natCodes = [];
+
+  function countryByCode(code) {
+    for (var i = 0; i < COUNTRIES.length; i++) if (COUNTRIES[i].code === code) return COUNTRIES[i];
+    return null;
+  }
+
+  /**
+   * The nationality code the basketball document rules should use. A player who
+   * holds Swiss nationality alongside another is Swiss for FIBA purposes, so any
+   * CH in the set wins; otherwise the primary (first) pick applies. The backend
+   * applies the same rule, and the two MUST agree — if the form shows a shorter
+   * document list than the server enforces, the submission is rejected after the
+   * applicant has already uploaded everything.
+   */
+  function bbNatCode() {
+    if (natCodes.indexOf('CH') !== -1) return 'CH';
+    return natCodes[0] || '';
+  }
+
+  // Keep the hidden inputs + chips in step with `natCodes`. `nationalitaet`
+  // carries the localized display names (what a human reads in the admin UI and
+  // the ClubDesk CSV); `nationalitaet_codes` carries the canonical codes.
+  function syncNationality() {
+    var names = [];
+    for (var i = 0; i < natCodes.length; i++) {
+      var c = countryByCode(natCodes[i]);
+      if (c) names.push(countryName(c));
+    }
+    natHidden.value = names.join(', ');
+    // Primary code only — the "CH if any" widening is a basketball-document rule,
+    // not a change to which nationality is primary.
+    natHidden.dataset.code = natCodes[0] || '';
+    if (natCodesHidden) natCodesHidden.value = natCodes.join(',');
+    natTriggerText.textContent = names.length ? names.join(', ') : '—';
+
+    if (natChips) {
+      natChips.innerHTML = '';
+      for (var j = 0; j < natCodes.length; j++) {
+        (function (code) {
+          var c = countryByCode(code);
+          if (!c) return;
+          var chip = document.createElement('span');
+          chip.className = 'country-chip';
+          var chipFlag = countryFlag(c.code);
+          chip.appendChild(document.createTextNode(
+            (chipFlag ? chipFlag + ' ' : '') + countryName(c)));
+          var x = document.createElement('button');
+          x.type = 'button';
+          x.textContent = '×';
+          x.setAttribute('aria-label', (locale === 'de' ? 'Entfernen: ' : 'Remove: ') + countryName(c));
+          x.addEventListener('click', function () { toggleNationality(code); });
+          chip.appendChild(x);
+          natChips.appendChild(chip);
+        })(natCodes[j]);
+      }
+    }
+  }
 
   function renderNationalityOptions(filter) {
     natOptions.innerHTML = '';
     var q = (filter || '').toLowerCase();
-    var highlighted = 0;
 
     function addOption(c) {
       var name = countryName(c);
       if (q && name.toLowerCase().indexOf(q) === -1 && c.code.toLowerCase().indexOf(q) === -1) return false;
       var div = document.createElement('div');
-      div.className = 'nationality-opt' + (natHidden.value === name ? ' selected' : '');
-      div.textContent = name;
+      div.className = 'nationality-opt' + (natCodes.indexOf(c.code) !== -1 ? ' selected' : '');
+      var fl = countryFlag(c.code);
+      div.textContent = fl ? fl + ' ' + name : name;
       div.dataset.value = name;
       div.dataset.code = c.code;
-      div.addEventListener('click', function () { selectNationality(name, c.code); });
+      div.addEventListener('click', function () { toggleNationality(c.code); });
       natOptions.appendChild(div);
-      highlighted++;
       return true;
     }
 
@@ -286,12 +362,12 @@
     }
   }
 
-  function selectNationality(name, code) {
-    natHidden.value = name;
-    natHidden.dataset.code = code || '';
-    natTriggerText.textContent = name;
-    natWrapper.classList.remove('open');
-    natSearch.value = '';
+  function toggleNationality(code) {
+    var at = natCodes.indexOf(code);
+    if (at === -1) natCodes.push(code); else natCodes.splice(at, 1);
+    syncNationality();
+    // The list stays open — picking a second passport shouldn't cost another tap.
+    renderNationalityOptions(natSearch ? natSearch.value : '');
     // Nationality feeds into the basketball document set (Player Self Declaration
     // for foreign new players, etc.).
     updateBBDocs();
@@ -330,10 +406,94 @@
     });
   }
 
+  // ── Federation of origin (single-select) ─────────────────────
+  // The national federation the player was FIRST licensed with — their
+  // federation of origin, not the most recent one. Unlike
+  // nationality this is optional, and "none" is a real answer — it tells the
+  // club there is no transfer certificate to chase, which a blank does not.
+  var fedWrapper = document.getElementById('federation-wrapper');
+  var fedTrigger = document.getElementById('federation-trigger');
+  var fedTriggerText = document.getElementById('federation-trigger-text');
+  var fedSearch = document.getElementById('federation-search');
+  var fedOptions = document.getElementById('federation-options');
+  var fedHidden = document.getElementById('federation_of_origin');
+
+  // Sentinel stored verbatim; the backend and members.federation_of_origin use
+  // the same literal.
+  var FED_NONE = 'NONE';
+
+  function fedNoneLabel() {
+    return locale === 'de' ? 'Keiner / noch nie lizenziert' : 'None / never licensed before';
+  }
+
+  function selectFederation(value, label) {
+    fedHidden.value = value;
+    var selFlag = countryFlag(value);
+    fedTriggerText.textContent = selFlag ? selFlag + ' ' + label : label;
+    fedWrapper.classList.remove('open');
+    if (fedSearch) fedSearch.value = '';
+  }
+
+  function renderFederationOptions(filter) {
+    if (!fedOptions) return;
+    fedOptions.innerHTML = '';
+    var q = (filter || '').toLowerCase();
+
+    function addOpt(value, label) {
+      if (q && label.toLowerCase().indexOf(q) === -1 && value.toLowerCase().indexOf(q) === -1) return false;
+      var div = document.createElement('div');
+      div.className = 'nationality-opt' + (fedHidden.value === value ? ' selected' : '');
+      // Search matched the plain label above, so the flag is added only now —
+      // typing "sui" must not have to get past a flag character.
+      var optFlag = countryFlag(value);
+      div.textContent = optFlag ? optFlag + ' ' + label : label;
+      div.addEventListener('click', function () { selectFederation(value, label); });
+      fedOptions.appendChild(div);
+      return true;
+    }
+
+    var anyTop = addOpt(FED_NONE, fedNoneLabel());
+    var anyFav = false;
+    for (var i = 0; i < favorites.length; i++) {
+      if (addOpt(favorites[i].code, countryName(favorites[i]))) anyFav = true;
+    }
+    if ((anyTop || anyFav) && !q) {
+      var hr = document.createElement('hr');
+      hr.className = 'nationality-divider';
+      fedOptions.appendChild(hr);
+    }
+    for (var j = 0; j < rest.length; j++) {
+      addOpt(rest[j].code, countryName(rest[j]));
+    }
+  }
+
+  if (fedTrigger) {
+    fedTrigger.addEventListener('click', function (e) {
+      e.preventDefault();
+      var isOpen = fedWrapper.classList.toggle('open');
+      if (isOpen) {
+        renderFederationOptions('');
+        if (fedSearch) fedSearch.focus();
+      }
+    });
+  }
+
+  if (fedSearch) {
+    fedSearch.addEventListener('input', function () {
+      renderFederationOptions(fedSearch.value);
+    });
+    fedSearch.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') fedWrapper.classList.remove('open');
+    });
+  }
+
   // Close on outside click
   document.addEventListener('click', function (e) {
     if (natWrapper && !natWrapper.contains(e.target)) {
       natWrapper.classList.remove('open');
+    }
+    if (fedWrapper && !fedWrapper.contains(e.target)) {
+      fedWrapper.classList.remove('open');
     }
   });
 
@@ -495,7 +655,7 @@
   }
 
   function updateBBDocs() {
-    var natCode = natHidden ? (natHidden.dataset.code || '') : '';
+    var natCode = bbNatCode();
     var minor = isMinorFromDob(val('geburtsdatum'));
     var dob = val('geburtsdatum');
     var situation = currentSituation();
@@ -979,8 +1139,9 @@
       for (var i = 0; i < others.length; i++) {
         if (others[i] !== wrapper) others[i].classList.remove('open');
       }
-      // Also close nationality
+      // Also close the nationality + federation dropdowns
       if (natWrapper && natWrapper !== wrapper) natWrapper.classList.remove('open');
+      if (fedWrapper && fedWrapper !== wrapper) fedWrapper.classList.remove('open');
       wrapper.classList.toggle('open');
     });
   }
@@ -1171,7 +1332,7 @@
           ? 'Bitte lade den unterschriebenen Lizenzantrag hoch.'
           : 'Please upload the signed licence application.');
       }
-      var natCode = natHidden ? (natHidden.dataset.code || '') : '';
+      var natCode = bbNatCode();
       if (!natCode) {
         logBlock('blocked: bb nationality not selected');
         return showFeedback('error', locale === 'de'
@@ -1319,8 +1480,13 @@
       plz: val('plz'),
       ort: val('ort'),
       geburtsdatum: val('geburtsdatum'),
+      // Display names (human-readable, in the submitter's language) plus the
+      // canonical codes. `nationalitaet_code` stays the PRIMARY code so the
+      // server-side basketball document gate keeps its existing contract.
       nationalitaet: natHidden ? natHidden.value : '',
-      nationalitaet_code: natHidden ? (natHidden.dataset.code || '') : '',
+      nationalitaet_code: natCodes[0] || '',
+      nationalitaet_codes: natCodes.join(','),
+      federation_of_origin: fedHidden ? fedHidden.value : '',
       geschlecht: val('geschlecht'),
       bemerkungen: val('bemerkungen'),
       turnstile_token: turnstileToken,
@@ -1451,8 +1617,10 @@
         docUploads = {};
         var stEls = form.querySelectorAll('.doc-upload-status');
         for (var si = 0; si < stEls.length; si++) stEls[si].textContent = '';
-        if (natTriggerText) natTriggerText.textContent = '—';
-        if (natHidden) { natHidden.value = ''; delete natHidden.dataset.code; }
+        natCodes = [];
+        syncNationality();
+        if (fedHidden) fedHidden.value = '';
+        if (fedTriggerText) fedTriggerText.textContent = '—';
         // form.reset() cleared the situation radios and nationality; collapse all
         // conditional document rows back to hidden until they're re-selected.
         var fdRows = document.querySelectorAll('.bb-doc-cond');
@@ -1654,7 +1822,10 @@
       geburtsdatum: val('geburtsdatum'),
       nationalitaet: natHidden ? natHidden.value : '',
       geschlecht: val('geschlecht'),
-      nationalitaetCode: natHidden ? (natHidden.dataset.code || '') : '',
+      nationalitaetCode: natCodes[0] || '',
+      // Full set, so a form that asks "Swiss or other?" can honour a dual
+      // national's Swiss passport instead of reading "Schweiz, Italien" as other.
+      nationalitaetCodes: natCodes.slice(),
       situation: currentSituation(),
     };
   }
@@ -1796,7 +1967,9 @@
           if (d.geschlecht === 'männlich') { try { f.getCheckBox('Mann').check(); } catch(e) {} }
           if (d.geschlecht === 'weiblich') { try { f.getCheckBox('Frau').check(); } catch(e) {} }
 
-          if (d.nationalitaet === 'Schweiz') {
+          // Holding a Swiss passport alongside another still ticks "Schweiz" —
+          // the form asks whether the player is Swiss, not which passport is first.
+          if ((d.nationalitaetCodes || []).indexOf('CH') !== -1) {
             try { f.getCheckBox('Schweiz').check(); } catch(e) {}
           } else if (d.nationalitaet) {
             try { f.getCheckBox('Andere').check(); } catch(e) {}

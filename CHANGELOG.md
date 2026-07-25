@@ -2,6 +2,17 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.16.0] — 2026-07-25
+
+### Dual nationals can enter every passport they hold
+- Nationality was a single choice, which forced anyone with two passports to pick one and discard the other — and the discarded one is often the one that decides which documents Swiss Basketball and FIBA want. It is now a **multi-select with chips**: pick all of them, and the first choice counts as the primary.
+- **A Swiss passport anywhere in the list makes the applicant Swiss** for the document rules, not just when it happens to be listed first. FIBA treats a dual national holding Swiss nationality as Swiss, so a CH/IT player who listed Italy first was being asked for foreign-player documents nobody required of them. The form and the server apply the same rule, deliberately — a form that asks for less than the server enforces rejects the submission after everything has already been uploaded.
+- The licence application ticks **Schweiz** for anyone holding a Swiss passport, whichever position it sits in: the form asks whether the player is Swiss, not which passport comes first.
+
+### Federation of origin
+- New field for the **first** national federation the player held a licence with — the one Swiss Basketball needs in order to request a transfer certificate. Not the most recent one, which is a different question with a different answer for anyone who has moved more than once.
+- **"None" is an explicit answer, not a blank.** It says this is a first licence and there is nothing to request, which is exactly what the club needs to know; an empty field only says nobody filled it in.
+
 ## [1.15.4] — 2026-07-25
 
 ### The Freibrief waiver is back, this time on both sides

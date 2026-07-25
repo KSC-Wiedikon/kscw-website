@@ -135,8 +135,37 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.15.1</span>
+          <span class="changelog-badge">v1.15.2</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.15.2 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>Ein ID-Download konnte das Original löschen, ohne es je gespeichert zu haben</h3>
+            <ul>
+              <li>Beim Herunterladen eines Ausweises wird dieser anschliessend <strong>auf dem Server gelöscht</strong> — wir behalten den Scan nicht länger als nötig, was das Löschen zugleich unwiderruflich macht. Es lief pro Datei, ohne zu prüfen, ob der Download überhaupt geklappt hat: Bei abgelaufenem Token oder einem 401 wurde <strong>die Fehlermeldung</strong> unter dem Namen der Person gespeichert und der echte Scan eine Zeile später gelöscht. Neu wird alles vollständig geholt und geprüft, bevor irgendetwas entfernt wird</li>
+              <li>Die gespeicherte Datei hatte zudem <strong>keine Dateiendung</strong> und liess sich deshalb auch bei erfolgreichem Download nicht per Doppelklick öffnen. Sie richtet sich neu nach dem tatsächlichen Dateityp</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Auch die übrigen Downloads kommen nicht mehr abgeschnitten an</h3>
+            <ul>
+              <li>Die letzte Version hat die Lizenzformulare behoben; derselbe Fehler steckte in <strong>vier weiteren Download-Wegen</strong>, darunter <strong>einzelne Spielblätter</strong> und das <strong>SVRZ-Paket</strong> — die grösste Datei, die der Admin erzeugt, und diejenige, bei der ein abgeschnittener Download am ehesten unbemerkt weitergeleitet wird. Alle Downloads laufen neu über eine Stelle, die die Datei so lange hält, bis der Browser sie geschrieben hat</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Fotografierte Dokumente werden nicht mehr quer gespeichert</h3>
+            <ul>
+              <li>Ein Handy hält die Drehung eines Fotos als Zusatzinformation fest, nicht in den Bildpunkten selbst — die Umwandlung ins PDF verwarf sie. Ein Upload konnte dadurch im PDF gedreht landen, obwohl er auf dem Handy aufrecht aussah</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Ausserdem</h3>
+            <ul>
+              <li>Der <strong>ClubDesk-Export ist neu durch Tests abgesichert</strong>. ClubDesk ordnet die Spalten nach ihrer Position zu: Wird eine Überschrift ergänzt oder entfernt, ohne die Datenzeile mitzuändern, verschiebt sich alles danach — der Nachname ins Feld Vorname, die Strasse in die PLZ — und die Datei sieht dabei völlig korrekt aus. Die Spaltenliste und der Schutz vor Formel-Einschleusung sind jetzt festgehalten</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.15.1 — 2026-07-25</div>
@@ -571,8 +600,37 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.15.1</span>
+          <span class="changelog-badge">v1.15.2</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.15.2 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>An ID download could delete the original without ever saving it</h3>
+            <ul>
+              <li>Downloading an applicant's ID <strong>deletes it from the server afterwards</strong> — we keep the scan no longer than we need it, which also makes the delete irreversible. It ran per file without checking that the download had actually worked: on an expired token or a 401 it saved <strong>the error message</strong> under the applicant's name and deleted the real scan a line later. Everything is now fetched and verified before anything is removed</li>
+              <li>The saved file also had <strong>no extension</strong>, so even a successful download would not open on a double-click. It now follows the file's actual type</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>The remaining downloads no longer truncate</h3>
+            <ul>
+              <li>The previous release fixed the licence forms; the same fault sat in <strong>four other download paths</strong>, including <strong>individual scoresheets</strong> and the <strong>SVRZ bundle</strong> — the largest file the admin produces, and the one where a truncated download is least likely to be spotted before it is passed on. Every download now goes through one helper that holds the file until the browser has written it</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Photographed documents are no longer saved sideways</h3>
+            <ul>
+              <li>A phone records a photo's rotation as metadata rather than in the pixels, and the conversion to PDF discarded it — so an upload could end up rotated in the PDF while looking upright on the phone that took it</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Also</h3>
+            <ul>
+              <li>The <strong>ClubDesk export is now covered by tests</strong>. ClubDesk maps columns by position, so a header added or removed without the matching change to the row shifts every field after it — surname into Vorname, street into PLZ — and the file still looks perfectly well-formed. The column list and the formula-injection guard are now pinned</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.15.1 — 2026-07-25</div>

@@ -1646,12 +1646,7 @@ import '../styles/global.css';
       }).join('\n');
 
       var blob = new Blob([BOM + header + rows], { type: 'text/csv;charset=utf-8;' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = 'mixed-turnier-anmeldungen.csv';
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, 'mixed-turnier-anmeldungen.csv');
     }
 
     // Note modal for mixed turnier (speech bubble → full text)
@@ -1923,26 +1918,49 @@ import '../styles/global.css';
       }
     }
 
+    // Identity documents are downloaded and then deleted from Directus — we keep
+    // a copy no longer than we need it. That makes the delete irreversible, so
+    // every byte is fetched and checked BEFORE anything is removed: a 401, an
+    // expired token or an empty body must not cost the applicant their ID.
+    // Previously the loop downloaded and deleted one file at a time without
+    // checking res.ok, so a failed fetch saved the JSON error body under the
+    // applicant's name and deleted the real scan straight afterwards.
     async function downloadRegistrationFiles(item) {
       try {
         var token = await getValidToken();
         var files = [];
         if (item.id_upload_front) files.push({ id: item.id_upload_front, name: 'ID_front' });
         if (item.id_upload_back) files.push({ id: item.id_upload_back, name: 'ID_back' });
+        if (!files.length) return;
 
+        // Phase 1 — fetch everything and verify it before deleting anything.
+        var fetched = [];
         for (var i = 0; i < files.length; i++) {
           var res = await fetch(DIRECTUS_URL + '/assets/' + files[i].id, {
             headers: { 'Authorization': 'Bearer ' + token },
           });
+          if (!res.ok) throw new Error('HTTP ' + res.status + ' fetching ' + files[i].name);
+          var type = res.headers.get('content-type') || '';
           var blob = await res.blob();
-          var url = URL.createObjectURL(blob);
-          var a = document.createElement('a');
-          a.href = url;
-          a.download = item.nachname + '_' + item.vorname + '_' + files[i].name;
-          a.click();
-          URL.revokeObjectURL(url);
+          if (!blob.size) throw new Error('empty response for ' + files[i].name);
+          // A blob URL carries no filename, so the extension has to come from the
+          // content type — without it the saved file has no extension at all and
+          // will not open on a double-click.
+          var ext = /pdf/i.test(type) ? '.pdf'
+            : (/png/i.test(type) ? '.png'
+            : (/jpe?g/i.test(type) ? '.jpg'
+            : (/webp/i.test(type) ? '.webp'
+            : (/gif/i.test(type) ? '.gif'
+            : (/heic|heif/i.test(type) ? '.heic' : '')))));
+          fetched.push({ id: files[i].id, blob: blob, name: item.nachname + '_' + item.vorname + '_' + files[i].name + ext });
+        }
 
-          await fetch(DIRECTUS_URL + '/files/' + files[i].id, {
+        // Phase 2 — hand them to the browser.
+        fetched.forEach(function(f) { downloadBlob(f.blob, f.name); });
+
+        // Phase 3 — only now drop the originals.
+        for (var d = 0; d < fetched.length; d++) {
+          await fetch(DIRECTUS_URL + '/files/' + fetched[d].id, {
             method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token },
           });
         }
@@ -2235,12 +2253,7 @@ import '../styles/global.css';
       // UTF-8 BOM + header + rows
       var csv = '\uFEFF' + headers.join(';') + '\n' + rows.join('\n');
       var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = 'kscw_anmeldungen_' + new Date().toISOString().substring(0, 10) + '.csv';
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadBlob(blob, 'kscw_anmeldungen_' + new Date().toISOString().substring(0, 10) + '.csv');
     }
 
     // SECURITY: Neutralize spreadsheet formula prefixes (=, +, -, @, TAB, CR) so
@@ -4063,8 +4076,18 @@ import '../styles/global.css';
       var a = document.createElement('a');
       a.href = url;
       a.download = filename;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // The object URL has to outlive the click. Revoking it on the same tick
+      // races the browser writing the file and truncates the result — worse the
+      // larger it is, and this helper carries the SVRZ bundle (every scoresheet
+      // in one zip) as well as individual scoresheet PDFs. Same reason
+      // openScoresheet() holds its URL for a minute.
+      setTimeout(function() {
+        try { document.body.removeChild(a); } catch(e) {}
+        URL.revokeObjectURL(url);
+      }, 60000);
     }
     // headers: string[]; rows: (string|boolean)[][] — booleans render as Ja/Nein.
     function exportRowsTSV(nameBase, headers, rows) {
@@ -4664,7 +4687,11 @@ import '../styles/global.css';
     }
 
     async function imageBytesToPdf(bytes, type) {
-      var bitmap = await createImageBitmap(new Blob([bytes], { type: type }));
+      // imageOrientation must be explicit: a phone photo records its rotation in
+      // EXIF rather than in the pixels, and decoders that ignore that hand back a
+      // sideways bitmap — which is then baked into the PDF, since the canvas
+      // re-encode drops EXIF entirely. Browsers have differed on the default.
+      var bitmap = await createImageBitmap(new Blob([bytes], { type: type }), { imageOrientation: 'from-image' });
       var canvas = document.createElement('canvas');
       canvas.width = bitmap.width;
       canvas.height = bitmap.height;

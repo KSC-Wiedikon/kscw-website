@@ -378,6 +378,16 @@
   form.querySelectorAll('input[name="bb_situation"]').forEach(function (r) {
     r.addEventListener('change', updateBBDocs);
   });
+  // Switching sport changes which federation set the picker shows, and clears any
+  // pick made under the old sport — the stored code would otherwise keep a label
+  // ("FIPAV") that no longer matches the selected membership type.
+  form.querySelectorAll('input[name="membership_type"]').forEach(function (r) {
+    r.addEventListener('change', function () {
+      if (fedHidden) fedHidden.value = '';
+      if (fedTriggerText) fedTriggerText.textContent = '—';
+      if (fedWrapper && fedWrapper.classList.contains('open')) renderFederationOptions('');
+    });
+  });
   form.querySelectorAll('input[name="bb_recent_licence"]').forEach(function (r) {
     r.addEventListener('change', updateBBDocs);
   });
@@ -404,6 +414,49 @@
         natWrapper.classList.remove('open');
       }
     });
+  }
+
+
+  // National federation names for the federation-of-origin picker, per sport.
+  // "Federation of origin" asks which BODY first licensed the applicant, and the
+  // answer is sport-specific: an Italian volleyballer came from FIPAV, an Italian
+  // basketballer from FIP. Not exhaustive — anything absent falls back to the
+  // country name, which is still correct, just less specific.
+  var FEDERATIONS = {
+    volleyball: {
+      AF: 'Afghanistan Volleyball Federation', AL: 'FSHV', AT: 'ÖVV', AU: 'Volleyball Australia',
+      BG: 'Bulgarian Volleyball Federation', BR: 'CBV', CH: 'Swiss Volley', CO: 'Fedevoley',
+      CZ: 'Český volejbalový svaz', DE: 'DVV', ES: 'RFEVB', ET: 'Ethiopian Volleyball Federation',
+      FI: 'Lentopalloliitto', FR: 'FFVB', GB: 'Volleyball England', GR: 'Hellenic Volleyball Federation',
+      HU: 'Magyar Röplabda Szövetség', IQ: 'Iraqi Volleyball Federation', IR: 'IRIVF', IT: 'FIPAV',
+      LK: 'Sri Lanka Volleyball Federation', MX: 'FMVB', NL: 'Nevobo', NZ: 'Volleyball New Zealand',
+      PE: 'FPV', PL: 'PZPS', PT: 'FPV', RS: 'OSS', RU: 'Russian Volleyball Federation',
+      SE: 'Svenska Volleybollförbundet', SI: 'OZS', US: 'USA Volleyball'
+    },
+    basketball: {
+      AF: 'Afghanistan Basketball Federation', AL: 'FSHB', AT: 'ÖBV', AU: 'Basketball Australia',
+      BG: 'Bulgarian Basketball Federation', BR: 'CBB', CH: 'Swiss Basketball', CO: 'Fecolcesto',
+      CZ: 'Česká basketbalová federace', DE: 'DBB', ES: 'FEB', ET: 'Ethiopian Basketball Federation',
+      FI: 'Basketball Finland', FR: 'FFBB', GB: 'Basketball England', GR: 'Hellenic Basketball Federation',
+      HU: 'MKOSZ', IQ: 'Iraq Basketball Federation', IR: 'IRIBF', IT: 'FIP',
+      LK: 'Sri Lanka Basketball Federation', MX: 'ADEMEBA', NL: 'NBB', NZ: 'Basketball New Zealand',
+      PE: 'FDPB', PL: 'PZKosz', PT: 'FPB', RS: 'KSS', RU: 'Russian Basketball Federation',
+      SE: 'Svenska Basketbollförbundet', SI: 'KZS', US: 'USA Basketball'
+    }
+  };
+
+  // The membership type drives which federation set applies. Passive members pick
+  // no sport, so they see plain country names.
+  function fedSport() {
+    var r = form.querySelector('input[name="membership_type"]:checked');
+    var v = r ? r.value : '';
+    return (v === 'volleyball' || v === 'basketball') ? v : '';
+  }
+
+  function federationLabelFor(code, countryLabelText) {
+    var sport = fedSport();
+    var fed = sport && FEDERATIONS[sport] ? FEDERATIONS[sport][code] : '';
+    return fed ? fed + ' (' + countryLabelText + ')' : countryLabelText;
   }
 
   // ── Federation of origin (single-select) ─────────────────────
@@ -446,8 +499,10 @@
       // Search matched the plain label above, so the flag is added only now —
       // typing "sui" must not have to get past a flag character.
       var optFlag = countryFlag(value);
-      div.textContent = optFlag ? optFlag + ' ' + label : label;
-      div.addEventListener('click', function () { selectFederation(value, label); });
+      var shown = value === FED_NONE ? label : federationLabelFor(value, label);
+      div.textContent = optFlag ? optFlag + ' ' + shown : shown;
+      div.dataset.shown = shown;
+      div.addEventListener('click', function () { selectFederation(value, shown); });
       fedOptions.appendChild(div);
       return true;
     }

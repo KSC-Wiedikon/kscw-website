@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.16.1] — 2026-07-25
+
+### The federation picker names the actual federation, per sport
+- "Federation of origin" asks which **body** first licensed you, and that answer is sport-specific: an Italian volleyballer came from FIPAV, an Italian basketballer from FIP. The picker now shows the federation's own name next to the country instead of the country alone. The list is deliberately not exhaustive — anything not covered falls back to the country name, which is still a correct answer, just less specific.
+- Switching between volleyball and basketball **clears a federation already picked**, rather than leaving a label from the other sport attached to the stored code.
+
 ## [1.16.0] — 2026-07-25
 
 ### Dual nationals can enter every passport they hold

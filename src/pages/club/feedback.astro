@@ -147,6 +147,13 @@ const locale = 'de';
               <li>Der Export ist neu CP1252 ohne Marke und verwendet dieselbe Umschrift wie die Synchronisation: Was CP1252 kann, bleibt unverändert (<strong>ä ö ü é à ç ß Š ž</strong>), das Wenige, was es nicht kann, verliert sein Diakritikum (<strong>ć → c</strong>, <strong>ł → l</strong>, <strong>đ → d</strong>) statt als Zeichensalat anzukommen. Beide Wege schreiben damit dieselbe Schreibweise ins Register</li>
             </ul>
           </div>
+          <div class="changelog-group">
+            <h3>«Keiner» beim Herkunftsverband nennt jetzt den Verband</h3>
+            <ul>
+              <li>Die Option hiess <em>«Keiner / noch nie lizenziert»</em> — mehrdeutig für jemanden, der <strong>sehr wohl</strong> lizenziert war, einfach nicht bei einem nationalen Verband. Italiens <strong>CSI</strong>, <strong>UISP</strong> und <strong>PGS</strong> sind CONI-Sportförderverbände, keine FIVB-/FIBA-Mitglieder — es gibt also gar keine Lizenz zu übertragen</li>
+              <li>Solche Anmeldungen hätten naheliegend <strong>Italien</strong> gewählt, worauf der Club bei <strong>FIPAV</strong> eine Freigabe angefragt hätte, die es dort nicht gibt. Die Option heisst neu <em>«Keiner / noch nie bei einem nationalen Verband lizenziert»</em></li>
+            </ul>
+          </div>
         </div>
 
         <div class="changelog-entry">
@@ -675,6 +682,13 @@ const locale = 'de';
             <ul>
               <li>The file was written as <strong>UTF-8</strong>, but ClubDesk's CSV interface is <strong>Windows-1252</strong> — its own export is CP1252 and the scripted member sync transcodes before uploading. Importing our UTF-8 file by hand turned <code>Dürig</code> into <code>DÃ¼rig</code> in the member register, and the leading byte-order mark left the first column header reading <code>ï»¿Nachname</code>, which may not map at all</li>
               <li>The export is now CP1252 with no mark, using the same transliteration the sync uses: letters CP1252 holds stay as they are (<strong>ä ö ü é à ç ß Š ž</strong>), and the few it cannot lose their diacritic (<strong>ć → c</strong>, <strong>ł → l</strong>, <strong>đ → d</strong>) rather than arriving as mojibake. Both writers now put the same spelling into the register</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>The "none" option in Federation of origin now names the federation</h3>
+            <ul>
+              <li>It read <em>"None / never licensed before"</em> — ambiguous for someone who <strong>was</strong> licensed, just not with a national federation. Italy's <strong>CSI</strong>, <strong>UISP</strong> and <strong>PGS</strong> are CONI sports-promotion bodies, not FIVB/FIBA members, so no licence exists to transfer</li>
+              <li>Such an applicant would reasonably have picked <strong>Italy</strong>, sending the club chasing <strong>FIPAV</strong> for a clearance FIPAV has no record to issue. It now reads <em>"None / never licensed with a national federation"</em></li>
             </ul>
           </div>
         </div>

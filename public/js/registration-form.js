@@ -1968,7 +1968,13 @@
   // Croatian or Polish name made pdfDoc.save() throw and the applicant silently
   // received a BLANK form — the download path's catch falls back to the empty
   // PDF, so it looked like the prefill had simply broken.
-  var NON_DECOMPOSING = { 'ł': 'l', 'Ł': 'L', 'đ': 'd', 'Đ': 'D', 'ø': 'o', 'Ø': 'O', 'ı': 'i', 'ħ': 'h', 'Ħ': 'H', 'ŧ': 't', 'Ŧ': 'T' };
+  // Letters with no CP1252 slot AND no combining-mark decomposition. Must match
+  // admin.astro's CP1252_TRANSLIT and wiedisync's CP1252_TRANSLIT byte for byte:
+  // the same person's name is written by all three (licence PDF here, licence PDF
+  // and ClubDesk CSV in the admin, ClubDesk sync in wiedisync), and a table that
+  // drifts spells one member two ways. tests/unit/registration-pdf-charset pins it.
+  // (ø/Ø are deliberately absent: CP1252 holds them at 0xF8/0xD8.)
+  var NON_DECOMPOSING = { 'đ': 'd', 'Đ': 'D', 'ł': 'l', 'Ł': 'L', 'ı': 'i', 'ħ': 'h', 'Ħ': 'H', 'ŧ': 't', 'Ŧ': 'T' };
   function winAnsiSafe(value) {
     var str = String(value == null ? '' : value);
     var out = '';

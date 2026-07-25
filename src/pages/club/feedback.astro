@@ -135,8 +135,20 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.15.3</span>
+          <span class="changelog-badge">v1.15.4</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.15.4 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>Der Freibrief-Verzicht ist zurück — diesmal auf beiden Seiten</h3>
+            <ul>
+              <li>Der Server setzt jetzt dieselbe Regel um, deshalb kann das Formular den Freibrief dort weglassen, wo Swiss Basketball ihn nicht verlangt: <strong>keine Lizenz in den letzten zwei Saisons</strong> oder <strong>Kategorie U12 und tiefer</strong>. Der Server war zuerst an der Reihe — genau darum geht es, denn 1.15.1 hatte nur die Formularhälfte ausgeliefert und damit ebendiese Leute ausgesperrt</li>
+              <li>U12 und tiefer ergibt sich aus dem Geburtsdatum und fragt nichts zusätzlich ab. Alle anderen, die aus einem Schweizer Club wechseln, werden einmal gefragt, ob sie in den letzten zwei Saisons lizenziert waren; nur ein ausdrückliches <strong>Nein</strong> lässt den Freibrief entfallen. Ohne Antwort bleibt er Pflicht — im Formular wie auf dem Server, denn ein zu Unrecht erlassener Freibrief führt zu einem unvollständigen Dossier, das Swiss Basketball später zurückweist</li>
+              <li>Die Antwort wird bei der Anmeldung gespeichert. Damit stimmen die Seite «Dokumente nachreichen» und die Freigabe im Admin mit dem überein, was das Formular verlangt hat, statt ein Dokument erneut einzufordern, das niemand schuldet</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.15.3 — 2026-07-25</div>
@@ -612,8 +624,20 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.15.3</span>
+          <span class="changelog-badge">v1.15.4</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.15.4 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>The Freibrief waiver is back, this time on both sides</h3>
+            <ul>
+              <li>The server now implements the same rule, so the form can stop asking for the release letter where Swiss Basketball does not require it: <strong>no licence in the last two seasons</strong>, or <strong>category U12 and below</strong>. The server went first — that ordering is the whole point, since 1.15.1 shipped the form half alone and locked exactly those applicants out</li>
+              <li>U12 and below follows from the date of birth and asks nothing extra. Everyone else transferring from a Swiss club is asked once whether they held a licence in the last two seasons; only an explicit <strong>no</strong> waives the document. Unanswered still requires it, on the form and on the server alike — waiving it wrongly produces an incomplete dossier that Swiss Basketball rejects later, so the cautious answer is the default</li>
+              <li>The answer is stored with the registration, so the "documents still missing" page and the approval step in the admin agree with what the form asked for, rather than re-demanding a document nobody owes</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.15.3 — 2026-07-25</div>

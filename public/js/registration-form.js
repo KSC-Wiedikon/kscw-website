@@ -476,7 +476,14 @@
   var FED_NONE = 'NONE';
 
   function fedNoneLabel() {
-    return locale === 'de' ? 'Keiner / noch nie lizenziert' : 'None / never licensed before';
+    // Names the FEDERATION explicitly: Italy's CSI, UISP, PGS et al. are sports
+    // promotion bodies, not FIVB/FIBA members, so a player who only ever played
+    // those has no federation of origin and must land here rather than picking
+    // "Italy" — which would send the club chasing FIPAV for a clearance that
+    // does not exist.
+    return locale === 'de'
+      ? 'Keiner / noch nie bei einem nationalen Verband lizenziert'
+      : 'None / never licensed with a national federation';
   }
 
   function selectFederation(value, label) {

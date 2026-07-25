@@ -135,8 +135,19 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.16.1</span>
+          <span class="changelog-badge">v1.16.2</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.16.2 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>Der ClubDesk-Export verstümmelte jeden Namen mit Akzent</h3>
+            <ul>
+              <li>Die Datei wurde als <strong>UTF-8</strong> geschrieben, die CSV-Schnittstelle von ClubDesk ist aber <strong>Windows-1252</strong> — der eigene Export von ClubDesk ist CP1252, und die skriptgesteuerte Mitgliedersynchronisation rechnet vor dem Hochladen um. Wer unsere UTF-8-Datei von Hand importierte, machte aus <code>Dürig</code> ein <code>DÃ¼rig</code> im Mitgliederregister; die vorangestellte Byte-Reihenfolge-Marke liess ausserdem die erste Spaltenüberschrift als <code>ï»¿Nachname</code> erscheinen, die womöglich gar nicht zugeordnet wird</li>
+              <li>Der Export ist neu CP1252 ohne Marke und verwendet dieselbe Umschrift wie die Synchronisation: Was CP1252 kann, bleibt unverändert (<strong>ä ö ü é à ç ß Š ž</strong>), das Wenige, was es nicht kann, verliert sein Diakritikum (<strong>ć → c</strong>, <strong>ł → l</strong>, <strong>đ → d</strong>) statt als Zeichensalat anzukommen. Beide Wege schreiben damit dieselbe Schreibweise ins Register</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.16.1 — 2026-07-25</div>
@@ -654,8 +665,19 @@ const locale = 'de';
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
           {t(locale, 'changelogTitle')}
-          <span class="changelog-badge">v1.16.1</span>
+          <span class="changelog-badge">v1.16.2</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.16.2 — 2026-07-25</div>
+          <div class="changelog-group">
+            <h3>The ClubDesk export was mangling every accented name</h3>
+            <ul>
+              <li>The file was written as <strong>UTF-8</strong>, but ClubDesk's CSV interface is <strong>Windows-1252</strong> — its own export is CP1252 and the scripted member sync transcodes before uploading. Importing our UTF-8 file by hand turned <code>Dürig</code> into <code>DÃ¼rig</code> in the member register, and the leading byte-order mark left the first column header reading <code>ï»¿Nachname</code>, which may not map at all</li>
+              <li>The export is now CP1252 with no mark, using the same transliteration the sync uses: letters CP1252 holds stay as they are (<strong>ä ö ü é à ç ß Š ž</strong>), and the few it cannot lose their diacritic (<strong>ć → c</strong>, <strong>ł → l</strong>, <strong>đ → d</strong>) rather than arriving as mojibake. Both writers now put the same spelling into the register</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.16.1 — 2026-07-25</div>

@@ -2,6 +2,13 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.15.4] — 2026-07-25
+
+### The Freibrief waiver is back, this time on both sides
+- The server now implements the same rule (wiedisync migration 232 + `bbFreibriefWaived`), so the form can stop asking for the release letter where Swiss Basketball does not require it: **no licence in the last two seasons**, or **category U12 and below**. Live on dev and prod before this was switched on — the ordering is the whole point, since 1.15.1 shipped the form half alone and locked those applicants out.
+- U12 and below is derived from the date of birth and never asks anything extra. Everyone else transferring from a Swiss club is asked once whether they held a licence in the last two seasons; only an explicit **no** waives the document. Unanswered still requires it, on the form and on the server alike — waiving wrongly produces an incomplete dossier that Swiss Basketball rejects later, so the cautious answer is the default.
+- The answer is stored with the registration, so the "documents still missing" page and the approval step in the admin agree with what the form asked for, instead of re-demanding a document nobody owes.
+
 ## [1.15.3] — 2026-07-25
 
 ### Correction: the Freibrief waiver from 1.15.1 is switched off again

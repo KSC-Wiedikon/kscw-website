@@ -432,20 +432,20 @@
   // approximates it as "under 12 at season start", the same convention used for
   // U18 above. Deliberately strict: an unknown date of birth keeps the Freibrief
   // required, because wrongly waiving it produces an incomplete dossier.
-  // The Freibrief waiver is DISABLED until the backend agrees with it.
+  // The Freibrief waiver, enabled once the backend agreed with it.
   //
-  // wiedisync's bbRequiredDocs() (directus/extensions/kscw-endpoints/src/bb-docs.js)
-  // still lists bb_doc_freibrief for every transfer_ch, and POST /kscw/registration
-  // rejects a submission whose required documents are missing with HTTP 400
-  // "Erforderliche Dokumente fehlen". Waiving it client-side therefore does not
-  // spare anyone the document — it stops them registering at all, and the error
-  // tells them to reload the page, which cannot help. Exactly the applicants the
-  // waiver was meant to help (U12 transfers, players who have not been licensed
-  // for two seasons) would be the ones locked out.
+  // This gate exists because waiving client-side alone does not spare anyone the
+  // document — it stops them registering. wiedisync's bbRequiredDocs() is enforced
+  // at three points (create, doc-status, approval gate) and POST /kscw/registration
+  // answers HTTP 400 when a required document is missing, so a form that waives
+  // while the server still demands locks out exactly the applicants it meant to
+  // help. That is what kscw-website 1.15.1 did.
   //
-  // Flip this on in the same change that ships the matching backend rule; the
-  // question and the derivation below are already in place and correct.
-  var FREIBRIEF_WAIVER_ENABLED = false;
+  // Both sides now implement the same rule: wiedisync bb-docs.js bbFreibriefWaived()
+  // plus migration 232 (registrations.bb_recent_licence), live on dev and prod
+  // since 2026-07-25. Keep them in step — if this rule changes, change it there
+  // first, and only then here.
+  var FREIBRIEF_WAIVER_ENABLED = true;
 
   function isYouthFreibriefExempt(dobStr) {
     if (!FREIBRIEF_WAIVER_ENABLED) return false;

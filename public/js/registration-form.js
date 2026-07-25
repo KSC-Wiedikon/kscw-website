@@ -476,14 +476,15 @@
   var FED_NONE = 'NONE';
 
   function fedNoneLabel() {
-    // Names the FEDERATION explicitly: Italy's CSI, UISP, PGS et al. are sports
-    // promotion bodies, not FIVB/FIBA members, so a player who only ever played
-    // those has no federation of origin and must land here rather than picking
-    // "Italy" — which would send the club chasing FIPAV for a clearance that
-    // does not exist.
+    // FIVB Sports Regulations, via Swiss Volley: the federation of origin is the
+    // association that licensed the person AT AGE 14 — not wherever they first
+    // played. So this option is about age 14 specifically, and it is also the
+    // point where recreational bodies drop out: Italy's CSI, UISP and PGS are
+    // CONI promotion bodies, not FIVB/FIBA members, so they never licensed anyone
+    // in the sense that matters and there is nothing to transfer.
     return locale === 'de'
-      ? 'Keiner / noch nie bei einem nationalen Verband lizenziert'
-      : 'None / never licensed with a national federation';
+      ? 'Keiner / mit 14 bei keinem nationalen Verband lizenziert'
+      : 'None / not licensed with a national federation at 14';
   }
 
   function selectFederation(value, label) {

@@ -147,9 +147,11 @@ const KS_OTHER = [
 
         <!-- The national federation that FIRST licensed the player — their
              federation of origin, not the most recent one. "None" is an explicit
-             answer, not a blank: it says this will be their first licence. -->
+             answer, not a blank: it says this will be their first licence.
+             Mandatory for volleyball (except guests) — enforced in JS on submit;
+             the star is toggled by registration-form.js to match. -->
         <div class="form-group nationality-wrapper" id="federation-wrapper">
-          <label><span data-i18n="registrationFederation">{t(locale, 'registrationFederation')}</span></label>
+          <label><span data-i18n="registrationFederation">{t(locale, 'registrationFederation')}</span><span id="federation-required-star" style="display: none;"> *</span></label>
           <small style="color: var(--text-secondary); display: block; margin-bottom: var(--space-xs);" data-i18n="registrationFederationHint">{t(locale, 'registrationFederationHint')}</small>
           <input type="hidden" id="federation_of_origin" name="federation_of_origin">
           <button type="button" class="form-select nationality-trigger" id="federation-trigger">

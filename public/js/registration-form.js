@@ -386,6 +386,7 @@
       if (fedHidden) fedHidden.value = '';
       if (fedTriggerText) fedTriggerText.textContent = '—';
       if (fedWrapper && fedWrapper.classList.contains('open')) renderFederationOptions('');
+      updateFedRequiredStar();
     });
   });
   form.querySelectorAll('input[name="bb_recent_licence"]').forEach(function (r) {
@@ -457,6 +458,18 @@
     var sport = fedSport();
     var fed = sport && FEDERATIONS[sport] ? FEDERATIONS[sport][code] : '';
     return fed ? fed + ' (' + countryLabelText + ')' : countryLabelText;
+  }
+
+  // The star on the federation label tracks requiredness: volleyball only, and
+  // guests are exempt (never licensed, so there is no origin federation to
+  // declare). Requiredness itself is enforced in JS on submit — the hidden
+  // input can't carry `required` (type=hidden skips constraint validation).
+  function updateFedRequiredStar() {
+    var star = document.getElementById('federation-required-star');
+    if (!star) return;
+    var vbFunktion = document.getElementById('funktion-vb');
+    var required = fedSport() === 'volleyball' && (!vbFunktion || vbFunktion.value !== 'Guest');
+    star.style.display = required ? '' : 'none';
   }
 
   // ── Federation of origin (single-select) ─────────────────────
@@ -1020,6 +1033,8 @@
     applyGuestVisibility(sport, isGuest);
     // AHV requiredness now depends on funktion (guest → never) — recompute.
     updateAhvRequired();
+    // So does the federation-of-origin star (volleyball non-guests only).
+    updateFedRequiredStar();
 
     // A guest picks a team like a player, just at a reduced fee (no licence).
     var showTeam = isGuest || funktion === 'Spieler*in' || funktion === 'Trainer*in' || funktion === 'Teamverantwortliche*r';
@@ -1468,6 +1483,17 @@
       }
     }
 
+    // Federation of origin: a volleyball licence needs an explicit answer — a
+    // federation or the "none at 14" sentinel. A blank leaves the club guessing
+    // whether a transfer certificate must be chased; guests are exempt because
+    // they are never licensed.
+    if (type === 'volleyball' && !isGuest && !(fedHidden && fedHidden.value)) {
+      logBlock('blocked: vb federation of origin not selected');
+      return showFeedback('error', locale === 'de'
+        ? 'Bitte wähle deinen Herkunftsverband — oder «Keiner», falls du mit 14 bei keinem nationalen Verband lizenziert warst.'
+        : 'Please select your federation of origin — or "None" if you were not licensed with a national federation at 14.');
+    }
+
     // "Other cantonal school" picked but no specific school chosen.
     if (type === 'volleyball' || type === 'basketball') {
       var ksPrefix = type === 'volleyball' ? 'vb' : 'bb';
@@ -1684,6 +1710,7 @@
         syncNationality();
         if (fedHidden) fedHidden.value = '';
         if (fedTriggerText) fedTriggerText.textContent = '—';
+        updateFedRequiredStar();
         // form.reset() cleared the situation radios and nationality; collapse all
         // conditional document rows back to hidden until they're re-selected.
         var fdRows = document.querySelectorAll('.bb-doc-cond');

@@ -1,6 +1,7 @@
 ---
 import PageLayout from '../../layouts/PageLayout.astro';
 import { t } from '../../lib/i18n';
+import { versionedAsset } from '../../lib/assetVersion';
 
 const locale = 'de';
 
@@ -569,7 +570,10 @@ const KS_OTHER = [
   </section>
 
   <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-  <script is:inline src="/js/registration-form.js?v=3.12.0"></script>
+  <!-- Cache-buster is the file's content hash (src/lib/assetVersion.ts) — a
+       hand-written version was forgotten once and shipped a validation rule
+       that cached browsers never ran. -->
+  <script is:inline src={versionedAsset('js/registration-form.js')}></script>
   <script src="../../islands/scroll-animations.ts"></script>
 </PageLayout>
 

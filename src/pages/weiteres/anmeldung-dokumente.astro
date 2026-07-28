@@ -1,6 +1,7 @@
 ---
 import PageLayout from '../../layouts/PageLayout.astro';
 import { t } from '../../lib/i18n';
+import { versionedAsset } from '../../lib/assetVersion';
 
 const locale = 'de';
 ---
@@ -36,7 +37,7 @@ const locale = 'de';
     </div>
   </section>
 
-  <script is:inline src="/js/anmeldung-dokumente.js?v=1.0.0"></script>
+  <script is:inline src={versionedAsset('js/anmeldung-dokumente.js')}></script>
 </PageLayout>
 
 <style>

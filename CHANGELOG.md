@@ -2,6 +2,13 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.16.4] — 2026-07-30
+
+### The membership fee tables were cut off on the right
+- The three tables on **Membership** sat three across on a desktop, which left each column too narrow for its own content. The category descriptions could not wrap, so the tables overflowed their columns: the **fee amounts were pushed out of sight** behind a scrollbar, on the very page whose job is to state them.
+- **Volleyball and basketball now sit side by side**, with the Swiss Volley licence fees below volleyball, where they belong. Two full-width columns fit their text, so nothing is clipped. On a phone the three still stack in that order.
+- The **Category / Fee** headings were dark grey on the dark blue header bar and effectively invisible. They are white now.
+
 ## [1.16.3] — 2026-07-25
 
 ### One member, one spelling — the accent tables had drifted apart

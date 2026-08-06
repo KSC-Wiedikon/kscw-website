@@ -891,8 +891,14 @@
     var modalGame = toModalGame(g, teamData);
     tr._gameData = modalGame;
 
-    // Date
-    tr.appendChild(makeCell(formatDateLocal(g.date), 'gt-date'));
+    // Date (+ trophy for cup fixtures — see the homepage table for why the
+    // marker lives in the date cell)
+    var dateCell = makeCell(formatDateLocal(g.date), 'gt-date');
+    if (window.KSCWGameIcons && KSCWGameIcons.isCupGame(g)) {
+      tr.classList.add('is-cup');
+      dateCell.appendChild(KSCWGameIcons.createCupIcon(g.league));
+    }
+    tr.appendChild(dateCell);
 
     // Time
     tr.appendChild(makeCell(g.time ? g.time.slice(0, 5) : '', 'gt-time'));
@@ -944,6 +950,11 @@
 
     var table = document.createElement('table');
     table.className = 'game-table';
+    // Reserve the trophy slot on every date cell so cup and league rows keep
+    // the same column alignment (see .has-cup in the CSS).
+    if (window.KSCWGameIcons && games.some(function (g) { return KSCWGameIcons.isCupGame(g); })) {
+      table.classList.add('has-cup');
+    }
     var tbody = document.createElement('tbody');
     for (var i = 0; i < games.length; i++) {
       tbody.appendChild(buildGameRow(games[i], showScore, teamData));

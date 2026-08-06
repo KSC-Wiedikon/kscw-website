@@ -31,6 +31,65 @@
     return chip;
   }
 
+  // ── Cup games ─────────────────────────────────────────────────────────
+  // `games` carries no competition-type field; the only marker a cup fixture
+  // has is its league string ("Züri Cup — 1/8-Final, Spiel 4", "Mobiliar
+  // Volley Cup — Tour 2, Spiel 26"). Word-bounded so a league that merely
+  // contains the letters (e.g. a club name) doesn't match.
+  var CUP_RE = /\b(cup|pokal|coupe)\b/i;
+
+  function isCupGame(game) {
+    return !!game && CUP_RE.test(game.league || '');
+  }
+
+  // Lucide "trophy" (vendored 0.577.0). Built here rather than via
+  // `<i data-lucide>`: game rows are created after lucide.createIcons() has
+  // already run, so the placeholder would never be replaced.
+  var TROPHY_PATHS = [
+    'M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978',
+    'M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978',
+    'M18 9h1.5a1 1 0 0 0 0-5H18',
+    'M4 22h16',
+    'M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z',
+    'M6 9H4.5a1 1 0 0 1 0-5H6'
+  ];
+
+  /**
+   * Trophy marker for cup fixtures.
+   * @param {string|null} label competition name for the tooltip / screen
+   *   readers; pass null where the surrounding text already names it.
+   */
+  function createCupIcon(label) {
+    var ns = 'http://www.w3.org/2000/svg';
+    var span = el('span', 'game-cup-icon');
+    if (label) {
+      span.title = label;
+      span.setAttribute('role', 'img');
+      span.setAttribute('aria-label', label);
+    } else {
+      span.setAttribute('aria-hidden', 'true');
+    }
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    for (var i = 0; i < TROPHY_PATHS.length; i++) {
+      var p = document.createElementNS(ns, 'path');
+      p.setAttribute('d', TROPHY_PATHS[i]);
+      svg.appendChild(p);
+    }
+    span.appendChild(svg);
+    return span;
+  }
+
+  // Shared with the game tables (homepage + team pages), which are rendered
+  // by their own scripts but load this one first.
+  window.KSCWGameIcons = { isCupGame: isCupGame, createCupIcon: createCupIcon };
+
   function infoRow(label, value) {
     var row = el('div', 'gm-row');
     row.appendChild(el('span', 'gm-label', label));
@@ -92,7 +151,13 @@
     left.style.alignItems = 'center';
     left.style.gap = '0.5rem';
     if (game.league) {
-      left.appendChild(el('span', 'badge', game.league));
+      var leagueBadge = el('span', 'badge', game.league);
+      if (isCupGame(game)) {
+        leagueBadge.classList.add('badge-cup');
+        // Decorative: the badge text already spells out the competition.
+        leagueBadge.insertBefore(createCupIcon(null), leagueBadge.firstChild);
+      }
+      left.appendChild(leagueBadge);
     }
     left.appendChild(createChipSpan(game));
     header.appendChild(left);

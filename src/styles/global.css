@@ -1346,6 +1346,35 @@ tr:hover td {
   flex-shrink: 0;
 }
 .game-sport-icon svg { display: block; width: 18px; height: 18px; }
+/* Cup fixtures (Züri Cup, Mobiliar Volley Cup …) get a trophy after the date */
+.game-cup-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 6px;
+  color: var(--kscw-gold);
+  flex-shrink: 0;
+}
+.game-cup-icon svg { display: block; width: 14px; height: 14px; }
+/* Bright gold washes out on the light theme's white — take the same darker
+   ochre the light theme already uses for .badge-gold text. Must stay above the
+   .badge-cup rule below, which is equally specific and has to win there. */
+.light .game-cup-icon { color: #92710a; }
+/* Every row is its own grid, so an inline trophy would push the time/badge/
+   matchup of cup rows out of line with the rest of the table. Tables that
+   contain a cup game reserve the slot on all their date cells instead
+   (`has-cup` is set by the renderers) and the trophy sits inside it. */
+.game-table.has-cup .gt-date { position: relative; padding-right: 22px; }
+.game-table.has-cup .gt-date .game-cup-icon {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0;
+}
+/* Inside the game-modal league badge the trophy leads the text and takes the
+   badge's own colour. */
+.badge-cup .game-cup-icon { margin-left: 0; margin-right: 4px; color: inherit; }
 .game-score {
   font-family: var(--font-display);
   font-weight: 700;

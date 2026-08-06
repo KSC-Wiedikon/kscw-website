@@ -278,8 +278,15 @@ try {
         // 1: sport icon
         tr.appendChild(makeCell(createIconEl(game), 'gt-icon'));
 
-        // 2: date
-        tr.appendChild(makeCell(formatDate(game.date), 'gt-date'));
+        // 2: date (+ trophy for cup fixtures — sits in the date cell because
+        // it is the only cell that survives every breakpoint; the icon column
+        // and the team chip are both hidden on mobile)
+        var dateCell = makeCell(formatDate(game.date), 'gt-date');
+        if (window.KSCWGameIcons && KSCWGameIcons.isCupGame(game)) {
+          tr.classList.add('is-cup');
+          dateCell.appendChild(KSCWGameIcons.createCupIcon(game.league));
+        }
+        tr.appendChild(dateCell);
 
         // 3: time
         tr.appendChild(makeCell(game.time ? game.time.slice(0, 5) : '', 'gt-time'));
@@ -349,6 +356,11 @@ try {
         if (!tbl) return;
         var tbody = tbl.querySelector('tbody') || tbl;
         while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+        // Reserve the trophy slot on every date cell of this table so cup and
+        // league rows keep the same column alignment (see .has-cup in the CSS).
+        tbl.classList.toggle('has-cup', !!(window.KSCWGameIcons && games.some(function(g) {
+          return KSCWGameIcons.isCupGame(g);
+        })));
         if (!games.length) {
           var tr = document.createElement('tr');
           var td = document.createElement('td');

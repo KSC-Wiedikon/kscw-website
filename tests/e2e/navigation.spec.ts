@@ -123,7 +123,11 @@ test.describe('navigation - mobile nav', () => {
     await page.locator('.nav-hamburger').click();
     await expect(page.locator('body')).toHaveClass(/nav-open/);
     const directLink = page.locator('.mobile-nav a[href^="/"]').first();
-    await directLink.click();
+    const href = await directLink.getAttribute('href');
+    // The click closes the menu AND navigates. Wait for the navigation to
+    // settle before asserting — otherwise the class check races the teardown of
+    // the page being left, which fails only under parallel load.
+    await Promise.all([page.waitForURL(`**${href}`), directLink.click()]);
     await expect(page.locator('body')).not.toHaveClass(/nav-open/);
   });
 });

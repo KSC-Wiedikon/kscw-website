@@ -1,7 +1,18 @@
 import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { gotoWithLang, switchLangTo } from './helpers';
-import de from '../../public/js/i18n/de.json';
-import en from '../../public/js/i18n/en.json';
+
+// Read + parse rather than `import … from '*.json'`: Playwright loads specs as
+// real ESM, where a JSON import needs an import attribute, and without one Node
+// throws while *collecting* the file. That failure is not scoped to this spec —
+// it aborts the whole run with "No tests found", so every e2e spec silently
+// stopped running in CI. Reading the file has no such failure mode.
+// import.meta.url, not __dirname: ESM has no __dirname either.
+const dict = (lang: 'de' | 'en'): Record<string, string> =>
+  JSON.parse(readFileSync(new URL(`../../public/js/i18n/${lang}.json`, import.meta.url), 'utf8'));
+
+const de = dict('de');
+const en = dict('en');
 
 // Single-URL site: one canonical path per page, language chosen client-side.
 // These specs used to assert on /de/… vs /en/… URLs; that scheme is gone, so

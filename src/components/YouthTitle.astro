@@ -25,3 +25,16 @@ const live = cardTitle(team?.name, code)
 <h3 data-team-title={code} data-i18n-fallback={fallbackKey} data-i18n={live ? undefined : fallbackKey}>
   {live ?? fallback}
 </h3>
+
+<style>
+  /* Scoped HERE, not in YouthCards.astro: Astro tags only the elements a
+     component itself renders, so a `.youth-card-header h3` rule over there
+     matches nothing — this <h3> carries YouthTitle's scope, not that one's.
+     It silently fell back to the browser's default h3 (18.72px / 1.17em),
+     which is close enough to --text-lg to hide the bug. */
+  h3 {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    margin: 0;
+  }
+</style>

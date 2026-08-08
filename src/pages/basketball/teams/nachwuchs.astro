@@ -154,44 +154,7 @@ const GROUPS = [
     grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
     gap: var(--space-lg);
   }
-  .youth-card {
-    /* Theme-aware surface. The old `var(--card-bg, #ffffff)` had no
-       --card-bg defined anywhere, so it always fell back to white — and
-       since dark mode is the default theme, the dark-theme text tokens
-       (light grey) rendered on a white card = unreadable. --bg-light is
-       defined for both themes and matches the site's .card surface. */
-    background: var(--bg-light);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: var(--space-lg);
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
-  }
-  .youth-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transform: translateY(-2px);
-  }
-  .youth-card-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    margin-bottom: var(--space-md);
-  }
-  .youth-card-header .chip {
-    font-size: var(--text-xs);
-    font-weight: 700;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
-  }
-  .youth-card-header h3 {
-    font-size: var(--text-lg);
-    font-weight: 600;
-    margin: 0;
-  }
-  .youth-card p {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    line-height: 1.6;
-    margin: 0 0 var(--space-sm) 0;
-  }
+  /* .youth-card* styles live in components/YouthCards.astro, which renders
+     that markup — Astro scopes styles per component, so they cannot live here. */
   /* .youth-meta styles live in components/YouthMeta.astro */
 </style>

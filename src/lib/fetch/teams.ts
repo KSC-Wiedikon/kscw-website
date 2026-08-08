@@ -64,7 +64,7 @@ async function fetchActiveTeams(): Promise<Team[]> {
             : d.directusId === String(t.id),
       )
       if (!def) return null
-      const live = !!def.teamName
+      const live = !!def.teamName || def.useLiveName === true
       return {
         ...def,
         directusId: String(t.id),                                       // live id (used for detail-page routing)

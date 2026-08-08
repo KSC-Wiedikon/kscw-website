@@ -2,6 +2,22 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.17.0] — 2026-08-08
+
+### The girls' youth cards had gone blank
+- The **U18 and U16 Mädchen cards showed no training, no coach and no status** at all. The club had renamed the two girls' squads in Directus — to **DU18 Spark** and **DU18 Fire** — and the page matched teams against a fixed list of names, so after the rename nothing matched and both cards emptied themselves. It was the third rename these teams have been through, and it emptied them every time.
+- The page no longer holds a list of teams at all: it **renders one card per team Directus actually has**, working out the age group from the team's own name. A squad added shows up, a squad dropped disappears, and a rename carries through — without the page being edited.
+- So **U18 now has both girls' squads** side by side, each under its own name, and **U16 has no girls' card**, because this season the club has no U16 girls' team — DU18 Fire is a U18 team that plays down in the U16 league. The team grid on the Basketball page follows the same two names.
+- Where a team's name in Directus is just its age code, the German label stays: "U8 Mixed" reads better than "MU8".
+
+### Mixed teams can take girls and boys separately
+- U8 and U10 are mixed, but the squad fills up per gender, so "open for players" was too blunt: it either invited everyone or nobody. Coaches can now open the team **for girls and boys independently** from the team settings in Wiedisync.
+- With only one of the two open, the card **splits**: the gender being taken gets the green badge and the contact form, the other gets the gold "Team voll" badge and the waiting list. Opening both — or neither, which is where every team starts — shows the single "open for players" row exactly as before.
+- The waiting-list button is now **gold instead of blue**, matching the "Team voll" chip next to it.
+
+### The Nachwuchs descriptions are gone
+- The paragraph under each youth team ("Unser U18-Knabenteam spielt in der regionalen Jugendliga …") has been removed from all ten cards. The training times, coach and joining status stay — those come from Directus and are the part that is actually current.
+
 ## [1.16.4] — 2026-07-30
 
 ### The membership fee tables were cut off on the right

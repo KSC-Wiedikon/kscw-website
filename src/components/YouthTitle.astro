@@ -1,0 +1,27 @@
+---
+// Heading of one basketball youth card. Prefers the team's live Directus name
+// ("DU18 Spark") over the page's static German label, so a rename in Directus
+// shows up on the site — see cardTitle() for when each one wins.
+//
+// data-team-title + data-i18n-fallback are the contract with
+// public/js/youth-status.js: it re-resolves the heading in the browser (the
+// build only reflects Directus as of the last deploy) and needs to know which
+// i18n key to put back when a team goes back to a bare-code name.
+import { cardTitle, type YouthTeamInfo } from '../lib/fetch/youthBasketball'
+
+interface Props {
+  code: string
+  /** null when Directus was unreachable and the static label is all there is. */
+  team: YouthTeamInfo | null
+  /** i18n key of the page's own label, used when Directus adds nothing. */
+  fallbackKey?: string
+  /** The German label itself — what builds when Directus is unreachable. */
+  fallback: string
+}
+
+const { code, team, fallbackKey, fallback } = Astro.props
+const live = cardTitle(team?.name, code)
+---
+<h3 data-team-title={code} data-i18n-fallback={fallbackKey} data-i18n={live ? undefined : fallbackKey}>
+  {live ?? fallback}
+</h3>

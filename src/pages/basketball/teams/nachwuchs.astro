@@ -1,13 +1,72 @@
 ---
 import PageLayout from '../../../layouts/PageLayout.astro';
 import CTA from '../../../components/CTA.astro';
-import YouthMeta from '../../../components/YouthMeta.astro';
+import YouthCards from '../../../components/YouthCards.astro';
 import { t } from '../../../lib/i18n';
 import { getYouthBasketball } from '../../../lib/fetch/youthBasketball';
 
 const locale = 'de';
 // Coaches (teams.coach M2M) + training slots (hall_slots), live from Directus.
 const youth = await getYouthBasketball();
+
+// Age sections, top (U18) to bottom (U8). Each entry lists the age-group codes
+// that section shows; YouthCards then renders one card per Directus team in
+// that group — two if the club runs two squads, none if it runs none. The chip
+// label/colour stay here because they describe the slot, not the team: 2026/27
+// has no U16 girls' team, so that card simply does not render.
+const GROUPS = [
+  {
+    anchor: 'hu18', heading: 'U18',
+    cards: [
+      { code: 'HU18', anchor: undefined, chipBg: '#f97316', chipText: '#ffffff',
+        chipKey: 'basketballTeamsNachwuchsU18BoysChip', chipLabel: 'U18 Knaben' },
+      { code: 'DU18', anchor: 'du18', chipBg: '#c084fc', chipText: '#ffffff',
+        chipKey: 'basketballTeamsNachwuchsU18GirlsChip', chipLabel: 'U18 Mädchen' },
+    ],
+  },
+  {
+    anchor: 'hu16', heading: 'U16',
+    cards: [
+      { code: 'HU16', anchor: undefined, chipBg: '#fb923c', chipText: '#ffffff',
+        chipKey: 'basketballTeamsNachwuchsU16BoysChip', chipLabel: 'U16 Knaben' },
+      { code: 'DU16', anchor: 'du16', chipBg: '#d8b4fe', chipText: '#1e1e1e',
+        chipKey: 'basketballTeamsNachwuchsU16GirlsChip', chipLabel: 'U16 Mädchen' },
+    ],
+  },
+  {
+    anchor: 'hu14', heading: 'U14',
+    cards: [
+      { code: 'HU14', anchor: undefined, chipBg: '#fdba74', chipText: '#1e1e1e',
+        chipKey: 'basketballTeamsNachwuchsU14BoysChip', chipLabel: 'U14 Knaben' },
+      { code: 'DU14', anchor: 'du14', chipBg: '#e9d5ff', chipText: '#1e1e1e',
+        chipKey: 'basketballTeamsNachwuchsU14GirlsChip', chipLabel: 'U14 Mädchen' },
+    ],
+  },
+  {
+    anchor: 'hu12', heading: 'U12',
+    cards: [
+      { code: 'HU12', anchor: undefined, chipBg: '#fed7aa', chipText: '#1e1e1e',
+        chipKey: 'basketballTeamsNachwuchsU12BoysChip', chipLabel: 'U12 Knaben' },
+      { code: 'DU12', anchor: 'du12', chipBg: '#f3e8ff', chipText: '#1e1e1e',
+        chipKey: 'basketballTeamsNachwuchsU12GirlsChip', chipLabel: 'U12 Mädchen' },
+    ],
+  },
+  {
+    anchor: 'mu10', heading: 'U10',
+    cards: [
+      { code: 'MU10', anchor: 'du10', chipBg: '#14b8a6', chipText: '#ffffff',
+        chipKey: undefined, chipLabel: 'U10 Mixed' },
+    ],
+  },
+  {
+    anchor: 'mu8', heading: 'U8',
+    cards: [
+      { code: 'MU8', anchor: undefined, chipBg: '#0d9488', chipText: '#ffffff',
+        chipKey: undefined, chipLabel: 'U8 Mixed' },
+    ],
+  },
+]
+
 ---
 <PageLayout
   title="Basketball Nachwuchs — KSC Wiedikon"
@@ -25,141 +84,28 @@ const youth = await getYouthBasketball();
     <div class="container">
 
       <div class="youth-sections">
-
-        <!-- U18 -->
-        <div id="hu18">
-          <div class="youth-section-title">
-            <h2>U18</h2>
-          </div>
-          <div class="youth-grid">
-            <div class="youth-card">
-              <div class="youth-card-header">
-                <span class="chip" style="background: #f97316; color: #ffffff;" data-i18n="basketballTeamsNachwuchsU18BoysChip">U18 Knaben</span>
-                <h3 data-i18n="basketballTeamsNachwuchsU18BoysName">U18 Knaben</h3>
-              </div>
-              <p data-i18n="basketballTeamsNachwuchsU18BoysDesc">Unser U18-Knabenteam spielt in der regionalen Jugendliga und bereitet sich auf den Übergang in die Herrenmannschaften vor. Technik, Taktik und Teamgeist stehen im Fokus.</p>
-              <YouthMeta code="HU18" data={youth} />
+        {GROUPS.map(group => (
+          <div id={group.anchor}>
+            <div class="youth-section-title">
+              <h2>{group.heading}</h2>
             </div>
-            <div class="youth-card" id="du18">
-              <div class="youth-card-header">
-                <span class="chip" style="background: #c084fc; color: #ffffff;" data-i18n="basketballTeamsNachwuchsU18GirlsChip">U18 Mädchen</span>
-                <h3 data-i18n="basketballTeamsNachwuchsU18GirlsName">U18 Mädchen</h3>
-              </div>
-              <p data-i18n="basketballTeamsNachwuchsU18GirlsDesc">Die U18 Mädchen sind ein ambitioniertes Team mit starkem Zusammenhalt. Sie nehmen an regionalen Turnieren teil und entwickeln ihre spielerischen Fähigkeiten stetig weiter.</p>
-              <YouthMeta code="DU18" data={youth} />
+            <div class="youth-grid">
+              {group.cards.map(card => (
+                <YouthCards
+                  code={card.code}
+                  data={youth}
+                  anchor={card.anchor}
+                  chipBg={card.chipBg}
+                  chipText={card.chipText}
+                  chipKey={card.chipKey}
+                  chipLabel={card.chipLabel}
+                  titleKey={card.chipKey && card.chipKey.replace(/Chip$/, 'Name')}
+                  title={card.chipLabel}
+                />
+              ))}
             </div>
           </div>
-        </div>
-
-        <!-- U16 -->
-        <div id="hu16">
-          <div class="youth-section-title">
-            <h2>U16</h2>
-          </div>
-          <div class="youth-grid">
-            <div class="youth-card">
-              <div class="youth-card-header">
-                <span class="chip" style="background: #fb923c; color: #ffffff;" data-i18n="basketballTeamsNachwuchsU16BoysChip">U16 Knaben</span>
-                <h3 data-i18n="basketballTeamsNachwuchsU16BoysName">U16 Knaben</h3>
-              </div>
-              <p data-i18n="basketballTeamsNachwuchsU16BoysDesc">Im U16-Bereich wird die basketballerische Grundausbildung vertieft. Positionsspiel und Spielverständnis werden gezielt gefördert.</p>
-              <YouthMeta code="HU16" data={youth} />
-            </div>
-            <div class="youth-card" id="du16">
-              <div class="youth-card-header">
-                <span class="chip" style="background: #d8b4fe; color: #1e1e1e;" data-i18n="basketballTeamsNachwuchsU16GirlsChip">U16 Mädchen</span>
-                <h3 data-i18n="basketballTeamsNachwuchsU16GirlsName">U16 Mädchen</h3>
-              </div>
-              <p data-i18n="basketballTeamsNachwuchsU16GirlsDesc">Die U16 Mädchen trainieren mit Begeisterung und nehmen regelmässig an Meisterschaftsspielen teil. Spass am Basketball steht an erster Stelle.</p>
-              <YouthMeta code="DU16" data={youth} />
-            </div>
-          </div>
-        </div>
-
-        <!-- U14 -->
-        <div id="hu14">
-          <div class="youth-section-title">
-            <h2>U14</h2>
-          </div>
-          <div class="youth-grid">
-            <div class="youth-card">
-              <div class="youth-card-header">
-                <span class="chip" style="background: #fdba74; color: #1e1e1e;" data-i18n="basketballTeamsNachwuchsU14BoysChip">U14 Knaben</span>
-                <h3 data-i18n="basketballTeamsNachwuchsU14BoysName">U14 Knaben</h3>
-              </div>
-              <p data-i18n="basketballTeamsNachwuchsU14BoysDesc">Unsere U14 Knaben lernen die Grundlagen des Basketballs: Dribbeln, Passen, Werfen und erste taktische Konzepte in spielerischer Form.</p>
-              <YouthMeta code="HU14" data={youth} />
-            </div>
-            <div class="youth-card" id="du14">
-              <div class="youth-card-header">
-                <span class="chip" style="background: #e9d5ff; color: #1e1e1e;" data-i18n="basketballTeamsNachwuchsU14GirlsChip">U14 Mädchen</span>
-                <h3 data-i18n="basketballTeamsNachwuchsU14GirlsName">U14 Mädchen</h3>
-              </div>
-              <p data-i18n="basketballTeamsNachwuchsU14GirlsDesc">Die U14 Mädchen entwickeln ihre Basketballskills in einer motivierenden Umgebung. Teamwork und Freude an der Bewegung sind zentral.</p>
-              <YouthMeta code="DU14" data={youth} />
-            </div>
-          </div>
-        </div>
-
-        <!-- U12 -->
-        <div id="hu12">
-          <div class="youth-section-title">
-            <h2>U12</h2>
-          </div>
-          <div class="youth-grid">
-            <div class="youth-card">
-              <div class="youth-card-header">
-                <span class="chip" style="background: #fed7aa; color: #1e1e1e;" data-i18n="basketballTeamsNachwuchsU12BoysChip">U12 Knaben</span>
-                <h3 data-i18n="basketballTeamsNachwuchsU12BoysName">U12 Knaben</h3>
-              </div>
-              <p data-i18n="basketballTeamsNachwuchsU12BoysDesc">Im U12-Bereich steht die spielerische Heranführung an den Basketball im Vordergrund. Koordination, Ballgefühl und Spass prägen die Trainings.</p>
-              <YouthMeta code="HU12" data={youth} />
-            </div>
-            <div class="youth-card" id="du12">
-              <div class="youth-card-header">
-                <span class="chip" style="background: #f3e8ff; color: #1e1e1e;" data-i18n="basketballTeamsNachwuchsU12GirlsChip">U12 Mädchen</span>
-                <h3 data-i18n="basketballTeamsNachwuchsU12GirlsName">U12 Mädchen</h3>
-              </div>
-              <p data-i18n="basketballTeamsNachwuchsU12GirlsDesc">Die U12 Mädchen entdecken Basketball mit viel Energie und Freude. In altersgerechten Trainings werden Grundtechniken und Spielfreude vermittelt.</p>
-              <YouthMeta code="DU12" data={youth} />
-            </div>
-          </div>
-        </div>
-
-        <!-- U10 -->
-        <div id="mu10">
-          <div class="youth-section-title">
-            <h2>U10</h2>
-          </div>
-          <div class="youth-grid">
-            <div class="youth-card" id="du10">
-              <div class="youth-card-header">
-                <span class="chip" style="background: #14b8a6; color: #ffffff;">U10 Mixed</span>
-                <h3>U10 Mixed</h3>
-              </div>
-              <p data-i18n="basketballTeamsNachwuchsU10MixedDesc">Unser U10-Team ist gemischt und bietet Kindern den idealen Einstieg in den Basketball. Spielerische Übungen, Mini-Turniere und jede Menge Spass warten auf die jungen Athletinnen und Athleten.</p>
-              <YouthMeta code="MU10" data={youth} />
-            </div>
-          </div>
-        </div>
-
-        <!-- U8 -->
-        <div id="mu8">
-          <div class="youth-section-title">
-            <h2>U8</h2>
-          </div>
-          <div class="youth-grid">
-            <div class="youth-card">
-              <div class="youth-card-header">
-                <span class="chip" style="background: #0d9488; color: #ffffff;">U8 Mixed</span>
-                <h3>U8 Mixed</h3>
-              </div>
-              <p data-i18n="basketballTeamsNachwuchsU8MixedDesc">Das jüngste Team im Verein! Hier lernen Kinder ab 5 Jahren die ersten Schritte mit dem Basketball. Bewegung, Koordination und Spass stehen im Mittelpunkt — ganz ohne Leistungsdruck.</p>
-              <YouthMeta code="MU8" data={youth} />
-            </div>
-          </div>
-        </div>
-
+        ))}
       </div>
     </div>
   </section>

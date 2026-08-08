@@ -2,6 +2,7 @@
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
+import { versionedAsset } from '../lib/assetVersion';
 import type { Locale } from '../lib/i18n';
 
 interface Props {
@@ -76,9 +77,18 @@ const { title, titleKey, description, descriptionKey, locale = 'de' } = Astro.pr
       } catch (e) {}
     })();
   </script>
+  <!-- href scheme guard, exposed as window.kscwSafeHref. In <head> and
+       render-blocking on purpose: the sponsor carousel on / and team-page.js
+       both build links from admin-authored Directus values, and a guard that
+       loads after them is no guard at all. ~4 KB, no dependencies.
+       Build-time callers import src/lib/safeHref.ts instead. -->
+  <script is:inline src={versionedAsset('js/safe-href.js')}></script>
   <!-- Client-side i18n engine: loaded site-wide, auto-initializes, swaps
-       [data-i18n*] nodes to the active language. -->
-  <script is:inline src="/js/i18n.js"></script>
+       [data-i18n*] nodes to the active language.
+       Cache-busted by content hash: this file is served max-age=14400, so
+       without a ?v= a behaviour change here (e.g. the i18nReady failure path)
+       would not reach a returning visitor for up to four hours. -->
+  <script is:inline src={versionedAsset('js/i18n.js')}></script>
 </head>
 <body>
   <div class="scroll-progress" aria-hidden="true">

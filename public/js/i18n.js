@@ -84,14 +84,15 @@
       if (key) textNodes[i].textContent = t(key);
     }
 
-    // data-i18n-html → innerHTML
-    // Safe: values come exclusively from our own bundled JSON translation
-    // files which are static assets under our control, not user input.
-    var htmlNodes = root.querySelectorAll('[data-i18n-html]');
-    for (var j = 0; j < htmlNodes.length; j++) {
-      var htmlKey = htmlNodes[j].getAttribute('data-i18n-html');
-      if (htmlKey) htmlNodes[j].innerHTML = t(htmlKey);
-    }
+    // NOTE: there is deliberately no data-i18n-html / innerHTML path here.
+    // Translated values are applied as text only. The premise that dictionary
+    // values are "static assets under our control" stops holding the moment any
+    // of them becomes admin-editable, and an innerHTML sink would then be a
+    // stored-XSS hole that is invisible to a German-speaking reviewer (German
+    // renders at build time through Astro's auto-escaping; only the client-side
+    // English swap would execute it). Markup that needs a link inside a sentence
+    // is split into sibling data-i18n nodes — see the privacy-consent block in
+    // src/pages/club/kontakt.astro and src/pages/club/feedback.astro.
 
     // data-i18n-placeholder → placeholder attribute
     var phNodes = root.querySelectorAll('[data-i18n-placeholder]');
@@ -159,6 +160,14 @@
       updateLangButtons(lang);
       document.body.classList.remove('i18n-loading');
       document.dispatchEvent(new CustomEvent('langChanged', { detail: { lang: lang } }));
+    }).catch(function (err) {
+      // Same reasoning as init(): never leave the veil up. The toggle simply
+      // does nothing visible and the page stays in the language it already had.
+      if (window.console && console.error) {
+        console.error('[i18n] failed to switch to "' + lang + '":', err);
+      }
+      document.body.classList.remove('i18n-loading');
+      updateLangButtons(currentLang);
     });
   }
 
@@ -173,6 +182,19 @@
       document.body.classList.remove('i18n-loading');
       updateLangButtons(lang);
       readyResolve(lang);
+    }).catch(function (err) {
+      // A failed dictionary fetch must never leave the page veiled or
+      // window.i18nReady unsettled. Several subsystems await that promise
+      // (team pages, calendar, scorer courses, youth status) and would hang
+      // forever on a pending promise, rendering a blank page rather than a
+      // degraded one. German is already server-rendered so falling through
+      // costs nothing; English silently stays German, which beats blank.
+      if (window.console && console.error) {
+        console.error('[i18n] failed to load "' + lang + '" dictionary:', err);
+      }
+      document.body.classList.remove('i18n-loading');
+      updateLangButtons(currentLang);
+      readyResolve(currentLang);
     });
   }
 

@@ -18,6 +18,17 @@
   var TEAM_DIRECTUS_ID = CFG.directusId;
   var IS_WOMEN = false; // set after team data loads
 
+  /**
+   * Vet a URL that came from Directus before it becomes an href or a src.
+   *
+   * Delegates to window.kscwSafeHref (public/js/safe-href.js, loaded in
+   * BaseLayout's <head>). Fails CLOSED — if that file did not load we render
+   * the element unlinked rather than emit a URL nobody vetted.
+   */
+  function safeUrl(value) {
+    return window.kscwSafeHref ? window.kscwSafeHref(value) : '';
+  }
+
   function getPosLabel(key) {
     var map = {
       setter: 'posSetter', opposite: 'posOpposite',
@@ -455,9 +466,10 @@
       card.className = 'sponsor-page-card';
 
       var wrapper = card;
-      if (sp.website_url) {
+      var sponsorHref = safeUrl(sp.website_url);
+      if (sponsorHref) {
         var link = document.createElement('a');
-        link.href = sp.website_url;
+        link.href = sponsorHref;
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
         link.className = 'sponsor-page-card';
@@ -465,14 +477,24 @@
         card = link;
       }
 
+      // A bare value is a Directus asset id; anything starting "http" is an
+      // admin-authored external URL. Vet the scheme rather than the prefix —
+      // `indexOf('http') === 0` also accepts "httpfoo:" — and let a rejected
+      // value fall through to the shield instead of emitting an unvetted src.
       var logoRef = sp.logo_url || sp.logo;
-      var img = document.createElement('img');
+      var logoSrc = '';
       if (logoRef) {
-        img.src = logoRef.indexOf('http') === 0 ? logoRef : DIRECTUS_URL + '/assets/' + logoRef + '?width=200&quality=80';
+        logoSrc = logoRef.indexOf('http') === 0
+          ? safeUrl(logoRef)
+          : DIRECTUS_URL + '/assets/' + logoRef + '?width=200&quality=80';
+      }
+      var img = document.createElement('img');
+      if (logoSrc) {
+        img.src = logoSrc;
         img.alt = sp.name;
         img.className = 'sponsor-logo';
       } else {
-        // No sponsor logo — fall back to the KSC Wiedikon shield.
+        // No usable sponsor logo — fall back to the KSC Wiedikon shield.
         img.src = '/images/kscw_blau.png';
         img.alt = sp.name || 'KSC Wiedikon';
         img.className = 'sponsor-logo sponsor-logo--fallback';

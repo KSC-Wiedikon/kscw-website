@@ -1,6 +1,7 @@
 ---
 import PageLayout from '../../layouts/PageLayout.astro';
 import { t } from '../../lib/i18n';
+import { safeHref } from '../../lib/safeHref';
 import { getSponsors } from '../../lib/fetch/sponsors';
 
 const locale = 'de';
@@ -31,8 +32,11 @@ try {
           <div class="sponsors-grid">
             {sponsors.map(s => (
               <div class="sponsor-card">
-                {s.websiteUrl ? (
-                  <a href={s.websiteUrl} target="_blank" rel="noopener noreferrer">
+                {/* safeHref() returns null for anything that is not an http(s)/mailto/tel
+                    or relative URL, so an unsafe website_url degrades to the plain
+                    (unlinked) card rather than becoming a clickable javascript: URL. */}
+                {safeHref(s.websiteUrl) ? (
+                  <a href={safeHref(s.websiteUrl)} target="_blank" rel="noopener noreferrer">
                     {s.logoUrl && <img class="sponsor-logo" src={s.logoUrl} alt={s.name} loading="lazy" />}
                     {s.name && <div class="sponsor-name">{s.name}</div>}
                   </a>

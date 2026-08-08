@@ -1,0 +1,49 @@
+---
+// The cards for one basketball youth age group (HU18, DU18, MU8 …).
+//
+// Renders ONE card per Directus team in that group, not a fixed card per age
+// and gender: 2026/27 has two U18 girls' squads (DU18 Spark, DU18 Fire) and no
+// U16 girls' team at all, and the club rearranges this most seasons. Driving it
+// off Directus means a squad added or dropped shows up on the next build
+// instead of needing the page edited.
+//
+// When Directus is unreachable the whole map comes back empty, and the group
+// falls back to its own static card so the page still lists the team (the
+// instant-paint / no-JS contract the rest of the page keeps). An age group that
+// Directus simply has no team for renders nothing.
+import type { YouthBasketball } from '../lib/fetch/youthBasketball'
+import YouthMeta from './YouthMeta.astro'
+import YouthTitle from './YouthTitle.astro'
+
+interface Props {
+  code: string
+  data: YouthBasketball
+  /** Anchor id for the first card — linked from the team grid on /basketball. */
+  anchor?: string
+  chipBg: string
+  chipText: string
+  chipKey?: string
+  chipLabel: string
+  /** i18n key + text of the page's own heading, used when Directus adds nothing. */
+  titleKey?: string
+  title: string
+}
+
+const { code, data, anchor, chipBg, chipText, chipKey, chipLabel, titleKey, title } = Astro.props
+
+const teams = data[code] ?? []
+const offline = Object.keys(data).length === 0
+// `null` = render the static fallback card (Directus unreachable).
+const cards: Array<(typeof teams)[number] | null> = teams.length ? teams : offline ? [null] : []
+---
+{cards.map((team, i) => (
+  <div class="youth-card" id={i === 0 ? anchor : undefined}>
+    <div class="youth-card-header">
+      <span class="chip" style={`background: ${chipBg}; color: ${chipText};`} data-i18n={chipKey}>
+        {chipLabel}
+      </span>
+      <YouthTitle code={code} team={team} fallbackKey={titleKey} fallback={title} />
+    </div>
+    <YouthMeta code={code} team={team} />
+  </div>
+))}

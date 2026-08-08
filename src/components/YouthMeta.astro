@@ -8,15 +8,16 @@
 // Each slot carries its own end date as data-valid-until; public/js/youth-status.js
 // prunes the line once that day passes, because nothing rebuilds the site on a
 // date alone (the Directus auto-rebuild Flow only fires on content edits).
-import type { YouthBasketball } from '../lib/fetch/youthBasketball'
+import { DEFAULT_WAITLIST_URL, type YouthTeamInfo } from '../lib/fetch/youthBasketball'
 
 interface Props {
   code: string
-  data: YouthBasketball
+  /** null when Directus was unreachable — renders the bare fallback card. */
+  team: YouthTeamInfo | null
 }
 
-const { code, data } = Astro.props
-const info = data[code] ?? { coaches: [], slots: [] }
+const { code, team } = Astro.props
+const info: YouthTeamInfo = team ?? { coaches: [], slots: [] }
 
 // Full team → show a waiting-list button. A custom label (from Directus) is
 // rendered verbatim; an empty label falls back to the i18n "Warteliste" key so
@@ -40,11 +41,39 @@ const openIsFemale = code.toUpperCase().startsWith('D')
 const openKey = openIsFemale ? 'bbTeamOpenF' : 'bbTeamOpen'
 const openText = openIsFemale ? 'Offen für neue Spielerinnen' : 'Offen für neue Spieler'
 
+// Mixed teams (MU8/MU10) recruit girls and boys separately (teams.open_for_girls
+// / open_for_boys, toggled per team in wiedisync). Taking only one of the two
+// splits the card in half: the open side keeps the green badge + contact link,
+// the other gets the gold "full" badge + waiting list.
+//
+// Only a one-sided choice splits it. Both flags on — or a coach who never
+// touched the toggles, leaving both off — keeps the single generic row, so the
+// card looks exactly as it does today until someone opts into the split.
+const isMixed = code.toUpperCase().startsWith('M')
+const openForGirls = info.openForGirls === true
+const openForBoys = info.openForBoys === true
+const splitByGender = isMixed && openForPlayers && openForGirls !== openForBoys
+
+const openBadge = splitByGender
+  ? openForGirls
+    ? { key: 'bbTeamOpenGirls', text: 'Offen für neue Spielerinnen' }
+    : { key: 'bbTeamOpenBoys', text: 'Offen für neue Spieler' }
+  : { key: openKey, text: openText }
+
+// The half the team is NOT taking. Always the club-wide waiting list: a team
+// with a waitlist_url of its own never reaches here, since that already makes
+// the whole card "full" (see openForPlayers above).
+const closedBadge = splitByGender
+  ? openForGirls
+    ? { key: 'bbTeamFullBoys', text: 'Knaben: Team voll' }
+    : { key: 'bbTeamFullGirls', text: 'Mädchen: Team voll' }
+  : null
+
 // 0 = Monday … 6 = Sunday (Directus hall_slots convention). Page builds in DE;
 // the client toggle swaps these via weekdayLong<n> keys.
 const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
 ---
-<div class="youth-meta" data-team-code={code}>
+<div class="youth-meta" data-team-code={code} data-team-name={info.name}>
   {info.slots.length > 0 && (
     <>
       <span class="youth-meta-label"><strong data-i18n="bbTrainingLabel">Training:</strong></span>
@@ -74,9 +103,23 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
   )}
   {openForPlayers && (
     <div class="youth-open">
-      <span class="youth-open-badge" data-i18n={openKey}>{openText}</span>
+      <span class="youth-open-badge" data-i18n={openBadge.key}>{openBadge.text}</span>
       <a class="btn btn-outline btn-sm youth-open-btn" href={contactHref}>
         <span data-i18n="bbTeamOpenCta">Kontakt aufnehmen</span>
+        <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  )}
+  {closedBadge && (
+    <div class="youth-waitlist">
+      <span class="youth-full-badge" data-i18n={closedBadge.key}>{closedBadge.text}</span>
+      <a
+        class="btn btn-outline btn-sm youth-waitlist-btn"
+        href={DEFAULT_WAITLIST_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span data-i18n="bbWaitlistLabel">Warteliste</span>
         <span aria-hidden="true">→</span>
       </a>
     </div>
@@ -122,7 +165,13 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
     align-items: center;
     gap: var(--space-sm);
     margin-top: var(--space-xs);
+    /* Matches the gold "Team voll" chip next to it. The brand gold only clears
+       contrast on the dark surface (11:1 on --bg-light #1a2234); on the light
+       theme it drops to ~1.6:1, so that one darkens to an amber that still
+       reads as the same accent at 4.6:1. */
+    --waitlist-accent: var(--kscw-gold);
   }
+  .light .youth-meta .youth-waitlist { --waitlist-accent: #8a6a00; }
   .youth-meta .youth-full-badge {
     display: inline-flex;
     font-size: var(--text-xs);
@@ -135,7 +184,7 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
     color: var(--text-on-gold);
   }
   .youth-meta .youth-waitlist-btn {
-    color: var(--kscw-blue);
+    color: var(--waitlist-accent);
     text-transform: none;
     letter-spacing: 0;
     min-height: 0;

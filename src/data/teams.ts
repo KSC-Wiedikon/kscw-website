@@ -50,6 +50,11 @@ export interface TeamDef {
   linkOverride?: string;
   /** Fallback league text shown if Directus fetch fails */
   fallbackLeague?: string;
+  /** Take the chip + display name from the live Directus name instead of the
+   *  static ones below. For teams the club distinguishes by name rather than by
+   *  age group — the two U18 girls' squads — where a static label would show
+   *  the same text twice and go stale on the next rename. */
+  useLiveName?: boolean;
 }
 
 /** TeamDef enriched with Directus data at build time */
@@ -94,9 +99,15 @@ export function getBadgeText(league: string, teamName: string): string {
  *  D1 → "Damen 1", H2 → "Herren 2", DU23-1 → "Damen U23-1", HU20 → "Herren U20".
  *  Names without a D/H gender prefix (Legends, MiniVB) pass through unchanged. */
 export function expandDisplayName(name: string): string {
-  const gender = (c: string) => (c === 'D' ? 'Damen' : 'Herren');
-  const youth = name.match(/^([DH])U(\d+)(?:-(\d+))?$/);
-  if (youth) return `${gender(youth[1])} U${youth[2]}${youth[3] ? `-${youth[3]}` : ''}`;
+  const gender = (c: string) => (c === 'D' ? 'Damen' : c === 'M' ? 'Mixed' : 'Herren');
+  // Trailing group: the club gives second squads a word rather than a number
+  // ("DU18 Spark", "DU18 Fire"), and that word is what tells them apart.
+  const youth = name.match(/^([DHM])U\s*0*(\d+)(?:-(\d+))?\s*(.*)$/);
+  if (youth) {
+    return `${gender(youth[1])} U${Number(youth[2])}`
+      + (youth[3] ? `-${youth[3]}` : '')
+      + (youth[4] ? ` ${youth[4].trim()}` : '');
+  }
   const senior = name.match(/^([DH])(\d+)$/);
   if (senior) return `${gender(senior[1])} ${senior[2]}`;
   return name;
@@ -248,17 +259,21 @@ const basketballYouth: TeamDef[] = [
     chipBg: '#fed7aa', chipText: '#7c2d12',
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#hu12',
   },
+  // 2026/27 runs TWO U18 girls' squads (DU18 Spark, DU18 Fire) and no U16
+  // girls' team. bb_7182 was the DU16 def and is now the second U18 one — the
+  // team_id is stable across the rename, so it keeps its identity here. Both
+  // take their label from Directus: "Damen U18" twice would say nothing.
   {
     directusId: '18', team_id: 'bb_5697', slug: 'du18', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-DU18', displayName: 'Damen U18', order: 5,
-    chipBg: '#c084fc', chipText: '#581c87',
+    chipBg: '#c084fc', chipText: '#581c87', useLiveName: true,
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#du18',
   },
   {
-    directusId: '17', team_id: 'bb_7182', slug: 'du16', sport: 'basketball', category: 'youth',
-    chipLabel: 'BB-DU16', displayName: 'Damen U16', order: 6,
-    chipBg: '#d8b4fe', chipText: '#581c87',
-    hasDetailPage: false, linkOverride: 'teams/nachwuchs#du16',
+    directusId: '17', team_id: 'bb_7182', slug: 'du18-2', sport: 'basketball', category: 'youth',
+    chipLabel: 'BB-DU18', displayName: 'Damen U18', order: 6,
+    chipBg: '#d8b4fe', chipText: '#581c87', useLiveName: true,
+    hasDetailPage: false, linkOverride: 'teams/nachwuchs#du18',
   },
   {
     directusId: '16', team_id: 'bb_5441', slug: 'du14', sport: 'basketball', category: 'youth',

@@ -1,5 +1,5 @@
 /**
- * KSCW Basketball Youth — live open / waiting-list status
+ * KSCW Basketball Youth — expired training lines + live open / waiting-list status
  *
  * The /basketball/teams/nachwuchs page is statically built, so the green
  * "Offen für neue Spieler" badge + contact link and the gold "Team voll" /
@@ -10,13 +10,60 @@
  *
  * The build-time render stays as the no-JS / instant-paint fallback; this just
  * replaces the status rows with fresh ones. Cards are matched by
- * data-team-code (HU18, DU16, MU8 …) === teams.name (upper-cased).
+ * data-team-code (HU18, DU16, MU8 …) === teams.name (upper-cased), via
+ * cardCode() for the handful of teams Directus names differently.
  */
 (function () {
   'use strict';
 
   var cards = document.querySelectorAll('.youth-meta[data-team-code]');
   if (!cards.length) return;
+
+  // Mirror of TEAM_CODE_ALIASES in src/lib/fetch/youthBasketball.ts — see the
+  // comment there for why "1xDU18"/"2xDU18" map onto the DU18/DU16 cards.
+  // tests/unit/youth-basketball.test.ts asserts the two copies stay in sync.
+  var TEAM_CODE_ALIASES = {
+    '1XDU18': 'DU18',
+    '2XDU18': 'DU16'
+  };
+
+  function cardCode(name) {
+    var key = String(name || '').trim().toUpperCase();
+    return TEAM_CODE_ALIASES[key] || key;
+  }
+
+  // ── Expired training lines ────────────────────────────────────────────
+  // Training times are baked in at build time, and the site only rebuilds when
+  // Directus *content changes* (the auto-rebuild Flow triggers on
+  // items.create/update/delete for teams/hall_slots/members). A booking that
+  // simply reaches the end of its validity window fires no such event, so the
+  // build alone can never drop it — it would linger until an unrelated edit
+  // happened to trigger a deploy. Each line carries its own end date, so prune
+  // them here on every page load instead.
+  //
+  // Only removal is needed: the build keeps *upcoming* bookings, so a new
+  // season's slots are already in the HTML before their first week, and any
+  // genuinely new slot is a Directus edit that does trigger a rebuild.
+  function pruneExpiredSlots() {
+    var today = new Date().toISOString().slice(0, 10);
+    for (var i = 0; i < cards.length; i++) {
+      var meta = cards[i];
+      var lines = meta.querySelectorAll('.youth-slot[data-valid-until]');
+      for (var j = 0; j < lines.length; j++) {
+        // ISO dates compare correctly as strings.
+        if (lines[j].getAttribute('data-valid-until') < today) {
+          lines[j].parentNode.removeChild(lines[j]);
+        }
+      }
+      // Nothing left → drop the now-dangling "Training:" label as well.
+      if (!meta.querySelector('.youth-slot')) {
+        var label = meta.querySelector('.youth-meta-label');
+        if (label) label.parentNode.removeChild(label);
+      }
+    }
+  }
+
+  pruneExpiredSlots();
 
   var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
@@ -123,11 +170,11 @@
 
     var open = {}, wait = {};
     openRows.forEach(function (t) {
-      if (t && t.name) open[String(t.name).toUpperCase()] = { id: String(t.id), open: t.open_for_players === true };
+      if (t && t.name) open[cardCode(t.name)] = { id: String(t.id), open: t.open_for_players === true };
     });
     waitRows.forEach(function (t) {
       var url = t && t.waitlist_url ? String(t.waitlist_url).trim() : '';
-      if (url && t.name) wait[String(t.name).toUpperCase()] = { url: url, label: t.waitlist_label ? String(t.waitlist_label).trim() : '' };
+      if (url && t.name) wait[cardCode(t.name)] = { url: url, label: t.waitlist_label ? String(t.waitlist_label).trim() : '' };
     });
 
     for (var i = 0; i < cards.length; i++) {

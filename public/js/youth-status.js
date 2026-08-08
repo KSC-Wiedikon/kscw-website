@@ -32,6 +32,11 @@
     return TEAM_CODE_ALIASES[key] || key;
   }
 
+  // Mirror of DEFAULT_WAITLIST_URL in src/lib/fetch/youthBasketball.ts — the
+  // club-wide waiting list a closed team falls back to. See the comment there.
+  var DEFAULT_WAITLIST_URL =
+    'https://docs.google.com/forms/d/e/1FAIpQLSfvak-SELFox7Bv2RVLrjA_uZ2K6vTiKYgRheDtck92VH8crQ/viewform';
+
   // ── Expired training lines ────────────────────────────────────────────
   // Training times are baked in at build time, and the site only rebuilds when
   // Directus *content changes* (the auto-rebuild Flow triggers on
@@ -81,10 +86,10 @@
   // open_for_players + id are public-readable, so the open badges are reliable.
   function fetchOpen() { return fetchRows('id,name,open_for_players'); }
 
-  // waitlist_url / waitlist_label are NOT public today → this request 403s and
-  // resolves to [] (no "Team voll" buttons). Isolated from the open fetch so
-  // that failure never drops the open badges. The moment the Public role is
-  // granted read on these two fields, the buttons light up — no code change.
+  // waitlist_url / waitlist_label are public-readable as of 2026-08-08 (they
+  // were not before, and this request used to 403 into []). Still isolated from
+  // the open fetch so that a future permission change only drops the "Team
+  // voll" buttons rather than the open badges too.
   function fetchWaitlist() { return fetchRows('name,waitlist_url,waitlist_label'); }
 
   function el(tag, cls) {
@@ -187,8 +192,12 @@
 
       var w = wait[code];
       var o = open[code];
-      // A non-empty waitlist_url means "full" and wins over the open badge,
-      // matching the build's `openForPlayers = !waitlistUrl && open` rule.
+      // Closed team with no link of its own → club-wide waiting list. Mirrors
+      // the build's rule; requires o to exist, so an unknown status (failed
+      // fetch) never flips a card to "full".
+      if (!w && o && o.open === false) w = { url: DEFAULT_WAITLIST_URL, label: '' };
+      // A waitlist link means "full" and wins over the open badge, matching the
+      // build's `openForPlayers = !waitlistUrl && open` rule.
       if (w) meta.appendChild(buildWaitlist(w));
       else if (o && o.open) meta.appendChild(buildOpen(o, code));
     }

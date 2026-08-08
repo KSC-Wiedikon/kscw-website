@@ -40,7 +40,27 @@ import '../styles/global.css';
     var SECTION_ORDER = ['news','events','registrations','sponsors','scorer_courses','mixed_turnier'];
     var _scorerCourses = null; // cached scorer_courses rows for the inline registrations view
     var _scorerSaveChains = {}; // per-signup save serialization (sub_key -> Promise)
-    var adminLang = 'en';
+    /**
+     * The admin's single language choice. It selects the UI chrome (through
+     * t() below) *and* the language you type content in — news titles are
+     * stored as `title` (German) plus `title_en`, and this decides which of
+     * the two the primary field edits.
+     *
+     * It was hardcoded 'en' until 2026-08-08, which had two consequences: a
+     * German-speaking club volunteer got an English admin, and the 188 German
+     * strings in the dictionary below were dead code that a parity test kept
+     * alive. Now: a stored choice wins, else the browser's language, else
+     * English — the same fallback order the public site uses.
+     */
+    var ADMIN_LANG_KEY = 'kscw_admin_lang';
+    function readAdminLang() {
+      try {
+        var stored = localStorage.getItem(ADMIN_LANG_KEY);
+        if (stored === 'de' || stored === 'en') return stored;
+      } catch (e) { /* private mode — fall through to the browser's language */ }
+      return (navigator.language || '').toLowerCase().indexOf('de') === 0 ? 'de' : 'en';
+    }
+    var adminLang = readAdminLang();
     var quillInstance = null;
     var turnstileWidgetId = null;
     var turnstileToken = '';
@@ -161,6 +181,7 @@ import '../styles/global.css';
         login: 'Anmelden',
         loggingIn: 'Wird angemeldet...',
         logout: 'Abmelden',
+        langToggleHint: 'Sprache wechseln',
         email: 'E-Mail',
         password: 'Passwort',
         showPassword: 'Passwort anzeigen',
@@ -351,6 +372,7 @@ import '../styles/global.css';
         login: 'Login',
         loggingIn: 'Logging in...',
         logout: 'Logout',
+        langToggleHint: 'Switch language',
         email: 'Email',
         password: 'Password',
         showPassword: 'Show password',
@@ -536,7 +558,15 @@ import '../styles/global.css';
         mixedTurnierMember: 'Member',
       }
     };
-    function t(key) { return i18n.en[key] || key; }
+    /**
+     * Look a key up in the admin's chosen language, fall back to English, and
+     * finally hand back the key itself so a missing string is visible in the
+     * UI rather than rendering as an empty label.
+     */
+    function t(key) {
+      var dict = i18n[adminLang];
+      return (dict && dict[key]) || i18n.en[key] || key;
+    }
     var cachedTeams = null; // [{id, name, sport}]
     var cachedMembers = null; // [{id, first_name, last_name, email}]
 
@@ -1018,6 +1048,10 @@ import '../styles/global.css';
                 '<span style="line-height:1.1;font-size:0.85em;">Website<br>Admin</span>' +
               '</a>' +
               '<div class="admin-header-actions">' +
+                '<button class="admin-btn admin-btn-ghost admin-lang-btn" type="button" id="lang-btn"' +
+                  ' title="' + t('langToggleHint') + '" aria-label="' + t('langToggleHint') + '">' +
+                  (adminLang === 'de' ? 'DE' : 'EN') +
+                '</button>' +
                 '<button class="admin-btn admin-btn-ghost" id="logout-btn">' + t('logout') + '</button>' +
               '</div>' +
             '</div>' +
@@ -1039,6 +1073,17 @@ import '../styles/global.css';
 
       document.getElementById('logout-btn').addEventListener('click', function() {
         sessionStorage.removeItem(AUTH_KEY);
+        render();
+      });
+
+      document.getElementById('lang-btn').addEventListener('click', function() {
+        adminLang = adminLang === 'de' ? 'en' : 'de';
+        try {
+          localStorage.setItem(ADMIN_LANG_KEY, adminLang);
+        } catch (e) { /* private mode — the choice holds for this session only */ }
+        // Full redraw rather than an in-place swap: every label in this admin
+        // comes from t(), so re-rendering is the whole translation mechanism.
+        // There is no data-i18n pass here like the public site has.
         render();
       });
 
@@ -5450,6 +5495,13 @@ import '../styles/global.css';
   .admin-btn-primary:hover { background: var(--kscw-blue-dark); }
   .admin-btn-ghost { border: none; background: none; }
   .admin-btn-ghost:hover { background: var(--bg-light); }
+  /* Language switch: a two-letter label, so give it a real touch target. */
+  .admin-lang-btn {
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    min-width: 44px;
+    min-height: 44px;
+  }
   .admin-btn-sm { padding: 4px 10px; font-size: var(--text-xs); }
   .admin-btn-sm.active { background: var(--kscw-blue); color: #fff; border-color: var(--kscw-blue); }
   .admin-btn-danger { color: #dc2626; border-color: #fecaca; }

@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import {
-  TEAM_CODE_ALIASES, cardCode, codesForSlot, dedupeSlots, isCurrentOrUpcoming,
-  type DirectusSlot, type YouthSlot,
+  DEFAULT_WAITLIST_URL, TEAM_CODE_ALIASES, cardCode, codesForSlot, dedupeSlots,
+  isCurrentOrUpcoming, type DirectusSlot, type YouthSlot,
 } from 'src/lib/fetch/youthBasketball';
 
 const slot = (over: Partial<DirectusSlot> = {}): DirectusSlot => ({
@@ -33,6 +33,27 @@ describe('youth basketball — card codes', () => {
     const mirror: Record<string, string> = {};
     for (const [, k, v] of block![1].matchAll(/'([^']+)'\s*:\s*'([^']+)'/g)) mirror[k] = v;
     expect(mirror).toEqual(TEAM_CODE_ALIASES);
+  });
+});
+
+describe('youth basketball — waiting list', () => {
+  const js = () => readFileSync(resolve(__dirname, '../../public/js/youth-status.js'), 'utf8');
+
+  it('points at a real https form', () => {
+    expect(DEFAULT_WAITLIST_URL).toMatch(/^https:\/\//);
+  });
+
+  it('keeps the youth-status.js mirror of the fallback URL in sync', () => {
+    const m = js().match(/var DEFAULT_WAITLIST_URL =\s*'([^']+)'/);
+    expect(m, 'DEFAULT_WAITLIST_URL not found in youth-status.js').toBeTruthy();
+    expect(m![1]).toBe(DEFAULT_WAITLIST_URL);
+  });
+
+  it('only falls back for a team known to be closed, never for an unknown status', () => {
+    // Guards the failure mode where a 403/network error on the open-status
+    // fetch would otherwise mark every card "Team voll".
+    expect(js()).toContain('o.open === false');
+    expect(js()).not.toMatch(/if \(!w && !o\)/);
   });
 });
 

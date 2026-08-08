@@ -30,6 +30,9 @@ pnpm-debug.log*
 # session log + infra (contains tokens)
 docs/sessions.md
 docs/infra.md
+# plans — often carry internal URLs, permission ids and credentials
+# (docs/superpowers/{plans,specs}/ predate this rule and are already tracked)
+docs/plans/
 .playwright-mcp/
 test-results/
 playwright-report/

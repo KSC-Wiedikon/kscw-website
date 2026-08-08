@@ -446,10 +446,16 @@ try {
             for (var pass = 0; pass < 2; pass++) {
               for (var s = 0; s < allSponsors.length; s++) {
                 var sp = allSponsors[s];
+                // sponsors.website_url is admin-authored and the CSP still
+                // carries 'unsafe-inline', so an unvetted javascript: URL here
+                // executes on click. Fails CLOSED: if safe-href.js did not
+                // load, every sponsor renders as an unlinked tile rather than
+                // as a link we could not vet.
+                var sponsorHref = window.kscwSafeHref ? window.kscwSafeHref(sp.website_url) : '';
                 var link = document.createElement('a');
-                link.href = sp.website_url || '#';
+                link.href = sponsorHref || '#';
                 link.className = 'sponsor-item';
-                if (sp.website_url) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
+                if (sponsorHref) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
                 link.title = sp.name;
                 var logoSrc = sp.logo ? (DIRECTUS_URL + '/assets/' + sp.logo + '?width=300&quality=80') : null;
                 if (logoSrc) {

@@ -71,7 +71,15 @@ const basketballContacts = contactPersons.filter(c => c.sport === 'basketball');
             <div class="form-group consent-group">
               <label class="consent-label">
                 <input type="checkbox" id="privacy-consent" name="privacy_consent" required>
-                <span data-i18n-html="clubKontaktConsent">Ich habe die <a href="/weiteres/datenschutz" target="_blank">Datenschutzerklärung</a> gelesen und bin damit einverstanden.</span>
+                <!-- One wrapper span = one flex child of .consent-label (which has a
+                     gap); the three pieces inside flow inline so the sentence reads as
+                     one line. Split into plain data-i18n keys so no translated value
+                     ever needs innerHTML. -->
+                <span>
+                  <span data-i18n="privacyConsentPre">{t(locale, 'privacyConsentPre')}</span>
+                  <a href="/weiteres/datenschutz" target="_blank" rel="noopener noreferrer" data-i18n="privacyConsentLink">{t(locale, 'privacyConsentLink')}</a>
+                  <span data-i18n="privacyConsentPost">{t(locale, 'privacyConsentPost')}</span>
+                </span>
               </label>
             </div>
             <div id="turnstile-container" class="form-group"></div>

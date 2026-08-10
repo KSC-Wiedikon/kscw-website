@@ -1,0 +1,372 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
+import { t } from '../../lib/i18n';
+
+const locale = 'de';
+
+/**
+ * ProBasket publishes the officials' documents from a public Nextcloud share
+ * rather than from probasket.ch itself. We deep-link into that share instead of
+ * vendoring the files: ProBasket revises them (the digital-scoresheet guides
+ * were reissued twice in 2026 alone) and a mirrored copy would quietly go stale
+ * while still looking authoritative. It also keeps us from re-hosting FIBA and
+ * Swiss Basketball material.
+ *
+ * The share token is part of the public URL printed on probasket.ch/offiziellenwesen.
+ * If ProBasket ever rotates it, every link here 404s at once — that is the one
+ * failure mode to check when this page is reported broken.
+ */
+const PROBASKET_SHARE = 'https://cloud.probasket.ch/index.php/s/ftJ4r337TeXF4Wi';
+const PROBASKET_ROOT = '/Offiziellenwesen';
+
+/** Nextcloud public-share download URL for one file inside the shared folder. */
+function docUrl(folder: string, file: string): string {
+  const path = folder ? `${PROBASKET_ROOT}/${folder}` : PROBASKET_ROOT;
+  return `${PROBASKET_SHARE}/download?path=${encodeURIComponent(path)}&files=${encodeURIComponent(file)}`;
+}
+
+interface Doc {
+  /** i18n key for the document title. */
+  key: string;
+  /** Sub-folder inside /Offiziellenwesen; empty string = the folder root. */
+  folder: string;
+  /** Exact filename in the share — including ProBasket's own typos. */
+  file: string;
+  /** Format badge. Language-neutral, so it needs no dictionary entry. */
+  type: 'PDF' | 'PPTX';
+  /** Version as ProBasket states it: dd.mm.yyyy, or a bare year when that is all they give. */
+  stand: string;
+  /** Set when the document exists only in English. */
+  english?: boolean;
+}
+
+const basics: Doc[] = [
+  { key: 'bbScorerDocInfo', folder: '', file: '250831_Info_Offizielle.pdf', type: 'PDF', stand: '31.08.2025' },
+  // ProBasket's own filename misspells "Learningtool" — kept verbatim, the share is case- and spelling-exact.
+  { key: 'bbScorerDocElearningReg', folder: '', file: 'Learingtool Registrieren.pdf', type: 'PDF', stand: '2024' },
+  { key: 'bbScorerDocElearningLogin', folder: '', file: 'Learningtool Login.pdf', type: 'PDF', stand: '2024' },
+];
+
+const scoresheet: Doc[] = [
+  { key: 'bbScorerDocDssPbGuide', folder: 'Digitales Matchblatt - ProBasket', file: 'Anleitung_DSS_PB_260709.pdf', type: 'PDF', stand: '09.07.2026' },
+  { key: 'bbScorerDocDssPbSlides', folder: 'Digitales Matchblatt - ProBasket', file: 'Präsentation_DSS_PB_260709.pptx', type: 'PPTX', stand: '09.07.2026' },
+  { key: 'bbScorerDocDssSbGuide', folder: 'Digitales Matchblatt - Swiss Basketball - Ingame', file: '260201_Anleitung_DSS_NBN23.pdf', type: 'PDF', stand: '01.02.2026' },
+  { key: 'bbScorerDocDssSbSlides', folder: 'Digitales Matchblatt - Swiss Basketball - Ingame', file: '260201_Präsentation_DSS_NBN23.pptx', type: 'PPTX', stand: '01.02.2026' },
+];
+
+const cheatsheets: Doc[] = [
+  { key: 'bbScorerDocSampleSheet', folder: 'Merkblätter', file: '180927_SwissBasketball_Matchblatt_deutsch_2018.10+V3.pdf', type: 'PDF', stand: '27.09.2018' },
+  { key: 'bbScorerDocTimekeeper', folder: 'Merkblätter', file: '1711_Aide-memoire-Chronometre.pdf', type: 'PDF', stand: '2017' },
+  { key: 'bbScorerDocGameClock', folder: 'Merkblätter', file: '1711_ZUSAMMENFASSUNG---Spieluhr.pdf', type: 'PDF', stand: '2017' },
+  { key: 'bbScorerDocShotClock', folder: 'Merkblätter', file: '181010_DocumentOTN_Oct2018_24secondes_deutsch_angepasst T-Foul.pdf', type: 'PDF', stand: '10.10.2018' },
+  { key: 'bbScorerDocFiba', folder: 'Merkblätter', file: '260121_FIBA_Table_Officials_Manual_v6_6a_2025_en.pdf', type: 'PDF', stand: '2025', english: true },
+];
+
+const modules: Doc[] = [
+  { key: 'bbScorerDocModGeneral', folder: 'Schulungsunterlagen', file: '181017_form_OTR_gen_all.pptx', type: 'PPTX', stand: '2018' },
+  { key: 'bbScorerDocModDigitalPdf', folder: 'Schulungsunterlagen', file: '190910_form_OTR_feuille_all_DM.pdf', type: 'PDF', stand: '10.09.2019' },
+  { key: 'bbScorerDocModDigitalPpt', folder: 'Schulungsunterlagen', file: '190910_form_OTR_feuille_all_DM.pptx', type: 'PPTX', stand: '10.09.2019' },
+  { key: 'bbScorerDocModPaper', folder: 'Schulungsunterlagen', file: '181017_form_OTR_feuille_all.pptx', type: 'PPTX', stand: '2018' },
+  { key: 'bbScorerDocModTimekeeper', folder: 'Schulungsunterlagen', file: '181017_form_OTR_chrono_all.pptx', type: 'PPTX', stand: '2018' },
+  { key: 'bbScorerDocModShotClockPdf', folder: 'Schulungsunterlagen', file: '181017_OTR_Modul_24+Sek.Uhr_angepasst T-Foul.pdf', type: 'PDF', stand: '17.10.2018' },
+  { key: 'bbScorerDocModShotClockPpt', folder: 'Schulungsunterlagen', file: '181017_form_OTR_24_all_angepasst T-Foul.pptx', type: 'PPTX', stand: '17.10.2018' },
+];
+
+const groups: { titleKey: string; icon: string; docs: Doc[] }[] = [
+  { titleKey: 'bbScorerGroupBasics', icon: 'compass', docs: basics },
+  { titleKey: 'bbScorerGroupSheet', icon: 'tablet', docs: scoresheet },
+  { titleKey: 'bbScorerGroupCheatsheets', icon: 'bookmark', docs: cheatsheets },
+  { titleKey: 'bbScorerGroupTraining', icon: 'presentation', docs: modules },
+];
+
+const steps = [
+  { titleKey: 'bbScorerStep1', descKey: 'bbScorerStep1Desc' },
+  { titleKey: 'bbScorerStep2', descKey: 'bbScorerStep2Desc' },
+  { titleKey: 'bbScorerStep3', descKey: 'bbScorerStep3Desc' },
+  { titleKey: 'bbScorerStep4', descKey: 'bbScorerStep4Desc' },
+];
+
+const ELEARNING_URL = 'https://probasket.openolat.com/';
+const PROBASKET_OFFICIALS_URL = 'https://www.probasket.ch/offiziellenwesen';
+---
+<PageLayout
+  title="Basketball-Schreiberkurse — KSC Wiedikon"
+  titleKey="weiteresSchreiberkurseBasketballMetaTitle"
+  description="Ausbildung, Unterlagen und Weg zur OTR-Lizenz für Basketball-Tischoffizielle beim KSC Wiedikon."
+  descriptionKey="weiteresSchreiberkurseBasketballMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'bbScorerTitle')}
+  pageTitleKey="bbScorerTitle"
+  pageSubtitle={t(locale, 'bbScorerSubtitle')}
+  pageSubtitleKey="bbScorerSubtitle"
+>
+  <!-- Intro -->
+  <section class="section">
+    <div class="container">
+      <div class="measure measure-center">
+        <p style="font-size: 1.125rem; line-height: 1.8; color: var(--text-secondary);" data-i18n="bbScorerIntro">
+          {t(locale, 'bbScorerIntro')}
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- The two licence levels -->
+  <section class="section-alt">
+    <div class="container">
+      <SectionHeader title={t(locale, 'bbScorerLevelsTitle')} titleKey="bbScorerLevelsTitle" />
+      <div class="level-grid">
+        <div class="card">
+          <div class="card-body">
+            <div class="level-head">
+              <span class="badge badge-blue">OTR1</span>
+              <h3 data-i18n="bbScorerOtr1">{t(locale, 'bbScorerOtr1')}</h3>
+            </div>
+            <p style="color: var(--text-secondary); margin: 0;" data-i18n="bbScorerOtr1Desc">{t(locale, 'bbScorerOtr1Desc')}</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body">
+            <div class="level-head">
+              <span class="badge badge-gold">OTR2</span>
+              <h3 data-i18n="bbScorerOtr2">{t(locale, 'bbScorerOtr2')}</h3>
+            </div>
+            <p style="color: var(--text-secondary); margin: 0;" data-i18n="bbScorerOtr2Desc">{t(locale, 'bbScorerOtr2Desc')}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Path to the licence -->
+  <section class="section">
+    <div class="container">
+      <SectionHeader title={t(locale, 'bbScorerPathTitle')} titleKey="bbScorerPathTitle" />
+      <ol class="step-list">
+        {steps.map((step, i) => (
+          <li class="step">
+            <span class="step-num" aria-hidden="true">{i + 1}</span>
+            <div>
+              <h3 class="step-title" data-i18n={step.titleKey}>{t(locale, step.titleKey)}</h3>
+              <p class="step-desc" data-i18n={step.descKey}>{t(locale, step.descKey)}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <div style="text-align: center; margin-top: var(--space-xl);">
+        <a href={ELEARNING_URL} target="_blank" rel="noopener noreferrer" class="btn btn-gold" style="font-size: 1.125rem; padding: var(--space-md) var(--space-xl);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          <span data-i18n="bbScorerElearningCta">{t(locale, 'bbScorerElearningCta')}</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Good to know -->
+  <section class="section-alt">
+    <div class="container">
+      <SectionHeader title={t(locale, 'bbScorerNotesTitle')} titleKey="bbScorerNotesTitle" />
+      <div class="level-grid">
+        <div class="card">
+          <div class="card-body" style="display: flex; gap: var(--space-md); align-items: flex-start;">
+            <i data-lucide="refresh-cw" style="width: 28px; height: 28px; color: var(--kscw-gold); flex-shrink: 0;"></i>
+            <p style="color: var(--text-secondary); margin: 0;" data-i18n="bbScorerRefresher">{t(locale, 'bbScorerRefresher')}</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-body" style="display: flex; gap: var(--space-md); align-items: flex-start;">
+            <i data-lucide="triangle-alert" style="width: 28px; height: 28px; color: var(--kscw-blue); flex-shrink: 0;"></i>
+            <p style="color: var(--text-secondary); margin: 0;" data-i18n="bbScorerRevocation">{t(locale, 'bbScorerRevocation')}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Documents -->
+  <section class="section">
+    <div class="container">
+      <SectionHeader title={t(locale, 'bbScorerResourcesTitle')} titleKey="bbScorerResourcesTitle" />
+      <p class="measure measure-center" style="color: var(--text-secondary); margin-bottom: var(--space-xl);" data-i18n="bbScorerResourcesIntro">
+        {t(locale, 'bbScorerResourcesIntro')}
+      </p>
+
+      <div class="doc-groups">
+        {groups.map((group) => (
+          <div class="card doc-group">
+            <div class="card-body">
+              <div class="doc-group-head">
+                <i data-lucide={group.icon} style="width: 26px; height: 26px; color: var(--kscw-blue); flex-shrink: 0;"></i>
+                <h3 data-i18n={group.titleKey}>{t(locale, group.titleKey)}</h3>
+              </div>
+              <ul class="doc-list">
+                {group.docs.map((doc) => (
+                  <li>
+                    <a class="doc-link" href={docUrl(doc.folder, doc.file)} target="_blank" rel="noopener noreferrer">
+                      <i data-lucide="download" class="doc-icon" aria-hidden="true"></i>
+                      <span class="doc-text">
+                        <span class="doc-title" data-i18n={doc.key}>{t(locale, doc.key)}</span>
+                        <span class="doc-meta">
+                          <span class="badge">{doc.type}</span>
+                          <span class="doc-stand">
+                            <span data-i18n="bbScorerStand">{t(locale, 'bbScorerStand')}</span>{' '}{doc.stand}
+                          </span>
+                          {doc.english && (
+                            <span class="badge badge-gold" data-i18n="bbScorerEnglishOnly">{t(locale, 'bbScorerEnglishOnly')}</span>
+                          )}
+                        </span>
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- ProBasket link -->
+  <section class="section-alt">
+    <div class="container">
+      <div class="measure measure-center" style="text-align: center;">
+        <p style="font-size: 1.125rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: var(--space-lg);" data-i18n="bbScorerProBasket">
+          {t(locale, 'bbScorerProBasket')}
+        </p>
+        <a href={PROBASKET_OFFICIALS_URL} target="_blank" rel="noopener noreferrer" class="btn btn-gold" style="font-size: 1.125rem; padding: var(--space-md) var(--space-xl);">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+          <span data-i18n="bbScorerProBasketLink">{t(locale, 'bbScorerProBasketLink')}</span>
+        </a>
+        <p style="margin-top: var(--space-lg); color: var(--text-secondary);">
+          <a href="/weiteres/schreiberkurse" data-i18n="bbScorerVolleyballLink">{t(locale, 'bbScorerVolleyballLink')}</a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <script src="../../islands/scroll-animations.ts"></script>
+</PageLayout>
+
+<style>
+  .level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+  }
+  .level-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+  .level-head h3 {
+    margin: 0;
+  }
+
+  /* Numbered path to the licence. The counter is drawn from step-num, not from
+     an ol marker, so the number keeps its badge styling in every browser. */
+  .step-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-lg);
+  }
+  .step {
+    display: flex;
+    gap: var(--space-md);
+    align-items: flex-start;
+  }
+  .step-num {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--radius-full);
+    background: var(--kscw-blue);
+    color: #fff;
+    font-family: var(--font-display);
+    font-weight: 700;
+  }
+  .step-title {
+    margin: 0 0 var(--space-xs);
+    font-size: var(--text-base);
+  }
+  .step-desc {
+    margin: 0;
+    color: var(--text-secondary);
+  }
+
+  .doc-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-lg);
+    align-items: start;
+  }
+  .doc-group-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+  }
+  .doc-group-head h3 {
+    margin: 0;
+  }
+  .doc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .doc-link {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.15s ease;
+  }
+  .doc-link:hover,
+  .doc-link:focus-visible {
+    background: var(--bg-light);
+  }
+  .doc-icon {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--kscw-gold);
+  }
+  .doc-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .doc-title {
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .doc-link:hover .doc-title {
+    color: var(--kscw-blue);
+  }
+  .doc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+  .doc-stand {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+  }
+</style>

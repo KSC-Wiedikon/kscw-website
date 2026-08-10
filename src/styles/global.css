@@ -173,11 +173,22 @@
 .light .badge {
   background: #f5f6fa;
 }
-:root .badge-blue {
+/* The dark theme darkened these badges' backgrounds but left the text at the
+   light-theme colours — mid-blue #4A55A2 and ochre #836408 — which land at
+   ~2:1 against the dark card and fail WCAG AA. Same rule .game-cup-icon already
+   follows in reverse: bright on dark, ochre only under .light.
+   The :not(.light) is load-bearing. Plain `:root .badge-gold` outranks the base
+   `.badge-gold` (0,2,0 over 0,1,0) in BOTH themes, which would put bright gold
+   on the light theme's white card — the washout .game-cup-icon guards against. */
+:root:not(.light) .badge-blue {
   background: rgba(74, 85, 162, 0.2);
+  /* A tint of --kscw-blue rather than --kscw-blue-light (#6b74b8), which only
+     reaches 3.1:1 on this badge's own translucent background. */
+  color: #9aa3da;
 }
-:root .badge-gold {
+:root:not(.light) .badge-gold {
   background: rgba(255, 200, 50, 0.2);
+  color: var(--kscw-gold);
 }
 :root .form-input,
 :root .form-textarea,
@@ -1041,11 +1052,18 @@ img.roster-avatar[src*="kscw_weiss"] {
 .btn > * {
   pointer-events: none;
 }
-.btn-primary {
+/* .btn-blue is the name /weiteres/schreiberkurse, its /pruefung sub-page and
+   /volleyball/reglemente have always used for the blue button. It was never
+   defined here, so those buttons silently fell back to bare .btn — no
+   background, no colour. Aliased onto .btn-primary rather than renamed at the
+   call sites, so both names keep working. */
+.btn-primary,
+.btn-blue {
   background: var(--kscw-blue);
   color: var(--text-on-blue);
 }
-.btn-primary:hover {
+.btn-primary:hover,
+.btn-blue:hover {
   background: var(--kscw-blue-dark);
   box-shadow: 0 4px 12px rgba(74, 85, 162, 0.4);
 }
@@ -1142,7 +1160,11 @@ img.roster-avatar[src*="kscw_weiss"] {
   color: var(--text-secondary);
 }
 .badge-blue { background: rgba(74, 85, 162, 0.1); color: var(--kscw-blue); }
-.badge-gold { background: rgba(255, 200, 50, 0.15); color: #92710a; }
+/* Ochre darkened from #92710a, which reached only 4.24:1 on the light theme —
+   .light .badge repaints this badge's background to the neutral #f5f6fa, so the
+   text lands on grey rather than on the gold tint set here. Kept in step with
+   .light .game-cup-icon below, which deliberately uses the same value. */
+.badge-gold { background: rgba(255, 200, 50, 0.15); color: #836408; }
 .badge-success { background: rgba(5, 150, 105, 0.1); color: var(--success); }
 .badge-danger { background: rgba(220, 38, 38, 0.1); color: var(--danger); }
 
@@ -1359,7 +1381,7 @@ tr:hover td {
 /* Bright gold washes out on the light theme's white — take the same darker
    ochre the light theme already uses for .badge-gold text. Must stay above the
    .badge-cup rule below, which is equally specific and has to win there. */
-.light .game-cup-icon { color: #92710a; }
+.light .game-cup-icon { color: #836408; }
 /* Every row is its own grid, so an inline trophy would push the time/badge/
    matchup of cup rows out of line with the rest of the table. Tables that
    contain a cup game reserve the slot on all their date cells instead

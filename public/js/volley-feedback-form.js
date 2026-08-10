@@ -432,7 +432,13 @@
 
     payload.turnstile_token = data.turnstileResponse;
 
-    fetch(DIRECTUS_URL + '/flows/trigger/d523d4a2-9dff-4dd5-b007-ec8991ef6392', {
+    // Was a Directus Flow trigger (d523d4a2-…). Replaced 2026-08-10 by a proper
+    // endpoint: the flow carried the Turnstile SECRET as a literal in
+    // directus_operations — readable by every Directus admin and in every DB
+    // backup — and created the row with permissions:"$full", a grant surface
+    // setup-permissions.mjs cannot see (audit 2026-08-08, findings 25 + 30).
+    // Same request shape, so the payload below is unchanged.
+    fetch(DIRECTUS_URL + '/kscw/public/volley-feedback', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

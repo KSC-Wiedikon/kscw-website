@@ -9,6 +9,7 @@
 // prunes the line once that day passes, because nothing rebuilds the site on a
 // date alone (the Directus auto-rebuild Flow only fires on content edits).
 import { DEFAULT_WAITLIST_URL, type YouthTeamInfo } from '../lib/fetch/youthBasketball'
+import { safeHref } from '../lib/safeHref'
 
 interface Props {
   code: string
@@ -23,7 +24,21 @@ const info: YouthTeamInfo = team ?? { coaches: [], slots: [] }
 // rendered verbatim; an empty label falls back to the i18n "Warteliste" key so
 // the client toggle can localise it. labelKey is undefined for custom labels,
 // which Astro omits, leaving the literal text untouched by the language switch.
-const waitlistUrl = info.waitlistUrl?.trim()
+// `waitlist_url` is a bare varchar(500) with no CHECK, and every coach can
+// write it on their own team — so it is untrusted input that gets BAKED into
+// static HTML by the rebuild Flow. Astro escapes the attribute but does not
+// vet the scheme, and `script-src 'unsafe-inline'` is still accepted in the
+// CSP, so a `javascript:` value executed on click for any parent who reached
+// the page before youth-status.js healed the node (audit 2026-08-08,
+// finding 16). Fail closed, matching sponsoren/index.astro: an unsafe URL
+// renders the badge without a link rather than a clickable javascript: href.
+// ⚠ Two values on purpose. `hasWaitlist` is the STATE (this team is full and
+// has a waiting list) and must come from the raw column; `waitlistHref` is the
+// vetted link. Deriving the state from the guarded value would mean an unsafe
+// URL silently flipped a FULL team to "open for players" via `openForPlayers`
+// below — turning a link-safety fix into a wrong-information bug.
+const hasWaitlist = !!info.waitlistUrl?.trim()
+const waitlistHref = safeHref(info.waitlistUrl?.trim())
 const customLabel = info.waitlistLabel?.trim()
 const waitlistLabel = customLabel || 'Warteliste'
 const waitlistLabelKey = customLabel ? undefined : 'bbWaitlistLabel'
@@ -31,7 +46,7 @@ const waitlistLabelKey = customLabel ? undefined : 'bbWaitlistLabel'
 // Not full + actively recruiting → green "Open for players" badge plus a link
 // into the contact form, prefilled to this exact team (sport + teamId). The
 // /kscw/contact backend routes youth-team submissions to the youth contact.
-const openForPlayers = !waitlistUrl && info.openForPlayers === true
+const openForPlayers = !hasWaitlist && info.openForPlayers === true
 const contactHref = `/club/kontakt?sport=basketball${info.teamId ? `&teamId=${encodeURIComponent(info.teamId)}` : ''}`
 
 // Female youth teams (D-codes: DU18/DU16/…) get the feminine German badge
@@ -87,18 +102,20 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
   {info.coaches.length > 0 && (
     <span><strong data-i18n="bbCoachLabel">Coach:</strong> {info.coaches.join(', ')}</span>
   )}
-  {waitlistUrl && (
+  {hasWaitlist && (
     <div class="youth-waitlist">
       <span class="youth-full-badge" data-i18n="bbTeamFull">Team voll</span>
-      <a
-        class="btn btn-outline btn-sm youth-waitlist-btn"
-        href={waitlistUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <span data-i18n={waitlistLabelKey}>{waitlistLabel}</span>
-        <span aria-hidden="true">→</span>
-      </a>
+      {waitlistHref && (
+        <a
+          class="btn btn-outline btn-sm youth-waitlist-btn"
+          href={waitlistHref}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span data-i18n={waitlistLabelKey}>{waitlistLabel}</span>
+          <span aria-hidden="true">→</span>
+        </a>
+      )}
     </div>
   )}
   {openForPlayers && (

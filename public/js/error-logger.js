@@ -64,17 +64,41 @@
     })
   })
 
+  // Strip the query string before anything is logged. `network_error` already
+  // passed the ingest guard, so `doc-status?reference=…&email=…` was shipping an
+  // applicant's reference and email address into a 30-day JSONL log on any
+  // offline/CORS failure (audit 2026-08-08, finding 43). The path is what
+  // identifies the failing endpoint; the parameters never were.
+  function cleanEndpoint(url) {
+    var path = String(url).replace(API_URL, '')
+    var q = path.indexOf('?')
+    return q === -1 ? path : path.slice(0, q)
+  }
+
   // ── Patch fetch to catch API errors ──────────────────────────────
   var origFetch = window.fetch
   window.fetch = function (url, opts) {
     return origFetch.apply(this, arguments).then(function (res) {
       // Only log Directus API errors (not external resources)
       if (!res.ok && typeof url === 'string' && url.indexOf('directus') !== -1) {
+        var endpoint = cleanEndpoint(url)
         send({
           event: 'api_error',
-          endpoint: url.replace(API_URL, ''),
+          endpoint: endpoint,
           method: (opts && opts.method) || 'GET',
           status: res.status,
+          // ⚠ `type` and `error` are what make this survive ingestion. The
+          // backend drops any body with none of error/stack/type/responseBody
+          // (index.js: `return res.status(204).end()`), and api_error was the
+          // ONLY class that carried none of them — so every one of these was
+          // silently discarded, and the beacon is fire-and-forget so the
+          // rejection was invisible. That mattered because team-page.js throws
+          // on !r.ok and swallows it with a bare .catch: no unhandledrejection,
+          // no console.error, and Sentry's CDN bundle only installs global
+          // handlers — this beacon was the sole telemetry for a revoked
+          // anonymous permission that only the static site exercises.
+          type: 'ApiError',
+          error: 'HTTP ' + res.status + ' ' + endpoint,
         })
       }
       return res
@@ -83,7 +107,7 @@
       if (typeof url === 'string' && url.indexOf('directus') !== -1) {
         send({
           event: 'network_error',
-          endpoint: url.replace(API_URL, ''),
+          endpoint: cleanEndpoint(url),
           method: (opts && opts.method) || 'GET',
           error: err.message || 'Network error',
         })

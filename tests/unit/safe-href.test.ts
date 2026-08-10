@@ -161,3 +161,41 @@ describe('safeHref — the runtime twin agrees with the build-time original', ()
     }
   });
 });
+
+// ── No re-implemented href guard may survive under public/js/ ───────────────
+// Two byte-identical weak copies of `safeUrl` lived in contact-form.js and
+// youth-status.js. Both accepted a PROTOCOL-RELATIVE `//evil.example`, which
+// inherits the page scheme and navigates off-site — the case the shared guard
+// rejects explicitly (audit 2026-08-08, finding 16). SECURITY.md claimed "the
+// pair cannot drift" while it was actually a quartet.
+//
+// The marker is the RETURNING shape — a helper that vets a URL and hands it
+// back — not the presence of a scheme regex. news-modal.js also tests schemes,
+// but as a DOMPurify post-pass that REMOVES any href which is not http(s)/
+// mailto: stricter than the shared guard and fail-closed, so it is correctly
+// not an offender here.
+describe('no re-implemented href guards under public/js/', () => {
+  it('no script vets-and-returns a URL instead of delegating to window.kscwSafeHref', async () => {
+    const { readdirSync, readFileSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+    const base = fileURLToPath(new URL('../../public/js/', import.meta.url))
+    const offenders: string[] = []
+    for (const f of readdirSync(base)) {
+      if (!f.endsWith('.js') || f === 'safe-href.js') continue
+      // Strip comments first: the fix's own comment QUOTES the defective
+      // expression to explain it, and a naive scan flags the explanation.
+      const src = readFileSync(base + f, 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '')
+      // The exact defect: treating a leading "/" as proof a URL is local, which
+      // waves "//evil.example" through.
+      const acceptsProtocolRelative = /charAt\(0\)\s*===\s*['"]\/['"]/.test(src)
+        || /\[0\]\s*===\s*['"]\/['"]/.test(src)
+      // A local guard that hands a vetted URL back to a caller.
+      const definesLocalGuard = /function\s+safe(?:Url|Href)\s*\(/.test(src)
+        && !/window\.kscwSafeHref/.test(src)
+      if (acceptsProtocolRelative || definesLocalGuard) offenders.push(f)
+    }
+    expect(offenders, `these re-implement the guard instead of using window.kscwSafeHref: ${offenders.join(', ')}`).toEqual([])
+  })
+})

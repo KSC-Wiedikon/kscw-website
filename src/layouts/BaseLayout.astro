@@ -2,7 +2,7 @@
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
-import { versionedAsset } from '../lib/assetVersion';
+import { assetVersion, versionedAsset } from '../lib/assetVersion';
 import type { Locale } from '../lib/i18n';
 
 interface Props {
@@ -88,6 +88,17 @@ const { title, titleKey, description, descriptionKey, locale = 'de' } = Astro.pr
        Cache-busted by content hash: this file is served max-age=14400, so
        without a ?v= a behaviour change here (e.g. the i18nReady failure path)
        would not reach a returning visitor for up to four hours. -->
+  {/* Content hashes for the i18n dictionaries. `i18n.js` itself is versioned by
+      `versionedAsset`, but its DATA file carried a hand-written `?v=4` that was
+      last bumped 2026-07-07 — 76 keys added, 26 removed and 5 changed behind an
+      unchanged URL since (audit 2026-08-08, finding 41). With
+      `Cache-Control: max-age=14400`, an English visitor kept a stale dictionary
+      for up to 4h after a deploy and saw raw key names ("privacyConsentPre …")
+      where the consent text should be. German is rendered by Astro at build
+      time, so a German-speaking reviewer sees nothing wrong. */}
+  <script is:inline define:vars={{ i18nVersions: { de: assetVersion('js/i18n/de.json'), en: assetVersion('js/i18n/en.json') } }}>
+    window.__I18N_V = i18nVersions;
+  </script>
   <script is:inline src={versionedAsset('js/i18n.js')}></script>
 </head>
 <body>

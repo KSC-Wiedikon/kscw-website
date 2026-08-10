@@ -1,12 +1,19 @@
-import { getLatestNews } from '../lib/fetch/news';
+import { getLatestNews, type NewsArticle } from '../lib/fetch/news';
 
 export async function GET() {
-  let articles: any[] = [];
+  // Typed, not `any[]`. The `any` is precisely why this shipped broken:
+  // `mapNews` emits a single `date` field, this file read `publishedAt ||
+  // dateCreated`, both resolved to undefined, and `new Date(undefined)
+  // .toUTCString()` returns the literal string "Invalid Date" — which every
+  // item on the live feed carried. A real type would have caught the rename.
+  let articles: NewsArticle[] = [];
   try {
     articles = await getLatestNews(20);
   } catch { /* empty feed on failure */ }
 
   const siteUrl = 'https://kscw.ch';
+  // Fallback for an article with no date, and the channel's own lastBuildDate.
+  const buildDate = new Date().toUTCString();
   const escXml = (s: string) => s
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -17,7 +24,9 @@ export async function GET() {
     // Slug is admin-authored — URL-encode it for the link and XML-escape the
     // final URL so it cannot break the feed or inject markup into RSS readers.
     const link = escXml(`${siteUrl}/news/?article=${encodeURIComponent(a.slug || '')}`);
-    const pubDate = new Date(a.publishedAt || a.dateCreated).toUTCString();
+    // Fall back to the build date rather than emitting an invalid one: an
+    // undated item is a cosmetic loss, an unparseable pubDate is a broken feed.
+    const pubDate = a.date ? new Date(a.date).toUTCString() : buildDate;
     const category = escXml(a.category || 'club');
     return `    <item>
       <title>${escXml(a.title)}</title>
@@ -36,6 +45,7 @@ export async function GET() {
     <link>${siteUrl}/news/</link>
     <description>Neuigkeiten vom KSC Wiedikon — Volleyball &amp; Basketball</description>
     <language>de-ch</language>
+    <lastBuildDate>${buildDate}</lastBuildDate>
     <atom:link href="${siteUrl}/feed.xml" rel="self" type="application/rss+xml"/>
 ${items}
   </channel>

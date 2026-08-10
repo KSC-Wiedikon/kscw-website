@@ -43,7 +43,11 @@
       return Promise.resolve(cache[lang]);
     }
 
-    return fetch('/js/i18n/' + lang + '.json?v=4')
+    // Content hash injected by BaseLayout (window.__I18N_V). Falls back to an
+    // UNVERSIONED url rather than a stale literal: revalidating is a cheap
+    // miss, serving four-hour-old translations is a visible bug.
+    var v = (window.__I18N_V && window.__I18N_V[lang]) || '';
+    return fetch('/js/i18n/' + lang + '.json' + (v ? '?v=' + v : ''))
       .then(function (res) {
         if (!res.ok) throw new Error('Failed to load translations for ' + lang);
         return res.json();

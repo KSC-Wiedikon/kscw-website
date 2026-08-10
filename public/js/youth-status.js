@@ -127,10 +127,21 @@
   // Only allow http(s)/mailto (and root-relative) URLs into an href — a
   // javascript: URL coming from Directus would otherwise be an XSS sink.
   // Mirrors the href post-pass in news-modal.js. Returns '' for unsafe URLs.
-  function safeUrl(url) {
-    var u = String(url || '').trim();
-    if (/^https?:/i.test(u) || /^mailto:/i.test(u) || u.charAt(0) === '/') return u;
-    return '';
+  /**
+   * Delegates to window.kscwSafeHref (public/js/safe-href.js, loaded
+   * render-blocking from BaseLayout's <head> on every page). Fails CLOSED — if
+   * that file did not load we render unlinked rather than emit a URL nobody
+   * vetted.
+   *
+   * This used to be a local copy whose `u.charAt(0) === '/'` also accepted a
+   * PROTOCOL-RELATIVE `//evil.example`, which inherits the page scheme and
+   * navigates off-site — the exact case the shared guard rejects explicitly
+   * (audit 2026-08-08, finding 16). Two byte-identical copies of that weaker
+   * check existed; SECURITY.md claimed "the pair cannot drift" while it was
+   * actually a quartet. Do not reintroduce a local scheme check.
+   */
+  function safeUrl(value) {
+    return window.kscwSafeHref ? window.kscwSafeHref(value) : '';
   }
 
   // Full team → gold "Team voll" badge + waiting-list link. A custom label from

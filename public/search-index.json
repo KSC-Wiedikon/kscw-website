@@ -130,5 +130,11 @@
     "titleKey": "weiteresSchreiberkurseMetaTitle",
     "descKey": "weiteresSchreiberkurseMetaDescription",
     "section": "navMore"
+  },
+  {
+    "url": "/weiteres/schreiberkurse-basketball",
+    "titleKey": "weiteresSchreiberkurseBasketballMetaTitle",
+    "descKey": "weiteresSchreiberkurseBasketballMetaDescription",
+    "section": "navMore"
   }
 ]

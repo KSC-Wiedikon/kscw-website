@@ -1,0 +1,59 @@
+name: Deploy to Cloudflare Pages (KSCW account)
+
+# kscw.ch + www.kscw.ch are served by the `kscw-web` project in the KSCW Cloudflare
+# account. It is a Direct Upload project — Cloudflare cannot attach a git repo to it,
+# ever — so push-to-deploy has to come from here. Without this workflow the apex goes
+# stale silently while the old `kscw-website` project keeps building nothing anyone sees
+# (that is exactly what happened between 10.08 and 11.08.2026).
+
+on:
+  push:
+    branches: [prod, dev]
+  workflow_dispatch:
+
+# Never pull_request / pull_request_target — this repo is PUBLIC and that would expose
+# CLOUDFLARE_API_TOKEN to fork PRs.
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref_name }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        env:
+          DIRECTUS_URL: ${{ github.ref_name == 'prod' && 'https://directus.kscw.ch' || 'https://directus-dev.kscw.ch' }}
+        # Matches the old Cloudflare build command exactly. Note `npx astro build`
+        # skips npm lifecycle hooks, so `prebuild`/`site-text` does NOT run — keep it
+        # that way unless you also change it on the Cloudflare side.
+        run: npx astro build
+
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          # KSCW club account. Not a secret — it appears in every dashboard URL.
+          CLOUDFLARE_ACCOUNT_ID: 989cbb0f25ed3f11e417908694ef8da5
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Repo secret CLOUDFLARE_API_TOKEN is not set. It must be a KSCW-account token with Account · Cloudflare Pages · Edit."
+            exit 1
+          fi
+          npx wrangler@4 pages deploy dist \
+            --project-name=kscw-web \
+            --branch='${{ github.ref_name }}' \
+            --commit-hash='${{ github.sha }}'

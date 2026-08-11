@@ -40,9 +40,13 @@ import '../styles/global.css';
     var app = document.getElementById('admin-app');
     var currentTab = 'news';
     var adminAccess = { isSuperuser: false, sections: [] };
-    var SECTION_ORDER = ['news','events','registrations','sponsors','scorer_courses','mixed_turnier'];
+    var SECTION_ORDER = ['news','events','registrations','sponsors','scorer_courses','mixed_turnier','site_text'];
     var _scorerCourses = null; // cached scorer_courses rows for the inline registrations view
     var _scorerSaveChains = {}; // per-signup save serialization (sub_key -> Promise)
+    // Seitentexte: { groups, defaults: { de, en }, overrides: { key: { de, en } } }
+    var _siteText = null;
+    var _siteTextGroupId = null; // selected page ('' = every page at once)
+    var _siteTextQuery = '';
     /**
      * The admin's single language choice. It selects the UI chrome (through
      * t() below) *and* the language you type content in — news titles are
@@ -172,7 +176,7 @@ import '../styles/global.css';
         el.classList.toggle('active', el.getAttribute('data-tab') === currentTab);
       });
       var fab = document.getElementById('fab-btn');
-      if (fab) fab.style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier') ? 'none' : '';
+      if (fab) fab.style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text') ? 'none' : '';
       loadItems();
     }
 
@@ -363,6 +367,27 @@ import '../styles/global.css';
         scEmailCancel: 'Abbrechen',
         scEmailNone: 'Keine E-Mail-Adressen ausgewählt.',
         scSvFromForm: 'Aus dem Formular übernommen (SVRZ-Lizenznummer)',
+        siteText: 'Seitentexte',
+        siteTextIntro: 'Texte der Website ändern. Gespeicherte Änderungen sind nach wenigen Sekunden live; der Originaltext bleibt erhalten und kann jederzeit zurückgeholt werden.',
+        siteTextPage: 'Seite',
+        siteTextAllPages: 'Alle Seiten',
+        siteTextShared: 'Gemeinsame Elemente',
+        siteTextOther: 'Weitere Texte (keiner Seite zugeordnet)',
+        siteTextSearch: 'Text suchen...',
+        siteTextNoMatches: 'Kein Text gefunden.',
+        siteTextChanged: 'Geändert',
+        siteTextRevert: 'Original',
+        siteTextRevertConfirm: 'Diesen Text auf das Original zurücksetzen?',
+        siteTextReverted: 'Original wiederhergestellt',
+        siteTextSaved: 'Gespeichert — in wenigen Sekunden live',
+        siteTextSaveFailed: 'Speichern fehlgeschlagen: ',
+        siteTextTranslate: 'Übersetzen',
+        siteTextNoMarkup: 'HTML ist in Texten nicht erlaubt — bitte «<» entfernen.',
+        siteTextPlaceholderMissing: 'Der Platzhalter {ph} muss im Text bleiben.',
+        siteTextEmptyValue: 'Der Text darf nicht leer sein — nutze «Original» zum Zurücksetzen.',
+        siteTextKindAttr: 'Feldtext',
+        siteTextKindMeta: 'Suchmaschinen',
+        siteTextUnavailable: 'Seitentexte sind noch nicht verfügbar — die Directus-Erweiterung fehlt.',
         mixedTurnier: 'Mixed Turnier',
         mixedTurnierNoEntries: 'Keine Anmeldungen vorhanden.',
         mixedTurnierExportCSV: 'CSV Export',
@@ -554,6 +579,27 @@ import '../styles/global.css';
         scEmailCancel: 'Cancel',
         scEmailNone: 'No email addresses selected.',
         scSvFromForm: 'Pre-filled from the form (SVRZ licence number)',
+        siteText: 'Page texts',
+        siteTextIntro: 'Change the text on the website. A saved change is live within seconds; the original wording is kept and can be restored at any time.',
+        siteTextPage: 'Page',
+        siteTextAllPages: 'All pages',
+        siteTextShared: 'Shared elements',
+        siteTextOther: 'Other text (not tied to a page)',
+        siteTextSearch: 'Search text...',
+        siteTextNoMatches: 'No text found.',
+        siteTextChanged: 'Changed',
+        siteTextRevert: 'Original',
+        siteTextRevertConfirm: 'Reset this text to the original?',
+        siteTextReverted: 'Original restored',
+        siteTextSaved: 'Saved — live within seconds',
+        siteTextSaveFailed: 'Could not save: ',
+        siteTextTranslate: 'Translate',
+        siteTextNoMarkup: 'HTML is not allowed in page text — please remove the "<".',
+        siteTextPlaceholderMissing: 'The {ph} placeholder has to stay in the text.',
+        siteTextEmptyValue: 'The text cannot be empty — use "Original" to reset it.',
+        siteTextKindAttr: 'Field text',
+        siteTextKindMeta: 'Search engines',
+        siteTextUnavailable: 'Page texts are not available yet — the Directus extension is missing.',
         mixedTurnier: 'Mixed Turnier',
         mixedTurnierNoEntries: 'No signups found.',
         mixedTurnierExportCSV: 'CSV Export',
@@ -1029,6 +1075,7 @@ import '../styles/global.css';
         news: 'News', events: 'Events',
         registrations: t('registrations'), sponsors: t('sponsors'),
         scorer_courses: t('scorerCourses'), mixed_turnier: t('mixedTurnier'),
+        site_text: t('siteText'),
       };
       var visibleSections = SECTION_ORDER.filter(function(s) {
         return adminAccess.isSuperuser || adminAccess.sections.indexOf(s) !== -1;
@@ -1097,7 +1144,7 @@ import '../styles/global.css';
           document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
           this.classList.add('active');
           // Hide FAB for registrations (no manual creation)
-          document.getElementById('fab-btn').style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier') ? 'none' : '';
+          document.getElementById('fab-btn').style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text') ? 'none' : '';
           loadItems();
         });
       });
@@ -1114,7 +1161,7 @@ import '../styles/global.css';
       // Canonicalise the address bar so the first tab is always shareable and
       // a later Back lands on it rather than an ambiguous /admin/.
       replaceAdminUrl(currentTab, { course: new URLSearchParams(location.search).get('course') });
-      document.getElementById('fab-btn').style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier') ? 'none' : '';
+      document.getElementById('fab-btn').style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text') ? 'none' : '';
 
       loadItems();
     }
@@ -1168,6 +1215,48 @@ import '../styles/global.css';
             var errDiv = document.createElement('div');
             errDiv.className = 'admin-error';
             errDiv.textContent = t('loadError') + err.message;
+            content.appendChild(errDiv);
+          });
+        return;
+      }
+
+      // ── Seitentexte tab ──
+      // Four sources: the per-page key index the build derives from the page
+      // sources, both shipped dictionaries (the original wording), and whatever
+      // overrides are already saved. All four are needed before anything can be
+      // drawn, so this is the one tab that genuinely wants Promise.all.
+      if (currentTab === 'site_text') {
+        Promise.all([
+          fetch('/site-text-manifest.json').then(function(r) {
+            if (!r.ok) throw new Error('manifest HTTP ' + r.status);
+            return r.json();
+          }),
+          fetch('/js/i18n/de.json').then(function(r) { return r.json(); }),
+          fetch('/js/i18n/en.json').then(function(r) { return r.json(); }),
+          wadmin('site_text', 'text', {}).then(function(r) {
+            // A 404 here means the Directus extension predates this feature. That
+            // is worth saying plainly rather than showing an empty editor whose
+            // saves would all fail.
+            if (r.status === 404) throw new Error('__no_endpoint__');
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+          }),
+        ])
+          .then(function(parts) {
+            _siteText = {
+              groups: parts[0].groups || [],
+              defaults: { de: parts[1] || {}, en: parts[2] || {} },
+              overrides: parts[3].data || {},
+            };
+            renderSiteTextEditor();
+          })
+          .catch(function(err) {
+            content.textContent = '';
+            var errDiv = document.createElement('div');
+            errDiv.className = 'admin-error';
+            errDiv.textContent = err.message === '__no_endpoint__'
+              ? t('siteTextUnavailable')
+              : t('loadError') + err.message;
             content.appendChild(errDiv);
           });
         return;
@@ -2409,6 +2498,379 @@ import '../styles/global.css';
         return '"' + val.replace(/"/g, '""') + '"';
       }
       return val;
+    }
+
+    // ── Seitentexte (page text) ────────────────────────────────
+    // Edits the strings the site is built from, without touching the repo.
+    //
+    // The dictionaries in the website repo stay the original wording; a save here
+    // writes an *override* keyed by the same i18n key, and "Original" deletes that
+    // override. So nothing an admin does in this tab can lose the wording the site
+    // shipped with, and a page whose text was never edited is byte-for-byte what
+    // the developers wrote.
+    //
+    // Text only, deliberately: values are applied with textContent at runtime and
+    // through Astro's escaping at build time (see the note in public/js/i18n.js and
+    // tests/unit/no-i18n-html.test.ts). A link inside a sentence still needs a code
+    // change — which is why "<" is refused here rather than silently stripped.
+
+    /** '/volleyball/spielplanung — Spielplanung', or 'Gemeinsame Elemente — Header'. */
+    function siteTextGroupLabel(g) {
+      if (g.kind === 'other') return t('siteTextOther');
+      // Header/Footer and the runtime form messages belong to no single page.
+      if (g.kind === 'component' || g.kind === 'runtime') return t('siteTextShared') + ' — ' + g.path;
+      var title = g.labelKey && _siteText.defaults[adminLang][g.labelKey];
+      return g.path + (title ? ' — ' + title : '');
+    }
+
+    function siteTextDefault(key, lang) {
+      var d = _siteText.defaults[lang];
+      return (d && d[key]) || '';
+    }
+
+    /** The value the site currently shows: the override if one exists, else the default. */
+    function siteTextCurrent(key, lang) {
+      var o = _siteText.overrides[key];
+      if (o && typeof o[lang] === 'string' && o[lang] !== '') return o[lang];
+      return siteTextDefault(key, lang);
+    }
+
+    /**
+     * Cosmetic pre-check, mirroring what the endpoint enforces server-side.
+     * Catching it here means the admin gets a sentence in their own language
+     * instead of a rejected request.
+     */
+    function siteTextProblem(value, fallback) {
+      if (!value.trim()) return t('siteTextEmptyValue');
+      if (value.indexOf('<') !== -1) return t('siteTextNoMarkup');
+      var required = fallback.match(/\{[a-zA-Z0-9_]+\}/g) || [];
+      for (var i = 0; i < required.length; i++) {
+        // A dropped {placeholder} does not fail loudly — it renders a sentence with
+        // a hole in it ("Es sind Teams angemeldet"), which is why it is refused.
+        if (value.indexOf(required[i]) === -1) {
+          return t('siteTextPlaceholderMissing').replace('{ph}', required[i]);
+        }
+      }
+      return null;
+    }
+
+    function renderSiteTextEditor() {
+      var content = document.getElementById('admin-content');
+      if (!content || !_siteText) return;
+      content.textContent = '';
+
+      // Open on a single page rather than all ~700 strings: "Alle Seiten" builds two
+      // textareas per string, which is a slow first paint for a list nobody reads
+      // top to bottom. It stays available for searching across the whole site.
+      if (_siteTextGroupId === null && _siteText.groups.length) {
+        _siteTextGroupId = _siteText.groups[0].id;
+      }
+
+      var intro = document.createElement('p');
+      intro.className = 'admin-list-meta';
+      intro.style.cssText = 'margin:0 0 12px;max-width:70ch;line-height:1.5;';
+      intro.textContent = t('siteTextIntro');
+      content.appendChild(intro);
+
+      // ── Page picker + search ──
+      var bar = document.createElement('div');
+      bar.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;';
+
+      var picker = document.createElement('select');
+      picker.className = 'form-select';
+      picker.style.cssText = 'flex:1 1 320px;min-width:0;';
+      var allOpt = document.createElement('option');
+      allOpt.value = '';
+      allOpt.textContent = t('siteTextAllPages');
+      picker.appendChild(allOpt);
+      _siteText.groups.forEach(function(g) {
+        var opt = document.createElement('option');
+        opt.value = g.id;
+        opt.textContent = siteTextGroupLabel(g);
+        if (g.id === _siteTextGroupId) opt.selected = true;
+        picker.appendChild(opt);
+      });
+      picker.addEventListener('change', function() {
+        _siteTextGroupId = this.value;
+        renderSiteTextEditor();
+      });
+      bar.appendChild(picker);
+
+      var search = document.createElement('input');
+      search.type = 'search';
+      search.className = 'form-input';
+      search.style.cssText = 'flex:1 1 220px;min-width:0;';
+      search.placeholder = t('siteTextSearch');
+      search.value = _siteTextQuery;
+      var searchTimer = null;
+      search.addEventListener('input', function() {
+        var value = this.value;
+        // Re-rendering on every keystroke would rebuild up to ~700 rows and drop
+        // focus with it; a short debounce keeps typing smooth.
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function() {
+          _siteTextQuery = value;
+          renderSiteTextEditor();
+          var again = document.getElementById('site-text-search');
+          if (again) { again.focus(); again.setSelectionRange(again.value.length, again.value.length); }
+        }, 250);
+      });
+      search.id = 'site-text-search';
+      bar.appendChild(search);
+      content.appendChild(bar);
+
+      // ── Rows ──
+      var query = _siteTextQuery.trim().toLowerCase();
+      var groups = _siteText.groups.filter(function(g) {
+        return !_siteTextGroupId || g.id === _siteTextGroupId;
+      });
+
+      var list = document.createElement('div');
+      list.className = 'admin-list';
+      var shown = 0;
+      var seen = {}; // a key used on two pages is edited once, not twice
+
+      groups.forEach(function(g) {
+        var matching = g.keys.filter(function(entry) {
+          if (seen[entry.key]) return false;
+          if (!query) return true;
+          return entry.key.toLowerCase().indexOf(query) !== -1
+            || siteTextCurrent(entry.key, 'de').toLowerCase().indexOf(query) !== -1
+            || siteTextCurrent(entry.key, 'en').toLowerCase().indexOf(query) !== -1;
+        });
+        if (!matching.length) return;
+
+        // Only worth a heading when more than one group is on screen.
+        if (!_siteTextGroupId) {
+          var heading = document.createElement('h3');
+          heading.className = 'admin-list-title';
+          heading.style.cssText = 'margin:18px 0 6px;font-size:0.95em;color:var(--text-muted);';
+          heading.textContent = siteTextGroupLabel(g);
+          list.appendChild(heading);
+        }
+
+        matching.forEach(function(entry) {
+          seen[entry.key] = true;
+          shown++;
+          list.appendChild(siteTextRow(entry));
+        });
+      });
+
+      if (!shown) {
+        var empty = document.createElement('div');
+        empty.className = 'admin-empty';
+        empty.textContent = t('siteTextNoMatches');
+        content.appendChild(empty);
+        return;
+      }
+
+      content.appendChild(list);
+    }
+
+    /** One editable string: DE + EN, with Save / Original / Übersetzen. */
+    function siteTextRow(entry) {
+      var key = entry.key;
+      var row = document.createElement('div');
+      row.className = 'admin-list-item';
+      row.style.cssText = 'display:block;';
+
+      // ── Header line: kind, key, changed badge ──
+      var head = document.createElement('div');
+      head.style.cssText = 'display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;';
+
+      if (entry.kind !== 'text') {
+        var kindBadge = document.createElement('span');
+        kindBadge.className = 'admin-badge admin-badge-gray';
+        kindBadge.textContent = entry.kind === 'attr' ? t('siteTextKindAttr') : t('siteTextKindMeta');
+        head.appendChild(kindBadge);
+      }
+
+      var keyLabel = document.createElement('code');
+      keyLabel.style.cssText = 'font-size:0.75em;color:var(--text-muted);';
+      keyLabel.textContent = key;
+      head.appendChild(keyLabel);
+
+      var changedBadge = document.createElement('span');
+      changedBadge.className = 'admin-badge admin-badge-green';
+      changedBadge.textContent = t('siteTextChanged');
+      head.appendChild(changedBadge);
+
+      var status = document.createElement('span');
+      status.style.cssText = 'font-size:0.8em;margin-left:auto;';
+      head.appendChild(status);
+      row.appendChild(head);
+
+      // ── The two language boxes ──
+      var boxes = {};
+      ['de', 'en'].forEach(function(lang) {
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex;gap:8px;align-items:flex-start;margin-bottom:6px;';
+
+        var tag = document.createElement('span');
+        tag.style.cssText = 'flex:0 0 24px;font-size:0.75em;color:var(--text-muted);padding-top:8px;';
+        tag.textContent = lang.toUpperCase();
+        wrap.appendChild(tag);
+
+        var box = document.createElement('textarea');
+        box.className = 'form-input';
+        box.style.cssText = 'flex:1 1 auto;min-width:0;resize:vertical;font:inherit;';
+        box.value = siteTextCurrent(key, lang);
+        box.rows = box.value.length > 90 ? 3 : 1;
+        box.addEventListener('input', refreshChrome);
+        boxes[lang] = box;
+        wrap.appendChild(box);
+
+        row.appendChild(wrap);
+      });
+
+      // ── Actions ──
+      var actions = document.createElement('div');
+      actions.className = 'admin-list-actions';
+      actions.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;';
+
+      var translateBtn = document.createElement('button');
+      translateBtn.type = 'button';
+      translateBtn.className = 'admin-btn admin-btn-ghost admin-btn-sm';
+      translateBtn.textContent = t('siteTextTranslate');
+      translateBtn.addEventListener('click', function() {
+        translateSiteText(boxes.de.value, boxes.en, status, refreshChrome);
+      });
+      actions.appendChild(translateBtn);
+
+      var revertBtn = document.createElement('button');
+      revertBtn.type = 'button';
+      revertBtn.className = 'admin-btn admin-btn-ghost admin-btn-sm';
+      revertBtn.textContent = t('siteTextRevert');
+      revertBtn.addEventListener('click', function() {
+        confirmModal(t('siteTextRevertConfirm')).then(function(ok) {
+          if (!ok) return;
+          revertSiteTextRow(key, boxes, status, refreshChrome);
+        });
+      });
+      actions.appendChild(revertBtn);
+
+      var saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'admin-btn admin-btn-primary admin-btn-sm';
+      saveBtn.textContent = t('save');
+      saveBtn.addEventListener('click', function() {
+        var values = { de: boxes.de.value.trim(), en: boxes.en.value.trim() };
+        var problem = siteTextProblem(values.de, siteTextDefault(key, 'de'))
+          || siteTextProblem(values.en, siteTextDefault(key, 'en'));
+        if (problem) {
+          status.textContent = '✕ ' + problem;
+          status.style.color = '#dc2626';
+          return;
+        }
+        // Show exactly what will be stored. Without this the box keeps the
+        // untrimmed text while the saved value is trimmed, so the row stays
+        // "dirty" after a successful save and looks like it did not go through.
+        boxes.de.value = values.de;
+        boxes.en.value = values.en;
+        // A language left at the shipped wording is sent as null — "not
+        // overridden" — rather than as a copy of it. Storing the copy would mean a
+        // later improvement to that language in the repo was silently shadowed by
+        // the old default, which is the drift this whole design avoids. Both null
+        // is how the endpoint recognises a revert.
+        saveSiteTextRow(key, {
+          de: values.de === siteTextDefault(key, 'de') ? null : values.de,
+          en: values.en === siteTextDefault(key, 'en') ? null : values.en,
+        }, status, refreshChrome);
+      });
+      actions.appendChild(saveBtn);
+      row.appendChild(actions);
+
+      /** Keeps the badge and the two buttons honest about the row's current state. */
+      function refreshChrome() {
+        var hasOverride = !!_siteText.overrides[key];
+        var dirty = boxes.de.value !== siteTextCurrent(key, 'de')
+          || boxes.en.value !== siteTextCurrent(key, 'en');
+        changedBadge.style.display = hasOverride ? '' : 'none';
+        // Nothing to reset on a row that has never been edited.
+        revertBtn.style.display = hasOverride ? '' : 'none';
+        saveBtn.disabled = !dirty; // .admin-btn:disabled already dims it
+      }
+      refreshChrome();
+
+      return row;
+    }
+
+    // WEB-SEC-5 / WEB-ADM-6 (info, accepted), same as the news/event title
+    // translation: the text is sent to api.mymemory.translated.net. It is website
+    // copy that is public by definition, so nothing confidential leaves the admin.
+    function translateSiteText(source, targetBox, statusEl, done) {
+      if (!source || source.trim().length < 3) return;
+      statusEl.style.color = 'var(--text-muted)';
+      statusEl.textContent = '…';
+      fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(source) + '&langpair=de|en')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+          var translated = data.responseData && data.responseData.translatedText;
+          if (!translated) throw new Error('empty');
+          // The API shouts back at short inputs ("SAVE" for "Speichern").
+          if (translated === translated.toUpperCase() && source !== source.toUpperCase()) {
+            translated = translated.charAt(0).toUpperCase() + translated.slice(1).toLowerCase();
+          }
+          targetBox.value = translated;
+          statusEl.textContent = '';
+          done();
+        })
+        .catch(function() {
+          statusEl.style.color = '#dc2626';
+          statusEl.textContent = '✕ ' + t('translationFailed');
+        });
+    }
+
+    function saveSiteTextRow(key, values, statusEl, done) {
+      statusEl.style.color = 'var(--text-muted)';
+      statusEl.textContent = t('saving');
+      wadmin('site_text', 'text/' + encodeURIComponent(key), {
+        // PATCH rather than PUT: Directus's CORS preflight allows
+        // GET,POST,PATCH,DELETE only, so a cross-origin PUT from here never
+        // reaches the endpoint at all.
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      })
+        .then(function(res) {
+          if (!res.ok) return res.json().then(function(body) {
+            throw new Error((body && body.error) || 'HTTP ' + res.status);
+          }, function() { throw new Error('HTTP ' + res.status); });
+          return res.json();
+        })
+        .then(function(body) {
+          // The endpoint drops a row whose values match the shipped text in both
+          // languages — editing a string back to its original is a revert, and
+          // leaving a no-op row behind would keep it flagged as "changed" forever.
+          if (body && body.data) _siteText.overrides[key] = { de: body.data.de, en: body.data.en };
+          else delete _siteText.overrides[key];
+          statusEl.style.color = '#16a34a';
+          statusEl.textContent = '✓ ' + t('siteTextSaved');
+          done();
+        })
+        .catch(function(err) {
+          statusEl.style.color = '#dc2626';
+          statusEl.textContent = '✕ ' + t('siteTextSaveFailed') + err.message;
+        });
+    }
+
+    function revertSiteTextRow(key, boxes, statusEl, done) {
+      statusEl.style.color = 'var(--text-muted)';
+      statusEl.textContent = t('saving');
+      wadmin('site_text', 'text/' + encodeURIComponent(key), { method: 'DELETE' })
+        .then(function(res) {
+          if (!res.ok && res.status !== 404) throw new Error('HTTP ' + res.status);
+          delete _siteText.overrides[key];
+          boxes.de.value = siteTextDefault(key, 'de');
+          boxes.en.value = siteTextDefault(key, 'en');
+          statusEl.style.color = '#16a34a';
+          statusEl.textContent = '✓ ' + t('siteTextReverted');
+          done();
+        })
+        .catch(function(err) {
+          statusEl.style.color = '#dc2626';
+          statusEl.textContent = '✕ ' + t('siteTextSaveFailed') + err.message;
+        });
     }
 
     // ── Sponsors List ──────────────────────────────────────────

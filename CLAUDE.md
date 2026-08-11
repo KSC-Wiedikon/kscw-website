@@ -18,7 +18,7 @@ CI (`.github/workflows/test.yml`) runs build + unit + e2e tests on every push to
 | Rule | Detail |
 |------|--------|
 | CSS | Custom design system in `src/styles/global.css` — **never rewrite to Tailwind** |
-| i18n | Single-URL routing — one page per path. German renders at build time via `t()` (`src/lib/i18n.ts`); English is swapped in client-side by `public/js/i18n.js` using `data-i18n` attributes. Dictionaries: `public/js/i18n/{de,en}.json`. Legacy `/de/…` `/en/…` URLs 301 to the canonical path via `public/_redirects`. |
+| i18n | Single-URL routing — one page per path. German renders at build time via `t()` (`src/lib/i18n.ts`); English is swapped in client-side by `public/js/i18n.js` using `data-i18n` attributes. Dictionaries: `public/js/i18n/{de,en}.json`. Admin edits from `/admin` → Seitentexte are layered on top of these: baked into the build by `scripts/fetch-site-text.mjs` (a `prebuild` step) and applied in the browser by `i18n.js`, so an edit shows up without a rebuild. Render German through `t(locale, 'key')` — never a hardcoded literal next to a `data-i18n` attribute, or the override cannot reach the build output (`tests/unit/site-text.test.ts` enforces this). Legacy `/de/…` `/en/…` URLs 301 to the canonical path via `public/_redirects`. |
 | Team data | Hybrid — build-time fetch in frontmatter via `src/lib/fetch/*` (instant-paint / no-JS fallback), refreshed client-side from Directus (`public/js/team-page.js` etc.) |
 | News/events | Build-time fetch in frontmatter + runtime via Directus REST |
 | Board/contacts | Static JSON in `src/data/` |
@@ -29,7 +29,8 @@ CI (`.github/workflows/test.yml`) runs build + unit + e2e tests on every push to
 ## Admin Page
 - `/admin` — hidden link in footer copyright text
 - Auth: Directus login, but **authorization is enforced server-side** by the `/kscw/wadmin/*` endpoints — the client-side role gate (`website_admin` / `website admin` / `admin` / `administrator` / `superuser`) is cosmetic. See `SECURITY.md` before changing it.
-- Sections: news, events, sponsors, registrations, mixed-tournament, scorer courses — plus a superuser-only section-grant grid
+- Sections: news, events, sponsors, registrations, mixed-tournament, scorer courses, **Seitentexte** (page text) — plus a superuser-only section-grant grid
+- **Seitentexte** edits any `data-i18n` string on the public site. The repo dictionaries stay the source of truth; Directus `site_text` holds overrides only, and deleting one restores the shipped wording. The page list is derived at build time from the page sources (`src/pages/site-text-manifest.json.ts`), so it never needs hand-maintaining. Values are text-only by design — read `SECURITY.md` (2026-08-11) before touching any of it
 - Vanilla JS island. Quill + DOMPurify loaded via SRI-pinned CDN in `admin.astro` only; **public** pages (news body rendering) use a vendored copy at `public/js/vendor/purify.min.js` instead of the CDN
 
 ## Branches & Dev-First Workflow

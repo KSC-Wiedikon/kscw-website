@@ -65,7 +65,7 @@ try {
         <div class="games-grid__col">
           <SectionHeader title={t(locale, 'homeUpcomingGames')} titleKey="homeUpcomingGames" />
           <div class="sport-tabs" data-target="upcoming-games-list">
-            <button class="sport-tab active" data-filter="all" data-i18n="newsTabAll">Alle</button>
+            <button class="sport-tab active" data-filter="all" data-i18n="newsTabAll">{t(locale, 'newsTabAll')}</button>
             <button class="sport-tab" data-filter="volleyball">Volleyball</button>
             <button class="sport-tab" data-filter="basketball">Basketball</button>
           </div>
@@ -76,7 +76,7 @@ try {
         <div class="games-grid__col">
           <SectionHeader title={t(locale, 'homeRecentResults')} titleKey="homeRecentResults" />
           <div class="sport-tabs" data-target="recent-results-list">
-            <button class="sport-tab active" data-filter="all" data-i18n="newsTabAll">Alle</button>
+            <button class="sport-tab active" data-filter="all" data-i18n="newsTabAll">{t(locale, 'newsTabAll')}</button>
             <button class="sport-tab" data-filter="volleyball">Volleyball</button>
             <button class="sport-tab" data-filter="basketball">Basketball</button>
           </div>
@@ -99,7 +99,7 @@ try {
         actionLabelKey="homeAllNews"
       />
       <div class="grid grid-2 card-glow-grid" id="news-grid">
-        <p id="news-empty" data-i18n="homeNewsEmpty">Keine News vorhanden.</p>
+        <p id="news-empty" data-i18n="homeNewsEmpty">{t(locale, 'homeNewsEmpty')}</p>
       </div>
     </div>
   </section>

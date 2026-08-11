@@ -17,6 +17,13 @@ Static Astro 6 site on Cloudflare Pages (`kscw.ch`). Client behaviour via `publi
 
 Deduplication shield — if a future audit re-finds one of these, it's a regression or a misunderstanding.
 
+### 2026-08-11 — Who may hold a website-admin grant, and the client gate that contradicted it
+
+- **Eligible roles are now a set, not one string.** `wadmin.js` gated on `role.name === 'website admin'` exactly, so a person could only administer the website by *being* a Website Admin. A Directus user has one role, so the club's youth/sport administrators (`Sport Admin`, needed for their actual work in Wiedisync) could not be given so much as page-text access without surrendering it. `GATED_ROLES = {'website admin', 'sport admin'}` replaces it. **Eligibility is not access**: the per-user row in `website_admin_access` is still the only thing that opens a section, and a Sport Admin with no row gets `[]` — pinned by tests, including that a stray row against an *ineligible* role stays inert.
+- **`/wadmin/admins` lists every eligible role.** It filtered on the same single role name, so a Sport Admin who *had* been granted sections would have been invisible in the superuser's grant grid — granted access that nobody could see or revoke from the UI.
+- **The admin page's client gate now asks the server.** `isAuthorized()` in `admin.astro` compared `role.name` against a hardcoded list (`website_admin`, `website admin`, `admin`, `administrator`, `superuser`). That made it a second source of truth for one decision, and it did not contain `sport admin` — so a person holding a valid grant would have been shown "Zugang verweigert" by the client while the server happily authorized their every request. It now gates on `/kscw/wadmin/me` (`isSuperuser || sections.length > 0`), the same authority that re-authorizes each data call, so adding an eligible role needs no website change at all. Still cosmetic in the security sense: it decides what renders, never what may be read or written.
+- Unchanged: the wadmin routes reach data through an admin-accountability `ItemsService` that bypasses RLS, so a granted section works regardless of what the holder's own Directus role permits. That is what makes the grant row load-bearing — and why widening eligibility is a deliberate decision rather than a tidy-up.
+
 ### 2026-08-11 — Content overlay Phase 1: the page-text editor (`/admin` → Seitentexte)
 
 The write path Phase 0 was hardening for. An admin can now edit any string the site renders, from the browser. New trust boundary: **a dictionary value is no longer developer-authored.** What keeps that safe:

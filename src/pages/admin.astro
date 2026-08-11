@@ -645,16 +645,23 @@ import '../styles/global.css';
     }
 
     // ── Auth helpers ──────────────────────────────────────────
+    // Ask the SERVER who this is, rather than pattern-matching role.name here.
+    //
+    // This used to compare the role name against a hardcoded list, which made it a
+    // second source of truth for one decision: when `Sport Admin` was added to the
+    // wadmin gate (2026-08-11, so the club's youth admins could hold website grants
+    // without giving up the role they do their job with), a person with a perfectly
+    // valid grant would still have been shown "Zugang verweigert" by this line.
+    // /kscw/wadmin/me IS that decision — the same authority every data call is
+    // re-authorized against — so a new eligible role now needs no change here at all.
+    //
+    // Still cosmetic in the security sense: it decides what to render, never what the
+    // caller may read or write. See SECURITY.md.
     async function isAuthorized() {
       var token = await getValidToken();
       if (!token) return false;
-      var res = await fetch(DIRECTUS_URL + '/users/me?fields=id,email,first_name,last_name,role.name', {
-        headers: { 'Authorization': 'Bearer ' + token },
-      });
-      if (!res.ok) return false;
-      var user = (await res.json()).data;
-      var roleName = user.role ? user.role.name : '';
-      return ['website_admin', 'website admin', 'admin', 'administrator', 'superuser'].indexOf(roleName.toLowerCase()) !== -1;
+      var access = await loadAccess();
+      return access.isSuperuser || access.sections.length > 0;
     }
 
     // ── Escape helpers ────────────────────────────────────────

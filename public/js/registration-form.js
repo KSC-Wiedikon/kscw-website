@@ -418,33 +418,12 @@
   }
 
 
-  // National federation names for the federation-of-origin picker, per sport.
-  // "Federation of origin" asks which BODY first licensed the applicant, and the
-  // answer is sport-specific: an Italian volleyballer came from FIPAV, an Italian
-  // basketballer from FIP. Not exhaustive — anything absent falls back to the
-  // country name, which is still correct, just less specific.
-  var FEDERATIONS = {
-    volleyball: {
-      AF: 'Afghanistan Volleyball Federation', AL: 'FSHV', AT: 'ÖVV', AU: 'Volleyball Australia',
-      BG: 'Bulgarian Volleyball Federation', BR: 'CBV', CH: 'Swiss Volley', CO: 'Fedevoley',
-      CZ: 'Český volejbalový svaz', DE: 'DVV', ES: 'RFEVB', ET: 'Ethiopian Volleyball Federation',
-      FI: 'Lentopalloliitto', FR: 'FFVB', GB: 'Volleyball England', GR: 'Hellenic Volleyball Federation',
-      HU: 'Magyar Röplabda Szövetség', IQ: 'Iraqi Volleyball Federation', IR: 'IRIVF', IT: 'FIPAV',
-      LK: 'Sri Lanka Volleyball Federation', MX: 'FMVB', NL: 'Nevobo', NZ: 'Volleyball New Zealand',
-      PE: 'FPV', PL: 'PZPS', PT: 'FPV', RS: 'OSS', RU: 'Russian Volleyball Federation',
-      SE: 'Svenska Volleybollförbundet', SI: 'OZS', US: 'USA Volleyball'
-    },
-    basketball: {
-      AF: 'Afghanistan Basketball Federation', AL: 'FSHB', AT: 'ÖBV', AU: 'Basketball Australia',
-      BG: 'Bulgarian Basketball Federation', BR: 'CBB', CH: 'Swiss Basketball', CO: 'Fecolcesto',
-      CZ: 'Česká basketbalová federace', DE: 'DBB', ES: 'FEB', ET: 'Ethiopian Basketball Federation',
-      FI: 'Basketball Finland', FR: 'FFBB', GB: 'Basketball England', GR: 'Hellenic Basketball Federation',
-      HU: 'MKOSZ', IQ: 'Iraq Basketball Federation', IR: 'IRIBF', IT: 'FIP',
-      LK: 'Sri Lanka Basketball Federation', MX: 'ADEMEBA', NL: 'NBB', NZ: 'Basketball New Zealand',
-      PE: 'FDPB', PL: 'PZKosz', PT: 'FPB', RS: 'KSS', RU: 'Russian Basketball Federation',
-      SE: 'Svenska Basketbollförbundet', SI: 'KZS', US: 'USA Basketball'
-    }
-  };
+  // National federation names for the federation-of-origin picker, per sport —
+  // loaded from public/js/federations.js, which the admin reads too so both spell
+  // a federation identically on the Acknowledgment form. If that script is
+  // missing the picker degrades to plain country names, which still answer the
+  // question; nothing here should throw over it.
+  var FEDERATIONS = window.KSCW_FEDERATIONS || { volleyball: {}, basketball: {} };
 
   // The membership type drives which federation set applies. Passive members pick
   // no sport, so they see plain country names.
@@ -460,16 +439,25 @@
     return fed ? fed + ' (' + countryLabelText + ')' : countryLabelText;
   }
 
-  // The star on the federation label tracks requiredness: volleyball only, and
-  // guests are exempt (never licensed, so there is no origin federation to
-  // declare). Requiredness itself is enforced in JS on submit — the hidden
-  // input can't carry `required` (type=hidden skips constraint validation).
+  // The star on the federation label tracks requiredness: both licensed sports,
+  // and guests are exempt (never licensed, so there is no origin federation to
+  // declare). Basketball needs it for the same reason volleyball does, plus one
+  // of its own — FIBA's Acknowledgment of National Team Restriction has a
+  // "National Member Federation of origin" box, and this is the only place the
+  // applicant ever tells us what belongs in it. Requiredness itself is enforced
+  // in JS on submit — the hidden input can't carry `required` (type=hidden skips
+  // constraint validation).
+  function fedRequired() {
+    var sport = fedSport();
+    if (!sport) return false;
+    var funktion = document.getElementById(sport === 'volleyball' ? 'funktion-vb' : 'funktion-bb');
+    return !funktion || funktion.value !== 'Guest';
+  }
+
   function updateFedRequiredStar() {
     var star = document.getElementById('federation-required-star');
     if (!star) return;
-    var vbFunktion = document.getElementById('funktion-vb');
-    var required = fedSport() === 'volleyball' && (!vbFunktion || vbFunktion.value !== 'Guest');
-    star.style.display = required ? '' : 'none';
+    star.style.display = fedRequired() ? '' : 'none';
   }
 
   // ── Federation of origin (single-select) ─────────────────────
@@ -498,6 +486,22 @@
     return locale === 'de'
       ? 'Keiner / mit 14 bei keinem nationalen Verband lizenziert'
       : 'None / not licensed with a national federation at 14';
+  }
+
+  // The federation of origin as FIBA's forms want it: the federation's own name
+  // with its country in brackets ("FIP (Italy)"). Deliberately English and
+  // deliberately not the picker's label — these are English documents read by
+  // Swiss Basketball and FIBA, so a German "FIP (Italien)" would be the one
+  // German word on the page. A country outside the table degrades to its name
+  // alone, which still names the federation unambiguously.
+  // Empty when nothing was picked, so the field stays blank rather than
+  // asserting something the applicant never answered.
+  function federationOfOriginForPdf() {
+    var code = fedHidden ? fedHidden.value : '';
+    if (!code) return '';
+    if (code === FED_NONE) return 'None (first licence)';
+    var country = countryByCode(code);
+    return federationLabelFor(code, country ? (country.en || country.de) : code);
   }
 
   function selectFederation(value, label) {
@@ -1483,12 +1487,13 @@
       }
     }
 
-    // Federation of origin: a volleyball licence needs an explicit answer — a
-    // federation or the "none at 14" sentinel. A blank leaves the club guessing
-    // whether a transfer certificate must be chased; guests are exempt because
-    // they are never licensed.
-    if (type === 'volleyball' && !isGuest && !(fedHidden && fedHidden.value)) {
-      logBlock('blocked: vb federation of origin not selected');
+    // Federation of origin: a licence needs an explicit answer — a federation or
+    // the "none at 14" sentinel. A blank leaves the club guessing whether a
+    // transfer certificate must be chased, and leaves the basketball
+    // Acknowledgment form's origin box empty; guests are exempt because they are
+    // never licensed.
+    if (!isGuest && (type === 'volleyball' || type === 'basketball') && !(fedHidden && fedHidden.value)) {
+      logBlock('blocked: ' + type + ' federation of origin not selected');
       return showFeedback('error', locale === 'de'
         ? 'Bitte wähle deinen Herkunftsverband — oder «Keiner», falls du mit 14 bei keinem nationalen Verband lizenziert warst.'
         : 'Please select your federation of origin — or "None" if you were not licensed with a national federation at 14.');
@@ -1917,6 +1922,7 @@
       // national's Swiss passport instead of reading "Schweiz, Italien" as other.
       nationalitaetCodes: natCodes.slice(),
       situation: currentSituation(),
+      federationOfOrigin: federationOfOriginForPdf(),
     };
   }
 
@@ -2121,9 +2127,10 @@
   // Acknowledgment of National Team Restriction pre-fill (FIBA — exact field
   // names). Replaces the former "National Team Declaration", which FIBA stopped
   // accepting for the 2026-27 season (Swiss Basketball licence mail, 22.07.2026).
-  // Two fields are deliberately left blank: the federation of origin (we don't
-  // know where the player is coming from) and the transfer date (set by Swiss
-  // Basketball / FIBA, not by us).
+  // One field is deliberately left blank: the transfer date, which Swiss
+  // Basketball / FIBA set, not us. The federation of origin comes from the
+  // picker above — it asks exactly what this form's origin box asks, the body
+  // that licensed the player at 14.
   var natDeclLink = document.getElementById('bb-doc-natdecl');
   if (natDeclLink) {
     natDeclLink.addEventListener('click', function (e) {
@@ -2135,6 +2142,7 @@
           var fullName = d.vorname + ' ' + d.nachname;
           setField(f, 'Player full name', fullName, font, sz);
           setField(f, 'Nationality  nationalities', d.nationalitaet, font, sz);
+          setField(f, 'National Member Federation of origin', d.federationOfOrigin, font, sz);
           setField(f, 'National Member Federation of destination', 'Swiss Basketball', font, sz);
           if (d.geburtsdatum) {
             var dp = d.geburtsdatum.split('-');

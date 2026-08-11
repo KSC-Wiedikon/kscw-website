@@ -573,6 +573,9 @@ const KS_OTHER = [
   <!-- Cache-buster is the file's content hash (src/lib/assetVersion.ts) — a
        hand-written version was forgotten once and shipped a validation rule
        that cached browsers never ran. -->
+  <!-- Must precede registration-form.js: it reads window.KSCW_FEDERATIONS at
+       start-up to label the federation-of-origin picker. -->
+  <script is:inline src={versionedAsset('js/federations.js')}></script>
   <script is:inline src={versionedAsset('js/registration-form.js')}></script>
   <script src="../../islands/scroll-animations.ts"></script>
 </PageLayout>

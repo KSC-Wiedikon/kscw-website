@@ -17,6 +17,19 @@ Static Astro 6 site on Cloudflare Pages (`kscw.ch`). Client behaviour via `publi
 
 Deduplication shield — if a future audit re-finds one of these, it's a regression or a misunderstanding.
 
+### 2026-08-11 — Content overlay Phase 1: the page-text editor (`/admin` → Seitentexte)
+
+The write path Phase 0 was hardening for. An admin can now edit any string the site renders, from the browser. New trust boundary: **a dictionary value is no longer developer-authored.** What keeps that safe:
+
+- **Overrides only, never a replacement.** `site_text` (migration `309-site-text.sql`, `wiedisync`) holds one row per edited key; the repo dictionaries stay the original wording and the fallback. A language left unedited is stored as `NULL`, not as a copy of the default — so a later improvement to that language in the repo is not silently shadowed by a stale copy. Deleting the row restores the shipped text, which means no browser action can permanently lose the original.
+- **Text only, enforced in four places** so no single omission opens a hole: the endpoint (`kscw-endpoints/src/site-text.js` — refuses `<`, control characters, non-strings, >2000 chars), the table's `CHECK` constraints (same rules in the database, for any future write path that forgets), the build (`scripts/fetch-site-text.mjs` drops anything with markup, an unknown key, or a lost `{placeholder}`), and the browser (`public/js/i18n.js` applies values with `textContent`/`setAttribute` only and re-checks before applying). `tests/unit/no-i18n-html.test.ts` already forbids the `innerHTML` path that would make any of this exploitable.
+- **Writes bypass the generic wadmin CRUD.** `site_text` is in `ALL_SECTIONS` (so it can be granted per-user) but deliberately **not** in `SECTION_COLLECTIONS`, so `/wadmin/site_text/items/site_text` returns `resource_out_of_scope`. The only way in is `PATCH/DELETE /kscw/wadmin/site_text/text/:key`, which validates. `wadmin.test.js` pins that asymmetry so a future "tidy-up" cannot quietly restore the unvalidated path.
+- **Keys are shape-checked before reaching a selector.** The runtime overlay interpolates the key into `[data-i18n="…"]`, so `^[A-Za-z][A-Za-z0-9_]*$` is enforced at the endpoint, in the database, and again in the browser — a key carrying a quote or bracket cannot widen that selector.
+- **The public read is anonymous by design** (`GET /kscw/site-text`, `max-age=30`): it returns website copy that is already visible on the pages it belongs to. It is served from a table with **no Directus collection registration**, so there is no `/items/site_text` REST surface and no public policy to grant — same posture as `website_admin_access` (063).
+- **Availability, not just confidentiality.** The overlay is never awaited: `public/js/i18n.js` starts the fetch alongside the dictionary but the loading veil, `window.i18nReady` and first paint never depend on it, and the build script keeps the last known overrides and exits 0 on any failure. Directus being down costs the committed wording, never a blank or undeployable site.
+- **Admin's own chrome is out of scope.** `admin.astro` is excluded from the manifest, so the editor cannot be used to rename the buttons needed to undo an edit.
+- Unchanged and accepted: text typed here is sent to `api.mymemory.translated.net` when the admin presses "Übersetzen" (same third party, same reasoning as the news/event title translation — this is public website copy).
+
 ### 2026-08-08 — Content-overlay Phase 0 (prerequisite hardening, no CMS surface yet)
 
 Standalone hardening that had to land **before** any admin-editable-content write path exists. Useful on its own — it closes a live hole and a latent one.

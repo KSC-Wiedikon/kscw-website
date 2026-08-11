@@ -23,7 +23,7 @@ const locale = 'de';
       {boardMembers.length > 0 ? (
         <BoardOrgChart members={boardMembers} locale={locale} />
       ) : (
-        <p data-i18n="clubVorstandNoMembers">Keine Vorstandsmitglieder gefunden.</p>
+        <p data-i18n="clubVorstandNoMembers">{t(locale, 'clubVorstandNoMembers')}</p>
       )}
     </div>
   </section>

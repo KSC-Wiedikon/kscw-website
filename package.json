@@ -1,12 +1,15 @@
 {
   "name": "kscw-website",
   "type": "module",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "engines": {
     "node": ">=22.12.0"
   },
   "scripts": {
+    "site-text": "node scripts/fetch-site-text.mjs",
+    "predev": "npm run site-text",
     "dev": "astro dev",
+    "prebuild": "npm run site-text",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",

@@ -10,6 +10,11 @@
 // date alone (the Directus auto-rebuild Flow only fires on content edits).
 import { DEFAULT_WAITLIST_URL, type YouthTeamInfo } from '../lib/fetch/youthBasketball'
 import { safeHref } from '../lib/safeHref'
+// This component has no locale prop — like every page it renders the German build
+// output, and the data-i18n keys let the client swap to English. The labels come
+// from the dictionary rather than being written twice, so an admin edit reaches the
+// build output too instead of only the browser.
+import { t } from '../lib/i18n'
 
 interface Props {
   code: string
@@ -91,7 +96,7 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
 <div class="youth-meta" data-team-code={code} data-team-name={info.name}>
   {info.slots.length > 0 && (
     <>
-      <span class="youth-meta-label"><strong data-i18n="bbTrainingLabel">Training:</strong></span>
+      <span class="youth-meta-label"><strong data-i18n="bbTrainingLabel">{t('de', 'bbTrainingLabel')}</strong></span>
       {info.slots.map(s => (
         <span class="youth-slot" data-valid-until={s.validUntil}>
           <span data-i18n={`weekdayLong${s.day}`}>{DE_DAYS[s.day] ?? ''}</span>{` ${s.start}–${s.end}`}
@@ -100,11 +105,11 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
     </>
   )}
   {info.coaches.length > 0 && (
-    <span><strong data-i18n="bbCoachLabel">Coach:</strong> {info.coaches.join(', ')}</span>
+    <span><strong data-i18n="bbCoachLabel">{t('de', 'bbCoachLabel')}</strong> {info.coaches.join(', ')}</span>
   )}
   {hasWaitlist && (
     <div class="youth-waitlist">
-      <span class="youth-full-badge" data-i18n="bbTeamFull">Team voll</span>
+      <span class="youth-full-badge" data-i18n="bbTeamFull">{t('de', 'bbTeamFull')}</span>
       {waitlistHref && (
         <a
           class="btn btn-outline btn-sm youth-waitlist-btn"
@@ -122,7 +127,7 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
     <div class="youth-open">
       <span class="youth-open-badge" data-i18n={openBadge.key}>{openBadge.text}</span>
       <a class="btn btn-outline btn-sm youth-open-btn" href={contactHref}>
-        <span data-i18n="bbTeamOpenCta">Kontakt aufnehmen</span>
+        <span data-i18n="bbTeamOpenCta">{t('de', 'bbTeamOpenCta')}</span>
         <span aria-hidden="true">→</span>
       </a>
     </div>
@@ -136,7 +141,7 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
         target="_blank"
         rel="noopener noreferrer"
       >
-        <span data-i18n="bbWaitlistLabel">Warteliste</span>
+        <span data-i18n="bbWaitlistLabel">{t('de', 'bbWaitlistLabel')}</span>
         <span aria-hidden="true">→</span>
       </a>
     </div>

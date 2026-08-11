@@ -2,6 +2,18 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.18.0] — 2026-08-11
+
+### Texte auf der Website lassen sich jetzt selber ändern
+- Im Website-Admin gibt es neu den Bereich **Seitentexte**: Seite auswählen, den Text auf Deutsch und Englisch anpassen, speichern. Die Änderung ist **nach wenigen Sekunden live** — ohne Umweg über den Code und ohne auf einen Neuaufbau der Seite zu warten.
+- Der **Originaltext bleibt immer erhalten**. «Original» holt die ursprüngliche Formulierung zurück, auch Monate später — eine Änderung im Browser kann die ausgelieferte Fassung nicht überschreiben.
+- Es stehen **alle Texte der Website** zur Auswahl, nach Seite geordnet und in der Reihenfolge, in der sie auf der Seite vorkommen. Wer den Text kennt, aber nicht die Seite, findet ihn über die Suche. Header, Footer und die Meldungen der Formulare stehen als eigene Gruppen.
+- Was hier **nicht** geht: ein Link oder Fettschrift mitten im Satz. Texte werden bewusst als reiner Text eingesetzt — das ist der Grund, warum ein editierbarer Text keine Sicherheitslücke aufreissen kann.
+
+### «Die meisten Heimspiele» stimmte nicht
+- Auf der Spielplanungs-Seite stand, an Spielsamstagen fänden **die meisten Heimspiele** statt. Das trifft nicht zu — und die Aussage stand an **drei Stellen**: im Einleitungstext, im Abschnitt «Spielsamstage» und bei der Halle Kantonsschule Wiedikon.
+- Alle drei beschreiben Spielsamstage jetzt ohne Mengenangabe, auf Deutsch und Englisch.
+
 ## [1.17.0] — 2026-08-08
 
 ### The girls' youth cards had gone blank

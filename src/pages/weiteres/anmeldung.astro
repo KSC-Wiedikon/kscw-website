@@ -141,7 +141,7 @@ const KS_OTHER = [
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 6 8 10 4"/></svg>
           </button>
           <div class="nationality-dropdown" id="nationality-dropdown">
-            <input type="text" class="form-input nationality-search" id="nationality-search" placeholder="Suchen…" data-i18n-placeholder="weiteresAnmeldungSearchPlaceholder" autocomplete="off">
+            <input type="text" class="form-input nationality-search" id="nationality-search" placeholder={t(locale, 'weiteresAnmeldungSearchPlaceholder')} data-i18n-placeholder="weiteresAnmeldungSearchPlaceholder" autocomplete="off">
             <div class="nationality-options" id="nationality-options"></div>
           </div>
         </div>
@@ -160,7 +160,7 @@ const KS_OTHER = [
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 4 6 8 10 4"/></svg>
           </button>
           <div class="nationality-dropdown" id="federation-dropdown">
-            <input type="text" class="form-input nationality-search" id="federation-search" placeholder="Suchen…" data-i18n-placeholder="weiteresAnmeldungSearchPlaceholder" autocomplete="off">
+            <input type="text" class="form-input nationality-search" id="federation-search" placeholder={t(locale, 'weiteresAnmeldungSearchPlaceholder')} data-i18n-placeholder="weiteresAnmeldungSearchPlaceholder" autocomplete="off">
             <div class="nationality-options" id="federation-options"></div>
           </div>
         </div>
@@ -242,7 +242,7 @@ const KS_OTHER = [
             </div>
           </div>
           <div class="form-group" id="vb-ref-level-group" style="display: none;">
-            <label for="vb-ref-level"><span data-i18n="registrationLicenceSchiedsrichter">{t(locale, 'registrationLicenceSchiedsrichter')}</span> — <span data-i18n="weiteresAnmeldungLevel">Stufe</span></label>
+            <label for="vb-ref-level"><span data-i18n="registrationLicenceSchiedsrichter">{t(locale, 'registrationLicenceSchiedsrichter')}</span> — <span data-i18n="weiteresAnmeldungLevel">{t(locale, 'weiteresAnmeldungLevel')}</span></label>
             <select id="vb-ref-level" name="vb_ref_level" class="form-select">
               <option value="" disabled selected data-i18n="registrationLicenceRefLevelPlaceholder">{t(locale, 'registrationLicenceRefLevelPlaceholder')}</option>
               <option value="N4-3">N4-3</option>
@@ -492,7 +492,7 @@ const KS_OTHER = [
             </div>
           </div>
           <div class="form-group" id="passive-vb-ref-level-group" style="display: none;">
-            <label for="passive-vb-ref-level"><span data-i18n="registrationLicenceSchiedsrichter">{t(locale, 'registrationLicenceSchiedsrichter')}</span> — <span data-i18n="weiteresAnmeldungLevel">Stufe</span></label>
+            <label for="passive-vb-ref-level"><span data-i18n="registrationLicenceSchiedsrichter">{t(locale, 'registrationLicenceSchiedsrichter')}</span> — <span data-i18n="weiteresAnmeldungLevel">{t(locale, 'weiteresAnmeldungLevel')}</span></label>
             <select id="passive-vb-ref-level" name="passive_vb_ref_level" class="form-select">
               <option value="" disabled selected data-i18n="registrationLicenceRefLevelPlaceholder">{t(locale, 'registrationLicenceRefLevelPlaceholder')}</option>
               <option value="N4-3">N4-3</option>

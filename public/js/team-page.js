@@ -309,12 +309,35 @@
   }
 
   // ── Fetch team data from public API ───────────────────────────────
-  function fetchTeamData() {
-    if (!TEAM_DIRECTUS_ID) { hideSection('kader'); hideSection('training'); return; }
 
-    fetch(DIRECTUS_URL + '/kscw/public/team/' + TEAM_DIRECTUS_ID)
+  /**
+   * The last payload, kept so a language switch can re-render instead of asking
+   * Directus for the same language-independent data again. See the langChanged
+   * handler at the bottom of this file.
+   */
+  var teamPayload = null;
+
+  /**
+   * ⚠ Issue the request WITHOUT waiting for the dictionary.
+   *
+   * This whole function used to sit behind `window.i18nReady.then(...)`, which
+   * serialised two independent round trips: the roster request went out roughly a
+   * second after this file had finished executing, on the primary content of the
+   * page, even though nothing in /kscw/public/team/<id> depends on the language.
+   * The render still waits for both — see the init block — because the renderers
+   * do call i18n.t().
+   */
+  function loadTeamPayload() {
+    if (!TEAM_DIRECTUS_ID) return Promise.resolve(null);
+    return fetch(DIRECTUS_URL + '/kscw/public/team/' + TEAM_DIRECTUS_ID)
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(function (resp) {
+      .then(function (resp) { teamPayload = resp; return resp; });
+  }
+
+  function renderTeam(resp) {
+    if (!resp) { hideSection('kader'); hideSection('training'); return; }
+    return Promise.resolve()
+      .then(function () {
         // Directus wraps response in { data: { ...team fields, roster, coaches, ... } }
         var raw = resp.data || resp;
         var teamData = {
@@ -421,6 +444,7 @@
       })
       .catch(function () { hideSection('kader'); hideSection('training'); });
   }
+
 
   // ── Update static HTML labels with i18n ───────────────────────────
   function updateStaticLabels() {
@@ -1477,31 +1501,46 @@
   });
 
   // ── Init ──────────────────────────────────────────────────────────
-  // Wait for i18n translations to load before rendering
-  if (window.i18nReady) {
-    window.i18nReady.then(fetchTeamData);
-  } else {
-    fetchTeamData();
-  }
+  // The request and the dictionary run CONCURRENTLY; only the render waits for
+  // both. Chaining them (i18nReady.then(fetch)) cost about a second of
+  // pure waiting on the page's primary content, since the payload is the same in
+  // either language.
+  (function start() {
+    var payload = loadTeamPayload();
+    var ready = (window.i18nReady && window.i18nReady.then)
+      ? window.i18nReady
+      : Promise.resolve('de');
+    // The dictionary promise never rejects, but be explicit: a broken i18n must
+    // not take the roster down with it.
+    Promise.all([payload, ready.catch(function () { return 'de'; })])
+      .then(function (r) { return renderTeam(r[0]); })
+      .catch(function () { hideSection('kader'); hideSection('training'); });
+  })();
 
   // ── Re-render on language change ──────────────────────────────────
+  // Re-render from the payload we already have. This used to blank the hero, the
+  // photo, the CTA and the Instagram embed and then re-request everything from
+  // Directus — so clicking DE/EN collapsed the page by a hero plus a 1280 px photo
+  // and re-expanded it a round trip later, and two fast clicks could race into two
+  // heroes. Nothing in the payload is language-dependent; only the labels are.
   document.addEventListener('langChanged', function () {
-    if (window.TEAM_CONFIG && window.TEAM_CONFIG.directusId) {
-      // Clear rendered content so fetchTeamData re-renders fresh
-      var heroContainer = document.getElementById('team-hero-container');
-      if (heroContainer) heroContainer.textContent = '';
-      var photoContainer = document.getElementById('team-photo-container');
-      if (photoContainer) photoContainer.textContent = '';
-      var existingPhoto = document.querySelector('.team-photo');
-      if (existingPhoto) existingPhoto.remove();
-      var ctaContainer = document.getElementById('cta-container');
-      if (ctaContainer) ctaContainer.textContent = '';
-      var igContainer = document.getElementById('instagram-embed-container');
-      if (igContainer) igContainer.style.display = 'none';
-      var igEmbed = document.getElementById('instagram-embed');
-      if (igEmbed) igEmbed.textContent = '';
+    if (!teamPayload) return;   // nothing fetched yet — the init render will handle it
 
-      fetchTeamData();
-    }
+    // The renderers append, so clear their containers first. (renderTeamPhoto has
+    // its own "already there" guard; the others do not.)
+    var heroContainer = document.getElementById('team-hero-container');
+    if (heroContainer) heroContainer.textContent = '';
+    var photoContainer = document.getElementById('team-photo-container');
+    if (photoContainer) photoContainer.textContent = '';
+    var existingPhoto = document.querySelector('.team-photo');
+    if (existingPhoto) existingPhoto.remove();
+    var ctaContainer = document.getElementById('cta-container');
+    if (ctaContainer) ctaContainer.textContent = '';
+    var igContainer = document.getElementById('instagram-embed-container');
+    if (igContainer) igContainer.style.display = 'none';
+    var igEmbed = document.getElementById('instagram-embed');
+    if (igEmbed) igEmbed.textContent = '';
+
+    renderTeam(teamPayload);
   });
 })();

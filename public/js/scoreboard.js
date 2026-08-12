@@ -16,6 +16,12 @@
   // teamIdMap: maps Directus team IDs to short display names
   var teamIdMap = {};
 
+  // Rankings, kept after the first fetch. The tables are rebuilt in the other
+  // language on a toggle; the standings themselves are language-independent, so
+  // re-requesting them (which is what this used to do) bought nothing and left the
+  // scoreboard blank for a round trip.
+  var cachedRankings = null;
+
   // ── i18n labels ────────────────────────────────────────────────────
   var labels = {
     de: {
@@ -440,6 +446,10 @@
     var containers = document.querySelectorAll('[data-scoreboard]');
     if (!containers.length) return;
 
+    // Already have the data — a language switch only needs the tables rebuilt with
+    // the other language's labels, not another two round trips.
+    if (cachedRankings) { paint(containers, cachedRankings); return; }
+
     // Fetch rankings and team names from Directus
     Promise.all([
       fetch(DIRECTUS_URL + '/items/rankings?sort=league,rank&limit=-1')
@@ -463,15 +473,20 @@
         }
       }
 
-      for (var i = 0; i < containers.length; i++) {
-        var el = containers[i];
-        if (el.children.length > 0) continue;
-        var filter = el.getAttribute('data-scoreboard') || 'all';
-        window.renderScoreboard(el.id, filter, rankings);
-      }
+      cachedRankings = rankings;
+      paint(containers, rankings);
     }).catch(function (err) {
       console.warn('[KSCW Scoreboard] Failed to fetch rankings:', err);
     });
+  }
+
+  function paint(containers, rankings) {
+    for (var i = 0; i < containers.length; i++) {
+      var el = containers[i];
+      if (el.children.length > 0) continue;
+      var filter = el.getAttribute('data-scoreboard') || 'all';
+      window.renderScoreboard(el.id, filter, rankings);
+    }
   }
 
   // Auto-init on DOM ready

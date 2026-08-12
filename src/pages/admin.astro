@@ -3314,6 +3314,25 @@ import '../styles/global.css';
       return (digits.length >= 4 && digits.length <= 10) ? digits : '';
     }
 
+    // "0", "00000" and friends are how a participant with no licence yet answers a
+    // number field they cannot leave blank — and how an admin records the same thing.
+    // It is a STATEMENT of not being licensed, not a missing entry, and the two are
+    // treated differently everywhere below: a blank cell still counts as data we are
+    // waiting on, a zero does not.
+    function isUnlicensed(v) {
+      var digits = String(v == null ? '' : v).replace(/\D/g, '');
+      return !!digits && /^0+$/.test(digits);
+    }
+    // What that gets written as on the SVRZ list, where "00000" would read like a
+    // licence number to whoever transcribes it. German like the rest of the sheet,
+    // and in the slash form on purpose: the signup never asks for gender, so the
+    // list must not assert one.
+    var SVRZ_NO_LICENCE = 'Noch nicht lizenziert/e';
+    function svrzLicenceCell(v) {
+      var s = String(v == null ? '' : v).trim();
+      return isUnlicensed(s) ? SVRZ_NO_LICENCE : s;
+    }
+
     // The SVRZ Teilnehmerliste is a German document and its own column reads
     // "Bestanden / Nicht bestanden", so these strings are literal, never translated.
     //
@@ -3545,18 +3564,31 @@ import '../styles/global.css';
             if (slug) courseBySlug[slug] = sc;
           });
         });
-        // Row 5 of the sheet holds a single expert name. In the combined view the
-        // courses can disagree, and guessing one would put a wrong name on an
-        // official list — so it is left blank unless every source agrees.
+        // Row 5 names whoever ran the course, from the course's own Schreiberexperte
+        // field. A course routinely has more than one expert, and the DE and EN halves
+        // of one course are two records that can each name their own — so every
+        // distinct name is listed. It previously took the name only when every source
+        // agreed and printed NOTHING otherwise, which meant the ordinary case of
+        // exporting the German and English signups together lost the line entirely.
+        //
+        // Separators are normalised ("A und B", "A; B" → "A, B") so one field's
+        // punctuation does not decide how an official list reads.
         function svrzExpert() {
-          var names = {};
+          var seen = {}, out = [];
           srcList.forEach(function(s) {
             var sc = courseBySlug[s.slug];
-            var n = sc && String(sc.scorer_expert || '').trim();
-            if (n) names[n] = 1;
+            String((sc && sc.scorer_expert) || '').split(/[,;&]|\bund\b/i).forEach(function(part) {
+              var n = part.trim().replace(/\s+/g, ' ');
+              // Keyed on the name's WORDS, not its spelling: the two records are typed
+              // by hand and one reading "Claudia Postolka" against the other's "Postolka
+              // Claudia" is one expert, not two. First spelling seen wins.
+              var key = n.toLowerCase().split(' ').sort().join(' ');
+              if (!n || seen[key]) return;
+              seen[key] = 1;
+              out.push(n);
+            });
           });
-          var found = Object.keys(names);
-          return found.length === 1 ? found[0] : '';
+          return out.join(', ');
         }
         // SVRZ needs a postcode and a town, and the form asked for neither: "Adresse" was
         // one free-text box, and 16 of 25 people read it as "street". This resolves the
@@ -3609,7 +3641,7 @@ import '../styles/global.css';
               isoToSwissDate(m.examInp ? m.examInp.value : st.exam_date),
               svrzResultLabel(st.exam_result),
               isKscw ? 'KSC Wiedikon' : String(pickVal(d, clubIds) || '').trim(),
-              m.svInp ? m.svInp.value.trim() : (st.sv_license || m.formSv || ''),
+              svrzLicenceCell(m.svInp ? m.svInp.value : (st.sv_license || m.formSv || '')),
               String(pickVal(d, lastNameIds) || ''),
               String(pickVal(d, firstNameIds) || ''),
               addr.street,
@@ -3641,6 +3673,7 @@ import '../styles/global.css';
               var d = m.row.data;
               var name = [String(pickVal(d, lastNameIds) || ''), String(pickVal(d, firstNameIds) || '')]
                 .filter(Boolean).join(' ') || String(m.row.id);
+              var rawSv = m.svInp ? m.svInp.value : (m.state.sv_license || m.formSv || '');
               return {
                 id: m.state.exam_file_corrected || m.state.exam_file,
                 // The licence number names the file; the person names the error message
@@ -3650,7 +3683,12 @@ import '../styles/global.css';
                 // upload already normalizes "337 646" → "337646", but the admin field
                 // takes whatever is typed. Without this the same licence yields two
                 // different filenames depending on who entered it.
-                licence: licenceDigits(m.svInp ? m.svInp.value : (m.state.sv_license || m.formSv || '')),
+                //
+                // A zero is not a number to name a file after — every unlicensed
+                // participant would land on "schreiberpruefung_00000", telling them
+                // apart by a "(2)" suffix. They go by name, like a blank does.
+                licence: isUnlicensed(rawSv) ? '' : licenceDigits(rawSv),
+                unlicensed: isUnlicensed(rawSv),
                 label: name,
               };
             });
@@ -3659,7 +3697,11 @@ import '../styles/global.css';
             // through — it is your call, and a partial list still beats none — but neither
             // happens silently. A guessed Wohnort in particular is the kind of thing that
             // looks like data once it is sitting in a spreadsheet cell.
-            var noLicence = refs.filter(function(r) { return !r.licence; });
+            // Only genuinely BLANK licences are worth stopping for. Someone who
+            // answered "00000" has said they are not licensed yet — the list now
+            // says so in words, so warning that their number is missing would be
+            // asking for a number that does not exist.
+            var noLicence = refs.filter(function(r) { return !r.licence && !r.unlicensed; });
             var guessed = exportMetas.filter(function(m) { return resolveAddress(m).guessed; })
               .map(function(m) {
                 var d = m.row.data;
@@ -3959,7 +4001,8 @@ import '../styles/global.css';
             // has been entered — so a sheet saved here and the same sheet out of the
             // zip are recognisably the same file.
             openSheetMenu(sheetBtn, rowMeta, state, paintSheet, statusEl, function() {
-              var lic = licenceDigits(svInp ? svInp.value : (state.sv_license || formSv || ''));
+              var rawSv = svInp ? svInp.value : (state.sv_license || formSv || '');
+              var lic = isUnlicensed(rawSv) ? '' : licenceDigits(rawSv);
               var who = [String(lnV || ''), String(fnV || '')].filter(Boolean).join(' ');
               return 'schreiberpruefung_' + safeFileName(lic || who, String(rowMeta.id));
             });
@@ -4846,8 +4889,44 @@ import '../styles/global.css';
     // UI, so it does not follow the admin language.
     var SVRZ_HEADERS = ['Kursdatum', 'Prüfungsdatum', 'Prüfungsresultat', 'Vereinsname', 'Lizenz-Nr.',
       'Name', 'Vorname', 'Strasse', 'PLZ', 'Wohnort', 'Telefon', 'E-Mail', 'Geb. Datum'];
-    var SVRZ_WIDTHS = [14.48, 14.48, 18.62, 20.69, 12.41, 20.69, 20.69, 20.69, 5.37, 20.69, 16.63, 20.69, 14.48];
     var SVRZ_CENTERED = { 0: 1, 1: 1, 2: 1, 12: 1 }; // dates + result; the rest reads left
+
+    // Columns are sized to what is in them rather than to the template's fixed
+    // widths: those were cut for a paper form, and a long street or e-mail lands
+    // in the cell clipped. Nobody re-opens this sheet to widen a column before
+    // reading it, so a clipped address is simply a wrong address.
+    //
+    // An .xlsx stores widths, not layout — there is no text metric here and Excel
+    // does not autofit on open, so the width is approximated per character. The
+    // unit is one digit of the workbook's OWN normal font (Open Sans 12 below),
+    // so the weights are simply each character measured against a digit; no
+    // point-size correction belongs here. They lean generous — too wide costs a
+    // little paper, too narrow hides data, and a reader without Open Sans
+    // installed gets whatever Excel substitutes.
+    var SVRZ_COL_MIN = 6, SVRZ_COL_MAX = 46;
+    var CH_NARROW = /[.,;:'!|()\[\]iljItfr ]/; // ~half a digit in Open Sans
+    var CH_WIDE = /[MWmw@%]/;
+    function approxWidth(s, bold) {
+      var str = String(s == null ? '' : s), w = 0;
+      for (var i = 0; i < str.length; i++) {
+        var c = str.charAt(i);
+        w += CH_NARROW.test(c) ? 0.55
+          : (CH_WIDE.test(c) ? 1.55
+          : (c >= 'A' && c <= 'Z' ? 1.2 : 1));
+      }
+      return w * (bold ? 1.05 : 1); // the header row is bold
+    }
+    // Measured over the header row and the data rows ONLY. The letterhead, the
+    // merged Schreiberexperte band and SVRZ's hint row are decoration that spans
+    // the sheet — measuring them would size a single column to a whole sentence.
+    function svrzColWidths(rows) {
+      return SVRZ_HEADERS.map(function(h, c) {
+        var w = approxWidth(h, true);
+        rows.forEach(function(r) { w = Math.max(w, approxWidth(r[c], false)); });
+        w = Math.min(SVRZ_COL_MAX, Math.max(SVRZ_COL_MIN, w + 2.2)); // +padding/gridline
+        return Math.round(w * 100) / 100;
+      });
+    }
 
     // The form collects one free-text address ("Bahnhofstrasse 1, 8001 Zürich")
     // but SVRZ wants street / PLZ / town split apart. The 4-5 digit postcode is
@@ -4967,8 +5046,8 @@ import '../styles/global.css';
         xr.push(rowXml(n, '22.7', cells));
       });
 
-      var cols = '<cols>' + SVRZ_WIDTHS.map(function(w, c) {
-        return '<col min="' + (c + 1) + '" max="' + (c + 1) + '" width="' + w + '" customWidth="1"/>';
+      var cols = '<cols>' + svrzColWidths(rows).map(function(w, c) {
+        return '<col min="' + (c + 1) + '" max="' + (c + 1) + '" width="' + w + '" customWidth="1" bestFit="1"/>';
       }).join('') + '</cols>';
       var sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
         + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'

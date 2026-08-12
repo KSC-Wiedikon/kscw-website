@@ -19,7 +19,8 @@ function loadWriter() {
   const code = SRC.slice(start, end + END.length) + '\n}\n';
   let captured: { blob: Blob; name: string } | null = null;
   const factory = new Function('downloadBlob',
-    `${code}\nreturn { exportSvrzXLSX, splitSwissAddress, safeFileName, zipStore, colName, xmlEsc, SVRZ_HEADERS };`);
+    `${code}\nreturn { exportSvrzXLSX, splitSwissAddress, safeFileName, zipStore, colName, xmlEsc,`
+    + ` SVRZ_HEADERS, svrzColWidths, approxWidth, SVRZ_COL_MIN, SVRZ_COL_MAX };`);
   const api = factory((blob: Blob, name: string) => { captured = { blob, name }; });
   return {
     ...api,
@@ -153,6 +154,60 @@ describe('admin .xlsx export (SVRZ Teilnehmerliste)', () => {
   });
 });
 
+// Widths are the difference between a list SVRZ can read and one where the long
+// half of every address is behind the next column. Excel does not autofit on
+// open, so whatever is written here is what they see.
+describe('column widths', () => {
+  /** width of column `c` for these rows, by header name. */
+  function widthOf(rows: string[][], header: string): number {
+    const { svrzColWidths, SVRZ_HEADERS } = loadWriter();
+    return svrzColWidths(rows)[SVRZ_HEADERS.indexOf(header)];
+  }
+
+  it('fits every header on its own row', () => {
+    const { svrzColWidths, approxWidth, SVRZ_HEADERS } = loadWriter();
+    svrzColWidths(ROWS).forEach((w: number, i: number) => {
+      expect(w, `${SVRZ_HEADERS[i]} is narrower than its own heading`)
+        .toBeGreaterThanOrEqual(approxWidth(SVRZ_HEADERS[i], true));
+    });
+  });
+
+  it('grows a column to its longest value', () => {
+    const long = ROWS.map((r) => r.slice());
+    long[0][11] = 'anna.katharina.muellerwidmermatt@bluewin.ch';
+    expect(widthOf(long, 'E-Mail')).toBeGreaterThan(widthOf(ROWS, 'E-Mail'));
+    // …and only that column: a long e-mail must not push the date columns out.
+    expect(widthOf(long, 'Kursdatum')).toBe(widthOf(ROWS, 'Kursdatum'));
+  });
+
+  it('measures the header and data rows only, not the letterhead or the expert band', () => {
+    // "RSK Swiss Volley Region Zürich" sits in M1 and "Schreiberexperte: …" spans
+    // A5:M5. Sizing a column to either would make one column as wide as a sentence.
+    const { svrzColWidths, SVRZ_HEADERS } = loadWriter();
+    const w = svrzColWidths(ROWS);
+    expect(w[SVRZ_HEADERS.indexOf('Geb. Datum')]).toBeLessThan(20);
+    expect(w[SVRZ_HEADERS.indexOf('Kursdatum')]).toBeLessThan(20);
+  });
+
+  it('clamps: a runaway value cannot produce a column nothing fits beside', () => {
+    const { SVRZ_COL_MIN, SVRZ_COL_MAX } = loadWriter();
+    const wide = ROWS.map((r) => r.slice());
+    wide[0][7] = 'x'.repeat(400);
+    expect(widthOf(wide, 'Strasse')).toBe(SVRZ_COL_MAX);
+    // An empty course still gets a usable form rather than hairline columns.
+    const { svrzColWidths } = loadWriter();
+    svrzColWidths([]).forEach((v: number) => expect(v).toBeGreaterThanOrEqual(SVRZ_COL_MIN));
+  });
+
+  it('writes one sized <col> per column into the sheet', async () => {
+    const { build, svrzColWidths } = loadWriter();
+    const sheet = sheetOf(readZip((await build(ROWS)).bytes));
+    svrzColWidths(ROWS).forEach((w: number, i: number) => {
+      expect(sheet).toContain(`<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"`);
+    });
+  });
+});
+
 describe('splitSwissAddress', () => {
   it.each([
     ['Bahnhofstrasse 1, 8001 Zürich', { street: 'Bahnhofstrasse 1', zip: '8001', city: 'Zürich' }],
@@ -180,6 +235,55 @@ describe('splitSwissAddress', () => {
   it('returns empty parts for a missing address', () => {
     expect(loadWriter().splitSwissAddress('')).toEqual({ street: '', zip: '', city: '' });
     expect(loadWriter().splitSwissAddress(null)).toEqual({ street: '', zip: '', city: '' });
+  });
+});
+
+// A participant with no licence yet answers the form's number field with zeros.
+// On the list that has to read as a sentence, not as a licence number — but a
+// BLANK cell still means "we are waiting on this number" and must stay blank.
+describe('unlicensed participants', () => {
+  function loadLicence() {
+    const start = SRC.indexOf('function licenceDigits(v) {');
+    const END_MARK = 'return isUnlicensed(s) ? SVRZ_NO_LICENCE : s;';
+    const end = SRC.indexOf(END_MARK, start);
+    expect(start, 'licenceDigits not found in admin.astro').toBeGreaterThan(-1);
+    expect(end, 'svrzLicenceCell not found in admin.astro').toBeGreaterThan(-1);
+    const code = `${SRC.slice(start, end + END_MARK.length)}\n}\n`;
+    return new Function(`${code}\nreturn { licenceDigits, isUnlicensed, svrzLicenceCell, SVRZ_NO_LICENCE };`)();
+  }
+
+  it.each(['0', '00', '0000', '00000', '000000', '00 000', ' 0 '])('reads %s as unlicensed', (v) => {
+    const { isUnlicensed, svrzLicenceCell, SVRZ_NO_LICENCE } = loadLicence();
+    expect(isUnlicensed(v)).toBe(true);
+    expect(svrzLicenceCell(v)).toBe(SVRZ_NO_LICENCE);
+  });
+
+  it.each(['337646', '3376460', '337 646', '104501'])('leaves the real licence %s alone', (v) => {
+    const { isUnlicensed, svrzLicenceCell } = loadLicence();
+    expect(isUnlicensed(v)).toBe(false);
+    expect(svrzLicenceCell(v)).toBe(v.trim());
+  });
+
+  // Not "unlicensed" — unknown. The export warns about these before it runs, and
+  // writing the sentence here would turn a data gap into a claim about the person.
+  it.each(['', '   ', null, undefined])('keeps a blank licence blank (%s)', (v) => {
+    const { isUnlicensed, svrzLicenceCell } = loadLicence();
+    expect(isUnlicensed(v)).toBe(false);
+    expect(svrzLicenceCell(v)).toBe('');
+  });
+
+  // The signup never asks for gender, so the list must not assert one.
+  it('names both genders', () => {
+    const { SVRZ_NO_LICENCE } = loadLicence();
+    expect(SVRZ_NO_LICENCE).toBe('Noch nicht lizenziert/e');
+  });
+
+  // 00000 must not become the filename: every unlicensed participant would land on
+  // the same one, told apart only by a "(2)" suffix.
+  it('is excluded from licence-named scoresheets', () => {
+    const { licenceDigits, isUnlicensed } = loadLicence();
+    expect(licenceDigits('00000')).toBe('00000'); // digits alone cannot tell
+    expect(isUnlicensed('00000') ? '' : licenceDigits('00000')).toBe(''); // …so the caller asks first
   });
 });
 

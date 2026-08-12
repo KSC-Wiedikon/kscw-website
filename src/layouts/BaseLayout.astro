@@ -100,9 +100,12 @@ const { title, titleKey, description, descriptionKey, locale = 'de' } = Astro.pr
        both build links from admin-authored Directus values, and a guard that
        loads after them is no guard at all. ~4 KB, no dependencies.
        Build-time callers import src/lib/safeHref.ts instead. -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Inter is self-hosted (public/fonts, @font-face in global.css). It used to be
+       a Google Fonts <link>, i.e. two cross-origin round trips — a stylesheet, then
+       the font it names — so every cold load painted in system sans and re-laid-out
+       the page afterwards. Preloading only the `latin` subset: `latin-ext` is
+       fetched on demand by unicode-range and most pages never need it. -->
+  <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="icon" href="/images/kscw_trio.png" type="image/png">
   <link rel="alternate" type="application/rss+xml" title="KSC Wiedikon News" href="/feed.xml">
   <!-- ⚠ `async` matters. This is a cross-origin script in <head>, so loaded

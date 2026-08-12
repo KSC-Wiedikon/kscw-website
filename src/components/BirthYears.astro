@@ -1,0 +1,55 @@
+---
+// The "Jahrgänge: 2009, 2010" line on a youth team's card or page.
+//
+// The years are computed here at build time so the line is in the HTML on first
+// paint and without JS, and recomputed by public/js/birth-years.js on every page
+// load — the categories shift on 1 August and no rebuild is triggered by a date
+// (see the header of src/lib/birthYears.ts). The data-birth-* attributes are that
+// script's whole input, so they must survive any change to this markup.
+//
+// The label differs by sport, not by data: basketball states two Jahrgänge and
+// volleyball states one plus "und jünger", so the two shapes are written out
+// separately with literal i18n keys rather than picked by a variable — a computed
+// data-i18n key is invisible to the /admin text editor's manifest scan.
+import { birthYears, formatBirthYears, seasonStartYear, type Sport } from '../lib/birthYears'
+import { t } from '../lib/i18n'
+
+interface Props {
+  sport: Sport
+  /** The category's U-number (18 for U18). */
+  age: number
+  /** Lowest age group this card also covers; see groupSpanTo(). */
+  spanTo?: number | null
+}
+
+const { sport, age, spanTo } = Astro.props
+
+const span = spanTo ?? age
+const spec = birthYears(sport, age, seasonStartYear(new Date()), span)
+const value = formatBirthYears(spec)
+---
+<span
+  class="birth-years"
+  data-birth-sport={sport}
+  data-birth-age={String(age)}
+  data-birth-span={String(span)}
+>
+  {spec.andYounger ? (
+    <>
+      <strong data-i18n="youthBirthYear">{t('de', 'youthBirthYear')}</strong>
+      <span class="birth-years-value">{value}</span>
+      <span data-i18n="youthBirthYearsYounger">{t('de', 'youthBirthYearsYounger')}</span>
+    </>
+  ) : (
+    <>
+      <strong data-i18n="youthBirthYears">{t('de', 'youthBirthYears')}</strong>
+      <span class="birth-years-value">{value}</span>
+    </>
+  )}
+</span>
+
+<!-- No <style> here on purpose. `.birth-years` lives in src/styles/global.css
+     because public/js/team-page.js builds this same line for the volleyball youth
+     heroes, on pages that never import this component — an `is:global` block here
+     ships only with the pages that DO, so the hero rendered with no spacing at all
+     ("Jahrgang:2008und jünger"). -->

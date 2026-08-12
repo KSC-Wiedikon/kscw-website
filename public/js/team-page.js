@@ -113,6 +113,26 @@
     league.textContent = (teamData.league || '') + (teamData.season ? ' — ' + i18n.t('teamSeason') + ' ' + teamData.season : '');
     inner.appendChild(league);
 
+    // Eligible Jahrgänge for a youth squad — "Jahrgang: 2005 und jünger" for the
+    // volleyball U23/U20 teams. Built by public/js/birth-years.js so the rules (and
+    // the 1 August shift) have a single home; the page loads it ahead of this file.
+    //
+    // The two federations disagree by a year, so the sport has to be KNOWN, not
+    // assumed: no script, an unrecognised sport or an adult team name all mean no
+    // line rather than a line computed under the other sport's rule.
+    var by = window.kscwBirthYears;
+    var sport = raw && raw.sport;
+    if (by && (sport === 'volleyball' || sport === 'basketball')) {
+      var age = by.youthAge(teamData.name || TEAM);
+      var years = age ? by.element(sport, age) : null;
+      if (years) {
+        var yearsRow = document.createElement('p');
+        yearsRow.className = 'team-league team-hero-years';
+        yearsRow.appendChild(years);
+        inner.appendChild(yearsRow);
+      }
+    }
+
     section.appendChild(inner);
     container.appendChild(section);
   }

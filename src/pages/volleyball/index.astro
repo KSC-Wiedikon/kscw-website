@@ -71,7 +71,7 @@ const moreText = t(locale, 'vbMore');
       <SectionHeader title={t(locale, 'vbYouth')} titleKey="vbYouth" />
       <div class={`grid grid-${Math.min(youth.length, 4)}`}>
         {youth.map((team: TeamData) => (
-          <TeamCard team={team} locale={locale} basePath={basePath} moreText={moreText} moreTextKey="vbMore" />
+          <TeamCard team={team} locale={locale} basePath={basePath} moreText={moreText} moreTextKey="vbMore" showBirthYears />
         ))}
       </div>
     </div>
@@ -97,5 +97,8 @@ const moreText = t(locale, 'vbMore');
   />
 
   <script is:inline src="/js/scoreboard.js"></script>
+  <!-- Eligible Jahrgänge on the Nachwuchs cards, recomputed live: the categories
+       shift on 1 August and no rebuild is triggered by a date alone. -->
+  <script is:inline src="/js/birth-years.js"></script>
   <script src="../../islands/scroll-animations.ts"></script>
 </PageLayout>

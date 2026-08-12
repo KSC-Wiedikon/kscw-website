@@ -1,6 +1,8 @@
 ---
 import type { TeamData } from '../data/teams';
 import { formatTrainings, getBadgeText } from '../data/teams';
+import { youthAge } from '../lib/birthYears';
+import BirthYears from './BirthYears.astro';
 import { t } from '../lib/i18n';
 
 interface Props {
@@ -12,9 +14,18 @@ interface Props {
   moreText: string;
   /** i18n key for the "more" label — enables client-side language swap. */
   moreTextKey?: string;
+  /** Show the eligible-Jahrgänge line. Opt-in per page rather than derived from
+   *  `team.category === 'youth'`, because basketball's youth cards here are
+   *  teasers that link into /basketball/teams/nachwuchs — and that page can widen
+   *  a card's range when the club runs no team one step down (see groupSpanTo()),
+   *  which this component has no roster to work out. Two different ranges for the
+   *  same team, one link apart, is worse than stating it in one place. */
+  showBirthYears?: boolean;
 }
 
-const { team, locale, basePath, moreText, moreTextKey } = Astro.props;
+const { team, locale, basePath, moreText, moreTextKey, showBirthYears } = Astro.props;
+
+const birthYearsAge = showBirthYears ? youthAge(team.teamName ?? team.chipLabel) : null;
 
 const href = team.linkOverride
   ? `${basePath}/${team.linkOverride}`
@@ -56,6 +67,11 @@ const altText = t(locale, 'teamPhotoAlt');
       <h3>{team.displayName}</h3>
     </div>
     {badgeText && <span class="badge badge-blue">{badgeText}</span>}
+    {birthYearsAge !== null && (
+      <p class="team-card-meta mt-sm">
+        <BirthYears sport={team.sport} age={birthYearsAge} />
+      </p>
+    )}
     {trainingTextDe && <p class="team-card-meta mt-sm"><span data-lang-only="de">{trainingTextDe}</span><span data-lang-only="en">{trainingTextEn}</span></p>}
     <p class="team-card-meta mt-md" style="color: var(--kscw-blue); font-weight: 600;"><span data-i18n={moreTextKey}>{moreText}</span> &rarr;</p>
   </div>

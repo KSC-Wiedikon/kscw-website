@@ -105,6 +105,9 @@ const { directusId, short } = Astro.props;
     window.TEAM_CONFIG = { short: short, directusId: directusId };
   </script>
   <script is:inline src="/js/game-modal.js"></script>
+  <!-- Eligible Jahrgänge for the U23/U20 squads. Loaded BEFORE team-page.js,
+       which asks it to build the hero line. -->
+  <script is:inline src="/js/birth-years.js"></script>
   <!-- Content-hashed: served max-age=14400, so without a ?v= a change here
        (e.g. the sponsor href guard) would not reach a returning visitor for
        up to four hours. -->

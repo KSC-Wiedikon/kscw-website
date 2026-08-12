@@ -99,7 +99,11 @@ try {
         actionLabelKey="homeAllNews"
       />
       <div class="grid grid-2 card-glow-grid" id="news-grid">
-        <p id="news-empty" data-i18n="homeNewsEmpty">{t(locale, 'homeNewsEmpty')}</p>
+        <!-- Ships HIDDEN. It used to ship visible, so every visitor read a flatly
+             false "Keine News vorhanden." for the length of the Directus round trip
+             before the cards replaced it. renderNews() is what decides: it reveals
+             this only once it knows the list is genuinely empty. -->
+        <p id="news-empty" data-i18n="homeNewsEmpty" style="display: none;">{t(locale, 'homeNewsEmpty')}</p>
       </div>
     </div>
   </section>
@@ -189,6 +193,22 @@ try {
         return fallback;
       }
 
+      /**
+       * Fill a node AND leave its key on it, so the i18n engine can repair the text
+       * later. Use this for every string this file writes.
+       *
+       * tr18n() alone is a one-shot read: nodes injected while the dictionary was
+       * still in flight — the "Laden…" rows below run during body parse — kept the
+       * German fallback forever, because without a data-i18n attribute
+       * applyTranslations() cannot see them. An English visitor read "Laden…" and
+       * then "Keine Spiele gefunden." on the finished page, in every language.
+       */
+      function setTr(el, key, fallback) {
+        el.setAttribute('data-i18n', key);
+        el.textContent = tr18n(key, fallback);
+        return el;
+      }
+
       // Table loading rows
       ['upcoming-games-list', 'recent-results-list'].forEach(function(id) {
         var tbl = document.getElementById(id);
@@ -199,7 +219,7 @@ try {
             var td = document.createElement('td');
             td.setAttribute('colspan', '6');
             td.style.textAlign = 'center'; td.style.padding = '2rem'; td.style.opacity = '0.5';
-            td.textContent = tr18n('homeTableLoading', 'Laden…');
+            setTr(td, 'homeTableLoading', 'Laden…');
             tr.appendChild(td);
             tbody.appendChild(tr);
           }
@@ -297,9 +317,8 @@ try {
         // 5: home/away
         var badge = document.createElement('span');
         badge.className = 'game-badge ' + (isHome ? 'home' : 'away');
-        badge.textContent = isHome
-          ? tr18n('teamBadgeHome', 'Heim')
-          : tr18n('homeBadgeAwayShort', 'Ausw.');
+        if (isHome) setTr(badge, 'teamBadgeHome', 'Heim');
+        else setTr(badge, 'homeBadgeAwayShort', 'Ausw.');
         tr.appendChild(makeCell(badge, 'gt-loc'));
 
         // 6: matchup (split into spans so mobile can align home/away under scores)
@@ -366,7 +385,7 @@ try {
           var td = document.createElement('td');
           td.setAttribute('colspan', '7');
           td.className = 'game-empty';
-          td.textContent = tr18n('homeNoGames', 'Keine Spiele gefunden.');
+          setTr(td, 'homeNoGames', 'Keine Spiele gefunden.');
           tr.appendChild(td); tbody.appendChild(tr);
           return;
         }
@@ -516,7 +535,9 @@ try {
         // Clear previously rendered cards, but keep the (hidden) empty placeholder.
         var stale = grid.querySelectorAll('.news-card');
         for (var k = 0; k < stale.length; k++) grid.removeChild(stale[k]);
-        if (!articles.length) return;
+        // The placeholder ships hidden, so revealing it is this branch's job — it is
+        // the only point at which "there is no news" is actually known to be true.
+        if (!articles.length) { if (empty) empty.style.display = ''; return; }
         if (empty) empty.style.display = 'none';
         var locale = document.documentElement.lang || 'de';
         var frag = document.createDocumentFragment();

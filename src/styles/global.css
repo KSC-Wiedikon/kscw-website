@@ -3,6 +3,58 @@
    Athletic Precision: bold, energetic, block-based
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── Inter, self-hosted ────────────────────────────────────────
+   Was two cross-origin round trips to fonts.googleapis.com +
+   fonts.gstatic.com (a CSS file, then the font it names), which is why every
+   cold load painted in the system sans and then re-laid-out the whole page. The
+   German visitor saw that too — it was the one staged repaint that was not
+   about language at all.
+
+   ONE variable file per subset, covering weights 300-800 (the site uses 300,
+   400, 500, 600, 700 and 800). `latin` is 48 KB and always needed;
+   `latin-ext` is 85 KB and fetched only if a glyph in its range actually
+   appears — roster names like Čačić or Włodarczyk are why it is here at all.
+   Both are preloaded-or-not by BaseLayout, which preloads only `latin`.
+
+   Update procedure: refetch
+   https://fonts.googleapis.com/css2?family=Inter:wght@300..800&display=swap
+   with a modern browser UA, take the latin + latin-ext woff2 URLs from it, and
+   keep the unicode-range values below in step with that response. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url('/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Metric-matched stand-in, used for the one swap that is left.
+   `font-display: swap` still means the first paint can happen in a fallback, so
+   the fallback is adjusted to Inter's metrics — otherwise the text reflows when
+   the real font arrives, which is the shift this whole change is about. The
+   numbers are the standard Inter-over-Arial overrides. */
+@font-face {
+  font-family: 'Inter Fallback';
+  /* Three names, one set of metrics: Helvetica and Liberation Sans are both
+     metric-compatible with Arial, so the overrides below hold for all three. Arial
+     alone made this face fail outright on Linux (no Arial installed), which dropped
+     the text to an unadjusted sans-serif — exactly the reflow it exists to prevent. */
+  src: local('Arial'), local('Helvetica'), local('Liberation Sans');
+  size-adjust: 107.12%;
+  ascent-override: 90.2%;
+  descent-override: 22.48%;
+  line-gap-override: 0%;
+}
+
 /* ── Design Tokens ─────────────────────────────────────────── */
 :root {
   color-scheme: dark light;
@@ -65,8 +117,8 @@
   --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
 
   /* Typography */
-  --font-display: 'Inter', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-display: 'Inter', 'Inter Fallback', sans-serif;
+  --font-body: 'Inter', 'Inter Fallback', sans-serif;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;

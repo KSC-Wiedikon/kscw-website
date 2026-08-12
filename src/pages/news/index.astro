@@ -24,7 +24,9 @@ const locale = 'de';
         <button class="sport-tab" data-filter="club">Club</button>
       </div>
       <div class="grid grid-3" id="news-grid">
-        <p id="news-empty" data-i18n="newsEmpty">{t(locale, 'newsEmpty')}</p>
+        <!-- Ships HIDDEN — see the identical placeholder on the homepage. fetchNews()
+             reveals it only once Directus has actually answered with nothing. -->
+        <p id="news-empty" data-i18n="newsEmpty" style="display: none;">{t(locale, 'newsEmpty')}</p>
       </div>
       <div class="text-center mt-lg" id="news-load-more-wrap" style="display:none;">
         <button class="btn btn-outline" id="news-load-more" data-i18n="newsLoadMore">{t(locale, 'newsLoadMore')}</button>
@@ -89,7 +91,11 @@ const locale = 'de';
         if (!append) {
           offset = 0;
           grid.innerHTML = '';
-          if (empty) { empty.style.display = ''; grid.appendChild(empty); }
+          // Re-attach the placeholder (innerHTML wiped it) but keep it HIDDEN. It
+          // used to be revealed here, which meant every filter-tab click flashed
+          // "Keine News vorhanden." at the reader for the length of the round trip
+          // before the cards arrived.
+          if (empty) { empty.style.display = 'none'; grid.appendChild(empty); }
         }
         var newsFields = 'id,title,title_en,slug,excerpt,body,category,author,published_at,image,date_created';
         // Published-only is enforced by the Directus Public role permission; is_published is not readable anonymously.
@@ -103,7 +109,8 @@ const locale = 'de';
           .then(function (res) { return res.json(); })
           .then(function (data) {
             var articles = data.data || [];
-            if (!append && !articles.length) return;
+            // Only here is "there is no news" known to be true.
+            if (!append && !articles.length) { if (empty) empty.style.display = ''; return; }
             if (empty) empty.style.display = 'none';
             var locale = document.documentElement.lang || 'de';
             var svgIcon = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2Zm0 0a2 2 0 0 1-2-2v-9c0-1.1.9-2 2-2h2"/><path d="M18 14h-8"/><path d="M15 18h-5"/><path d="M10 6h8v4h-8V6Z"/></svg>';

@@ -47,6 +47,29 @@
 
   /* ── Load Translations ────────────────────────────────────── */
 
+  /**
+   * The dictionary response, reusing the request the pre-paint script in
+   * BaseLayout.astro already put in flight.
+   *
+   * That script is inline, so it runs before this file has even been downloaded.
+   * Asking for the dictionary here instead would mean two sequential round trips
+   * — download i18n.js, then request the dictionary — and the second one is what
+   * the visitor is waiting on to stop reading German.
+   *
+   * One-shot: consumed on first use so a later setLang() (the toggle, switching
+   * to the OTHER language) always issues a fresh request. Falls back to fetch()
+   * whenever there is no hand-off — a page not using BaseLayout, a browser where
+   * the inline script threw, or a language other than the one it detected.
+   */
+  function dictionaryRequest(lang, url) {
+    var pre = window.__I18N_PRE;
+    if (pre && pre.lang === lang && pre.p) {
+      window.__I18N_PRE = null;
+      return pre.p;
+    }
+    return fetch(url);
+  }
+
   function loadTranslations(lang) {
     if (cache[lang]) {
       currentLang = lang;
@@ -58,7 +81,7 @@
     // UNVERSIONED url rather than a stale literal: revalidating is a cheap
     // miss, serving four-hour-old translations is a visible bug.
     var v = (window.__I18N_V && window.__I18N_V[lang]) || '';
-    return fetch('/js/i18n/' + lang + '.json' + (v ? '?v=' + v : ''))
+    return dictionaryRequest(lang, '/js/i18n/' + lang + '.json' + (v ? '?v=' + v : ''))
       .then(function (res) {
         if (!res.ok) throw new Error('Failed to load translations for ' + lang);
         return res.json();
@@ -285,62 +308,103 @@
     return loadTranslations(lang).then(function () {
       applyTranslations();
       updateLangButtons(lang);
-      document.body.classList.remove('i18n-loading');
       document.dispatchEvent(new CustomEvent('langChanged', { detail: { lang: lang } }));
     }).catch(function (err) {
-      // Same reasoning as init(): never leave the veil up. The toggle simply
-      // does nothing visible and the page stays in the language it already had.
+      // The toggle simply does nothing visible and the page stays in the language
+      // it already had.
       if (window.console && console.error) {
         console.error('[i18n] failed to switch to "' + lang + '":', err);
       }
-      document.body.classList.remove('i18n-loading');
+      // loadTranslations() sets <html lang> only on success, so nothing to undo
+      // here — but the buttons were already showing the requested language.
       updateLangButtons(currentLang);
     });
   }
 
   /* ── Initialize ───────────────────────────────────────────── */
 
-  function init() {
-    var lang = detectLang();
-    // Started here so it runs alongside the dictionary rather than after it, but
-    // applied only once the language is settled. It resolves either way, so
-    // neither the veil nor window.i18nReady can ever wait on Directus.
-    var pendingOverrides = fetchOverrides();
+  /**
+   * ⚠ The dictionary request is issued the moment this file executes — in <head>,
+   * before the parser has reached <body>. Do not move it back behind a DOM event.
+   *
+   * It used to be started from a DOMContentLoaded handler, which put the ONE
+   * request that can turn the page English behind the entire document, including a
+   * 398 KB parser-blocking icon bundle. First paint then always won a race against
+   * a request that had not been made yet, and an English visitor read a complete,
+   * finished German page for a measured ~466 ms at 150 ms RTT (~674 ms at 6× CPU)
+   * before it flipped. On localhost the dictionary happened to land ~1 ms before
+   * first paint, which is why this never showed up in development.
+   *
+   * Nothing about STARTING the fetch needs the DOM, so nothing here waits for it.
+   * Applying the result does need the DOM, and that is what the two passes below
+   * are for.
+   */
+  var activeLang = detectLang();
 
-    return loadTranslations(lang).then(function () {
-      // German is the server-rendered default — no DOM pass needed. English
-      // gets swapped in place. Either way, clear the loading veil.
-      if (lang !== 'de') applyTranslations();
-      document.body.classList.remove('i18n-loading');
-      updateLangButtons(lang);
-      readyResolve(lang);
-      pendingOverrides.then(applyOverrides);
-    }).catch(function (err) {
-      // A failed dictionary fetch must never leave the page veiled or
-      // window.i18nReady unsettled. Several subsystems await that promise
-      // (team pages, calendar, scorer courses, youth status) and would hang
-      // forever on a pending promise, rendering a blank page rather than a
-      // degraded one. German is already server-rendered so falling through
-      // costs nothing; English silently stays German, which beats blank.
+  // Resolves to the language actually in effect — the requested one, or 'de' when
+  // its dictionary could not be fetched. Deliberately never rejects: several
+  // subsystems await window.i18nReady (team pages, calendar, scorer courses, youth
+  // status) and would hang forever on a pending promise, rendering a blank page
+  // rather than a degraded one.
+  var pendingDictionary = loadTranslations(activeLang)
+    .then(function () { return activeLang; })
+    .catch(function (err) {
       if (window.console && console.error) {
-        console.error('[i18n] failed to load "' + lang + '" dictionary:', err);
+        console.error('[i18n] failed to load "' + activeLang + '" dictionary:', err);
       }
-      document.body.classList.remove('i18n-loading');
-      updateLangButtons(currentLang);
-      readyResolve(currentLang);
-      // The dictionary failed, but the German build output on screen is intact and
-      // its overrides are independent of that fetch — still worth applying.
-      pendingOverrides.then(applyOverrides);
+      // The pre-paint script in BaseLayout has already set <html lang> to the
+      // requested language. Put it back to what we can actually render: the
+      // [data-lang-only] rules in global.css key off html[lang], so leaving it at
+      // "en" would show the English half of every dual-rendered block sitting on
+      // top of otherwise-German text. German is server-rendered, so falling back
+      // costs nothing.
+      document.documentElement.lang = currentLang;
+      return currentLang;
     });
+
+  // Started alongside the dictionary rather than after it, and never awaited by
+  // anything the page needs. Directus being slow, blocked or down must cost
+  // nothing beyond the site showing its committed wording.
+  var pendingOverrides = fetchOverrides();
+
+  /**
+   * Translate the DOM as it currently stands.
+   *
+   * Runs twice on a first load: once the instant the dictionary resolves — which
+   * may be mid-parse, and is the pass that keeps the visitor's first paint in their
+   * own language — and once at DOMContentLoaded for whatever the parser produced in
+   * between. applyTranslations() is idempotent and costs ~130 textContent writes,
+   * so the second pass is sub-millisecond.
+   *
+   * `settle` is true only on the final pass: that is the one allowed to resolve
+   * window.i18nReady, whose contract is "dictionary loaded AND document
+   * translated". Resolving it mid-parse would hand consumers a DOM whose render
+   * targets do not exist yet.
+   */
+  function applyPass(lang, settle) {
+    // German is the server-rendered default and needs no DOM pass.
+    if (lang !== 'de') applyTranslations();
+    updateLangButtons(lang);
+    if (!settle) return;
+    readyResolve(lang);
+    pendingOverrides.then(applyOverrides);
+    // Nodes built by page scripts DURING body parse (the homepage game tables)
+    // carry a data-i18n key but were filled from a still-empty dictionary. This is
+    // the signal that lets their page repair them. It is deliberately not
+    // `langChanged`: that event has thirteen listeners wired for an explicit
+    // toggle, several of which re-fetch from Directus, and firing them all on every
+    // page load would make loading slower, not faster.
+    document.dispatchEvent(new CustomEvent('i18nApplied', { detail: { lang: lang } }));
   }
 
-  // Auto-initialize as soon as the script runs / DOM is ready, so language is
-  // applied without every page wiring it up manually.
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  pendingDictionary.then(function (lang) {
+    if (document.readyState === 'loading') {
+      applyPass(lang, false);
+      document.addEventListener('DOMContentLoaded', function () { applyPass(lang, true); });
+    } else {
+      applyPass(lang, true);
+    }
+  });
 
   /* ── Public API ───────────────────────────────────────────── */
 
@@ -349,7 +413,12 @@
     setLang: setLang,
     getLang: function () { return currentLang; },
     applyTranslations: applyTranslations,
-    init: init
+    // Re-run the final pass. Nothing in the repo calls this — the engine wires
+    // itself up above — but it stays on the API so a page that injects a large
+    // subtree can settle it without knowing about the two-pass bootstrap.
+    init: function () {
+      return pendingDictionary.then(function (lang) { applyPass(lang, true); });
+    }
   };
 
 })();

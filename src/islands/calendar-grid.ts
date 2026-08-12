@@ -976,14 +976,15 @@ if (container) {
     // Re-evaluate the active language + labels on every full render so a
     // client-side language switch is reflected without a page reload.
     computeLabels()
-    // Network fetch happens only on the very first render. Month navigation and
-    // language switches reuse the already-loaded dataset, so they rebuild
-    // instantly without a loading spinner or refetch.
+    // Pure rebuild — no network. The dataset is fetched once by the bootstrap at the
+    // bottom of this file, which is also what sets dataLoaded; month navigation and
+    // language switches reuse it and rebuild instantly. If the bootstrap has not
+    // finished yet (nothing calls this before it does today, but a future caller
+    // might) keep the page on its loading line rather than painting an empty month.
     if (!dataLoaded) {
       container!.textContent = ''
       container!.appendChild(el('div', 'cal-loading', loadingLabel))
-      await fetchAllData()
-      dataLoaded = true
+      return
     }
 
     container!.textContent = ''
@@ -1427,14 +1428,24 @@ if (container) {
   // this is a pure relabel + rebuild.
   document.addEventListener('langChanged', () => { render() })
 
-  // Initial load — wait for the i18n engine so the very first render is in the
-  // active language (it may be English from a stored preference). Falls back to
-  // immediate render if i18n is unavailable.
-  const start = () => fetchTeams().then(() => render())
+  // Initial load. All THREE waits run concurrently: the dictionary, the teams list
+  // and the games+closures dataset. This used to be strictly sequential —
+  // i18nReady, then fetchTeams(), then render() which itself awaited
+  // fetchAllData() — three round trips end to end, although none of them depends
+  // on either of the others. fetchAllData() never reads allTeams; fetchTeams()
+  // only fills the toolbar's team filter.
+  //
+  // The render still waits for all of them, because it builds the toolbar (needs
+  // the teams and the labels) and the grid (needs the games) in one pass. Painting
+  // earlier from the build-time #events-data was considered and NOT done: the
+  // toolbar's team filter would be empty on that first paint and fill in
+  // afterwards, which swaps a spinner for a control changing under the reader.
   const ready = (window as any).i18nReady
-  if (ready && typeof ready.then === 'function') {
-    ready.then(start, start)
-  } else {
-    start()
-  }
+  const settled: Promise<unknown> = (ready && typeof ready.then === 'function')
+    ? ready.catch(() => undefined)
+    : Promise.resolve()
+  // dataLoaded is set here rather than inside render(), so render() stays a pure
+  // rebuild. Set even when the fetch failed: an empty grid beats a stuck spinner.
+  const data = fetchAllData().catch(() => undefined).then(() => { dataLoaded = true })
+  Promise.all([fetchTeams(), data, settled]).then(() => render())
 }

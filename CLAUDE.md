@@ -58,6 +58,18 @@ Cloudflare Pages — pushes to `prod` trigger the live deploy.
 ## Runtime Layer
 `public/js/` is a vanilla-JS runtime (no framework) covering: the i18n engine (`i18n.js` + `i18n/{de,en}.json`), forms with Cloudflare Turnstile (registration, feedback, contact, newsletter), `error-logger.js` (JSONL/Sentry telemetry), `search.js`, `scoreboard.js`, `team-page.js`.
 
+### Load order — four rules that were expensive to find (2026-08-12)
+An audit measured an English visitor reading a complete German page for **1.7–2.7 s**, and a CLS of **0.95** on team pages. Both were ordering, not speed. Undoing any of these brings them straight back:
+
+1. **The dictionary request is issued by the inline pre-paint script at the top of `BaseLayout.astro`'s `<head>`**, and handed to `i18n.js` via `window.__I18N_PRE`. It must not move behind a DOM event or below another blocking script — it was `DOMContentLoaded`-gated, which put it after the whole document. Request time: 2250 ms → 175 ms.
+2. **Await `i18nReady` before RENDERING, never before FETCHING.** Nothing in Directus depends on the language, so chaining serialises two independent round trips. Use `Promise.all([payload, i18nReady])`.
+3. **Anything a page script writes gets a `data-i18n` key on the node**, not just translated text (`setTr()` in `index.astro`). Nodes built during body parse are filled from an empty dictionary and stay in the build language forever otherwise. The `i18nApplied` event is the load-time repair signal — `langChanged` is toggle-only and has thirteen listeners, several of which re-fetch.
+4. **Client renderers that replace server-rendered markup must clear their container** (`renderHero` in `team-page.js`) and keep their markup in step with the Astro component (`TeamHero.astro` / `TeamPhoto.astro`), or the swap becomes a visible jump.
+
+Tests: `tests/e2e/i18n-first-paint.spec.ts`, `data-parallel-load.spec.ts`, `team-page-build-time.spec.ts`, `i18n-runtime-strings.spec.ts`, `fonts-self-hosted.spec.ts`. Read the header of `data-parallel-load.spec.ts` before editing it — three timing-based shapes were tried and abandoned; it pins the dictionary request *open* rather than timing anything.
+
+There is deliberately **no** `i18n-loading` veil. It existed as four `classList.remove()` calls with nothing adding the class and no CSS rule, and comments claiming it covered the flash. Hiding the gap trades wrong-language text for invisible text; the fix is to close the gap.
+
 ## Build Prerequisites
 - Node `>=22.12`
 - Copy `.env.example` → `.env` and set `DIRECTUS_URL` (build-time Astro frontmatter fetches; defaults to the dev Directus)

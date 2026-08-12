@@ -335,11 +335,19 @@
     if (window.i18n && window.i18n.applyTranslations) window.i18n.applyTranslations();
   }
 
-  function run() {
-    Promise.all([fetchOpen(), fetchWaitlist()]).then(function (res) { render(res[0], res[1]); });
-  }
-
-  // Wait for i18n so applyTranslations has strings to localise into.
-  if (window.i18nReady && window.i18nReady.then) window.i18nReady.then(run);
-  else run();
+  // Both Directus requests and the dictionary run CONCURRENTLY; only the render
+  // waits for all three. This used to be `i18nReady.then(run)`, which held the two
+  // status requests back until the dictionary had arrived even though open/waitlist
+  // state is the same in either language.
+  //
+  // render() still needs the dictionary — it calls i18n.applyTranslations() on the
+  // badges it injects — which is why the wait moved rather than disappeared.
+  (function run() {
+    var ready = (window.i18nReady && window.i18nReady.then)
+      ? window.i18nReady.catch(function () {})
+      : Promise.resolve();
+    Promise.all([fetchOpen(), fetchWaitlist(), ready]).then(function (res) {
+      render(res[0], res[1]);
+    });
+  })();
 })();

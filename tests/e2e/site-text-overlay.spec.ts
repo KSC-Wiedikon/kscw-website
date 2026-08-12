@@ -92,9 +92,8 @@ test.describe('page-text overlay', () => {
     await page.route(OVERLAY, (route) => route.abort('failed'));
     await gotoWithLang(page, PAGE, 'de');
 
-    // The veil is down, i18nReady resolved, and the committed wording is on screen.
+    // i18nReady resolved and the committed wording is on screen.
     await waitForI18n(page);
-    expect(await page.evaluate(() => document.body.classList.contains('i18n-loading'))).toBe(false);
     await expect(paragraph(page)).toContainText('Spielsamstagen');
   });
 
@@ -103,7 +102,6 @@ test.describe('page-text overlay', () => {
     await gotoWithLang(page, PAGE, 'de');
 
     await waitForI18n(page);
-    expect(await page.evaluate(() => document.body.classList.contains('i18n-loading'))).toBe(false);
     await expect(paragraph(page)).toContainText('Spielsamstagen');
   });
 

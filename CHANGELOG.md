@@ -2,6 +2,22 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.20.0] — 2026-08-12
+
+### Die Seite lädt nicht mehr zuerst auf Deutsch und springt dann auf Englisch
+- Wer die Website auf **Englisch** liest, bekam zuerst die **fertige deutsche Seite** zu sehen und erst danach die Übersetzung. Nicht den Bruchteil einer Sekunde, wie es auf einer schnellen Leitung aussieht: gemessen **1,7 bis 2,7 Sekunden** bei normaler Mobilverbindung. Auf der Startseite ist die deutsche Fassung jetzt **in keinem einzigen Bild** mehr zu sehen, auf den übrigen Seiten bleiben rund 0,25 Sekunden.
+- Der Grund war die Reihenfolge, nicht die Geschwindigkeit: die Übersetzungsdatei wurde erst angefordert, wenn die **ganze Seite** fertig geladen war — inklusive einer 398 KB grossen Icon-Datei. Sie wird jetzt als Erstes angefordert, noch bevor irgendetwas anderes lädt.
+- Drei Texte waren **dauerhaft** falsch, nicht nur kurz: auf **Feedback** stand «WAS IST NEU» über dem englischen Änderungsprotokoll, und die **Spieltabellen** auf der Startseite blieben in jeder Sprache deutsch («Laden…», «Keine Spiele gefunden.»).
+- «**Keine News vorhanden.**» stand auf der Startseite und auf **News**, solange die News noch geladen wurden — also eine Aussage, die in dem Moment niemand kennen konnte. Sie erscheint jetzt nur, wenn es wirklich keine gibt.
+
+### Teamseiten sind sofort da, statt zu springen
+- Die Teamseiten (z. B. **Damen 1**, **HU20**) waren im ersten Moment **leer** und füllten sich erst, wenn die Daten eintrafen — der Titel, die Liga und das Mannschaftsfoto sprangen dabei unter der Leserin weg. Das war der mit Abstand grösste Sprung auf der ganzen Website. Titel, Liga, Saison, Jahrgänge und Foto sind jetzt **von Anfang an da**, auch ohne JavaScript.
+- Der **Sprachumschalter** hat auf Teamseiten bisher die halbe Seite geleert und alles neu geladen — Foto inklusive. Jetzt werden nur die Bezeichnungen ausgetauscht.
+- **Spielplan, Kader, Rangliste und Kurse** werden jetzt **gleichzeitig** mit den Übersetzungen geladen statt danach. Beim Kalender waren es sogar drei Ladevorgänge hintereinander.
+
+### Schrift und Icons kommen nicht mehr von Google
+- Die Schrift **Inter** wird jetzt vom eigenen Server geliefert statt über zwei Umwege zu Google. Damit verschwindet das Umbrechen des Textes, das bisher bei jedem ersten Besuch auftrat — das war der einzige dieser Sprünge, den auch deutschsprachige Besucher gesehen haben.
+
 ## [1.19.0] — 2026-08-12
 
 ### Jedes Nachwuchsteam sagt jetzt, welche Jahrgänge mitspielen können

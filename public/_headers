@@ -1,6 +1,13 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
+# Self-hosted Inter. Content-addressed by hand rather than by hash: the filenames
+# are stable, so a NEW cut of the font needs a new filename (and a matching change
+# in global.css + the preload in BaseLayout.astro) — do not just overwrite these,
+# or returning visitors keep the old one for a year.
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

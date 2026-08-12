@@ -273,25 +273,31 @@ if (container) {
     if (cachedCourses.length) render(cachedCourses);
   });
 
-  const load = () =>
+  /** Fetch only — the render is the caller's job, so it can wait on the dictionary. */
+  const fetchCourses = (): Promise<ScorerCourse[]> =>
     fetch(`${base}/items/scorer_courses?filter[active][_eq]=true&fields=slug_id,title_de,title_en,date_iso,time,mode,form_slug_de,form_slug_en,location,host_note,duration_hours,registration_closes,sort&sort=sort&limit=-1`)
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const rows = Array.isArray(json?.data) ? (json.data as Record<string, unknown>[]) : [];
-        const upcoming = getUpcomingScorerCourses(rows.map(mapRow));
-        if (!upcoming.length) return;
-        cachedCourses = upcoming;
-        render(upcoming);
-        if (section) section.hidden = false;
+        return getUpcomingScorerCourses(rows.map(mapRow));
       })
-      .catch(() => { /* Directus unreachable — section stays hidden */ });
+      .catch(() => [] as ScorerCourse[]);   // Directus unreachable — section stays hidden
 
-  // Wait for the i18n engine so the first render is in the active language
-  // (could be English from a stored preference). Fall back if unavailable.
+  // The course fetch and the dictionary run CONCURRENTLY; only the render waits
+  // for both. It used to be `ready.then(load)`, which held the Directus request
+  // back behind the dictionary although the courses are the same in either
+  // language — and this section ships `hidden`, so the delay was a visible pop-in.
+  //
+  // The render still needs the dictionary (it builds localised labels), hence
+  // Promise.all rather than dropping the wait altogether.
   const ready = (window as any).i18nReady;
-  if (ready && typeof ready.then === 'function') {
-    ready.then(load, load);
-  } else {
-    load();
-  }
+  const settled: Promise<unknown> = (ready && typeof ready.then === 'function')
+    ? ready.catch(() => undefined)
+    : Promise.resolve();
+  Promise.all([fetchCourses(), settled]).then(([upcoming]) => {
+    if (!upcoming.length) return;
+    cachedCourses = upcoming;
+    render(upcoming);
+    if (section) section.hidden = false;
+  });
 }

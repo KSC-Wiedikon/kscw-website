@@ -1,0 +1,50 @@
+---
+// The hero of a team detail page, rendered at BUILD time.
+//
+// public/js/team-page.js renders the same block in the browser from live Directus
+// and replaces this one (renderHero() clears its container first — it used to append,
+// which is why this could not exist before). The markup here mirrors that renderer
+// deliberately: if the two drift, the swap becomes a visible jump instead of a
+// no-op, which is the whole reason this exists. Anything changed in renderHero()
+// belongs here too.
+//
+// Why it exists: these pages shipped as empty containers, so the hero appeared under
+// the reader a Directus round trip after first paint — a measured CLS of 0.633 on
+// /volleyball/hu20, the worst on the site.
+import type { TeamDetail } from '../lib/fetch/teamDetail'
+import { youthAge } from '../lib/birthYears'
+import BirthYears from './BirthYears.astro'
+import { t } from '../lib/i18n'
+
+interface Props {
+  /** null when Directus was unreachable at build time — renders nothing. */
+  team: TeamDetail | null
+  sport: 'volleyball' | 'basketball'
+}
+
+const { team, sport } = Astro.props
+// Youth squads state their eligible Jahrgänge; adult teams have no age category.
+const age = team ? youthAge(team.name) : null
+---
+{team && (
+    <section class="team-hero" style="--team-color: var(--kscw-blue);">
+      <div class="container">
+        <span class="chip" style="background: var(--kscw-blue); color: #fff; margin-bottom: 0.75rem; display: inline-block;">
+          {team.name}
+        </span>
+        <div class="team-hero-title-row">
+          <h1>{team.fullName}</h1>
+        </div>
+        <p class="team-league">
+          {team.league}{team.season && (
+            <> — <span data-i18n="teamSeason">{t('de', 'teamSeason')}</span> {team.season}</>
+          )}
+        </p>
+        {age !== null && (
+          <p class="team-league team-hero-years">
+            <BirthYears sport={sport} age={age} />
+          </p>
+        )}
+      </div>
+    </section>
+)}

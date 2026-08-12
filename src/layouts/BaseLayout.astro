@@ -31,49 +31,67 @@ const { title, titleKey, description, descriptionKey, locale = 'de' } = Astro.pr
   {descriptionKey && <meta name="i18n-description" content={descriptionKey}>}
   <title>{title}</title>
   {titleKey && <meta name="i18n-title" content={titleKey}>}
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" href="/images/kscw_trio.png" type="image/png">
-  <link rel="alternate" type="application/rss+xml" title="KSC Wiedikon News" href="/feed.xml">
-  <script is:inline src="https://browser.sentry-cdn.com/9.27.0/bundle.min.js" integrity="sha384-l+DRKdttgde2nTK8cjclL7gMH8ppmfZkjDrpe0sf98IeOzcCZo+AjGwPe4qipohT" crossorigin="anonymous"></script>
-  <script is:inline>
-    if (typeof Sentry !== 'undefined') {
-      Sentry.init({
-        dsn: 'https://511f2d9c956d41f53d9bbe7033e54850@o4511121927766016.ingest.de.sentry.io/4511156195098704',
-        environment: (location.hostname === 'kscw-website.pages.dev' || location.hostname === 'localhost') ? 'development' : 'production',
-        tracesSampleRate: 0,
-        allowUrls: [location.origin],
-        ignoreErrors: [
-          'ResizeObserver loop',
-          'ResizeObserver loop completed with undelivered notifications',
-          'Network request failed',
-          'Failed to fetch',
-          'NetworkError',
-          'Load failed',
-          /^Non-Error promise rejection captured/,
-        ],
-      });
-    }
+  {/* Content hashes for the i18n dictionaries. `i18n.js` itself is versioned by
+      `versionedAsset`, but its DATA file carried a hand-written `?v=4` that was
+      last bumped 2026-07-07 — 76 keys added, 26 removed and 5 changed behind an
+      unchanged URL since (audit 2026-08-08, finding 41). With
+      `Cache-Control: max-age=14400`, an English visitor kept a stale dictionary
+      for up to 4h after a deploy and saw raw key names ("privacyConsentPre …")
+      where the consent text should be. German is rendered by Astro at build
+      time, so a German-speaking reviewer sees nothing wrong.
+
+      ⚠ This sits ABOVE the pre-paint script because that script now uses it to
+      start the dictionary request. Do not move it back down. */}
+  <script is:inline define:vars={{ i18nVersions: { de: assetVersion('js/i18n/de.json'), en: assetVersion('js/i18n/en.json') } }}>
+    window.__I18N_V = i18nVersions;
   </script>
-  <script is:inline src="/js/error-logger.js"></script>
   <script is:inline>
     // Pre-paint: apply saved theme + language before first paint.
     // Page HTML is server-rendered in German; the i18n engine swaps to English
     // in place. Mirror detectLang() here: an explicit saved choice wins, else
     // the browser language (en/de) decides, else German — so an English-browser
     // visitor doesn't flash German. Keep in sync with public/js/i18n.js.
+    //
+    // ⚠ Two separate try blocks on purpose. They used to share one, so a
+    // localStorage getter that THROWS — Safari's "block all cookies", partitioned
+    // and embedded contexts, some enterprise policies — skipped the language
+    // branch entirely while detectLang() in i18n.js (which guards each read
+    // separately) still resolved to English. <html lang> then stayed "de" through
+    // first paint, so the [data-lang-only] blocks that are otherwise flash-free
+    // painted their German half and had it swapped out from under the reader:
+    // measured as a 1142 px scroll-height collapse on /club/feedback.
     (function() {
       try {
         if (localStorage.getItem('kscw-theme') === 'light') {
           document.documentElement.classList.add('light');
         }
-        var loc = localStorage.getItem('kscw-locale');
+      } catch (e) {}
+      try {
+        var loc = null;
+        try { loc = localStorage.getItem('kscw-locale'); } catch (e) {}
         if (loc !== 'de' && loc !== 'en') {
           var nav = (navigator.language || '').toLowerCase();
           loc = nav.indexOf('en') === 0 ? 'en' : 'de';
         }
         if (loc === 'en') document.documentElement.lang = 'en';
+
+        // Start the dictionary request HERE, from an inline script that needs no
+        // download of its own, rather than waiting for i18n.js to arrive and ask
+        // for it. Those were two sequential round trips: the measured effect of
+        // moving it up is the difference between ~500 ms and ~200 ms of German
+        // still on screen for an English visitor at 150 ms RTT.
+        //
+        // Only the request is started; i18n.js owns parsing and applying it, and
+        // picks this up via window.__I18N_PRE. The extra .catch marks the promise
+        // handled so a failed fetch cannot log an unhandled rejection in the
+        // window before i18n.js attaches its own.
+        // priority:'high' puts it ahead of the fonts, images and island bundles it
+        // would otherwise queue behind; browsers that do not know the option ignore
+        // it. What is left of the flash is exactly this one round trip.
+        var v = (window.__I18N_V && window.__I18N_V[loc]) || '';
+        var p = fetch('/js/i18n/' + loc + '.json' + (v ? '?v=' + v : ''), { priority: 'high' });
+        p.catch(function () {});
+        window.__I18N_PRE = { lang: loc, p: p };
       } catch (e) {}
     })();
   </script>
@@ -82,23 +100,52 @@ const { title, titleKey, description, descriptionKey, locale = 'de' } = Astro.pr
        both build links from admin-authored Directus values, and a guard that
        loads after them is no guard at all. ~4 KB, no dependencies.
        Build-time callers import src/lib/safeHref.ts instead. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="/images/kscw_trio.png" type="image/png">
+  <link rel="alternate" type="application/rss+xml" title="KSC Wiedikon News" href="/feed.xml">
+  <!-- ⚠ `async` matters. This is a cross-origin script in <head>, so loaded
+       synchronously it blocks first paint of the whole site on browser.sentry-cdn.com
+       being reachable and fast — and it sits AHEAD of our own stylesheet in the head,
+       so a slow CDN delayed everything behind it. The trade is deliberate: errors
+       thrown in the first ~200 ms are no longer captured by Sentry. Nothing else
+       depends on it — public/js/error-logger.js POSTs to Directus independently. -->
+  <script is:inline async id="sentry-sdk" src="https://browser.sentry-cdn.com/9.27.0/bundle.min.js" integrity="sha384-l+DRKdttgde2nTK8cjclL7gMH8ppmfZkjDrpe0sf98IeOzcCZo+AjGwPe4qipohT" crossorigin="anonymous"></script>
+  <script is:inline>
+    // The SDK is async now, so it may already be here (memory/disk cache) or land
+    // later. Init on whichever happens, and never on neither.
+    (function () {
+      function initSentry() {
+        if (typeof Sentry === 'undefined') return;
+        Sentry.init({
+          dsn: 'https://511f2d9c956d41f53d9bbe7033e54850@o4511121927766016.ingest.de.sentry.io/4511156195098704',
+          environment: (location.hostname === 'kscw-website.pages.dev' || location.hostname === 'localhost') ? 'development' : 'production',
+          tracesSampleRate: 0,
+          allowUrls: [location.origin],
+          ignoreErrors: [
+            'ResizeObserver loop',
+            'ResizeObserver loop completed with undelivered notifications',
+            'Network request failed',
+            'Failed to fetch',
+            'NetworkError',
+            'Load failed',
+            /^Non-Error promise rejection captured/,
+          ],
+        });
+      }
+      if (typeof Sentry !== 'undefined') { initSentry(); return; }
+      var tag = document.getElementById('sentry-sdk');
+      if (tag) tag.addEventListener('load', initSentry);
+    })();
+  </script>
+  <script is:inline src="/js/error-logger.js"></script>
   <script is:inline src={versionedAsset('js/safe-href.js')}></script>
   <!-- Client-side i18n engine: loaded site-wide, auto-initializes, swaps
        [data-i18n*] nodes to the active language.
        Cache-busted by content hash: this file is served max-age=14400, so
        without a ?v= a behaviour change here (e.g. the i18nReady failure path)
        would not reach a returning visitor for up to four hours. -->
-  {/* Content hashes for the i18n dictionaries. `i18n.js` itself is versioned by
-      `versionedAsset`, but its DATA file carried a hand-written `?v=4` that was
-      last bumped 2026-07-07 — 76 keys added, 26 removed and 5 changed behind an
-      unchanged URL since (audit 2026-08-08, finding 41). With
-      `Cache-Control: max-age=14400`, an English visitor kept a stale dictionary
-      for up to 4h after a deploy and saw raw key names ("privacyConsentPre …")
-      where the consent text should be. German is rendered by Astro at build
-      time, so a German-speaking reviewer sees nothing wrong. */}
-  <script is:inline define:vars={{ i18nVersions: { de: assetVersion('js/i18n/de.json'), en: assetVersion('js/i18n/en.json') } }}>
-    window.__I18N_V = i18nVersions;
-  </script>
   <script is:inline src={versionedAsset('js/i18n.js')}></script>
 </head>
 <body>
@@ -111,9 +158,26 @@ const { title, titleKey, description, descriptionKey, locale = 'de' } = Astro.pr
   </main>
   <Footer locale={locale} />
   <!-- Self-hosted (was unpkg): a CDN block/outage left `lucide` undefined and the
-       unguarded createIcons() threw "lucide is not defined" on every page. -->
-  <script is:inline src="/vendor/lucide-0.577.0.min.js"></script>
-  <script is:inline>window.lucide && lucide.createIcons();</script>
+       unguarded createIcons() threw "lucide is not defined" on every page.
+       ⚠ `async` matters. This bundle is 398 KB and was parser-blocking, so it gated
+       DOMContentLoaded — and with it the i18n engine's second translation pass,
+       every `.fade-in` island reveal, and every window.i18nReady consumer. Icons
+       now materialise slightly later; everything else arrives sooner. -->
+  <script is:inline async id="lucide-sdk" src="/vendor/lucide-0.577.0.min.js"></script>
+  <script is:inline>
+    (function () {
+      function drawIcons() { if (window.lucide) lucide.createIcons(); }
+      // createIcons() walks the document replacing [data-lucide] placeholders, so it
+      // needs them to exist. Async means the bundle can now land mid-parse.
+      function whenParsed() {
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', drawIcons);
+        else drawIcons();
+      }
+      if (window.lucide) { whenParsed(); return; }
+      var tag = document.getElementById('lucide-sdk');
+      if (tag) tag.addEventListener('load', whenParsed);
+    })();
+  </script>
   <script src="../islands/nav-mobile.ts"></script>
   <script src="../islands/theme-toggle.ts"></script>
   <script src="../islands/scroll-progress.ts"></script>

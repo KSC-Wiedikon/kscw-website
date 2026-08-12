@@ -944,6 +944,28 @@ button.nav-link {
   opacity: 0.85;
   font-weight: 400;
 }
+/* ── Eligible Jahrgänge on a youth team's card or page ─────── */
+/* Rendered by src/components/BirthYears.astro at build time AND by
+   public/js/birth-years.js in the browser (the categories shift on 1 August and no
+   rebuild is triggered by a date). It lives here rather than in that component
+   because the volleyball youth heroes are built entirely in JS, on pages that never
+   import it — a component `is:global` block ships only with the pages that do.
+   Layout only: colour is left to inherit, since the same line sits on a light card
+   surface and on the blue team hero. Each context sets its own. */
+.birth-years {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+/* Tabular figures keep the year pairs from jittering between cards. */
+.birth-years-value { font-variant-numeric: tabular-nums; }
+/* Under the league line on a youth team's hero: one step down in size so it reads
+   as a detail about it. */
+.team-hero-years {
+  font-size: var(--text-base);
+  margin-top: var(--space-xs);
+}
 
 /* ── Team Photo (individual team pages) ───────────────────── */
 .team-photo-wrapper {

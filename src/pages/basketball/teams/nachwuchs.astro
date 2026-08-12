@@ -122,6 +122,9 @@ const GROUPS = [
   />
 
   <script src="../../../islands/scroll-animations.ts"></script>
+  <!-- Eligible Jahrgänge, recomputed live: the categories shift on 1 August and
+       no rebuild is triggered by a date alone. -->
+  <script is:inline src="/js/birth-years.js"></script>
   <!-- Live open/waiting-list status — overrides the build-time render so
        open_for_players + waitlist_url changes appear without a site rebuild. -->
   <script is:inline src="/js/youth-status.js"></script>

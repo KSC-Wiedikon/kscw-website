@@ -137,6 +137,63 @@ export function cardTitle(liveName: string | null | undefined, code: string): st
   return name.replace(/\s+/g, '').toUpperCase() === code.toUpperCase() ? null : name
 }
 
+/** "DU18" → { gender: 'D', age: 18 }; anything else → null. */
+function parseCode(code: string | null | undefined): { gender: string; age: number } | null {
+  const m = /^([HDM])U0*(\d+)$/.exec((code ?? '').toUpperCase())
+  return m ? { gender: m[1], age: Number(m[2]) } : null
+}
+
+/**
+ * The lowest age group a card's Jahrgänge cover — its own group, unless the club
+ * runs no team one step down that those players could actually join.
+ *
+ * 2026/27 has no U16 girls' squad, so the two U18 girls' teams take the U16
+ * players as well and their card reads 2009–2012 rather than 2009 + 2010. That is
+ * what the club tells parents, and it is not a fact about U18: it is a fact about
+ * this season's roster, which is why it is derived from Directus instead of
+ * written down. A DU16 team appearing next season narrows the card by itself.
+ *
+ * "Could join" is per gender, and Mixed counts for both ways round: HU12 stops at
+ * its own two years because MU10 exists even though the club runs no HU10, and a
+ * Mixed group is only covered when both halves have somewhere to go.
+ *
+ * The ladder walked is the set of ages Directus actually holds, not a fixed
+ * two-year step, so a season running U17 instead of U16 still lines up. It also
+ * means an age group the club runs for NO gender drops out of the ladder entirely
+ * and widens nothing: that says nothing about who took those players on, and the
+ * case this exists for is the one the club is actually in — the group exists (HU16
+ * does) but not for these players (no DU16). Same reason no live data at all
+ * (Directus unreachable → the fallback card) leaves every card at its own two
+ * Jahrgänge: understating the range beats claiming a year nobody is eligible for.
+ *
+ * @param presentCodes every age-group code Directus has an active team for
+ * @returns the lowest covered U-number, or null when `code` is not a group code
+ */
+export function groupSpanTo(code: string, presentCodes: string[]): number | null {
+  const self = parseCode(code)
+  if (!self) return null
+
+  const present = presentCodes
+    .map(parseCode)
+    .filter((p): p is { gender: string; age: number } => !!p)
+
+  const gendersAt = (age: number) => new Set(present.filter(p => p.age === age).map(p => p.gender))
+  const covered = (age: number) => {
+    const g = gendersAt(age)
+    if (g.has('M')) return true                              // Mixed takes everyone
+    if (self.gender === 'M') return g.has('D') && g.has('H')  // both halves have a home
+    return g.has(self.gender)
+  }
+
+  let lowest = self.age
+  for (const age of [...new Set(present.map(p => p.age))].sort((a, b) => b - a)) {
+    if (age >= self.age) continue
+    if (covered(age)) break
+    lowest = age
+  }
+  return lowest
+}
+
 /**
  * True while a slot is still worth showing. hall_slots never deletes finished
  * seasons — the 2025/26 rows (valid_until 2026-06-27) sat in the collection

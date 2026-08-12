@@ -2,6 +2,15 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.19.0] — 2026-08-12
+
+### Jedes Nachwuchsteam sagt jetzt, welche Jahrgänge mitspielen können
+- Auf jeder Nachwuchs-Karte steht neu die **Jahrgangs-Zeile** — Basketball U18 «Jahrgänge: 2009, 2010» bis U8 «Jahrgänge: 2019, 2020». Die Frage, die Eltern zuerst stellen, stand bisher nirgends auf der Website.
+- Die Zeile **rechnet sich selber weiter**: am **1. August** verschiebt sich jede Kategorie um ein Jahr, und zwar auch dann, wenn die Website in dem Moment gar nicht neu gebaut wird. Sie muss also nie jemand nachtragen.
+- Bei den **U18-Mädchen steht 2009–2012**, weil es diese Saison kein U16-Mädchenteam gibt und die beiden U18-Teams diese Jahrgänge mittragen. Das ist keine Eigenheit von U18, sondern eine des aktuellen Kaders — die Zeile liest den Kader aus Directus, und sobald es wieder ein U16-Mädchenteam gibt, wird sie von selbst wieder schmaler.
+- **Volleyball rechnet eine Jahrgangsgrenze anders als Basketball**: Swiss Volley zählt vom zweiten Kalenderjahr der Saison, Swiss Basketball vom ersten, weshalb dieselbe U-Zahl in den beiden Sportarten ein Jahr auseinanderliegt. Swiss Volley setzt zudem **keine untere Grenze** — ein U20-Team spielt tatsächlich mit 15-Jährigen. Darum steht dort «Jahrgang: 2008 und jünger» statt zwei Jahrgängen.
+- Zu sehen auf **Basketball → Nachwuchs**, bei den Nachwuchs-Karten auf der **Volleyball**-Seite und auf den Teamseiten von **DU23, HU23 und HU20**. Auf Deutsch und Englisch.
+
 ## [1.18.0] — 2026-08-11
 
 ### Texte auf der Website lassen sich jetzt selber ändern

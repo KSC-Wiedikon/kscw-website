@@ -9,6 +9,8 @@
 // prunes the line once that day passes, because nothing rebuilds the site on a
 // date alone (the Directus auto-rebuild Flow only fires on content edits).
 import { DEFAULT_WAITLIST_URL, type YouthTeamInfo } from '../lib/fetch/youthBasketball'
+import { youthAge } from '../lib/birthYears'
+import BirthYears from './BirthYears.astro'
 import { safeHref } from '../lib/safeHref'
 // This component has no locale prop — like every page it renders the German build
 // output, and the data-i18n keys let the client swap to English. The labels come
@@ -20,10 +22,16 @@ interface Props {
   code: string
   /** null when Directus was unreachable — renders the bare fallback card. */
   team: YouthTeamInfo | null
+  /** Lowest age group this card's Jahrgänge cover — see groupSpanTo(). */
+  spanTo?: number | null
 }
 
-const { code, team } = Astro.props
+const { code, team, spanTo } = Astro.props
 const info: YouthTeamInfo = team ?? { coaches: [], slots: [] }
+
+// Eligible Jahrgänge, read off the card's own age-group code. Every card here is
+// a [DHM]U<n> group, so this is only null if a non-group code ever reached it.
+const age = youthAge(code)
 
 // Full team → show a waiting-list button. A custom label (from Directus) is
 // rendered verbatim; an empty label falls back to the i18n "Warteliste" key so
@@ -94,6 +102,7 @@ const closedBadge = splitByGender
 const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
 ---
 <div class="youth-meta" data-team-code={code} data-team-name={info.name}>
+  {age !== null && <BirthYears sport="basketball" age={age} spanTo={spanTo} />}
   {info.slots.length > 0 && (
     <>
       <span class="youth-meta-label"><strong data-i18n="bbTrainingLabel">{t('de', 'bbTrainingLabel')}</strong></span>
@@ -180,6 +189,15 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
      `.youth-meta` to keep specificity (and to win over the generic
      `.youth-meta span` colour/display rule above). -->
 <style is:global>
+  /* The Jahrgänge line is rendered by BirthYears.astro, so it carries THAT
+     component's scope — the `.youth-meta > span` colour rule above cannot reach
+     it, and it would otherwise sit on the card in the default body colour while
+     the training and coach lines next to it are muted. Its layout lives in
+     global.css; only the colour is set here, because the same line also renders on
+     the blue team hero, where it has to inherit white instead. */
+  .youth-meta .birth-years { color: var(--text-secondary); }
+  .youth-meta .birth-years strong { color: var(--text-primary); }
+
   .youth-meta .youth-waitlist {
     display: flex;
     flex-direction: row;

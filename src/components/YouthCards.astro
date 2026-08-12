@@ -11,7 +11,7 @@
 // falls back to its own static card so the page still lists the team (the
 // instant-paint / no-JS contract the rest of the page keeps). An age group that
 // Directus simply has no team for renders nothing.
-import type { YouthBasketball } from '../lib/fetch/youthBasketball'
+import { groupSpanTo, type YouthBasketball } from '../lib/fetch/youthBasketball'
 import YouthMeta from './YouthMeta.astro'
 import YouthTitle from './YouthTitle.astro'
 
@@ -35,6 +35,12 @@ const teams = data[code] ?? []
 const offline = Object.keys(data).length === 0
 // `null` = render the static fallback card (Directus unreachable).
 const cards: Array<(typeof teams)[number] | null> = teams.length ? teams : offline ? [null] : []
+
+// Whether this card's Jahrgänge also cover the age group below it — the case the
+// club is in whenever it runs no team one step down (no U16 girls in 2026/27, so
+// the U18 girls' cards read 2009–2012). Needs the whole roster, which is why it
+// is resolved here and handed to YouthMeta rather than looked up there.
+const spanTo = groupSpanTo(code, Object.keys(data))
 ---
 {cards.map((team, i) => (
   <div class="youth-card" id={i === 0 ? anchor : undefined}>
@@ -44,7 +50,7 @@ const cards: Array<(typeof teams)[number] | null> = teams.length ? teams : offli
       </span>
       <YouthTitle code={code} team={team} fallbackKey={titleKey} fallback={title} />
     </div>
-    <YouthMeta code={code} team={team} />
+    <YouthMeta code={code} team={team} spanTo={spanTo} />
   </div>
 ))}
 

@@ -142,7 +142,14 @@ const locale = 'de';
       <div class="changelog-section">
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
-          {t(locale, 'changelogTitle')}
+          {/* The key sits on a SPAN, not on the <h2>. applyTranslations() writes
+              textContent, which on the heading would delete the lucide icon and the
+              version badge either side of it. Without the key at all — the state
+              this page was in — the English block below rendered t('de', …), so
+              every English visitor read "WAS IST NEU" above 600 lines of English
+              changelog, permanently: no data-i18n meant the engine could never
+              repair it. */}
+          <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
           <span class="changelog-badge">v1.19.0</span>
         </h2>
 
@@ -764,7 +771,14 @@ const locale = 'de';
       <div class="changelog-section">
         <h2 class="changelog-heading">
           <i data-lucide="scroll-text"></i>
-          {t(locale, 'changelogTitle')}
+          {/* The key sits on a SPAN, not on the <h2>. applyTranslations() writes
+              textContent, which on the heading would delete the lucide icon and the
+              version badge either side of it. Without the key at all — the state
+              this page was in — the English block below rendered t('de', …), so
+              every English visitor read "WAS IST NEU" above 600 lines of English
+              changelog, permanently: no data-i18n meant the engine could never
+              repair it. */}
+          <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
           <span class="changelog-badge">v1.19.0</span>
         </h2>
 

@@ -1,0 +1,34 @@
+---
+// The team photo of a detail page, rendered at BUILD time — the LCP element on most
+// team pages, and previously absent from the HTML entirely.
+//
+// public/js/team-page.js's renderTeamPhoto() bails out when a `.team-photo` is
+// already in the document, so this one stays and the client never re-inserts it.
+// That guard already existed; renderHero() had no equivalent, which is why the hero
+// needed a fix and this did not.
+import type { TeamDetail } from '../lib/fetch/teamDetail'
+import { teamPhotoUrl } from '../lib/fetch/teamDetail'
+import { t } from '../lib/i18n'
+
+interface Props {
+  /** null when Directus was unreachable at build time — renders nothing. */
+  team: TeamDetail | null
+}
+
+const { team } = Astro.props
+---
+{team && team.picture && (
+  <div class="team-photo-wrapper">
+    {/* Not lazy: this is above the fold and is the LCP element on most team
+        pages. renderTeamPhoto() in team-page.js bails out when a .team-photo is
+        already present, so this one stays and the client never re-inserts it. */}
+    <img
+      src={teamPhotoUrl(team.picture)}
+      alt={`${t('de', 'teamPhoto')} ${team.name}`}
+      class="team-photo"
+      width="1280"
+      height="720"
+      decoding="async"
+    />
+  </div>
+)}

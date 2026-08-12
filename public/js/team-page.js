@@ -65,6 +65,13 @@
     var container = document.getElementById('team-hero-container');
     if (!container) return;
 
+    // ⚠ REPLACE, never append. The container now ships with a build-time hero
+    // (src/components/TeamHero.astro) so the page is a real team page on first paint
+    // instead of an empty box that drops in a round trip later — a measured CLS of
+    // 0.633 on /volleyball/hu20. Appending would stack the live hero under the built
+    // one. Keep the two markups in step: they are meant to swap invisibly.
+    container.textContent = '';
+
     // Always use KSCW brand blue for team hero
     var color = 'var(--kscw-blue)';
 

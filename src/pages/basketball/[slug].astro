@@ -2,6 +2,9 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { basketballTeams } from '../../data/team-routes';
 import { t } from '../../lib/i18n';
+import TeamHero from '../../components/TeamHero.astro';
+import TeamPhoto from '../../components/TeamPhoto.astro';
+import { getTeamDetail } from '../../lib/fetch/teamDetail';
 import { versionedAsset } from '../../lib/assetVersion';
 
 const locale = 'de';
@@ -14,13 +17,17 @@ export function getStaticPaths() {
 }
 
 const { directusId, short } = Astro.props;
+// Build-time hero + photo, so the page is a real team page on first paint and
+// without JS. team-page.js replaces this with live Directus data on load.
+const detail = await getTeamDetail(directusId);
 ---
 <BaseLayout title={`${short} — KSC Wiedikon`} locale={locale}>
-  <!-- Hero: rendered by JS -->
-  <section id="team-hero-container"></section>
+  <!-- Hero + photo: rendered at BUILD time, then replaced by team-page.js with
+       live Directus data. Both containers stay, because that is what the client
+       renderers target. -->
+  <section id="team-hero-container"><TeamHero team={detail} sport="basketball" /></section>
 
-  <!-- Team photo: rendered by JS -->
-  <div id="team-photo-container"></div>
+  <div id="team-photo-container"><TeamPhoto team={detail} /></div>
 
   <!-- Content tabs -->
   <section class="section">

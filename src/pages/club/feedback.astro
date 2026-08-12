@@ -150,8 +150,35 @@ const locale = 'de';
               changelog, permanently: no data-i18n meant the engine could never
               repair it. */}
           <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
-          <span class="changelog-badge">v1.19.0</span>
+          <span class="changelog-badge">v1.20.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.20.0 — 2026-08-12</div>
+          <div class="changelog-group">
+            <h3>Die Seite lädt nicht mehr zuerst auf Deutsch und springt dann auf Englisch</h3>
+            <ul>
+              <li>Wer die Website auf <strong>Englisch</strong> liest, bekam zuerst die <strong>fertige deutsche Seite</strong> zu sehen und erst danach die Übersetzung. Nicht den Bruchteil einer Sekunde, wie es auf einer schnellen Leitung aussieht: gemessen <strong>1,7 bis 2,7 Sekunden</strong> bei normaler Mobilverbindung. Auf der Startseite ist die deutsche Fassung jetzt in keinem einzigen Bild mehr zu sehen, auf den übrigen Seiten bleiben rund 0,25 Sekunden</li>
+              <li>Der Grund war die Reihenfolge, nicht die Geschwindigkeit: die Übersetzungsdatei wurde erst angefordert, wenn die <strong>ganze Seite</strong> fertig geladen war — inklusive einer 398 KB grossen Icon-Datei. Sie wird jetzt als Erstes angefordert</li>
+              <li>Drei Texte waren <strong>dauerhaft</strong> falsch, nicht nur kurz: hier auf Feedback stand «WAS IST NEU» über dem englischen Änderungsprotokoll, und die Spieltabellen auf der Startseite blieben in jeder Sprache deutsch («Laden…», «Keine Spiele gefunden.»)</li>
+              <li>«<strong>Keine News vorhanden.</strong>» stand auf der Startseite und auf News, solange die News noch geladen wurden — eine Aussage, die in dem Moment niemand kennen konnte. Sie erscheint jetzt nur, wenn es wirklich keine gibt</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Teamseiten sind sofort da, statt zu springen</h3>
+            <ul>
+              <li>Die Teamseiten (z. B. <strong>Damen 1</strong>, <strong>HU20</strong>) waren im ersten Moment <strong>leer</strong> und füllten sich erst, wenn die Daten eintrafen — Titel, Liga und Mannschaftsfoto sprangen dabei unter der Leserin weg. Das war der mit Abstand grösste Sprung auf der ganzen Website. Titel, Liga, Saison, Jahrgänge und Foto sind jetzt von Anfang an da, auch ohne JavaScript</li>
+              <li>Der <strong>Sprachumschalter</strong> hat auf Teamseiten bisher die halbe Seite geleert und alles neu geladen — Foto inklusive. Jetzt werden nur die Bezeichnungen ausgetauscht</li>
+              <li><strong>Spielplan, Kader, Rangliste und Kurse</strong> werden jetzt gleichzeitig mit den Übersetzungen geladen statt danach. Beim Kalender waren es sogar drei Ladevorgänge hintereinander</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Schrift und Icons kommen nicht mehr von Google</h3>
+            <ul>
+              <li>Die Schrift <strong>Inter</strong> wird jetzt vom eigenen Server geliefert statt über zwei Umwege zu Google. Damit verschwindet das Umbrechen des Textes bei jedem ersten Besuch — der einzige dieser Sprünge, den auch deutschsprachige Besucher gesehen haben</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.19.0 — 2026-08-12</div>
@@ -779,8 +806,35 @@ const locale = 'de';
               changelog, permanently: no data-i18n meant the engine could never
               repair it. */}
           <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
-          <span class="changelog-badge">v1.19.0</span>
+          <span class="changelog-badge">v1.20.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.20.0 — 2026-08-12</div>
+          <div class="changelog-group">
+            <h3>The page no longer loads in German and then jumps to English</h3>
+            <ul>
+              <li>Reading the site in <strong>English</strong> meant seeing the <strong>finished German page</strong> first and the translation only afterwards. Not the split second it looks like on a fast connection: measured at <strong>1.7 to 2.7 seconds</strong> on a normal mobile link. On the home page the German version is now not visible in a single frame; elsewhere about 0.25 seconds remain</li>
+              <li>The cause was ordering, not speed: the translation file was not requested until the <strong>whole page</strong> had loaded — including a 398 KB icon bundle. It is now the very first thing requested</li>
+              <li>Three texts were <strong>permanently</strong> wrong rather than briefly: this Feedback page said "WAS IST NEU" above the English changelog, and the home page's game tables stayed German in every language ("Laden…", "Keine Spiele gefunden.")</li>
+              <li>"<strong>No news available.</strong>" appeared on the home page and on News while the news was still loading — a claim nobody could know at that moment. It now shows only when there genuinely is none</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Team pages are there immediately instead of jumping</h3>
+            <ul>
+              <li>Team pages (<strong>Damen 1</strong>, <strong>HU20</strong> and the rest) started out <strong>empty</strong> and filled in once the data arrived — the title, league and team photo moved out from under the reader. It was by far the largest shift on the site. Title, league, season, birth years and photo are now there from the start, even without JavaScript</li>
+              <li>The <strong>language switch</strong> used to empty half of a team page and reload everything, photo included. Now only the labels change</li>
+              <li><strong>Fixtures, rosters, standings and courses</strong> are now loaded at the same time as the translations rather than after them. The calendar was doing three loads one after another</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Fonts and icons no longer come from Google</h3>
+            <ul>
+              <li>The <strong>Inter</strong> typeface is now served from our own server instead of via two detours to Google. That removes the text re-flow on every first visit — the one shift German-speaking visitors saw as well</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.19.0 — 2026-08-12</div>

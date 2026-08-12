@@ -796,7 +796,12 @@ import '../styles/global.css';
       if (!slugs.length) return Promise.resolve([]);
       return Promise.all(slugs.map(function(slug) {
         return wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(slug) + '/closes', {
-          method: 'PUT',
+          // PATCH, not PUT: Directus's CORS preflight allows GET,POST,PATCH,DELETE
+          // only, so the PUT this used to send never reached the endpoint. The
+          // failure was invisible because the push degrades to a warning on an
+          // already-saved course — so the form kept accepting late sign-ups while
+          // the website card showed as closed.
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ closes_at: closesISO }),
         }).then(function(res) { return res.ok ? null : slug; })

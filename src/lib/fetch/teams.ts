@@ -63,7 +63,21 @@ async function fetchActiveTeams(): Promise<Team[]> {
           : d.teamName ? (d.sport === t.sport && d.teamName === t.name)
             : d.directusId === String(t.id),
       )
-      if (!def) return null
+      if (!def) {
+        // ⚠ Silent drop. This is how DU20 (the girls' U20 volleyball squad) and both
+        // Classics teams stayed invisible on the whole site — no nav entry, no card,
+        // no detail page, and nothing anywhere to say so. A team the club adds in
+        // Directus simply never appears until someone hand-writes a def below.
+        //
+        // The warning does not fix that, but it turns a silent omission into a line
+        // in the build log, which is what makes the next one findable.
+        console.warn(
+          `[teams] live team has no def in src/data/teams.ts and was DROPPED — `
+          + `id=${t.id} team_id=${t.team_id ?? '—'} sport=${t.sport} name="${t.name}". `
+          + `It will not appear anywhere on the site until a TeamDef is added.`,
+        )
+        return null
+      }
       const live = !!def.teamName || def.useLiveName === true
       return {
         ...def,

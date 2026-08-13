@@ -63,11 +63,21 @@ describe('no i18n value is ever treated as HTML', () => {
     // kalender.astro embeds an application/json <script>, escaping <, > and &
     // before they reach the page — a data island, not rendered markup. Any new
     // set:html is a deliberate decision that must be argued for here.
+    //
+    // faq.astro (added 2026-08-13) is the second and applies the identical escaping to
+    // an application/ld+json FAQPage island. The argument: structured data has to be
+    // ONE serialized blob, so there is no element-per-value form to fall back on, and
+    // its content is the same dictionary strings the page already renders — built from
+    // the same keys precisely so the markup and the structured data cannot disagree.
+    // The \uXXXX escaping is what makes it a data island rather than an HTML sink.
     const offenders = walk(resolve(ROOT, 'src'), ['.astro'])
       .filter((f) => readFileSync(f, 'utf8').includes('set:html'))
       .map((f) => relative(ROOT, f));
 
-    expect(offenders).toEqual([join('src', 'pages', 'weiteres', 'kalender.astro')]);
+    expect(offenders).toEqual([
+      join('src', 'pages', 'weiteres', 'faq.astro'),
+      join('src', 'pages', 'weiteres', 'kalender.astro'),
+    ]);
   });
 });
 

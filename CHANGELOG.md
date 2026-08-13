@@ -2,6 +2,14 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.23.0] — 2026-08-13
+
+### Neu: eine Seite mit häufigen Fragen
+- Die Website beantwortete nirgends die Fragen, die einen Interessierten tatsächlich aufhalten. Neu gibt es **/weiteres/faq** mit neun Antworten: Probetraining, Anmeldung, Beiträge, Gastspieler, Schreiberpflicht, Trainingszeiten sowie Volleyball und Basketball für Kinder.
+- Die Seite ist im Fussmenü verlinkt, von der Mitgliedschaftsseite aus erreichbar und über die Suche auffindbar. Für Google und KI-Antwortdienste ist sie zusätzlich als **FAQ ausgezeichnet**.
+- **Bewusst noch nicht beantwortet**, weil nur der Vorstand es entscheiden kann: ob Anfänger:innen ohne Vereinserfahrung aufgenommen werden, in welcher Sprache trainiert wird, ob ein Einstieg mitten in der Saison möglich ist und welche Kündigungsfrist gilt. Sobald das geklärt ist, kommen die Antworten dazu.
+- Die Beiträge stehen **absichtlich nicht** auf der FAQ-Seite, sondern nur auf der Mitgliedschaftsseite — doppelt gepflegte Zahlen laufen früher oder später auseinander.
+
 ## [1.22.0] — 2026-08-13
 
 ### Die Suche findet endlich die Teams

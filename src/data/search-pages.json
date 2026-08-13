@@ -102,6 +102,13 @@
     "section": "navMore"
   },
   {
+    "url": "/weiteres/faq",
+    "titleKey": "weiteresFaqMetaTitle",
+    "descKey": "weiteresFaqMetaDescription",
+    "keywords": "faq fragen antworten häufige fragen probetraining schnuppern kosten beitrag alter jahrgang gast anfänger questions answers trial fees age guest",
+    "section": ""
+  },
+  {
     "url": "/weiteres/impressum",
     "titleKey": "weiteresImpressumMetaTitle",
     "descKey": "weiteresImpressumMetaDescription",

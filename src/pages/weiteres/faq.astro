@@ -1,0 +1,143 @@
+---
+/**
+ * FAQ.
+ *
+ * The site had no FAQ of any kind, so every objection that stops a prospective member
+ * — can I try first, what does it cost, how old must my child be, when is training —
+ * had to be assembled from three separate pages, or went unanswered.
+ *
+ * ⚠ Every answer here is provable from this repo. Fees are deliberately NOT repeated:
+ * they live on /weiteres/mitgliedschaft and duplicating them would create a second
+ * copy to drift out of date, which is the exact class of bug that put three teams and
+ * a wrong nav label on the live site. Questions that need a decision from the Vorstand
+ * (beginners policy, training language, mid-season joining, notice period for leaving,
+ * J+S status) are deliberately ABSENT rather than answered speculatively.
+ */
+import PageLayout from '../../layouts/PageLayout.astro';
+import { t } from '../../lib/i18n';
+
+const locale = 'de';
+
+const faqs = [
+  { q: 'faqTrialQ', a: 'faqTrialA', href: '/club/kontakt', cta: 'faqLinkContact' },
+  { q: 'faqSignupQ', a: 'faqSignupA', href: '/weiteres/anmeldung', cta: 'faqLinkRegister' },
+  { q: 'faqCostQ', a: 'faqCostA', href: '/weiteres/mitgliedschaft', cta: 'faqLinkFees' },
+  { q: 'faqGuestQ', a: 'faqGuestA', href: '/weiteres/mitgliedschaft', cta: 'faqLinkFees' },
+  { q: 'faqScorerQ', a: 'faqScorerA', href: '/weiteres/schreiberkurse', cta: 'faqLinkScorer' },
+  { q: 'faqTrainingTimesQ', a: 'faqTrainingTimesA', href: '/volleyball', cta: 'faqLinkTeams' },
+  { q: 'faqVolleyKidsQ', a: 'faqVolleyKidsA', href: '/basketball/teams/nachwuchs', cta: 'faqLinkYouth' },
+  { q: 'faqBasketAgeQ', a: 'faqBasketAgeA', href: '/basketball/teams/nachwuchs', cta: 'faqLinkYouth' },
+  { q: 'faqMoreQ', a: 'faqMoreA', href: '/club/kontakt', cta: 'faqLinkContact' },
+] as const;
+
+/**
+ * FAQPage structured data, built from the same keys the page renders so the two can
+ * never disagree. German only and emitted at build time on purpose: search engines and
+ * answer engines read the raw HTML without running the client-side language swap.
+ */
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((item) => ({
+    '@type': 'Question',
+    name: t(locale, item.q),
+    acceptedAnswer: { '@type': 'Answer', text: t(locale, item.a) },
+  })),
+};
+---
+<PageLayout
+  title="Häufige Fragen — KSC Wiedikon"
+  titleKey="weiteresFaqMetaTitle"
+  description="Probetraining, Beiträge, Alter, Trainingszeiten und Anmeldung — die häufigsten Fragen an den KSC Wiedikon, kurz beantwortet."
+  descriptionKey="weiteresFaqMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'faqTitle')}
+  pageTitleKey="faqTitle"
+  pageSubtitle={t(locale, 'faqSubtitle')}
+  pageSubtitleKey="faqSubtitle"
+>
+  {/* Escape <, > and & to \uXXXX before they reach the page, exactly as the calendar
+      data island does, so a question or answer containing "</script>" cannot break
+      out. These strings are admin-editable via /admin → Seitentexte — that path
+      already refuses markup, but this is the layer that must not depend on it.
+      JSON.parse (and every structured-data crawler) decodes them transparently. */}
+  <script
+    type="application/ld+json"
+    set:html={JSON.stringify(jsonLd).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')}
+    is:inline
+  />
+
+  <section class="section">
+    <div class="container">
+      <p class="faq-intro" data-i18n="faqIntro">{t(locale, 'faqIntro')}</p>
+
+      <div class="faq-list">
+        {faqs.map((item) => (
+          <details class="faq-item">
+            <summary data-i18n={item.q}>{t(locale, item.q)}</summary>
+            <div class="faq-answer">
+              <p data-i18n={item.a}>{t(locale, item.a)}</p>
+              <a href={item.href} class="faq-link" data-i18n={item.cta}>{t(locale, item.cta)}</a>
+            </div>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .faq-intro {
+    max-width: 60ch;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-xl);
+  }
+  .faq-list {
+    max-width: 760px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  .faq-item {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-white);
+  }
+  .faq-item summary {
+    cursor: pointer;
+    /* 44px floor, same as the rest of the design system. */
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+    list-style: none;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary::before {
+    content: '+';
+    font-variant-numeric: tabular-nums;
+    color: var(--accent-text);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .faq-item[open] summary::before { content: '−'; }
+  .faq-item[open] summary { border-bottom: 1px solid var(--border); }
+  .faq-answer {
+    padding: var(--space-md) var(--space-lg) var(--space-lg);
+  }
+  .faq-answer p {
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin: 0 0 var(--space-md);
+    max-width: 68ch;
+  }
+  .faq-link {
+    color: var(--accent-text);
+    font-weight: 600;
+    font-size: var(--text-sm);
+  }
+  .faq-link:hover { text-decoration: underline; }
+</style>

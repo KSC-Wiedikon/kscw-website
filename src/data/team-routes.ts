@@ -18,6 +18,7 @@ export const volleyballTeams: TeamRoute[] = [
   { slug: 'du23-2', directusId: '10', short: 'DU23-2', sport: 'volleyball' },
   { slug: 'hu23', directusId: '8', short: 'HU23', sport: 'volleyball' },
   { slug: 'hu20', directusId: '12', short: 'HU20', sport: 'volleyball' },
+  { slug: 'du20', directusId: '68', short: 'DU20', sport: 'volleyball' },
 ];
 
 export const basketballTeams: TeamRoute[] = [
@@ -26,6 +27,8 @@ export const basketballTeams: TeamRoute[] = [
   { slug: 'h4', directusId: '22', short: 'BB-H4', sport: 'basketball' },
   { slug: 'lions', directusId: '27', short: 'BB-Lions D1', sport: 'basketball' },
   { slug: 'rhinos', directusId: '30', short: 'BB-Rhinos D3', sport: 'basketball' },
+  { slug: 'h-classics', directusId: '74', short: 'BB-H-Classics', sport: 'basketball' },
+  { slug: 'd-classics', directusId: '69', short: 'BB-D-Classics', sport: 'basketball' },
 ];
 
 export const allTeams = [...volleyballTeams, ...basketballTeams];

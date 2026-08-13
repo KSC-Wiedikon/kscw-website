@@ -204,6 +204,16 @@ const volleyballYouth: TeamDef[] = [
     chipBg: '#93c5fd', chipText: '#1e3a8a',
     hasDetailPage: true, fallbackLeague: 'HU20',
   },
+  {
+    // Girls' U20. Active in Directus (vb_00001) but had NO def here, so
+    // lib/fetch/teams.ts dropped it on every build — it appeared nowhere on the
+    // site: not in the nav, not on /volleyball, no detail page. Rose-pink to match
+    // the other Damen youth squads.
+    directusId: '68', teamName: 'DU20', slug: 'du20', sport: 'volleyball', category: 'youth',
+    chipLabel: 'DU20', displayName: 'Damen U20', order: 5,
+    chipBg: '#fda4af', chipText: '#881337',
+    hasDetailPage: true, fallbackLeague: 'DU20',
+  },
 ];
 
 // ─── Basketball Teams ──────────────────────────────────────────────
@@ -220,6 +230,14 @@ const basketballWomen: TeamDef[] = [
     chipLabel: 'Rhinos', displayName: 'Rhinos', order: 2,
     chipBg: '#059669', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'D3LR',
+  },
+  {
+    // Veterans. Same silent-drop story as H-Classics; colours already existed as
+    // 'BB-D-Classics'.
+    directusId: '69', team_id: 'bb_4934', slug: 'd-classics', sport: 'basketball', category: 'women',
+    chipLabel: 'BB-D-Classics', displayName: 'D-Classics', order: 3,
+    chipBg: '#581c87', chipText: '#ffffff',
+    hasDetailPage: true, fallbackLeague: 'D-Classics', useLiveName: true,
   },
 ];
 
@@ -248,6 +266,14 @@ const basketballMen: TeamDef[] = [
     chipLabel: 'BB-H4', displayName: 'Herren 4', order: 3,
     chipBg: '#ea580c', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'H4LZ', useLiveName: true,
+  },
+  {
+    // Veterans. Active in Directus but had no def, so it was dropped silently on
+    // every build. Colours already existed in team-colors.ts as 'BB-H-Classics'.
+    directusId: '74', team_id: 'bb_4935', slug: 'h-classics', sport: 'basketball', category: 'men',
+    chipLabel: 'BB-H-Classics', displayName: 'H-Classics', order: 4,
+    chipBg: '#78350f', chipText: '#ffffff',
+    hasDetailPage: true, fallbackLeague: 'H-Classics', useLiveName: true,
   },
 ];
 

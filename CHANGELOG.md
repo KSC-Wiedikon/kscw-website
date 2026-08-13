@@ -2,6 +2,18 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.21.1] — 2026-08-13
+
+### Drei Teams waren auf der Website unsichtbar
+- **DU20** (Volleyball, Mädchen U20) sowie **H-Classics** und **D-Classics** (Basketball) sind in Directus aktiv, tauchten aber **nirgends** auf der Website auf — nicht im Menü, nicht auf den Sportseiten, ohne eigene Teamseite. Sie fehlten in einer Zuordnungstabelle im Code, und wer dort fehlt, wird beim Bauen der Seite **kommentarlos weggelassen**. Jetzt sind alle drei da, inklusive Teamseite.
+- Damit das nicht wieder unbemerkt passiert: Ein neu in Directus angelegtes Team, das noch keine Zuordnung hat, erzeugt jetzt eine **Warnung im Bauprotokoll** statt still zu verschwinden.
+
+### Basketball-Menü stimmt wieder mit den Teamseiten überein
+- Drei von fünf Einträgen im Basketball-Menü nannten **andere Teams als die Seiten, auf die sie führten** — «Herren 3» führte zu «Herren 2», «Herren 4» zu «Unicorns Herren 3», und Rhinos war als «2. Liga» angeschrieben statt als 3. Liga. Das Menü holt die Namen jetzt direkt aus Directus, wie das Volleyball-Menü schon lange.
+
+### Datenschutz
+- Der Auftragsbearbeitungsvertrag mit **Cloudflare** ist jetzt genannt — er ist Bestandteil der Nutzungsbedingungen, was im Cloudflare-Konto bestätigt ist.
+
 ## [1.21.0] — 2026-08-13
 
 ### Falsche Adressen zeigen nicht mehr einfach die Startseite

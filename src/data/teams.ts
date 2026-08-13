@@ -92,6 +92,16 @@ export function getBadgeText(league: string, teamName: string): string {
   // API publishes the long-form league for the season.
   const terse = league.match(/^(\d+)L$/);
   if (terse) return `${terse[1]}. Liga`;
+  // ProBasket federation codes: gender letter, league number, then a region suffix —
+  // H1LRA, H3LS, H4LZ, D1LRA, D3LR. Nothing here handled them, so the fallthrough
+  // below printed the raw code and a visitor could not tell a first-league squad
+  // from a fourth. Youth codes (DU12Tu, MixU10M, HU 18B) never reach this line: the
+  // U-level match on the team NAME above catches them, and none of them has a digit
+  // immediately after the leading letter anyway.
+  const bbLeague = league.match(/^[DHM](\d+)L/);
+  if (bbLeague) return `${bbLeague[1]}. Liga`;
+  // The veterans' category, which ProBasket writes as "D-Classics" / "H-Classics".
+  if (/^[DHM]-Classics$/i.test(league)) return 'Classics';
   return league;
 }
 

@@ -124,7 +124,7 @@ const locale = 'de';
             </div>
 
             <!-- Feedback message -->
-            <div id="form-feedback" class="form-feedback" hidden></div>
+            <div id="form-feedback" class="form-feedback" role="status" aria-live="polite" hidden></div>
           </form>
 
           <!-- Wiedisync cross-link -->
@@ -150,8 +150,60 @@ const locale = 'de';
               changelog, permanently: no data-i18n meant the engine could never
               repair it. */}
           <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
-          <span class="changelog-badge">v1.20.0</span>
+          <span class="changelog-badge">v1.21.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.21.0 — 2026-08-13</div>
+          <div class="changelog-group">
+            <h3>Falsche Adressen zeigen nicht mehr einfach die Startseite</h3>
+            <ul>
+              <li>Wer sich vertippt hat oder einem alten Link folgte, landete <strong>wortlos auf der Startseite</strong> — die Seite meldete dem Browser sogar «alles in Ordnung». Das betraf auch echte, früher existierende Seiten: Teamseiten wechseln bei jedem Saisonwechsel im Juni, und jeder Link auf ein altes Team führte still auf die Startseite. Neu gibt es eine richtige <strong>«Seite nicht gefunden»-Seite</strong> mit Wegweisern zu Volleyball, Basketball, Startseite und Kontakt</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Das Vereinswappen ist wieder das Vereinswappen</h3>
+            <ul>
+              <li>Das kleine Symbol im Browser-Tab war seit dem allerersten Tag das <strong>Logo des verwendeten Programmier-Werkzeugs</strong>, nicht das KSCW-Wappen. Jetzt kommt das Wappen — zusätzlich als App-Symbol für «Zum Startbildschirm hinzufügen»</li>
+              <li>Wer einen Link zu kscw.ch in <strong>WhatsApp, Instagram oder Facebook</strong> teilt, bekam eine <strong>graue Kachel ohne Bild</strong>. Neu erscheint das Vereinswappen als Vorschaubild</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Die Datenschutzerklärung stimmt wieder</h3>
+            <ul>
+              <li>Impressum und Datenschutz nannten <strong>Hetzner</strong> als Hoster. Die Website läuft auf <strong>Cloudflare</strong> — eine Auskunftsanfrage wäre an eine Firma gegangen, die gar nichts über einen weiss. Korrigiert; Hetzner bleibt, richtig benannt als Standort der Vereinsdatenbank</li>
+              <li>Neu beschrieben: der <strong>Spam-Schutz der Formulare</strong>, der <strong>Newsletter</strong> und die <strong>Vereinsanmeldung</strong> — letztere sammelt AHV-Nummer, Zahlungsverbindung und teils ein Ausweisdokument und stand bisher überhaupt nicht in der Erklärung</li>
+              <li>Der Cookie-Abschnitt beschrieb Cookies, die es gar nicht gibt. Die Website setzt <strong>keine Cookies</strong> und verwendet <strong>keine Statistik-Werkzeuge</strong>; gespeichert werden nur Farbschema, Sprache und Kaderansicht. Deshalb braucht sie <strong>kein Cookie-Banner</strong> — das steht jetzt auch so da. Die Erklärung trägt neu ein Datum</li>
+              <li><strong>Instagram-Feeds</strong> auf Teamseiten wurden sofort geladen, obwohl die Datenschutzerklärung ausdrücklich das Gegenteil versprach. Jetzt wird erst nach Zustimmung geladen</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Teamseiten sagen endlich, wann und wo trainiert wird</h3>
+            <ul>
+              <li><strong>Trainingszeiten, Wochentag und Halle</strong> stehen jetzt direkt in der Seite statt erst nach dem Laden. Die Daten waren immer schon da — sie wurden nur weggeworfen. Das ist die meistgestellte Frage auf der ganzen Website</li>
+              <li>Bei Google hiessen alle 16 Teamseiten nur «<strong>D1 — KSC Wiedikon</strong>» und hatten keinen Beschreibungstext. Jetzt stehen dort voller Teamname, Sportart und Liga</li>
+              <li>Basketball-Ligen erschienen als <strong>Verbandskürzel</strong> («H3LS», «D1LRA»). Jetzt steht dort «3. Liga» bzw. «1. Liga»</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Mitgliedschaft: keine widersprüchlichen Angaben mehr</h3>
+            <ul>
+              <li>Es stand dort, man bekomme das <strong>Anmeldeformular auf Papier</strong> vom Trainer — zwanzig Zeilen über vier Knöpfen, die zum funktionierenden Online-Formular führen. Der Text beschreibt jetzt den tatsächlichen Weg</li>
+              <li>Der <strong>Zuschlag von CHF 100</strong> ohne erfüllte Offiziellen-Pflicht im Basketball war formuliert und übersetzt, wurde aber <strong>auf keiner Seite angezeigt</strong>. Wer mit CHF 520 rechnete, konnte CHF 620 verrechnet bekommen. Er steht jetzt bei den Beiträgen</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Kleinere Dinge, die grösser waren als sie klingen</h3>
+            <ul>
+              <li>Nach einem <strong>Fehler beim Absenden</strong> des Kontakt- oder Feedback-Formulars war jeder weitere Versuch zum Scheitern verurteilt — der Spam-Schutz gibt seinen Prüfcode nur einmal aus. Jetzt funktioniert der zweite Versuch</li>
+              <li>Das <strong>Kontaktformular ragte auf dem Handy rechts aus dem Bild</strong> — genau dort, wo Interessierte den ersten Schritt machen sollen</li>
+              <li>Beim <strong>Ausdrucken</strong> war die Seite praktisch leer: weisse Schrift auf weissem Papier. Wer Hallenadressen fürs Anschlagbrett druckt, bekommt jetzt ein lesbares Blatt</li>
+              <li>Im dunklen Design waren <strong>Spielzeiten, News-Daten und Tabellenköpfe</strong> zu blass; zwei Libero-Rückennummern waren im hellen Design <strong>weiss auf weiss</strong></li>
+              <li>Die Startseite hat neu einen <strong>Knopf für ein Probetraining</strong> — vorher führte von dort kein einziger Weg zum Mitmachen. Der Untertitel nennt jetzt <strong>Zürich-Wiedikon</strong></li>
+              <li>Die Teamzahl wurde an drei Stellen <strong>unterschiedlich</strong> angegeben. Jetzt einheitlich. Neu gibt es ausserdem eine <strong>sitemap.xml</strong> für Suchmaschinen</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.20.0 — 2026-08-12</div>
@@ -806,8 +858,60 @@ const locale = 'de';
               changelog, permanently: no data-i18n meant the engine could never
               repair it. */}
           <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
-          <span class="changelog-badge">v1.20.0</span>
+          <span class="changelog-badge">v1.21.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.21.0 — 2026-08-13</div>
+          <div class="changelog-group">
+            <h3>A wrong address no longer just shows the homepage</h3>
+            <ul>
+              <li>Mistype a URL or follow an old link and you landed <strong>silently on the homepage</strong> — the site even told your browser everything was fine. That included pages that really had existed: team pages change at every June season rollover, so every link to a retired team quietly led to the homepage. There is now a proper <strong>“page not found”</strong> page pointing to volleyball, basketball, home and contact</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>The club crest is the club crest again</h3>
+            <ul>
+              <li>The little icon in the browser tab had, since day one, been the <strong>logo of the development tool</strong> the site was built with, not the KSCW crest. It is now the crest — and also an app icon for “add to home screen”</li>
+              <li>Sharing a kscw.ch link on <strong>WhatsApp, Instagram or Facebook</strong> produced a <strong>blank grey tile</strong>. It now shows the club crest as a preview image</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>The privacy policy is accurate again</h3>
+            <ul>
+              <li>The imprint and privacy policy named <strong>Hetzner</strong> as the website host. The site runs on <strong>Cloudflare</strong> — so a data-access request would have gone to a company holding nothing about you. Corrected; Hetzner stays, correctly described as the home of the club database</li>
+              <li>Newly described: the <strong>form spam protection</strong>, the <strong>newsletter</strong>, and <strong>club registration</strong> — the last of which collects an AHV number, payment details and sometimes an identity document, and was not mentioned in the policy at all</li>
+              <li>The cookie section described cookies that do not exist. The site sets <strong>no cookies</strong> and uses <strong>no analytics</strong>; it stores only your colour scheme, language and roster view. That is why it needs <strong>no cookie banner</strong> — which the policy now says plainly. It also carries a date now</li>
+              <li><strong>Instagram feeds</strong> on team pages loaded immediately, even though the privacy policy explicitly promised the opposite. They now load only after you agree</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Team pages finally say when and where the team trains</h3>
+            <ul>
+              <li><strong>Training times, weekday and venue</strong> are now in the page itself instead of appearing after loading. The data was always there — it was simply discarded. This is the most asked question on the whole site</li>
+              <li>On Google all 16 team pages were titled just “<strong>D1 — KSC Wiedikon</strong>” with no description. They now carry the full team name, the sport and the league</li>
+              <li>Basketball leagues showed as <strong>federation codes</strong> (“H3LS”, “D1LRA”). They now read “3. Liga” and “1. Liga”</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Membership: no more contradictory instructions</h3>
+            <ul>
+              <li>The page said you get a <strong>paper registration form</strong> from your coach — twenty lines above four buttons linking to the working online form. It now describes what actually happens</li>
+              <li>The <strong>CHF 100 surcharge</strong> for an unfulfilled officials duty in basketball was written and translated but <strong>displayed on no page</strong>. Someone budgeting CHF 520 could be invoiced CHF 620. It is now shown with the fees</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Small things that were bigger than they sound</h3>
+            <ul>
+              <li>After a <strong>failed submit</strong> of the contact or feedback form, every retry was doomed — the spam protection issues its check code only once. The second attempt now works</li>
+              <li>The <strong>contact form ran off the right edge on phones</strong> — exactly where a prospective member is meant to take the first step</li>
+              <li><strong>Printing</strong> a page produced a near-blank sheet: white text on white paper. Anyone printing hall addresses for a noticeboard now gets something readable</li>
+              <li>In the dark theme, <strong>fixture times, news dates and table headers</strong> were too faint; in the light theme two libero shirt numbers were <strong>white on white</strong></li>
+              <li>The homepage now has a <strong>trial-session button</strong> — previously nothing on it led to joining. The subtitle now names <strong>Zürich-Wiedikon</strong></li>
+              <li>The team count was stated <strong>three different ways</strong>. Now consistent. There is also a <strong>sitemap.xml</strong> for search engines</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.20.0 — 2026-08-12</div>
@@ -1486,7 +1590,7 @@ const locale = 'de';
 
   .feedback-type-pill:hover {
     border-color: var(--kscw-blue);
-    color: var(--kscw-blue);
+    color: var(--accent-text);
   }
 
   .feedback-type-pill.active[data-type="bug"] {
@@ -1583,7 +1687,7 @@ const locale = 'de';
   .feedback-dropzone:hover,
   .feedback-dropzone.dragover {
     border-color: var(--kscw-blue);
-    color: var(--kscw-blue);
+    color: var(--accent-text);
   }
 
   .feedback-dropzone svg {
@@ -1639,7 +1743,7 @@ const locale = 'de';
     flex-shrink: 0;
   }
   .consent-label a {
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
     text-decoration: underline;
   }
   .form-actions {
@@ -1728,7 +1832,7 @@ const locale = 'de';
   }
 
   .feedback-wiedisync-hint a {
-    color: var(--kscw-blue);
+    color: var(--accent-text);
     font-weight: 600;
   }
 
@@ -1753,7 +1857,7 @@ const locale = 'de';
   .changelog-heading svg {
     width: 22px;
     height: 22px;
-    color: var(--kscw-blue);
+    color: var(--accent-text);
   }
 
   .changelog-badge {

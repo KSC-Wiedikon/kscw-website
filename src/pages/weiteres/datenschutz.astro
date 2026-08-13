@@ -43,8 +43,23 @@ const locale = 'de';
         </div>
 
         <div class="legal-card">
+          <h2 data-i18n="privacyRegistration">{t(locale, 'privacyRegistration')}</h2>
+          <p data-i18n="privacyRegistrationText">{t(locale, 'privacyRegistrationText')}</p>
+        </div>
+
+        <div class="legal-card">
+          <h2 data-i18n="privacyNewsletter">{t(locale, 'privacyNewsletter')}</h2>
+          <p data-i18n="privacyNewsletterText">{t(locale, 'privacyNewsletterText')}</p>
+        </div>
+
+        <div class="legal-card">
           <h2 data-i18n="privacyCookies">{t(locale, 'privacyCookies')}</h2>
           <p data-i18n="privacyCookiesText">{t(locale, 'privacyCookiesText')}</p>
+        </div>
+
+        <div class="legal-card">
+          <h2 data-i18n="privacySecurity">{t(locale, 'privacySecurity')}</h2>
+          <p data-i18n="privacySecurityText">{t(locale, 'privacySecurityText')}</p>
         </div>
 
         <div class="legal-card">
@@ -68,6 +83,11 @@ const locale = 'de';
           <p data-i18n="privacyChangesText">{t(locale, 'privacyChangesText')}</p>
         </div>
 
+        {/* An undated policy gives a reader no way to tell whether it describes the
+            site they are looking at. Kept as a dictionary string so it can be
+            corrected from /admin → Seitentexte together with the text it dates. */}
+        <p class="legal-updated" data-i18n="privacyLastUpdated">{t(locale, 'privacyLastUpdated')}</p>
+
       </div>
     </div>
   </section>
@@ -89,7 +109,7 @@ const locale = 'de';
   .legal-card h2 {
     font-size: var(--text-lg);
     font-weight: 700;
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
     margin-bottom: var(--space-sm);
   }
   .legal-card p {
@@ -98,9 +118,15 @@ const locale = 'de';
     color: var(--text-secondary);
   }
   .legal-card a {
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
   }
   .legal-card a:hover {
     text-decoration: underline;
+  }
+  .legal-updated {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    text-align: left;
+    margin: 0;
   }
 </style>

@@ -1,0 +1,97 @@
+---
+/**
+ * Build-time render of a team's weekly training pattern.
+ *
+ * Lives INSIDE `#training-list`, which public/js/team-page.js clears and refills with
+ * the live schedule on load. That is deliberate and matches the hybrid contract the
+ * rest of the site keeps (CLAUDE.md → Team data): this markup is what a crawler, a
+ * no-JS visitor and the first paint get, and the client renderer takes over with the
+ * dated, cancellation-aware version once it has the payload.
+ *
+ * ⚠ Keep this in step with `renderTrainings()` in team-page.js. A build-time render
+ * that disagrees with its client replacement turns the handover into a visible jump
+ * — the load-order rule that cost the team pages a 0.95 CLS the first time round.
+ */
+import { t, type Locale } from '../lib/i18n';
+import type { TrainingSlot } from '../lib/fetch/teamDetail';
+
+interface Props {
+  trainings: TrainingSlot[];
+  locale?: Locale;
+}
+
+const { trainings, locale = 'de' } = Astro.props;
+
+/** Halls repeat across slots; list each address once, under the table. */
+const halls = [...new Map(
+  trainings.filter((s) => s.hall).map((s) => [s.hall, s.address]),
+).entries()];
+---
+{trainings.length > 0 ? (
+  <div class="training-pattern">
+    <table class="training-table">
+      <tbody>
+        {trainings.map((slot) => (
+          <tr>
+            <td class="training-day" data-i18n={`weekdayLong${slot.weekday}`}>
+              {t(locale, `weekdayLong${slot.weekday}`)}
+            </td>
+            <td class="training-time">{slot.end ? `${slot.start}–${slot.end}` : slot.start}</td>
+            <td class="training-hall">{slot.hall}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    {halls.length > 0 && (
+      <p class="training-halls">
+        {halls.map(([hall, address], i) => (
+          <>
+            {i > 0 && <br />}
+            <strong>{hall}</strong>{address && <span> — {address}, Zürich</span>}
+          </>
+        ))}
+      </p>
+    )}
+  </div>
+) : (
+  /* No pattern to show — either the season has not started or Directus was
+     unreachable at build time. team-page.js fills this in on load either way, so
+     the placeholder stays rather than asserting "no trainings". */
+  <p class="text-muted text-sm" data-i18n="teamLoadingTrainings">{t(locale, 'teamLoadingTrainings')}</p>
+)}
+
+<style>
+  .training-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: var(--space-md);
+  }
+  .training-table td {
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--border);
+    vertical-align: baseline;
+  }
+  .training-table tr:last-child td {
+    border-bottom: none;
+  }
+  .training-day {
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+  .training-time {
+    font-variant-numeric: tabular-nums;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .training-hall {
+    color: var(--text-secondary);
+    width: 100%;
+  }
+  .training-halls {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    line-height: 1.7;
+    margin: 0;
+  }
+</style>

@@ -54,7 +54,7 @@ const locale = 'de';
           </div>
           <div id="nl-turnstile" style="margin-bottom: var(--space-sm);"></div>
           <button type="submit" class="btn btn-gold form-submit" data-i18n="newsletterSubscribe">{t(locale, 'newsletterSubscribe')}</button>
-          <div id="nl-feedback" class="form-feedback" style="display:none;"></div>
+          <div id="nl-feedback" class="form-feedback" role="status" aria-live="polite" style="display:none;"></div>
         </form>
         <p class="text-sm text-muted mt-md">
           <a href="/feed.xml" style="color: var(--text-muted);" data-i18n="newsletterRss">{t(locale, 'newsletterRss')}</a>

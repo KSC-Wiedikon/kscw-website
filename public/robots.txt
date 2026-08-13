@@ -1,3 +1,18 @@
+# ⚠ This is NOT the whole file the site serves.
+#
+# Cloudflare's managed robots.txt feature PREPENDS a block of its own at the edge,
+# so the live https://kscw.ch/robots.txt is ~1.9 KB while this file is a handful of
+# lines. That injected block currently sends `Disallow: /` to ClaudeBot, GPTBot,
+# Google-Extended, CCBot, Applebot-Extended, Amazonbot, Bytespider and
+# meta-externalagent — i.e. the club is opted out of AI answer engines, including
+# Google's AI Overviews via Google-Extended. Ordinary search indexing is unaffected.
+#
+# If that is not what the club wants, it cannot be changed here: it is a toggle in
+# the Cloudflare dashboard. Check the live file before concluding anything from this
+# one:  curl -s https://kscw.ch/robots.txt
+
 User-agent: *
 Allow: /
 Disallow: /admin
+
+Sitemap: https://kscw.ch/sitemap.xml

@@ -1,0 +1,109 @@
+---
+/**
+ * Custom 404.
+ *
+ * Astro emits this as `dist/404.html`, which Cloudflare Pages serves — with a real
+ * 404 status — for any path that matches no asset. Before it existed, Pages fell
+ * back to `index.html`, so every unknown URL answered **200 with a byte-identical
+ * copy of the homepage**: a visitor who mistyped a team slug landed on the home
+ * page with nothing to say the page they asked for was gone, and Google filed the
+ * unbounded set of junk URLs as soft-404 duplicates of `/`.
+ *
+ * That is not a hypothetical: team slugs are retired at the June season rollover
+ * (`/volleyball/du23-2` was live until then), and every link to a retired one
+ * silently answered 200 with the homepage.
+ *
+ * No config change is needed for this to take effect — the filename is the
+ * contract. Covered by `tests/e2e/404.spec.ts`.
+ */
+import PageLayout from '../layouts/PageLayout.astro';
+import { t } from '../lib/i18n';
+
+const locale = 'de';
+
+// Kept in the page source rather than fetched: a 404 must render when Directus is
+// unreachable, and these four routes are the ones that will not move.
+const routes = [
+  { href: '/', icon: 'home', titleKey: 'notFoundLinkHome', descKey: 'notFoundLinkHomeDesc' },
+  { href: '/volleyball', icon: 'volleyball', titleKey: 'notFoundLinkVolleyball', descKey: 'notFoundLinkVolleyballDesc' },
+  { href: '/basketball', icon: 'dribbble', titleKey: 'notFoundLinkBasketball', descKey: 'notFoundLinkBasketballDesc' },
+  { href: '/club/kontakt', icon: 'mail', titleKey: 'notFoundLinkContact', descKey: 'notFoundLinkContactDesc' },
+] as const;
+---
+<PageLayout
+  title="Seite nicht gefunden — KSC Wiedikon"
+  titleKey="notFoundMetaTitle"
+  description="Diese Seite existiert nicht mehr. Hier findest du zurück zu den Teams, News und zum Kontakt des KSC Wiedikon."
+  descriptionKey="notFoundMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'notFoundTitle')}
+  pageTitleKey="notFoundTitle"
+  pageSubtitle={t(locale, 'notFoundSubtitle')}
+  pageSubtitleKey="notFoundSubtitle"
+>
+  <section class="section">
+    <div class="container">
+      <p style="max-width: 640px; color: var(--text-secondary); margin-bottom: var(--space-xl);" data-i18n="notFoundText">{t(locale, 'notFoundText')}</p>
+
+      <div class="notfound-grid">
+        {routes.map((route) => (
+          <a href={route.href} class="card notfound-card">
+            <div class="card-body">
+              <i data-lucide={route.icon} aria-hidden="true"></i>
+              <h3 data-i18n={route.titleKey}>{t(locale, route.titleKey)}</h3>
+              <p data-i18n={route.descKey}>{t(locale, route.descKey)}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .notfound-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--space-lg);
+    max-width: 900px;
+  }
+
+  /* The whole card is the link, so it must not inherit the underline body links get. */
+  .notfound-card {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .notfound-card:hover,
+  .notfound-card:focus-visible {
+    transform: translateY(-2px);
+    border-color: var(--kscw-gold);
+  }
+
+  .notfound-card i {
+    width: 28px;
+    height: 28px;
+    color: var(--kscw-gold);
+    margin-bottom: var(--space-sm);
+    display: block;
+  }
+
+  .notfound-card h3 {
+    margin-bottom: var(--space-xs);
+    font-size: 1.125rem;
+  }
+
+  .notfound-card p {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    margin: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .notfound-card { transition: none; }
+    .notfound-card:hover,
+    .notfound-card:focus-visible { transform: none; }
+  }
+</style>

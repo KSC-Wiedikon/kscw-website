@@ -16,9 +16,43 @@ interface Props {
   descriptionKey?: string;
   /** Build-time locale for the German default render. Single-URL site → always 'de'. */
   locale?: Locale;
+  /** Absolute-from-root path to a per-page share image. Defaults to the club crest card. */
+  ogImage?: string;
+  /** og:type — 'article' for a news item, 'website' everywhere else. */
+  ogType?: 'website' | 'article';
 }
 
-const { title, titleKey, description, descriptionKey, locale = 'de' } = Astro.props;
+const {
+  title,
+  titleKey,
+  description,
+  descriptionKey,
+  locale = 'de',
+  ogImage = '/images/og-default.png',
+  ogType = 'website',
+} = Astro.props;
+
+/**
+ * Canonical URL.
+ *
+ * Built from the *normalised* pathname on purpose. Astro's directory build format
+ * serves every page at a trailing slash and the host 308s the slashless form onto
+ * it, so a canonical without the slash would point at a URL that redirects — which
+ * is exactly the signal a canonical exists to remove. `/feed.xml` and friends keep
+ * their extension and take no slash.
+ */
+const path = Astro.url.pathname;
+const canonicalPath = path.endsWith('/') || /\.[a-z0-9]+$/i.test(path) ? path : `${path}/`;
+const canonical = new URL(canonicalPath, Astro.site).href;
+const ogImageUrl = new URL(ogImage, Astro.site).href;
+
+/**
+ * Open Graph is rendered from the BUILD-TIME German values and deliberately gets no
+ * `data-i18n` hook. Every scraper that matters (WhatsApp, Facebook, Slack, iMessage)
+ * reads the raw HTML without executing JavaScript, so a client-swapped tag would be
+ * swapped after the only reader has already left. German is the right default: it is
+ * what the HTML ships and what most people sharing a link to a Zurich club will speak.
+ */
 ---
 <!DOCTYPE html>
 <html lang="de">
@@ -106,8 +140,36 @@ const { title, titleKey, description, descriptionKey, locale = 'de' } = Astro.pr
        the page afterwards. Preloading only the `latin` subset: `latin-ext` is
        fetched on demand by unicode-range and most pages never need it. -->
   <link rel="preload" href="/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="icon" href="/images/kscw_trio.png" type="image/png">
+  <link rel="canonical" href={canonical}>
+  {/* Icons. These used to be a single <link> pointing at /images/kscw_trio.png — a
+      1080x1182 portrait PNG, 59 KB, for a 16 px slot — while public/favicon.{ico,svg}
+      sat unreferenced at the root still holding the stock **Astro scaffold logo** from
+      the initial commit. Anything that blind-fetches /favicon.ico (RSS readers,
+      bookmark managers, link previews) therefore showed a JS framework's mark as the
+      club's identity. All four are now generated from public/images/kscw_logo.svg. */}
+  <link rel="icon" href="/favicon.ico" sizes="32x32">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  {/* Dark is the default theme (:root), .light is the opt-in override — so the
+      unqualified value is the dark one, matching --bg-white in global.css. */}
+  <meta name="theme-color" content="#0f1729">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <link rel="alternate" type="application/rss+xml" title="KSC Wiedikon News" href="/feed.xml">
+  <meta property="og:site_name" content="KSC Wiedikon">
+  <meta property="og:type" content={ogType}>
+  <meta property="og:locale" content="de_CH">
+  <meta property="og:url" content={canonical}>
+  <meta property="og:title" content={title}>
+  {description && <meta property="og:description" content={description}>}
+  <meta property="og:image" content={ogImageUrl}>
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="KSC Wiedikon">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content={title}>
+  {description && <meta name="twitter:description" content={description}>}
+  <meta name="twitter:image" content={ogImageUrl}>
   <!-- ⚠ `async` matters. This is a cross-origin script in <head>, so loaded
        synchronously it blocks first paint of the whole site on browser.sentry-cdn.com
        being reachable and fast — and it sits AHEAD of our own stylesheet in the head,

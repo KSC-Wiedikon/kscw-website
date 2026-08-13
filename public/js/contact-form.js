@@ -253,11 +253,16 @@
   function setLoading(loading) {
     if (!submitBtn) return;
     submitBtn.disabled = loading;
+    // The button is an inline SVG icon followed by <span data-i18n="contactSubmit">.
+    // Writing textContent on the BUTTON replaced both of those with a text node, so
+    // the paper-plane icon was destroyed on the first submit and never came back for
+    // the life of the page. Write to the label span when there is one.
+    var label = submitBtn.querySelector('[data-i18n]') || submitBtn;
     if (loading) {
-      submitBtn.dataset.originalText = submitBtn.textContent;
-      submitBtn.textContent = i18n.t('contactSending');
+      label.dataset.originalText = label.textContent;
+      label.textContent = i18n.t('contactSending');
     } else {
-      submitBtn.textContent = submitBtn.dataset.originalText || i18n.t('contactSubmit');
+      label.textContent = label.dataset.originalText || i18n.t('contactSubmit');
     }
   }
 
@@ -323,15 +328,22 @@
         showFeedback('success', i18n.t('contactSuccess'));
         form.reset();
         hideTeamDropdown();
-        if (window.turnstile && turnstileWidgetId !== null) {
-          window.turnstile.reset(turnstileWidgetId);
-        }
       })
       .catch(function (err) {
         showFeedback('error', err.message || i18n.t('contactErrorRetry'));
       })
       .finally(function () {
         setLoading(false);
+        // ⚠ Must run on the failure path too, which is why it is here and not in the
+        // success handler where it used to live. A Turnstile token is single-use: once
+        // it has been sent, the widget will keep handing back the same spent token
+        // until it is reset, and the backend rejects it. So the visitor saw a generic
+        // error, pressed the button again, and got the same error forever — the one
+        // case where retrying was guaranteed not to work. registration-form.js already
+        // fixed this (see CHANGELOG.md 2026-06 "Turnstile token reset").
+        if (window.turnstile && turnstileWidgetId !== null) {
+          window.turnstile.reset(turnstileWidgetId);
+        }
       });
   });
 

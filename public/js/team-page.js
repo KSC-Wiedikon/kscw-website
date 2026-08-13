@@ -287,6 +287,39 @@
 
   // ── Render Instagram Feed ───────────────────────────────────────────
   // Uses Instagram's native /embed/ iframe URL for profile feeds.
+  //
+  // ⚠ Behind an explicit click, not on load. The iframe hands Meta the visitor's IP,
+  // user agent and referring URL the moment it is appended, and the site's own
+  // privacy policy states that embedded Instagram content "wird erst nach Ihrer
+  // ausdrücklichen Zustimmung geladen" (privacyThirdPartyText). That promise shipped
+  // while the iframe was in fact appended unconditionally — code and policy
+  // contradicted each other, and closing the gap in the code is the half that
+  // actually protects anyone.
+
+  /**
+   * Whether the visitor has asked for the embed on THIS page view.
+   *
+   * In memory only, deliberately. Persisting consent would add a fourth storage key,
+   * which the privacy policy would then have to declare — and the point of that
+   * section is that the site keeps nothing but three display preferences. The cost is
+   * one extra click per visit; the benefit is that the disclosure stays true.
+   * Module-scoped rather than local so a DE/EN switch, which re-renders the whole
+   * page from the cached payload, does not silently revoke a consent just given.
+   */
+  var igConsent = false;
+
+  function instagramIframe(handle) {
+    var iframe = document.createElement('iframe');
+    iframe.src = 'https://www.instagram.com/' + handle + '/embed/';
+    iframe.className = 'ig-feed-iframe';
+    iframe.title = '@' + handle + ' auf Instagram';
+    iframe.setAttribute('frameborder', '0');
+    iframe.setAttribute('scrolling', 'no');
+    iframe.setAttribute('allowtransparency', 'true');
+    iframe.setAttribute('loading', 'lazy');
+    return iframe;
+  }
+
   function renderInstagramEmbed(teamData) {
     var container = document.getElementById('instagram-embed-container');
     var embedEl = document.getElementById('instagram-embed');
@@ -304,15 +337,41 @@
     var heading = document.getElementById('instagram-heading');
     if (heading) heading.textContent = '@' + handle;
 
-    var iframe = document.createElement('iframe');
-    iframe.src = 'https://www.instagram.com/' + handle + '/embed/';
-    iframe.className = 'ig-feed-iframe';
-    iframe.setAttribute('frameborder', '0');
-    iframe.setAttribute('scrolling', 'no');
-    iframe.setAttribute('allowtransparency', 'true');
-
     embedEl.textContent = '';
-    embedEl.appendChild(iframe);
+
+    if (igConsent) {
+      embedEl.appendChild(instagramIframe(handle));
+      return;
+    }
+
+    var placeholder = document.createElement('div');
+    placeholder.className = 'ig-consent';
+
+    var text = document.createElement('p');
+    text.className = 'ig-consent-text';
+    text.textContent = i18n.t('teamInstagramConsentText');
+    placeholder.appendChild(text);
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-primary';
+    btn.textContent = i18n.t('teamInstagramConsentButton');
+    btn.addEventListener('click', function () {
+      igConsent = true;
+      embedEl.textContent = '';
+      embedEl.appendChild(instagramIframe(handle));
+    });
+    placeholder.appendChild(btn);
+
+    var link = document.createElement('a');
+    link.className = 'ig-consent-link';
+    link.href = 'https://www.instagram.com/' + handle + '/';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = i18n.t('teamInstagramOpenProfile');
+    placeholder.appendChild(link);
+
+    embedEl.appendChild(placeholder);
   }
 
   // ── Fetch team data from public API ───────────────────────────────

@@ -3,8 +3,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { volleyballTeams } from '../../data/team-routes';
 import { getActiveTeams } from '../../lib/fetch/teams';
 import { t } from '../../lib/i18n';
+import { getBadgeText } from '../../data/teams';
 import TeamHero from '../../components/TeamHero.astro';
 import TeamPhoto from '../../components/TeamPhoto.astro';
+import TeamTrainings from '../../components/TeamTrainings.astro';
 import { getTeamDetail } from '../../lib/fetch/teamDetail';
 import { versionedAsset } from '../../lib/assetVersion';
 
@@ -29,8 +31,37 @@ const { directusId, short } = Astro.props;
 // Build-time hero + photo, so the page is a real team page on first paint and
 // without JS. team-page.js replaces this with live Directus data on load.
 const detail = await getTeamDetail(directusId);
+
+/**
+ * Page metadata.
+ *
+ * These 16 pages used to ship `title={short + ' — KSC Wiedikon'}` and NO description
+ * at all — so search results read "D1 — KSC Wiedikon", which nobody searches for, and
+ * BaseLayout omitted the description tag entirely because it renders it conditionally.
+ * They are also the pages most search traffic actually lands on.
+ *
+ * `detail` is null whenever Directus is unreachable at build time (documented in
+ * getTeamDetail), so every read is optional-chained with a fallback to the static
+ * slug label — otherwise a bad build day ships "undefined — KSC Wiedikon".
+ *
+ * Deliberate trade-off: because the team name is data, not a dictionary key, this
+ * description is NOT client-translated or editable from /admin → Seitentexte. The
+ * sentence around it comes from the dictionary; only the proper noun is interpolated.
+ */
+const teamFull = detail?.fullName || `KSC Wiedikon ${short}`;
+// `fullName` already carries the club, so the usual `… — KSC Wiedikon` suffix
+// produced "KSC Wiedikon D1 — KSC Wiedikon". Lead with the team, qualify with the
+// sport and league — which is what distinguishes one of these 16 pages from another.
+// Through getBadgeText, so the title says "3. Liga" rather than the raw ProBasket
+// code "H3LS" — and so it agrees with the badge on the card that linked here.
+const leagueSuffix = detail?.league ? ` ${getBadgeText(detail.league, teamFull)}` : '';
+const metaTitle = `${teamFull} — Volleyball${leagueSuffix}`;
+// Same reason: strip the club prefix before dropping the name into a sentence that
+// names the club itself.
+const teamShort = teamFull.replace(/^KSC\s+Wiedikon\s*/i, '') || short;
+const metaDescription = t(locale, 'teamMetaDescription').replace('{team}', teamShort);
 ---
-<BaseLayout title={`${short} — KSC Wiedikon`} locale={locale}>
+<BaseLayout title={metaTitle} description={metaDescription} locale={locale}>
   <!-- Hero + photo: rendered at BUILD time, then replaced by team-page.js with
        live Directus data. Both containers stay, because that is what the client
        renderers target. -->
@@ -87,7 +118,7 @@ const detail = await getTeamDetail(directusId);
 
       <div class="tab-panel" data-tab-panel="training" role="tabpanel">
         <div id="training-list">
-          <p class="text-muted text-sm" data-i18n="teamLoadingTrainings">{t(locale, 'teamLoadingTrainings')}</p>
+          <TeamTrainings trainings={detail?.trainings ?? []} locale={locale} />
         </div>
       </div>
 

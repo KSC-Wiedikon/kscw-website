@@ -544,7 +544,7 @@ const KS_OTHER = [
 
         <!-- Privacy Notice (collapsible) -->
         <details style="margin-bottom: var(--space-lg);">
-          <summary style="cursor: pointer; font-weight: 600; color: var(--kscw-blue);" data-i18n="registrationPrivacyTitle">{t(locale, 'registrationPrivacyTitle')}</summary>
+          <summary style="cursor: pointer; font-weight: 600; color: var(--accent-text);" data-i18n="registrationPrivacyTitle">{t(locale, 'registrationPrivacyTitle')}</summary>
           <p style="margin-top: var(--space-sm); color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.7; text-align: justify;" data-i18n="registrationPrivacyText">{t(locale, 'registrationPrivacyText')}</p>
         </details>
 
@@ -565,7 +565,7 @@ const KS_OTHER = [
         </button>
       </form>
 
-      <div id="form-feedback" style="display: none;"></div>
+      <div id="form-feedback" role="status" aria-live="polite" style="display: none;"></div>
     </div>
   </section>
 
@@ -670,12 +670,12 @@ const KS_OTHER = [
   }
   .radio-card:has(input:checked) {
     border-color: var(--kscw-blue, #4A55A2);
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
     background: rgba(74, 85, 162, 0.06);
   }
   .radio-card:hover {
     border-color: var(--kscw-blue, #4A55A2);
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
   }
   /* Toggle switches */
   .toggle-group {
@@ -852,7 +852,7 @@ const KS_OTHER = [
     background: rgba(74, 85, 162, 0.08);
   }
   :global(.nationality-opt.selected) {
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
     font-weight: 600;
   }
   :global(.nationality-divider) {
@@ -957,7 +957,7 @@ const KS_OTHER = [
     background: rgba(74, 85, 162, 0.08);
   }
   :global(.team-opt.selected) {
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
     font-weight: 600;
   }
   /* BB docs download list */
@@ -984,7 +984,7 @@ const KS_OTHER = [
   .bb-doc-download {
     font-size: var(--text-xs, 0.75rem);
     font-weight: 600;
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
     text-decoration: none;
     white-space: nowrap;
   }

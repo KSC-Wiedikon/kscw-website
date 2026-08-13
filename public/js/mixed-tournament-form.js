@@ -100,15 +100,25 @@
   TEAMS.forEach(function (t) { teamNameToChip[t.name] = t.chip; teamNameToChip[t.chip] = t.chip; });
 
   function fetchMemberNames() {
-    // SECURITY FOLLOW-UP (server-side): this UNAUTHENTICATED Directus Flow returns
-    // the full member directory (id, name, sex, teams, wiedisync_active) and so
-    // bypasses the scoped public members read (website_visible=true + adults only),
-    // leaking minors / opted-out members plus internal member ids. The real fix is
-    // in the Flow itself (not in this repo): scope it to the public policy —
-    // website_visible + adults, and drop `id`. Tracked as a follow-up. Note the
-    // member `id` is still used here for the already-signed-up check + submission
-    // linkage below, so it can only be dropped once the Flow returns an opaque
-    // lookup key instead. Do not widen this call's usage of the response.
+    // This UNAUTHENTICATED Directus Flow used to return the FULL member directory —
+    // 706 records including `sex`, ignoring both the `website_visible` opt-out and
+    // the adults-only rule, because its read operation ran with Full Access and so
+    // bypassed the Public policy. Scoped in Directus on 2026-08-13 to
+    // `website_visible = true AND birthdate <= $NOW(-18 years)`, with `sex` and
+    // `wiedisync_active` dropped from its field list: 706 → 284 records.
+    //
+    // Two consequences for the code below, both deliberate:
+    //  - `member.sex` is now always null, so the sex auto-fill silently does
+    //    nothing. The dropdown is user-set and validated on submit, so nothing
+    //    breaks — but do not "fix" the auto-fill by asking the Flow for sex again.
+    //  - `member.wiedisync_active` is now always false. If that flag is ever needed
+    //    for real, read it from the authenticated check-signup Flow below, which is
+    //    already keyed by member id, rather than from this public list.
+    //
+    // The internal member `id` IS still returned, because the already-signed-up
+    // check below is keyed by it; it can only be dropped once that Flow accepts an
+    // opaque lookup key. Tracked in wiedisync SECURITY.md. Do not widen this call's
+    // usage of the response.
     fetch(DIRECTUS_URL + '/flows/trigger/531dc3c2-64ec-4a7e-a989-da983d3530e4')
       .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
       .then(function (data) {

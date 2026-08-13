@@ -99,14 +99,15 @@
   TEAMS.forEach(function (t) { teamNameToChip[t.name] = t.chip; teamNameToChip[t.chip] = t.chip; });
 
   function fetchMemberNames() {
-    // SECURITY FOLLOW-UP (server-side): this UNAUTHENTICATED Directus Flow returns
-    // the full member directory (id, name, sex, teams, wiedisync_active) and so
-    // bypasses the scoped public members read (website_visible=true + adults only),
-    // leaking minors / opted-out members plus internal member ids. The real fix is
-    // in the Flow itself (not in this repo): scope it to the public policy —
-    // website_visible + adults, and drop `id`. Tracked as a follow-up. This form
-    // only needs name/functions/teams for autocomplete, so we discard the internal
-    // `id` (and other extra fields) client-side and never send them on submit.
+    // This UNAUTHENTICATED Directus Flow used to return the FULL member directory —
+    // 706 records including `sex`, ignoring both the `website_visible` opt-out and
+    // the adults-only rule, because its read operation ran with Full Access and so
+    // bypassed the Public policy. Scoped in Directus on 2026-08-13 to
+    // `website_visible = true AND birthdate <= $NOW(-18 years)`: 706 → 284 records.
+    //
+    // This form needs only name/functions/teams for autocomplete, so the map below
+    // still discards the internal `id` client-side and never sends it on submit —
+    // keep it that way even though the Flow's scope is now narrow.
     fetch(DIRECTUS_URL + '/flows/trigger/531dc3c2-64ec-4a7e-a989-da983d3530e4')
       .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
       .then(function (data) {

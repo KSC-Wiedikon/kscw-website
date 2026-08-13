@@ -45,9 +45,12 @@
     feedback.textContent = msg;
     feedback.style.padding = '12px 16px';
     feedback.style.borderRadius = '8px';
-    feedback.style.background = kind === 'error' ? '#fef2f2' : '#f0fdf4';
-    feedback.style.color = kind === 'error' ? '#b91c1c' : '#15803d';
-    feedback.style.border = '1px solid ' + (kind === 'error' ? '#fecaca' : '#bbf7d0');
+    // Tinted-background + token-colour pair, matching .badge-success/.badge-danger
+    // in global.css. The previous hardcoded #fef2f2/#f0fdf4 boxes were light-theme
+    // literals painted onto a dark-by-default page.
+    feedback.style.background = kind === 'error' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(5, 150, 105, 0.1)';
+    feedback.style.color = kind === 'error' ? 'var(--danger)' : 'var(--success)';
+    feedback.style.border = '1px solid ' + (kind === 'error' ? 'rgba(220, 38, 38, 0.3)' : 'rgba(5, 150, 105, 0.3)');
   }
   function hideFeedback() { feedback.style.display = 'none'; }
 
@@ -107,13 +110,16 @@
       row.appendChild(label);
       if (current.docs[key]) {
         var ok = document.createElement('small');
-        ok.style.color = '#15803d';
+        ok.style.color = 'var(--success)';
         ok.textContent = de ? 'Bereits vorhanden' : 'Already on file';
         row.appendChild(ok);
       } else {
         var input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*,.pdf';
+        // Global class, not a page-scoped one — Astro scopes <style> by stamping
+        // an attribute on build-time nodes, and this input is created here.
+        input.className = 'form-input';
         input.dataset.docKey = key;
         row.appendChild(input);
       }
@@ -122,7 +128,10 @@
 
     var submit = document.createElement('button');
     submit.type = 'button';
-    submit.className = 'form-submit';
+    // `.form-submit` is NOT a site-wide class — kontakt / anmeldung / feedback
+    // each define their own copy inside a scoped <style>, so it renders as bare
+    // unstyled text anywhere else (same trap global.css records for .btn-blue).
+    submit.className = 'btn btn-primary';
     submit.textContent = de ? 'Dokumente hochladen' : 'Upload documents';
     submit.addEventListener('click', function () { uploadMissing(submit); });
     slotsBox.appendChild(submit);

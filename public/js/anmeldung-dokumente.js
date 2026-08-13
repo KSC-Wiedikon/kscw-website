@@ -38,6 +38,16 @@
   var ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
   var MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+  // Documents the club can hand over already filled in. The two ID slots are
+  // absent on purpose — those are photographs of a document we do not issue.
+  // ⚠ Mirrors BB_PDF_TEMPLATES in wiedisync's bb-pdf-fill.js, which is what the
+  // endpoint below actually dispatches on: a key listed here but not there just
+  // 404s, so the page must not invent one.
+  var PREFILLABLE = [
+    'bb_doc_lizenz', 'bb_doc_selfdecl', 'bb_doc_natdecl',
+    'bb_doc_freibrief', 'bb_doc_u18parents',
+  ];
+
   var current = null; // { id, reference, email, required, docs }
 
   function showFeedback(kind, msg) {
@@ -114,6 +124,28 @@
         ok.textContent = de ? 'Bereits vorhanden' : 'Already on file';
         row.appendChild(ok);
       } else {
+        // Hand over the form already filled in from the applicant's own
+        // registration, so the only work left is print, sign, upload. Without
+        // this the page named a document and offered no way to obtain it — the
+        // blank PDFs are linked from the registration form, which somebody who
+        // already registered has no reason to revisit (A. Jung, 13.08.2026).
+        if (PREFILLABLE.indexOf(key) !== -1) {
+          var dl = document.createElement('a');
+          dl.href = DIRECTUS_URL + '/kscw/registration/doc-template/' + key
+            + '?reference=' + encodeURIComponent(current.reference)
+            + '&email=' + encodeURIComponent(current.email);
+          dl.className = 'btn btn-gold btn-sm';
+          dl.style.marginBottom = '8px';
+          // The response is Content-Disposition: attachment, so a success never
+          // navigates. _blank is for the failure case: without it a 404 or 500
+          // would replace this page with raw JSON and discard a hand-typed
+          // reference number.
+          dl.target = '_blank';
+          dl.rel = 'noopener';
+          dl.textContent = de ? 'Vorausgefülltes Formular herunterladen' : 'Download prefilled form';
+          row.appendChild(dl);
+          row.appendChild(document.createElement('br'));
+        }
         var input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*,.pdf';

@@ -25,16 +25,22 @@ test.describe('basketball youth cards', () => {
     // the script disagreed with the build, the page would visibly change after load.
     const drift = await page.evaluate(() => {
       const by = (window as unknown as {
-        kscwBirthYears?: { text: (s: string, a: number, span?: number) => string };
+        kscwBirthYears?: {
+          text: (s: string, a: number, span?: number, team?: string | null) => string;
+        };
       }).kscwBirthYears;
       if (!by) return ['birth-years.js did not load'];
       return [...document.querySelectorAll('[data-birth-age]')]
         .map((el) => {
           const shown = el.querySelector('.birth-years-value')?.textContent?.trim() ?? '';
+          // data-birth-team included on purpose: a squad with hand-written years
+          // (TEAM_BIRTH_YEARS) renders those, and the recompute has to reach the
+          // same answer from the attribute alone or the card changes on load.
           const want = by.text(
             el.getAttribute('data-birth-sport')!,
             Number(el.getAttribute('data-birth-age')),
             Number(el.getAttribute('data-birth-span')),
+            el.getAttribute('data-birth-team'),
           );
           return shown === want ? '' : `${el.getAttribute('data-birth-age')}: ${shown} ≠ ${want}`;
         })
@@ -49,15 +55,25 @@ test.describe('basketball youth cards', () => {
     // than the literal years, which change with the season and the roster.
     await gotoWithLang(page, '/basketball/teams/nachwuchs', 'de');
 
-    const value = (code: string) =>
-      page.locator(`.youth-card:has(h3[data-team-title="${code}"]) .birth-years-value`).first();
+    const values = (code: string) =>
+      page.locator(`.youth-card:has(h3[data-team-title="${code}"]) .birth-years-value`);
 
-    await expect(value('HU18')).toHaveText(/^\d{4}, \d{4}$/);
-    const boys = yearsOn((await value('HU18').textContent()) ?? '');
-    const girls = yearsOn((await value('DU18').textContent()) ?? '');
-    // Same oldest Jahrgang either way; the girls' card reaches further down.
-    expect(girls.slice(0, 4)).toBe(boys.slice(0, 4));
-    expect(girls).not.toBe(boys);
+    await expect(values('HU18').first()).toHaveText(/^\d{4}, \d{4}$/);
+    const bounds = (text: string) => {
+      const years = yearsOn(text).match(/\d{4}/g)!.map(Number);
+      return { first: years[0], last: years[years.length - 1] };
+    };
+    const boys = bounds((await values('HU18').first().textContent()) ?? '');
+
+    // Every girls' squad, not just the first: one of them states its own years by
+    // hand (TEAM_BIRTH_YEARS) and starts a year earlier than the category does.
+    const girlsCards = await values('DU18').allTextContents();
+    expect(girlsCards.length).toBeGreaterThan(0);
+    for (const text of girlsCards) {
+      const girls = bounds(text);
+      expect(girls.first, text).toBeLessThanOrEqual(boys.first);
+      expect(girls.last, text).toBeGreaterThan(boys.last);
+    }
   });
 
   test('follow the language toggle', async ({ page }) => {

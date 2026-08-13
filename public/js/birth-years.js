@@ -47,8 +47,45 @@
     return y.from + '–' + y.to;
   }
 
-  /** The years text for one age category, or '' when the inputs make no sense. */
-  function textFor(sport, age, spanTo) {
+  // Mirror of TEAM_BIRTH_YEARS in src/lib/birthYears.ts — Jahrgänge the club
+  // stated by hand for one squad, because the category rule cannot know them
+  // (DU18 Spark carries a 2008-born player). Stored as stated for `season` and
+  // shifted to the current one, so they move up by a year every 1 August like
+  // everything else on these cards. Read the comment there before editing here.
+  var TEAM_BIRTH_YEARS = {
+    'DU18 SPARK': { season: 2026, years: [2008, 2009, 2010, 2011, 2012] },
+    'DU18 FIRE': { season: 2026, years: [2009, 2010, 2011, 2012] }
+  };
+
+  function teamKey(name) {
+    return String(name == null ? '' : name).trim().replace(/\s+/g, ' ').toUpperCase();
+  }
+
+  function teamBirthYears(name, seasonYear) {
+    var entry = TEAM_BIRTH_YEARS[teamKey(name)];
+    if (!entry) return null;
+    var shift = seasonYear - entry.season;
+    return entry.years.map(function (y) { return y + shift; });
+  }
+
+  function formatYearList(years) {
+    var sorted = years.slice().sort(function (a, b) { return a - b; })
+      .filter(function (y, i, all) { return i === 0 || y !== all[i - 1]; });
+    if (!sorted.length) return '';
+    if (sorted.length === 1) return String(sorted[0]);
+    if (sorted.length === 2) return sorted[0] + ', ' + sorted[1];
+    var consecutive = sorted.every(function (y, i) { return i === 0 || y === sorted[i - 1] + 1; });
+    return consecutive ? sorted[0] + '–' + sorted[sorted.length - 1] : sorted.join(', ');
+  }
+
+  /**
+   * The years text for one age category, or '' when the inputs make no sense.
+   * `team` is teams.name where the caller knows it — a squad with hand-written
+   * years uses those instead of the category rule.
+   */
+  function textFor(sport, age, spanTo, team) {
+    var stated = teamBirthYears(team, seasonStartYear(new Date()));
+    if (stated) return formatYearList(stated);
     if (!(age > 0)) return '';
     return formatBirthYears(birthYears(sport, age, seasonStartYear(new Date()), spanTo));
   }
@@ -75,18 +112,23 @@
    * and the refresh pass above both apply unchanged. Returns null when there is no
    * age category to state.
    */
-  function element(sport, age, spanTo) {
-    var text = textFor(sport, age, spanTo);
+  function element(sport, age, spanTo, team) {
+    var text = textFor(sport, age, spanTo, team);
     if (!text) return null;
     var spec = birthYears(sport, age, seasonStartYear(new Date()), spanTo);
+    // Hand-written years are a closed list, so they take the plural "Jahrgänge:"
+    // shape even where the derived line would be open-ended. Same rule as
+    // components/BirthYears.astro.
+    var andYounger = spec.andYounger && !teamBirthYears(team, seasonStartYear(new Date()));
 
     var wrap = document.createElement('span');
     wrap.className = 'birth-years';
     wrap.setAttribute('data-birth-sport', sport);
     wrap.setAttribute('data-birth-age', String(age));
     wrap.setAttribute('data-birth-span', String(typeof spanTo === 'number' ? spanTo : age));
+    if (team) wrap.setAttribute('data-birth-team', String(team));
 
-    wrap.appendChild(spec.andYounger
+    wrap.appendChild(andYounger
       ? label('youthBirthYear', 'Jahrgang:')
       : label('youthBirthYears', 'Jahrgänge:'));
 
@@ -95,7 +137,7 @@
     value.textContent = text;
     wrap.appendChild(value);
 
-    if (spec.andYounger) {
+    if (andYounger) {
       var younger = document.createElement('span');
       younger.setAttribute('data-i18n', 'youthBirthYearsYounger');
       younger.textContent = (window.i18n && window.i18n.t)
@@ -118,7 +160,8 @@
     var text = textFor(
       el.getAttribute('data-birth-sport') || 'basketball',
       age,
-      spanAttr === null ? age : Number(spanAttr)
+      spanAttr === null ? age : Number(spanAttr),
+      el.getAttribute('data-birth-team')
     );
     if (text) value.textContent = text;
   }
@@ -132,6 +175,8 @@
     seasonStartYear: seasonStartYear,
     birthYears: birthYears,
     format: formatBirthYears,
+    formatYearList: formatYearList,
+    teamYears: teamBirthYears,
     text: textFor,
     youthAge: youthAge,
     element: element,

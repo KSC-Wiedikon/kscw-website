@@ -102,7 +102,7 @@ const closedBadge = splitByGender
 const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']
 ---
 <div class="youth-meta" data-team-code={code} data-team-name={info.name}>
-  {age !== null && <BirthYears sport="basketball" age={age} spanTo={spanTo} />}
+  {age !== null && <BirthYears sport="basketball" age={age} spanTo={spanTo} team={info.name} />}
   {info.slots.length > 0 && (
     <>
       <span class="youth-meta-label"><strong data-i18n="bbTrainingLabel">{t('de', 'bbTrainingLabel')}</strong></span>

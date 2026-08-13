@@ -42,7 +42,7 @@ const age = team ? youthAge(team.name) : null
         </p>
         {age !== null && (
           <p class="team-league team-hero-years">
-            <BirthYears sport={sport} age={age} />
+            <BirthYears sport={sport} age={age} team={team.name} />
           </p>
         )}
       </div>

@@ -83,6 +83,83 @@ export function formatBirthYears(y: BirthYears): string {
   return `${y.from}–${y.to}`
 }
 
+// ── Years stated by hand for one team ──────────────────────────────────────
+
+/**
+ * What a single team says its own Jahrgänge are, when the category rule above
+ * gets it wrong for that squad.
+ *
+ * The rule is right about the CATEGORY and can only ever be right about the
+ * category: Swiss Basketball's U18 is 2009 + 2010 in 2026/27, and groupSpanTo()
+ * widens a card when the club runs no team one step down. A squad is a different
+ * question — DU18 Spark carries a 2008-born player, which no federation table
+ * and no roster the website can read will ever say (members.birthdate is not
+ * public, and publishing minors' birthdates to fix a label would be a bad
+ * trade). So these are written down by hand, from what the club states in
+ * wiedisync.
+ *
+ * `season` is what makes them survive a season change instead of quietly rotting:
+ * the years are stored as stated FOR that season and shifted by the difference
+ * to the current one, so every 1 August they move up by one on their own, exactly
+ * like the derived line next to them. A squad that keeps a genuinely fixed year
+ * would need a different mechanism — none does, so there isn't one.
+ *
+ * Keyed by `teams.name` as Directus spells it (case and inner spacing are
+ * normalised, nothing else). A rename in Directus therefore drops the override
+ * and the card falls back to the derived range: wrong-but-plausible beats
+ * silently attaching another team's years to a renamed squad.
+ *
+ * Mirrored in public/js/birth-years.js — tests/unit/birth-years.test.ts fails if
+ * the two copies drift.
+ */
+export interface TeamBirthYears {
+  /** Season the years were stated for, named by its first calendar year. */
+  season: number
+  /** The eligible Jahrgänge as stated, oldest first. */
+  years: number[]
+}
+
+export const TEAM_BIRTH_YEARS: Record<string, TeamBirthYears> = {
+  // Stated by the club for 2026/27. Spark takes a player a year above the
+  // category; Fire matches the derived U18 + absorbed-U16 range and is listed
+  // anyway, so the pair is read and maintained together.
+  'DU18 SPARK': { season: 2026, years: [2008, 2009, 2010, 2011, 2012] },
+  'DU18 FIRE': { season: 2026, years: [2009, 2010, 2011, 2012] },
+}
+
+/** Lookup key for a team name: upper-case, inner whitespace collapsed. */
+export function teamKey(name: string | null | undefined): string {
+  return (name ?? '').trim().replace(/\s+/g, ' ').toUpperCase()
+}
+
+/**
+ * The hand-written Jahrgänge for a team, shifted to `seasonYear`, or null when
+ * the team has none and the category rule stands.
+ */
+export function teamBirthYears(
+  name: string | null | undefined,
+  seasonYear: number,
+): number[] | null {
+  const entry = TEAM_BIRTH_YEARS[teamKey(name)]
+  if (!entry) return null
+  const shift = seasonYear - entry.season
+  return entry.years.map(y => y + shift)
+}
+
+/**
+ * An explicit list of years in the same shapes formatBirthYears() produces, so
+ * an overridden card and a derived one next to it read identically: "2009",
+ * "2009, 2010", "2008–2012", and a comma list if the years ever have a gap.
+ */
+export function formatYearList(years: number[]): string {
+  const sorted = [...new Set(years)].sort((a, b) => a - b)
+  if (!sorted.length) return ''
+  if (sorted.length === 1) return String(sorted[0])
+  if (sorted.length === 2) return `${sorted[0]}, ${sorted[1]}`
+  const consecutive = sorted.every((y, i) => i === 0 || y === sorted[i - 1] + 1)
+  return consecutive ? `${sorted[0]}–${sorted[sorted.length - 1]}` : sorted.join(', ')
+}
+
 /**
  * The U-number in a team name or chip label — "DU23-1" → 23, "BB-HU18" → 18,
  * "Damen U23-1" → 23. Returns null for adult teams (D1, Legends, Lions), which

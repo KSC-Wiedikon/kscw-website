@@ -16,6 +16,17 @@ import { DIRECTUS_URL } from '../directus'
  * the same payload the browser gets. Only the hero fields are taken here — see the
  * note in the page templates for why the roster is deliberately NOT pre-rendered.
  */
+/** One weekly training slot, deduped from the dated sessions the API returns. */
+export interface TrainingSlot {
+  /** 0 = Monday, matching the `weekdayLong0…6` dictionary keys and hall_slots. */
+  weekday: number
+  /** 'HH:MM', 24-hour (CLAUDE.md → Time & date). */
+  start: string
+  end: string
+  hall: string
+  address: string
+}
+
 export interface TeamDetail {
   name: string
   fullName: string
@@ -23,6 +34,54 @@ export interface TeamDetail {
   season: string
   /** Directus asset id of the team photo, or '' when there is none. */
   picture: string
+  /**
+   * The weekly training pattern.
+   *
+   * `/kscw/public/team/<id>` has always returned a 10-item `upcoming_trainings`
+   * array with day, time and hall — this function simply threw it away, so the most
+   * asked-for fact on the site ("when and where does this team train?") reached the
+   * page only after JS and a Directus round trip. A crawler, a no-JS visitor and a
+   * first paint all saw "Trainingszeiten werden geladen…" instead.
+   *
+   * Deduped to the recurring pattern rather than listed as dates: ten dated rows are
+   * the same two or three weekly slots repeated, and the weekly shape is what a
+   * prospective member actually wants to read.
+   */
+  trainings: TrainingSlot[]
+}
+
+/** 'HH:MM:SS' → 'HH:MM'. Times arrive from Postgres with seconds. */
+function hhmm(raw: unknown): string {
+  return String(raw ?? '').slice(0, 5)
+}
+
+function weeklyPattern(rows: unknown): TrainingSlot[] {
+  if (!Array.isArray(rows)) return []
+  const seen = new Map<string, TrainingSlot>()
+
+  for (const row of rows) {
+    // A cancelled one-off says nothing about the weekly pattern.
+    if (!row || row.cancelled || !row.date || !row.start_time) continue
+    const when = new Date(row.date)
+    if (Number.isNaN(when.getTime())) continue
+
+    // Dates arrive as midnight UTC, so the UTC weekday is the intended one — and
+    // getUTCDay() counts from Sunday while this codebase counts from Monday.
+    const weekday = (when.getUTCDay() + 6) % 7
+    const slot: TrainingSlot = {
+      weekday,
+      start: hhmm(row.start_time),
+      end: hhmm(row.end_time),
+      hall: String(row.hall_name || ''),
+      address: String(row.hall_address || ''),
+    }
+    const key = `${slot.weekday}|${slot.start}|${slot.end}|${slot.hall}`
+    if (!seen.has(key)) seen.set(key, slot)
+  }
+
+  return [...seen.values()].sort((a, b) =>
+    a.weekday - b.weekday || a.start.localeCompare(b.start),
+  )
 }
 
 /**
@@ -45,6 +104,7 @@ export async function getTeamDetail(directusId: string): Promise<TeamDetail | nu
       league: String(raw.league || ''),
       season: String(raw.season || ''),
       picture: raw.team_picture ? String(raw.team_picture) : '',
+      trainings: weeklyPattern(raw.upcoming_trainings),
     }
   } catch (err) {
     console.warn(`[teamDetail] ${directusId} unavailable — page ships without a hero:`, err)

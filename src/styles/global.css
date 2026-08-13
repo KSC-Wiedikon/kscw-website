@@ -151,8 +151,16 @@
   --bg-muted: #141d30;
   --text-primary: #e2e8f0;
   --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  /* Was #64748b — the SAME value as the light theme used, which on this near-black
+     ground measured 3.3–3.8:1 and carried fixture times, news dates, table headers
+     and roster positions: the practical information members and opponents come for.
+     #78889f is 5.0:1 here and still reads as muted next to --text-secondary. */
+  --text-muted: #78889f;
   --border: #2d3a52;
+  /* The brand blue is a FILL colour. As type on this ground it measures 2.65:1, so
+     every `color:` use of it goes through this token instead, which the .light block
+     resolves straight back to --kscw-blue. 7.4:1 here. */
+  --accent-text: #9aa3da;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
   --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -2px rgba(0,0,0,0.2);
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -4px rgba(0,0,0,0.2);
@@ -164,8 +172,10 @@
   --bg-muted: #f9fafb;
   --text-primary: #1e293b;
   --text-secondary: #475569;
+  /* 4.76:1 on white — fine as-is; only the dark theme needed lifting. */
   --text-muted: #64748b;
   --border: #e2e8f0;
+  --accent-text: var(--kscw-blue);
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
   --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
   --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
@@ -355,7 +365,7 @@ a.sponsor-page-card:hover {
   color: #e2e8f0;
 }
 .light .nav-logo span {
-  color: var(--kscw-blue);
+  color: var(--accent-text);
 }
 :root .hamburger-icon span {
   background: #e2e8f0;
@@ -531,7 +541,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: var(--text-xl);
-  color: var(--kscw-blue);
+  color: var(--accent-text);
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
@@ -570,7 +580,7 @@ button.nav-link {
   min-height: 44px;
 }
 .nav-link:hover, .nav-link.active {
-  color: var(--kscw-blue);
+  color: var(--accent-text);
   background: rgba(74, 85, 162, 0.06);
 }
 .nav-link .chevron {
@@ -624,7 +634,7 @@ button.nav-link {
 }
 .dropdown-link:hover {
   background: rgba(74, 85, 162, 0.06);
-  color: var(--kscw-blue);
+  color: var(--accent-text);
 }
 .dropdown-divider {
   height: 1px;
@@ -666,7 +676,7 @@ button.nav-link {
   transition: color var(--transition-fast);
 }
 .dropdown-group-toggle:hover {
-  color: var(--kscw-blue);
+  color: var(--accent-text);
 }
 .dropdown-group-chevron {
   width: 14px;
@@ -777,7 +787,7 @@ button.nav-link {
   align-items: center;
 }
 .mobile-sublink:hover {
-  color: var(--kscw-blue);
+  color: var(--accent-text);
 }
 .mobile-sub-label {
   padding: var(--space-xs) var(--space-md);
@@ -831,7 +841,12 @@ button.nav-link {
   margin-bottom: var(--space-md);
 }
 .footer-links a {
-  display: block;
+  /* Was `display: block` with only --space-xs of padding, i.e. ~30px tall with 18
+     links stacked 4px apart. The pair that matters most is Datenschutz / Impressum,
+     where a mis-tap lands on the neighbouring legal page. */
+  display: flex;
+  align-items: center;
+  min-height: 44px;
   padding: var(--space-xs) 0;
   color: var(--text-muted);
   font-size: var(--text-sm);
@@ -939,6 +954,23 @@ button.nav-link {
   gap: var(--space-md);
   justify-content: center;
   flex-wrap: wrap;
+}
+/* The join CTA sits below the two sport buttons rather than beside them: those pick
+   a sport, this one starts a conversation, and giving three equal-weight buttons the
+   same row is how a page ends up with no primary action at all. Gold on the blue hero
+   is the strongest contrast pair the brand palette has. */
+.hero-cta {
+  margin-top: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.hero-cta-note {
+  font-size: var(--text-sm);
+  opacity: 0.85;
+  margin: 0;
+  max-width: 42ch;
 }
 
 /* ── Team Hero (smaller, with accent color) ────────────────── */
@@ -1203,6 +1235,16 @@ img.roster-avatar[src*="kscw_weiss"] {
   color: var(--text-muted);
   font-size: var(--text-sm);
 }
+/* The placeholder doubles as an image frame when a news item has a picture, but it
+   is a flex container with no rule for a child <img> — so the image kept its
+   intrinsic ratio, overflowed the 16/10 box and was clipped from the top, slicing
+   the headline off the club's own recruiting poster. `.card-img` next door has had
+   `object-fit: cover` all along; this gives the placeholder variant the same. */
+.card-img-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 
 /* ── Team Chips ────────────────────────────────────────────── */
 .chip {
@@ -1233,7 +1275,7 @@ img.roster-avatar[src*="kscw_weiss"] {
   background: var(--bg-light);
   color: var(--text-secondary);
 }
-.badge-blue { background: rgba(74, 85, 162, 0.1); color: var(--kscw-blue); }
+.badge-blue { background: rgba(74, 85, 162, 0.1); color: var(--accent-text); }
 /* Ochre darkened from #92710a, which reached only 4.24:1 on the light theme —
    .light .badge repaints this badge's background to the neutral #f5f6fa, so the
    text lands on grey rather than on the gold tint set here. Kept in step with
@@ -1287,7 +1329,7 @@ tr:hover td {
 }
 .light .table-highlight td {
   background: rgba(74, 85, 162, 0.08);
-  color: var(--kscw-blue);
+  color: var(--accent-text);
 }
 
 /* ── Tabs ──────────────────────────────────────────────────── */
@@ -1321,7 +1363,7 @@ tr:hover td {
   color: var(--text-primary);
 }
 .tab-btn.active {
-  color: var(--kscw-blue);
+  color: var(--accent-text);
   border-bottom-color: var(--kscw-blue);
 }
 .tab-panel {
@@ -1348,6 +1390,12 @@ tr:hover td {
   font-weight: 600;
   cursor: pointer;
   transition: all var(--transition-fast);
+  /* 44px is the floor this design system already applies in seven other places;
+     the padding alone rendered these at 34px. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -1475,7 +1523,7 @@ tr:hover td {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: var(--text-lg);
-  color: var(--kscw-blue);
+  color: var(--accent-text);
   white-space: nowrap;
 }
 .game-score.win { color: var(--success); }
@@ -1488,7 +1536,7 @@ tr:hover td {
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
-.game-badge.home { color: var(--kscw-blue); }
+.game-badge.home { color: var(--accent-text); }
 .game-badge.away { color: var(--bb-orange); }
 .game-empty {
   text-align: center;
@@ -1712,7 +1760,7 @@ tr:hover td {
 }
 .gm-value { color: var(--text); }
 .gm-link {
-  color: var(--kscw-blue);
+  color: var(--accent-text);
   text-decoration: none;
 }
 .gm-link:hover { text-decoration: underline; }
@@ -1753,7 +1801,7 @@ tr:hover td {
   transition: color var(--transition-fast);
 }
 .news-card:hover .card-body h3 {
-  color: var(--kscw-blue);
+  color: var(--accent-text);
 }
 .news-date {
   font-size: var(--text-xs);
@@ -1857,7 +1905,7 @@ tr:hover td {
   margin: var(--space-md) 0;
 }
 .nm-body a {
-  color: var(--kscw-blue);
+  color: var(--accent-text);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -2256,6 +2304,12 @@ tr:hover td {
 }
 .roster-number.is-captain { color: #FFC832; }
 .roster-number.is-libero  { color: #ffffff; }
+/* Both literals above are picked for the dark default. In the light theme the
+   libero's white sat on a white card — two D1 players had no visible shirt number
+   at all — and the captain's #FFC832 measured 1.55:1. #836408 is the ochre this
+   file already uses wherever gold has to sit on a light ground. */
+.light .roster-number.is-captain { color: #836408; }
+.light .roster-number.is-libero  { color: var(--text-primary); }
 .roster-list .roster-card {
   padding: var(--space-sm) var(--space-md);
 }
@@ -2359,6 +2413,9 @@ tr:hover td {
 }
 .roster-table .rt-num.is-captain { color: #FFC832; }
 .roster-table .rt-num.is-libero  { color: #ffffff; }
+/* Same fix as .roster-number above — this is the table view of the same data. */
+.light .roster-table .rt-num.is-captain { color: #836408; }
+.light .roster-table .rt-num.is-libero  { color: var(--text-primary); }
 .roster-table .rt-photo {
   width: 56px;
   padding-right: 0;
@@ -2523,7 +2580,7 @@ tr:hover td {
   width: 24px;
   height: 24px;
   flex-shrink: 0;
-  color: var(--kscw-blue);
+  color: var(--accent-text);
 }
 .accordion-chevron {
   width: 20px;
@@ -2575,7 +2632,7 @@ tr:hover td {
   width: 20px;
   height: 20px;
   flex-shrink: 0;
-  color: var(--kscw-blue);
+  color: var(--accent-text);
 }
 .reg-link-text {
   flex: 1;
@@ -2680,7 +2737,7 @@ tr:hover td {
   border: 0;
 }
 .text-gold { color: var(--kscw-gold); }
-.text-blue { color: var(--kscw-blue); }
+.text-blue { color: var(--accent-text); }
 .text-muted { color: var(--text-muted); }
 .text-sm { font-size: var(--text-sm); }
 .font-display { font-family: var(--font-display); }
@@ -2786,6 +2843,10 @@ tr:hover td {
 }
 .lang-btn:hover, .lang-btn-mobile:hover { color: var(--text-primary); }
 .lang-btn.active, .lang-btn-mobile.active { font-weight: 700; color: var(--kscw-gold); }
+/* --kscw-gold on the light theme's white header measured 1.55:1 — the active
+   language, i.e. the one piece of state this control exists to show, was the
+   hardest thing on it to read. Same ochre as the roster numbers. */
+.light .lang-btn.active, .light .lang-btn-mobile.active { color: #836408; }
 .lang-sep { color: var(--text-secondary); font-size: 0.8rem; user-select: none; }
 .mobile-lang-toggle {
   justify-content: center;
@@ -2900,6 +2961,35 @@ button:focus-visible {
     height: 480px;
   }
 }
+/* Click-to-load gate shown in place of the iframe until the visitor asks for it.
+   Sized close to the embed so consenting does not jolt the page. */
+.ig-consent {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-light);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  text-align: center;
+}
+.ig-consent-text {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 40ch;
+}
+.ig-consent-link {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+}
+.ig-consent-link:hover { color: var(--kscw-gold); }
+.light .ig-consent-link:hover { color: #836408; }
 
 /* ── CTA Section ───────────────────────────────────────────── */
 .cta-section {
@@ -3046,7 +3136,7 @@ button:focus-visible {
   font-size: var(--text-sm);
   text-transform: uppercase;
   min-width: 100px;
-  color: var(--kscw-blue);
+  color: var(--accent-text);
 }
 .training-time {
   font-weight: 500;
@@ -3485,7 +3575,7 @@ button:focus-visible {
 .cal-filter-btn.active {
   background: rgba(74, 85, 162, 0.08);
   border-color: var(--kscw-blue);
-  color: var(--kscw-blue);
+  color: var(--accent-text);
 }
 .cal-filter-btn.open {
   border-color: var(--kscw-blue);
@@ -3578,7 +3668,7 @@ button:focus-visible {
   border-style: dashed !important;
 }
 .cal-filter-reset:hover {
-  color: var(--kscw-blue) !important;
+  color: var(--accent-text) !important;
   border-color: var(--kscw-blue) !important;
   border-style: solid !important;
 }
@@ -3618,7 +3708,7 @@ button:focus-visible {
 }
 .cal-entry-badge--home {
   background: rgba(74, 85, 162, 0.2);
-  color: var(--kscw-blue);
+  color: var(--accent-text);
 }
 .cal-entry-badge--away {
   background: rgba(217, 119, 6, 0.2);
@@ -3730,7 +3820,7 @@ button:focus-visible {
   text-align: center;
 }
 .cal-detail-link {
-  color: var(--kscw-blue);
+  color: var(--accent-text);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -4492,4 +4582,76 @@ html[lang="en"] [data-lang-only="de"] { display: none; }
 @media (max-width: 900px) {
   .search-btn { display: none; }
   .mobile-search-btn { display: flex; }
+}
+
+/* ── Print ─────────────────────────────────────────────────────
+   Dark is this site's DEFAULT theme (the `:root` block above; `.light` is the
+   opt-in override), and printers do not paint backgrounds. Without this block a
+   page printed exactly as it looked on screen minus the ground: headings computed
+   to rgb(255,255,255) and body text to roughly 1.14:1 — a coach printing hall
+   addresses for a noticeboard got a near-blank sheet.
+
+   So the first job here is to force the LIGHT token set regardless of the visitor's
+   theme; hiding chrome is secondary. Overriding the tokens rather than the
+   components means every rule that already reads `var(--text-primary)` follows
+   along, including the ones on pages this file has never heard of. */
+@media print {
+  :root,
+  :root.light {
+    --bg-white: #ffffff;
+    --bg-light: #ffffff;
+    --bg-muted: #ffffff;
+    --text-primary: #000000;
+    --text-secondary: #1f2937;
+    --text-muted: #374151;
+    --border: #9ca3af;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --shadow-xl: none;
+  }
+
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  /* Navigation, the reading-progress bar and decorative canvases carry no
+     information on paper, and the sparkles canvas prints as a grey block. */
+  .site-header,
+  .scroll-progress,
+  .site-footer,
+  footer,
+  .sparkles-canvas,
+  .cta-section,
+  .search-overlay,
+  .nav-hamburger,
+  [data-lucide] {
+    display: none !important;
+  }
+
+  /* Hardcoded-for-dark literals that no token reaches. */
+  .roster-number.is-libero,
+  .roster-table .rt-num.is-libero { color: #000000; }
+  .roster-number.is-captain,
+  .roster-table .rt-num.is-captain { color: #7a5c07; }
+
+  a { text-decoration: underline; }
+  /* A printed page cannot be clicked, so an external link's destination has to be
+     legible. Internal links are left alone — the path alone tells a reader nothing
+     and the noise would swamp the fixture tables this is mostly used for. */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+
+  .card,
+  .legal-card,
+  .roster-card,
+  table { break-inside: avoid; }
+
+  h1, h2, h3 { break-after: avoid; }
+
+  main { padding-top: 0 !important; }
 }

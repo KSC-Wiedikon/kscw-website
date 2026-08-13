@@ -2,6 +2,40 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.21.0] — 2026-08-13
+
+### Falsche Adressen zeigen nicht mehr einfach die Startseite
+- Wer sich vertippt hat oder einem alten Link folgte, landete **wortlos auf der Startseite** — die Seite meldete dem Browser sogar «alles in Ordnung». Das betraf auch echte, früher existierende Seiten: Teamseiten wechseln bei jedem Saisonwechsel im Juni, und jeder Link auf ein altes Team führte still auf die Startseite. Neu gibt es eine richtige **«Seite nicht gefunden»-Seite** mit Wegweisern zu Volleyball, Basketball, Startseite und Kontakt.
+
+### Das Vereinswappen ist wieder das Vereinswappen
+- Das kleine Symbol im Browser-Tab (**Favicon**) war seit dem allerersten Tag das **Logo des verwendeten Programmier-Werkzeugs**, nicht das KSCW-Wappen — überall dort sichtbar, wo Lesezeichen, News-Reader oder Link-Vorschauen es abholen. Jetzt kommt das Wappen, zusätzlich als **App-Symbol** für «Zum Startbildschirm hinzufügen» auf dem iPhone.
+- Wer einen Link zu kscw.ch in **WhatsApp, Instagram oder Facebook** teilt, bekam bisher eine **graue Kachel ohne Bild**. Neu erscheint das Vereinswappen als Vorschaubild.
+
+### Die Datenschutzerklärung stimmt wieder
+- Impressum und Datenschutz nannten **Hetzner** als Hoster der Website. Die Website läuft seit dem Umzug auf **Cloudflare** — eine Auskunftsanfrage wäre also an eine Firma gegangen, die gar nichts über einen weiss. Das ist korrigiert; Hetzner bleibt, richtig benannt als Standort der Vereinsdatenbank.
+- Neu beschrieben sind der **Spam-Schutz der Formulare**, der **Newsletter** und die **Vereinsanmeldung** — letztere sammelt AHV-Nummer, Zahlungsverbindung und teils ein Ausweisdokument, und stand bisher in der Datenschutzerklärung überhaupt nicht.
+- Der Cookie-Abschnitt beschrieb Cookies, die es gar nicht gibt. Die Website setzt **keine Cookies** und verwendet **keine Statistik-Werkzeuge**; gespeichert werden nur Farbschema, Sprache und Kaderansicht, direkt im Browser. Deshalb braucht diese Website **kein Cookie-Banner** — das steht jetzt auch so da. Die Erklärung trägt neu ein **Datum**.
+- **Instagram-Feeds** auf Teamseiten wurden bisher sofort geladen, obwohl die Datenschutzerklärung ausdrücklich das Gegenteil versprach. Jetzt erscheint zuerst ein Hinweis mit Knopf — geladen wird erst nach Zustimmung.
+
+### Teamseiten sagen endlich, wann und wo trainiert wird
+- **Trainingszeiten, Wochentag und Halle** stehen jetzt direkt in der Seite, statt erst nach dem Laden zu erscheinen. Die Daten waren immer schon da — sie wurden nur weggeworfen. Das ist die meistgestellte Frage auf der ganzen Website, für Mitglieder wie für Gegner.
+- Bei Google hiessen alle 16 Teamseiten bisher nur «**D1 — KSC Wiedikon**» und hatten **keinen Beschreibungstext**. Jetzt stehen dort der volle Teamname, die Sportart und die Liga.
+- Basketball-Ligen erschienen als **Verbandskürzel** («H3LS», «D1LRA»). Jetzt steht dort «3. Liga» bzw. «1. Liga».
+
+### Mitgliedschaft: keine widersprüchlichen Angaben mehr
+- Auf der Mitgliedschaftsseite stand, man bekomme das **Anmeldeformular auf Papier** vom Trainer — zwanzig Zeilen über vier Knöpfen, die zum funktionierenden Online-Formular führen. Der Text beschreibt jetzt den tatsächlichen Weg.
+- Der **Zuschlag von CHF 100** ohne erfüllte Offiziellen-Pflicht im Basketball war zwar formuliert und übersetzt, wurde aber **auf keiner Seite angezeigt**. Wer mit CHF 520 rechnete, konnte CHF 620 verrechnet bekommen. Er steht jetzt bei den Beiträgen.
+
+### Kleinere Dinge, die grösser waren als sie klingen
+- Nach einem **Fehler beim Absenden** des Kontakt- oder Feedback-Formulars war jeder weitere Versuch zum Scheitern verurteilt — der Spam-Schutz gibt seinen Prüfcode nur einmal aus. Jetzt funktioniert der zweite Versuch.
+- Das **Kontaktformular ragte auf dem Handy rechts aus dem Bild** — also genau dort, wo Interessierte den ersten Schritt machen sollen.
+- Rückmeldungen der Formulare werden neu auch von **Screenreadern vorgelesen**.
+- Beim **Ausdrucken** war die Seite praktisch leer: weisse Schrift auf weissem Papier. Wer Hallenadressen fürs Anschlagbrett druckt, bekommt jetzt ein lesbares Blatt.
+- Im dunklen Design waren **Spielzeiten, News-Daten und Tabellenköpfe** zu blass. Zwei Rückennummern (Libero) waren im hellen Design **weiss auf weiss**, also gar nicht zu sehen.
+- Die Startseite hat neu einen **Knopf für ein Probetraining** — vorher führte von dort kein einziger Weg zum Mitmachen. Der Untertitel nennt jetzt **Zürich-Wiedikon**.
+- Die Teamzahl wurde an drei Stellen **unterschiedlich** angegeben (300 Mitglieder / 20 Teams / 30 Teams). Jetzt einheitlich.
+- Neu gibt es eine **sitemap.xml** für Suchmaschinen.
+
 ## [1.20.0] — 2026-08-12
 
 ### Die Seite lädt nicht mehr zuerst auf Deutsch und springt dann auf Englisch

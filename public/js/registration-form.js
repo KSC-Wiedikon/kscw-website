@@ -21,6 +21,22 @@
 
   if (!form) return;
 
+  // Re-read the language when it changes.
+  //
+  // `locale` above was captured once at init and never updated, so every validation
+  // message, country name and confirmation string on this form was frozen in
+  // whatever language the page happened to load in. A visitor who arrived in German
+  // and switched to English still got German errors — on the one form that collects
+  // an identity document and an IBAN, i.e. exactly where a confusing error costs the
+  // club a member. contact-form.js has listened for this event all along.
+  //
+  // Reassigning the variable is enough: every reader above is inside a function and
+  // reads it at call time. The one exception is the country list, which is sorted
+  // once at init — its ordering stays in the load-time language, which is cosmetic.
+  document.addEventListener('langChanged', function () {
+    locale = document.documentElement.lang || 'de';
+  });
+
   // Surface client-side submit blocks (validation / expired captcha) into the
   // error log via the console.error capture in error-logger.js, so silent
   // "it didn't work" reports become diagnosable. Prefixed for easy filtering.

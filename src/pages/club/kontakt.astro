@@ -88,7 +88,7 @@ const basketballContacts = contactPersons.filter(c => c.sport === 'basketball');
               <span data-i18n="contactSubmit">{t(locale, 'contactSubmit')}</span>
             </button>
           </form>
-          <div id="form-feedback" style="display: none;"></div>
+          <div id="form-feedback" role="status" aria-live="polite" style="display: none;"></div>
         </div>
 
         <!-- Sidebar -->
@@ -169,6 +169,15 @@ const basketballContacts = contactPersons.filter(c => c.sport === 'basketball');
     grid-template-columns: 1.2fr 0.8fr;
     gap: var(--space-2xl);
     align-items: start;
+  }
+  /* Grid items default to `min-width: auto`, so a child whose content has a wider
+     intrinsic minimum (the form's input row, the contact cards' email addresses)
+     refuses to shrink below it and pushes past the viewport. At 375px the form and
+     all four cards ran ~15px off the right edge; `overflow-x: hidden` on .container
+     hid the symptom, so the club's stated first step for a prospect simply looked
+     broken. min-width: 0 lets them shrink to the track. */
+  .contact-layout > * {
+    min-width: 0;
   }
   @media (max-width: 768px) {
     .contact-layout { grid-template-columns: 1fr; }
@@ -277,7 +286,7 @@ const basketballContacts = contactPersons.filter(c => c.sport === 'basketball');
     margin: 0;
   }
   .contact-info-card a {
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
     text-decoration: underline;
   }
   .social-links {
@@ -296,7 +305,7 @@ const basketballContacts = contactPersons.filter(c => c.sport === 'basketball');
     transition: color 0.2s ease;
   }
   .social-link:hover {
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
   }
   #team-group {
     overflow: hidden;
@@ -315,7 +324,7 @@ const basketballContacts = contactPersons.filter(c => c.sport === 'basketball');
   }
   .team-waitlist-link {
     font-weight: 600;
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
     text-decoration: underline;
     white-space: nowrap;
   }
@@ -369,7 +378,7 @@ const basketballContacts = contactPersons.filter(c => c.sport === 'basketball');
     flex-shrink: 0;
   }
   .consent-label a {
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
     text-decoration: underline;
   }
 </style>

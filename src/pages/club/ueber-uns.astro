@@ -332,9 +332,16 @@ const locale = 'de';
     flex-direction: column;
     align-items: center;
     gap: var(--space-xs);
+    /* Grid child: without this it refuses to shrink below its content's intrinsic
+       width and pushes the second column off the right edge at 375px. */
+    min-width: 0;
   }
   .stat-number {
-    font-size: 3rem;
+    /* Was a hardcoded 3rem, which is the CEILING of --text-5xl
+       (clamp(2.25rem, 5vw, 3rem)) applied at every width — so this override did
+       nothing on desktop and broke the two-column phone layout, where the token
+       would have stepped the number down to 2.25rem. */
+    font-size: var(--text-5xl);
     font-weight: 800;
     line-height: 1;
     color: var(--kscw-gold, #FFC832);
@@ -382,7 +389,7 @@ const locale = 'de';
     font-size: var(--text-lg);
     font-weight: 700;
     margin-bottom: var(--space-sm);
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
   }
   .value-card p {
     font-size: var(--text-sm);
@@ -429,7 +436,7 @@ const locale = 'de';
   .doc-card-title {
     font-size: var(--text-lg);
     font-weight: 700;
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
     margin-bottom: 4px;
   }
   .doc-card-desc {
@@ -586,7 +593,7 @@ const locale = 'de';
     color: var(--text-primary);
   }
   .map-contact-info a {
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
   }
   .history-content p {
     font-size: var(--text-base);
@@ -653,7 +660,7 @@ const locale = 'de';
     align-items: center;
     gap: 4px;
     font-size: 0.8rem;
-    color: var(--kscw-blue, #4A55A2);
+    color: var(--accent-text, #4A55A2);
     text-decoration: none;
     transition: opacity 0.2s ease;
   }

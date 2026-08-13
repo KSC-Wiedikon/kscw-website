@@ -54,6 +54,16 @@ try {
             <span>Basketball</span>
           </a>
         </div>
+        {/* The two buttons above are navigation — they ask which sport, not whether to
+            join. Before this block the entire page body held exactly two links, both
+            of them those, so the one page every search result and Instagram bio points
+            at offered a first-time visitor no action at all; the most prominent button
+            in the chrome was a members-only login. This is deliberately an addition,
+            not a replacement: that login serves several hundred people a day. */}
+        <div class="hero-cta">
+          <a href="/club/kontakt" class="btn btn-gold" data-i18n="homeHeroCtaButton">{t(locale, 'homeHeroCtaButton')}</a>
+          <p class="hero-cta-note" data-i18n="homeHeroCtaNote">{t(locale, 'homeHeroCtaNote')}</p>
+        </div>
       </div>
     </div>
   </section>
@@ -572,7 +582,13 @@ try {
               meta.className = 'flex items-center gap-sm mb-md';
               var dateSpan = document.createElement('span');
               dateSpan.className = 'news-date';
-              dateSpan.textContent = new Date(date).toLocaleDateString('de-CH', { timeZone: 'Europe/Zurich' });
+              // Without the explicit 2-digit parts de-CH drops leading zeros — this
+              // rendered "3.6.2026" while formatDate() a few hundred lines up in the
+              // same file rendered "15.09.2026", so one screen showed both shapes.
+              // CLAUDE.md → Time & date: always dd.mm.yyyy.
+              dateSpan.textContent = new Date(date).toLocaleDateString('de-CH', {
+                timeZone: 'Europe/Zurich', day: '2-digit', month: '2-digit', year: 'numeric',
+              });
               meta.appendChild(dateSpan);
               var badge = document.createElement('span');
               badge.className = 'badge ' + badgeClass;

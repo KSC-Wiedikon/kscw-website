@@ -282,9 +282,6 @@
         var bugPill = form.querySelector('[data-type="bug"]');
         if (bugPill) bugPill.classList.add('active');
         selectedType = 'bug';
-        if (window.turnstile && turnstileWidgetId !== null) {
-          window.turnstile.reset(turnstileWidgetId);
-        }
       })
       .catch(function (err) {
         var errMsg = (err && err.message && err.message !== 'HTTP 400')
@@ -293,6 +290,12 @@
         showFeedback(errMsg, 'error');
       })
       .finally(function () {
+        // Single-use token: resetting only on success (where this used to live) left
+        // a spent token in the widget after any failure, so every retry was rejected.
+        // Same fix as contact-form.js.
+        if (window.turnstile && turnstileWidgetId !== null) {
+          window.turnstile.reset(turnstileWidgetId);
+        }
         if (submitBtn) {
           submitBtn.disabled = false;
           // Restore original button content (icon + text) from cloned nodes

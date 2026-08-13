@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import de from '../../public/js/i18n/de.json';
 import en from '../../public/js/i18n/en.json';
-import searchIndex from '../../public/search-index.json';
+import searchIndex from '../../src/data/search-pages.json';
 
 const root = resolve(__dirname, '../..');
 const page = readFileSync(resolve(root, 'src/pages/weiteres/schreiberkurse-basketball.astro'), 'utf-8');

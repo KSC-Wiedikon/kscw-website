@@ -1,4 +1,4 @@
-import { fetchAllItems } from '../directus'
+import { fetchAllItems, strictBuildData } from '../directus'
 
 // Build-time data for the basketball youth page (/basketball/teams/nachwuchs).
 // Coaches come from the `teams.coach` M2M (→ members); training day/time/hall
@@ -86,6 +86,25 @@ interface DirectusTeamOpen {
 }
 
 const hhmm = (t: string | null | undefined) => (t ?? '').slice(0, 5)
+
+/**
+ * What a failed fetch does. Everywhere but the production build it warns and
+ * lets the page render its fallback; on the production build it throws, so the
+ * deploy fails and the last good page stays live rather than being replaced by
+ * ten nameless cards. See strictBuildData() for the exact conditions and the
+ * incident that put this here.
+ */
+function onFetchError(what: string, err: unknown): void {
+  if (strictBuildData()) {
+    throw new Error(
+      `[youthBasketball] ${what} failed against the production Directus — refusing to ` +
+      `ship /basketball/teams/nachwuchs without its teams. Set DIRECTUS_STRICT=0 to ` +
+      `deploy anyway. Cause: ${err instanceof Error ? err.message : String(err)}`,
+      { cause: err },
+    )
+  }
+  console.warn(`[youthBasketball] ${what} failed:`, err)
+}
 
 // A [DHM]U<age> token anywhere in a free-text string: "DU18 Spark" → D/18,
 // "BB - MU8/MU10" → M/8 + M/10. Leading zeros and a space before the number
@@ -235,7 +254,7 @@ async function fetchWaitlist(): Promise<Record<string, { url: string; label: str
     }
     return out
   } catch (err) {
-    console.warn('[youthBasketball] waitlist fetch failed — full-team links omitted:', err)
+    onFetchError('the waiting-list fetch (full-team links omitted)', err)
     return {}
   }
 }
@@ -282,7 +301,7 @@ async function fetchOpenStatus(): Promise<Record<string, OpenStatus>> {
     }
     return out
   } catch (err) {
-    console.warn('[youthBasketball] open-status fetch failed — open badges omitted:', err)
+    onFetchError('the open-status fetch (open badges omitted)', err)
     return {}
   }
 }
@@ -436,7 +455,7 @@ export async function getYouthBasketball(): Promise<YouthBasketball> {
     }
     return data
   } catch (err) {
-    console.warn('[youthBasketball] live fetch failed — cards render without coach/training:', err)
+    onFetchError('the teams/hall_slots fetch (cards render without name, coach or training)', err)
     return {}
   }
 }

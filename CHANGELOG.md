@@ -2,6 +2,17 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.24.0] — 2026-08-13
+
+### Die beiden U18-Mädchenteams nennen jetzt ihre eigenen Jahrgänge
+- Auf der Nachwuchsseite standen bei **DU18 Spark** und **DU18 Fire** dieselben Jahrgänge, weil die Website sie aus der Alterskategorie **ausrechnet** (Swiss Basketball: U18 = 2009 + 2010 in der Saison 2026/27, erweitert auf 2009–2012, weil der Verein diese Saison kein U16-Mädchenteam führt). Spark spielt aber mit einem Jahrgang **2008**. Neu stehen für die beiden Teams die Jahrgänge, die der Verein selbst angibt: **Spark 2008–2012**, **Fire 2009–2012**.
+- Diese von Hand eingetragenen Jahrgänge **rücken jeden 1. August automatisch um ein Jahr weiter**, genau wie die ausgerechneten daneben — sie veralten also nicht still zum Saisonwechsel.
+- Die Geburtsdaten der Spielerinnen stehen dabei **nirgends** auf der Website und werden auch nicht dafür ausgelesen; es sind nur die Jahrgänge, die der Verein ohnehin öffentlich nennt.
+
+### Ein Fehler beim Erstellen der Website versteckt nicht mehr die halbe Nachwuchsseite
+- Am 13.08. beantwortete die Vereinsdatenbank die Anfragen einer Website-Erstellung mit «keine Berechtigung». Die Seite **/basketball/teams/nachwuchs** ging trotzdem online — mit zehn namenlosen Platzhalterkarten: **ohne Teamnamen** (statt DU18 Spark/Fire nur «U18 Mädchen»), **ohne Trainingszeiten**, **ohne Trainer:innen** und mit einer Karte für ein Team, das es gar nicht mehr gibt. Sichtbar war das eine Stunde lang, bis die nächste Erstellung wieder funktionierte.
+- Der Grund: Eine Erstellung ohne Daten sah bisher aus wie eine erfolgreiche. Neu **bricht die Erstellung der Live-Website ab**, wenn diese Daten fehlen — dann bleibt die letzte funktionierende Fassung online, statt durch eine halb leere ersetzt zu werden. Vorschau-Erstellungen und die lokale Entwicklung verhalten sich unverändert.
+
 ## [1.23.0] — 2026-08-13
 
 ### Neu: eine Seite mit häufigen Fragen

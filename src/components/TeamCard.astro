@@ -69,7 +69,7 @@ const altText = t(locale, 'teamPhotoAlt');
     {badgeText && <span class="badge badge-blue">{badgeText}</span>}
     {birthYearsAge !== null && (
       <p class="team-card-meta mt-sm">
-        <BirthYears sport={team.sport} age={birthYearsAge} />
+        <BirthYears sport={team.sport} age={birthYearsAge} team={team.teamName} />
       </p>
     )}
     {trainingTextDe && <p class="team-card-meta mt-sm"><span data-lang-only="de">{trainingTextDe}</span><span data-lang-only="en">{trainingTextEn}</span></p>}

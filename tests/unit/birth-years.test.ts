@@ -13,8 +13,11 @@ import { resolve } from 'node:path';
 import {
   birthYears,
   formatBirthYears,
+  formatYearList,
   seasonStartYear,
+  teamBirthYears,
   youthAge,
+  TEAM_BIRTH_YEARS,
   type Sport,
 } from '../../src/lib/birthYears';
 import { groupSpanTo } from '../../src/lib/fetch/youthBasketball';
@@ -79,6 +82,53 @@ describe('volleyball Jahrgänge', () => {
   it('names the KSCW squads for 2026/27', () => {
     expect(line('volleyball', 23, 2026)).toBe('2005'); // DU23-1, DU23-2, HU23
     expect(line('volleyball', 20, 2026)).toBe('2008'); // HU20
+  });
+});
+
+describe('Jahrgänge stated by hand for one team', () => {
+  // The numbers the club states in wiedisync for 2026/27. Spark carries a
+  // 2008-born player, which no category rule and no readable roster can say.
+  it('is what the club wrote down, for the season it was written for', () => {
+    expect(teamBirthYears('DU18 Spark', 2026)).toEqual([2008, 2009, 2010, 2011, 2012]);
+    expect(teamBirthYears('DU18 Fire', 2026)).toEqual([2009, 2010, 2011, 2012]);
+  });
+
+  it('moves up by one every 1 August, like the derived line next to it', () => {
+    expect(teamBirthYears('DU18 Spark', 2027)).toEqual([2009, 2010, 2011, 2012, 2013]);
+    expect(teamBirthYears('DU18 Fire', 2029)).toEqual([2012, 2013, 2014, 2015]);
+    // And backwards, so a build for an earlier season states that season's years.
+    expect(teamBirthYears('DU18 Spark', 2025)).toEqual([2007, 2008, 2009, 2010, 2011]);
+  });
+
+  it('leaves every other team to the category rule', () => {
+    for (const name of ['HU18', 'DU14', 'MU8', 'D1', 'DU18', '', null, undefined]) {
+      expect(teamBirthYears(name, 2026), String(name)).toBeNull();
+    }
+  });
+
+  it('matches the Directus name loosely enough to survive spacing and case', () => {
+    expect(teamBirthYears('du18 spark', 2026)).toEqual(teamBirthYears('DU18 Spark', 2026));
+    expect(teamBirthYears('  DU18   Spark ', 2026)).toEqual(teamBirthYears('DU18 Spark', 2026));
+    // But not a rename: a squad that changed its name falls back to the rule
+    // rather than inheriting another team's years.
+    expect(teamBirthYears('DU18 Sparks', 2026)).toBeNull();
+  });
+
+  it('renders in the same shapes as the derived line', () => {
+    expect(formatYearList([2008, 2009, 2010, 2011, 2012])).toBe('2008–2012');
+    expect(formatYearList([2009, 2010])).toBe('2009, 2010');
+    expect(formatYearList([2009])).toBe('2009');
+    expect(formatYearList([])).toBe('');
+    // Sorted and de-duplicated, and a gap is spelled out rather than hidden
+    // inside a range that would claim a year nobody is eligible for.
+    expect(formatYearList([2010, 2008, 2010])).toBe('2008, 2010');
+    expect(formatYearList([2012, 2009, 2011, 2010])).toBe('2009–2012');
+  });
+
+  it('keys the map on a normalised name, so lookups cannot miss on spacing', () => {
+    for (const key of Object.keys(TEAM_BIRTH_YEARS)) {
+      expect(key, key).toBe(key.trim().replace(/\s+/g, ' ').toUpperCase());
+    }
   });
 });
 
@@ -178,7 +228,8 @@ describe('the public/js/birth-years.js mirror', () => {
     new Function('window', 'document', src)(win, doc);
     return win.kscwBirthYears as {
       seasonStartYear: (d: Date) => number;
-      text: (sport: string, age: number, spanTo?: number) => string;
+      text: (sport: string, age: number, spanTo?: number, team?: string | null) => string;
+      teamYears: (name: unknown, seasonYear: number) => number[] | null;
       youthAge: (name: unknown) => number | null;
     };
   };
@@ -205,6 +256,27 @@ describe('the public/js/birth-years.js mirror', () => {
     }
   });
 
+  it('holds the same hand-written years, for every season', () => {
+    const js = load();
+    // Every team in the TypeScript map, plus the names that must NOT match one.
+    const names = [...Object.keys(TEAM_BIRTH_YEARS), 'DU18 Spark', 'du18 fire', 'HU18', ''];
+    for (const season of [2025, 2026, 2027, 2031]) {
+      for (const name of names) {
+        expect(js.teamYears(name, season), `${name} in ${season}`)
+          .toEqual(teamBirthYears(name, season));
+      }
+    }
+  });
+
+  it('agrees on the line an overridden card renders', () => {
+    const js = load();
+    const season = seasonStartYear(new Date());
+    for (const name of Object.keys(TEAM_BIRTH_YEARS)) {
+      expect(js.text('basketball', 18, 16, name), name)
+        .toBe(formatYearList(teamBirthYears(name, season)!));
+    }
+  });
+
   it('agrees on reading the U-number off a name', () => {
     const js = load();
     for (const name of ['DU23-1', 'HU20', 'BB-HU18', 'MU8', 'Legends', 'D1', '']) {
@@ -219,7 +291,7 @@ describe('the rendered line', () => {
   it('keeps the data-birth-* contract the browser recompute depends on', () => {
     const astro = read('src/components/BirthYears.astro');
     const js = read('public/js/birth-years.js');
-    for (const attr of ['data-birth-sport', 'data-birth-age', 'data-birth-span']) {
+    for (const attr of ['data-birth-sport', 'data-birth-age', 'data-birth-span', 'data-birth-team']) {
       expect(astro, `${attr} missing from BirthYears.astro`).toContain(attr);
       expect(js, `${attr} missing from birth-years.js`).toContain(attr);
     }

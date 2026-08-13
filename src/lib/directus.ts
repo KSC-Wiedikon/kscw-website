@@ -19,6 +19,39 @@ export function getDirectusUrl(): string {
 /** Build-time constant — use getDirectusUrl() for runtime-detected URL. */
 export const DIRECTUS_URL = getDirectusUrl()
 
+/** The Directus a build must not silently render the site without. */
+const PROD_DIRECTUS = 'https://directus.kscw.ch'
+
+/**
+ * True when a failed build-time fetch has to ABORT the build rather than let the
+ * page render without its data.
+ *
+ * The build-time fetches all degrade gracefully — a page that loses Directus
+ * still ships, with its static fallback, and the client-side refresh usually
+ * repairs it in the browser. That is the right behaviour everywhere except one
+ * place: the production build. On 13.08.2026 the prod build's three `teams`
+ * queries came back "You don't have permission to access collection teams", the
+ * basketball youth page shipped ten generic fallback cards — no squad names, no
+ * coaches, no training times, plus a card for a team that no longer exists — and
+ * it stayed live for an hour, because a degraded page looks exactly like a
+ * successful deploy. Failing here keeps the LAST GOOD deploy up instead.
+ *
+ * Deliberately narrow, so this cannot break the work it is meant to protect:
+ *   • `astro dev` keeps degrading — an offline afternoon must not stop the dev server.
+ *   • dev/preview builds keep degrading. They target directus-dev, where the
+ *     anonymous role is restricted by design ("items is a restricted resource"),
+ *     so a strict dev build would fail every single time and teach everyone to
+ *     ignore it.
+ *   • DIRECTUS_STRICT=0 turns it off, for the day a prod deploy has to go out
+ *     while Directus is down.
+ */
+export function strictBuildData(): boolean {
+  if (typeof window !== 'undefined') return false
+  if (!import.meta.env.PROD) return false
+  if (import.meta.env.DIRECTUS_STRICT === '0') return false
+  return getDirectusUrl() === PROD_DIRECTUS
+}
+
 // ── Query param helpers ────────────────────────────────────────────────────
 
 interface QueryParams {

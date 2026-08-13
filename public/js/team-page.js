@@ -131,7 +131,10 @@
     var sport = raw && raw.sport;
     if (by && (sport === 'volleyball' || sport === 'basketball')) {
       var age = by.youthAge(teamData.name || TEAM);
-      var years = age ? by.element(sport, age) : null;
+      // The name is handed over as well: a squad the club stated its own
+      // Jahrgänge for (TEAM_BIRTH_YEARS) uses those instead of the category rule,
+      // and this hero replaces the build-rendered one, which already does.
+      var years = age ? by.element(sport, age, undefined, teamData.name || TEAM) : null;
       if (years) {
         var yearsRow = document.createElement('p');
         yearsRow.className = 'team-league team-hero-years';

@@ -11,7 +11,9 @@
 // volleyball states one plus "und jünger", so the two shapes are written out
 // separately with literal i18n keys rather than picked by a variable — a computed
 // data-i18n key is invisible to the /admin text editor's manifest scan.
-import { birthYears, formatBirthYears, seasonStartYear, type Sport } from '../lib/birthYears'
+import {
+  birthYears, formatBirthYears, formatYearList, seasonStartYear, teamBirthYears, type Sport,
+} from '../lib/birthYears'
 import { t } from '../lib/i18n'
 
 interface Props {
@@ -20,21 +22,34 @@ interface Props {
   age: number
   /** Lowest age group this card also covers; see groupSpanTo(). */
   spanTo?: number | null
+  /**
+   * teams.name, when the caller knows it. Only used to look up years the club
+   * stated for this squad by hand (TEAM_BIRTH_YEARS); a team without an entry —
+   * which is nearly all of them — renders exactly as before. Passed on to the
+   * browser as data-birth-team so the recompute resolves the same override.
+   */
+  team?: string | null
 }
 
-const { sport, age, spanTo } = Astro.props
+const { sport, age, spanTo, team } = Astro.props
 
 const span = spanTo ?? age
-const spec = birthYears(sport, age, seasonStartYear(new Date()), span)
-const value = formatBirthYears(spec)
+const season = seasonStartYear(new Date())
+const spec = birthYears(sport, age, season, span)
+// Hand-written years win over the category rule; see TEAM_BIRTH_YEARS. They are
+// an explicit, closed list, so they render in the plural "Jahrgänge:" shape even
+// on a volleyball card, whose derived line would be open-ended.
+const stated = teamBirthYears(team, season)
+const value = stated ? formatYearList(stated) : formatBirthYears(spec)
 ---
 <span
   class="birth-years"
   data-birth-sport={sport}
   data-birth-age={String(age)}
   data-birth-span={String(span)}
+  data-birth-team={team || undefined}
 >
-  {spec.andYounger ? (
+  {spec.andYounger && !stated ? (
     <>
       <strong data-i18n="youthBirthYear">{t('de', 'youthBirthYear')}</strong>
       <span class="birth-years-value">{value}</span>

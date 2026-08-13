@@ -73,6 +73,7 @@ There is deliberately **no** `i18n-loading` veil. It existed as four `classList.
 ## Build Prerequisites
 - Node `>=22.12`
 - Copy `.env.example` → `.env` and set `DIRECTUS_URL` (build-time Astro frontmatter fetches; defaults to the dev Directus)
+- **A production build fails when the basketball youth data cannot be fetched** (`strictBuildData()` in `src/lib/directus.ts`). On 13.08.2026 a transient `teams` 403 shipped ten nameless fallback cards to the live site and stayed up for an hour, because a degraded page is indistinguishable from a good deploy — failing keeps the last good deploy live instead. Only `astro build` against `directus.kscw.ch` is strict: `astro dev` and the dev/preview builds (which target the deliberately restricted `directus-dev`) still degrade. `DIRECTUS_STRICT=0` overrides it when a deploy has to go out with Directus down.
 
 ## Changelog & Versioning
 

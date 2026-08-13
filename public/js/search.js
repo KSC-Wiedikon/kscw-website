@@ -43,11 +43,23 @@
       index = res[0];
       dicts = { de: res[1], en: res[2] };
       // Precompute a lowercase bilingual haystack per entry.
+      //
+      // ⚠ This used to read ONLY dicts[...][titleKey|descKey], which quietly made the
+      // index un-extendable: a team page's title is "D1" — a data value, not a
+      // dictionary key — so every lookup returned undefined, the haystack came out
+      // EMPTY and the entry matched nothing, while still RENDERING fine in the results
+      // list because tr() falls back to the key itself. Adding team entries without
+      // this change would have looked correct and done nothing.
+      //
+      // Entries may therefore now carry literal `title` / `desc` strings (used by the
+      // build-generated team entries) and a `keywords` string for terms a visitor
+      // types but the page copy never says — "probetraining", "kosten", "beitrag".
       for (var i = 0; i < index.length; i++) {
         var e = index[i];
         var parts = [
           dicts.de[e.titleKey], dicts.en[e.titleKey],
-          dicts.de[e.descKey], dicts.en[e.descKey]
+          dicts.de[e.descKey], dicts.en[e.descKey],
+          e.title, e.desc, e.keywords
         ];
         e._hay = parts.filter(Boolean).join('  ').toLowerCase();
       }
@@ -88,7 +100,8 @@
       a.setAttribute('role', 'option');
       var title = document.createElement('span');
       title.className = 'search-result-title';
-      title.textContent = tr(e.titleKey).replace(/\s+—\s+KSC Wiedikon$/, '');
+      // A literal title wins over a key lookup — team entries have no dictionary key.
+      title.textContent = (e.title || tr(e.titleKey)).replace(/\s+—\s+KSC Wiedikon$/, '');
       a.appendChild(title);
       if (e.section) {
         var sec = document.createElement('span');

@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.22.0] — 2026-08-13
+
+### Die Suche findet endlich die Teams
+- Die Suchfunktion oben rechts kannte **keine einzige Teamseite**. Wer «D1», «Lions», «Rhinos» oder «HU20» eingab — also die eigenen Teamnamen des Vereins — bekam **kein Ergebnis**. Jetzt sind alle 19 Teamseiten dabei, und die Liste baut sich beim Erstellen der Website automatisch aus Directus auf, statt von Hand gepflegt zu werden. Neue Teams sind damit ab sofort automatisch auffindbar.
+- Ausserdem findet die Suche jetzt auch Begriffe, die zwar niemand auf der Seite geschrieben hat, aber alle eingeben: **«Probetraining»**, **«Kosten»**, **«Beitrag»**, **«Kinder»**, **«anmelden»** führen jetzt zur jeweils richtigen Seite. Vorher: null Treffer.
+
 ## [1.21.1] — 2026-08-13
 
 ### Drei Teams waren auf der Website unsichtbar

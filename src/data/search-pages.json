@@ -9,7 +9,8 @@
     "url": "/basketball/",
     "titleKey": "basketballMetaTitle",
     "descKey": "basketballMetaDescription",
-    "section": "navBasketball"
+    "section": "navBasketball",
+    "keywords": "basketball probetraining schnuppern anfänger einsteiger mitspielen teams mannschaften trial beginner"
   },
   {
     "url": "/basketball/spielplanung",
@@ -21,7 +22,8 @@
     "url": "/basketball/teams/nachwuchs",
     "titleKey": "basketballTeamsNachwuchsMetaTitle",
     "descKey": "basketballTeamsNachwuchsMetaDescription",
-    "section": "navBasketball"
+    "section": "navBasketball",
+    "keywords": "nachwuchs kinder jugend junioren kind mädchen knaben u8 u10 u12 u14 u16 u18 jahrgang jahrgänge youth juniors kids children"
   },
   {
     "url": "/club/feedback",
@@ -33,7 +35,8 @@
     "url": "/club/kontakt",
     "titleKey": "clubKontaktMetaTitle",
     "descKey": "clubKontaktMetaDescription",
-    "section": "navClub"
+    "section": "navClub",
+    "keywords": "kontakt probetraining schnuppern schnuppertraining mitmachen anfänger einsteiger trial training contact join"
   },
   {
     "url": "/club/ueber-uns",
@@ -51,7 +54,8 @@
     "url": "/club/vorstand",
     "titleKey": "clubVorstandMetaTitle",
     "descKey": "clubVorstandMetaDescription",
-    "section": "navClub"
+    "section": "navClub",
+    "keywords": "vorstand team leitung verein kontakt board committee"
   },
   {
     "url": "/news/",
@@ -69,7 +73,8 @@
     "url": "/volleyball/",
     "titleKey": "volleyballMetaTitle",
     "descKey": "volleyballMetaDescription",
-    "section": "navVolleyball"
+    "section": "navVolleyball",
+    "keywords": "volleyball probetraining schnuppern anfänger einsteiger mitspielen teams mannschaften trial beginner"
   },
   {
     "url": "/volleyball/reglemente",
@@ -87,7 +92,8 @@
     "url": "/weiteres/anmeldung",
     "titleKey": "weiteresAnmeldungMetaTitle",
     "descKey": "weiteresAnmeldungMetaDescription",
-    "section": "navMore"
+    "section": "navMore",
+    "keywords": "anmeldung anmelden mitglied werden beitreten registrieren formular probetraining schnuppern join sign up register trial"
   },
   {
     "url": "/weiteres/datenschutz",
@@ -105,7 +111,8 @@
     "url": "/weiteres/kalender",
     "titleKey": "weiteresKalenderMetaTitle",
     "descKey": "weiteresKalenderMetaDescription",
-    "section": "navMore"
+    "section": "navMore",
+    "keywords": "kalender termine spielplan saison daten calendar dates fixtures"
   },
   {
     "url": "/weiteres/logos",
@@ -117,7 +124,8 @@
     "url": "/weiteres/mitgliedschaft",
     "titleKey": "weiteresMitgliedschaftMetaTitle",
     "descKey": "weiteresMitgliedschaftMetaDescription",
-    "section": "navMore"
+    "section": "navMore",
+    "keywords": "mitgliedschaft mitglied werden beitrag beiträge kosten preis preise gebühr jahresbeitrag saison membership fee cost join"
   },
   {
     "url": "/weiteres/partner",

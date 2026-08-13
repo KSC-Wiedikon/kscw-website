@@ -23,13 +23,13 @@ const locale = 'de';
       <form id="docstatus-form">
         <div class="form-group">
           <label for="docs-ref"><span data-i18n="regDocsRef">{t(locale, 'regDocsRef')}</span> *</label>
-          <input type="text" id="docs-ref" name="reference" placeholder="REG-2026-1234" required autocomplete="off">
+          <input type="text" id="docs-ref" name="reference" class="form-input" placeholder="REG-2026-1234" required autocomplete="off">
         </div>
         <div class="form-group">
           <label for="docs-email"><span data-i18n="regDocsEmail">{t(locale, 'regDocsEmail')}</span> *</label>
-          <input type="email" id="docs-email" name="email" required autocomplete="email">
+          <input type="email" id="docs-email" name="email" class="form-input" required autocomplete="email">
         </div>
-        <button type="submit" class="form-submit" id="docs-check-btn" data-i18n="regDocsCheck">{t(locale, 'regDocsCheck')}</button>
+        <button type="submit" class="btn btn-primary" id="docs-check-btn" data-i18n="regDocsCheck">{t(locale, 'regDocsCheck')}</button>
       </form>
 
       <div id="docs-feedback" style="display: none; margin-top: var(--space-md);"></div>
@@ -49,14 +49,14 @@ const locale = 'de';
     font-weight: 600;
     margin-bottom: var(--space-xs);
   }
-  .form-group input[type='text'],
-  .form-group input[type='email'] {
-    width: 100%;
-    padding: var(--space-sm) var(--space-md);
-    border: 1px solid var(--border-color, #d1d5db);
-    border-radius: 8px;
-    font-size: var(--text-base);
-    background: var(--bg-primary, #fff);
-    color: var(--text-primary, #111);
-  }
+  /* Inputs deliberately carry NO local rule — `.form-input` in global.css owns
+     them, and it is the only version that tracks the theme. This page used to
+     hand-roll the box with `var(--bg-primary, #fff)` / `var(--border-color, …)`:
+     neither token has ever existed, so both fell through to their hardcoded
+     light-theme fallbacks while `--text-primary` (which DOES exist) correctly
+     resolved to the dark theme's near-white #e2e8f0 — white text on a white
+     box, ~1.1:1, on the one field a family has to fill in to recover their
+     registration. The class must also stay global rather than scoped: the
+     upload slots are created at runtime by anmeldung-dokumente.js, and an
+     Astro-scoped rule never reaches a node that did not exist at build time. */
 </style>

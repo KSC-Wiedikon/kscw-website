@@ -223,24 +223,31 @@ const basketballWomen: TeamDef[] = [
   },
 ];
 
+// ⚠ The three men's teams take their name from LIVE Directus (useLiveName), because
+// the static labels below had drifted a full squad out of step: slug `h3` was labelled
+// "Herren 3" while Directus (and therefore the team page's own <h1>) calls it
+// "Herren 2", and `h4` was "Herren 4" against "Unicorns Herren 3". The nav and the
+// page it linked to disagreed. The displayName values are kept as the
+// Directus-unreachable fallback only. Lions and Rhinos keep their static names —
+// those are stable brand names, not numbered squads that shuffle at the rollover.
 const basketballMen: TeamDef[] = [
   {
     directusId: '20', team_id: 'bb_1348', slug: 'h1', sport: 'basketball', category: 'men',
     chipLabel: 'BB-H1', displayName: 'Herren 1', order: 1,
     chipBg: '#9a3412', chipText: '#ffffff',
-    hasDetailPage: true, fallbackLeague: 'H1LRA',
+    hasDetailPage: true, fallbackLeague: 'H1LRA', useLiveName: true,
   },
   {
     directusId: '21', team_id: 'bb_4829', slug: 'h3', sport: 'basketball', category: 'men',
     chipLabel: 'BB-H3', displayName: 'Herren 3', order: 2,
     chipBg: '#c2410c', chipText: '#ffffff',
-    hasDetailPage: true, fallbackLeague: 'H3LS',
+    hasDetailPage: true, fallbackLeague: 'H3LS', useLiveName: true,
   },
   {
     directusId: '22', team_id: 'bb_7183', slug: 'h4', sport: 'basketball', category: 'men',
     chipLabel: 'BB-H4', displayName: 'Herren 4', order: 3,
     chipBg: '#ea580c', chipText: '#ffffff',
-    hasDetailPage: true, fallbackLeague: 'H4LZ',
+    hasDetailPage: true, fallbackLeague: 'H4LZ', useLiveName: true,
   },
 ];
 

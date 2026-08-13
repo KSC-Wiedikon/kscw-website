@@ -35,6 +35,30 @@ const vbBy = (cat: string) => vbNav.filter((tm) => tm.category === cat).sort((a,
 const vbWomen = vbBy('women');
 const vbMen = vbBy('men');
 const vbYouth = vbBy('youth');
+
+// Basketball nav — same treatment as volleyball above.
+//
+// These five links were hardcoded, and three of them contradicted the page they
+// pointed at: /basketball/h3 was labelled "Herren 3" but its page reads "Herren 2",
+// /basketball/h4 was "Herren 4" against "Unicorns Herren 3", and Rhinos was tagged
+// "2. Liga" while its league is D3LR, i.e. the third. Hand-maintained labels drift
+// away from Directus at every season rollover; the volleyball half has been built
+// from live data all along, so this just mirrors it.
+let bbNav: NavTeam[] = [];
+try {
+  bbNav = (await getActiveTeams())
+    .filter((tm) => tm.sport === 'basketball' && tm.hasDetailPage)
+    .map((tm) => ({ slug: tm.slug, displayName: tm.displayName, league: tm.league, chipLabel: tm.chipLabel, category: tm.category, order: tm.order }));
+} catch { /* fall back below */ }
+if (!bbNav.length) {
+  bbNav = (['women', 'men', 'youth'] as TeamCategory[])
+    .flatMap((c) => getTeamDefs('basketball', c))
+    .filter((d) => d.hasDetailPage)
+    .map((d) => ({ slug: d.slug, displayName: d.displayName, league: d.fallbackLeague || '', chipLabel: d.chipLabel, category: d.category, order: d.order }));
+}
+const bbBy = (cat: string) => bbNav.filter((tm) => tm.category === cat).sort((a, b) => a.order - b.order);
+const bbWomen = bbBy('women');
+const bbMen = bbBy('men');
 ---
   <header class="site-header">
     <div class="container">
@@ -121,8 +145,9 @@ const vbYouth = vbBy('youth');
                   <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="dropdown-group-items">
-                  <a href={l('/basketball/lions')} class="dropdown-link">Lions — 1. Liga</a>
-                  <a href={l('/basketball/rhinos')} class="dropdown-link">Rhinos — 2. Liga</a>
+                  {bbWomen.map((tm) => (
+                    <a href={l(`/basketball/${tm.slug}`)} class="dropdown-link">{tm.displayName} — {getBadgeText(tm.league, tm.chipLabel)}</a>
+                  ))}
                 </div>
               </div>
               <div class="dropdown-group">
@@ -131,9 +156,9 @@ const vbYouth = vbBy('youth');
                   <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </button>
                 <div class="dropdown-group-items">
-                  <a href={l('/basketball/h1')} class="dropdown-link">Herren 1 — 1. Liga</a>
-                  <a href={l('/basketball/h3')} class="dropdown-link">Herren 3 — 3. Liga</a>
-                  <a href={l('/basketball/h4')} class="dropdown-link">Herren 4 — 4. Liga</a>
+                  {bbMen.map((tm) => (
+                    <a href={l(`/basketball/${tm.slug}`)} class="dropdown-link">{tm.displayName} — {getBadgeText(tm.league, tm.chipLabel)}</a>
+                  ))}
                 </div>
               </div>
               <div class="dropdown-group">
@@ -274,8 +299,9 @@ const vbYouth = vbBy('youth');
               <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="dropdown-group-items">
-              <a href={l('/basketball/lions')} class="mobile-sublink">Lions — 1. Liga</a>
-              <a href={l('/basketball/rhinos')} class="mobile-sublink">Rhinos — 2. Liga</a>
+              {bbWomen.map((tm) => (
+                <a href={l(`/basketball/${tm.slug}`)} class="mobile-sublink">{tm.displayName} — {getBadgeText(tm.league, tm.chipLabel)}</a>
+              ))}
             </div>
           </div>
           <div class="dropdown-group">
@@ -284,9 +310,9 @@ const vbYouth = vbBy('youth');
               <svg class="dropdown-group-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
             </button>
             <div class="dropdown-group-items">
-              <a href={l('/basketball/h1')} class="mobile-sublink">Herren 1 — 1. Liga</a>
-              <a href={l('/basketball/h3')} class="mobile-sublink">Herren 3 — 3. Liga</a>
-              <a href={l('/basketball/h4')} class="mobile-sublink">Herren 4 — 4. Liga</a>
+              {bbMen.map((tm) => (
+                <a href={l(`/basketball/${tm.slug}`)} class="mobile-sublink">{tm.displayName} — {getBadgeText(tm.league, tm.chipLabel)}</a>
+              ))}
             </div>
           </div>
           <div class="dropdown-group">

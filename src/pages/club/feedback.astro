@@ -150,8 +150,25 @@ const locale = 'de';
               changelog, permanently: no data-i18n meant the engine could never
               repair it. */}
           <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
-          <span class="changelog-badge">v1.24.0</span>
+          <span class="changelog-badge">v1.25.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.25.0 — 2026-08-14</div>
+          <div class="changelog-group">
+            <h3>Fehlende Unterlagen: die Formulare kommen jetzt ausgefüllt</h3>
+            <ul>
+              <li>Die Seite zum Nachreichen listete zwar auf, welche Dokumente fehlen, sagte aber nirgends, <strong>woher man sie bekommt</strong> — die leeren Formulare sind nur im Anmeldeformular verlinkt. Neu steht bei jedem fehlenden Dokument ein Knopf <strong>«Vorausgefülltes Formular herunterladen»</strong>: Name, Adresse, Geburtsdatum und Nationalität sind schon eingetragen, es bleibt ausdrucken, unterschreiben, hochladen</li>
+              <li>Ausgefüllt wird auf dem Server — die Angaben verlassen den Verein nur als fertiges PDF, dessen Inhalt die Familie ohnehin selbst geliefert hat. Die Seite erfährt weiterhin <strong>nur, ob</strong> ein Dokument vorliegt</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>Das Formular zum Nachreichen war im dunklen Design unlesbar</h3>
+            <ul>
+              <li>Das Feld für die Referenznummer war <strong>weisse Schrift auf weissem Grund</strong>, die Knöpfe nicht als Knöpfe erkennbar — und zwar in der Standarddarstellung. Betroffen war ausgerechnet die Seite, auf die der Verein Familien mit fehlenden Unterlagen schickt. Behoben, hell wie dunkel</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.24.0 — 2026-08-13</div>
@@ -874,8 +891,25 @@ const locale = 'de';
               changelog, permanently: no data-i18n meant the engine could never
               repair it. */}
           <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
-          <span class="changelog-badge">v1.24.0</span>
+          <span class="changelog-badge">v1.25.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.25.0 — 2026-08-14</div>
+          <div class="changelog-group">
+            <h3>Missing documents: the forms now arrive already filled in</h3>
+            <ul>
+              <li>The page for submitting documents late listed which ones were missing but never said <strong>where to get them</strong> — the blank forms are only linked from the registration form itself. Every missing document now carries a <strong>“Download prefilled form”</strong> button: name, address, date of birth and nationality are already entered, so all that is left is print, sign, upload</li>
+              <li>The filling happens on the server — the details leave the club only as a finished PDF whose contents the family supplied in the first place. The page itself still learns <strong>only whether</strong> a document is on file</li>
+            </ul>
+          </div>
+          <div class="changelog-group">
+            <h3>The document form was unreadable in the dark theme</h3>
+            <ul>
+              <li>The reference-number field was <strong>white text on a white box</strong> and the buttons did not look like buttons — in the default rendering, not some edge case. Of all pages, this is the one the club sends families to when their documents are missing. Fixed, in both light and dark</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.24.0 — 2026-08-13</div>

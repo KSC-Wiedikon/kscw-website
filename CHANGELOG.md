@@ -2,6 +2,18 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.25.0] — 2026-08-14
+
+### Fehlende Unterlagen: die Formulare kommen jetzt ausgefüllt
+- Wer die Aufforderung bekam, fehlende Unterlagen nachzureichen, landete auf einer Seite, die zwar **auflistete**, welche Dokumente fehlen, aber nirgends sagte, **woher man sie bekommt** — die leeren Formulare von Swiss Basketball und der FIBA sind nur im Anmeldeformular verlinkt, und dorthin geht niemand zurück, der sich längst angemeldet hat.
+- Neu steht bei jedem fehlenden Dokument ein Knopf **«Vorausgefülltes Formular herunterladen»**. Name, Adresse, Geburtsdatum, Nationalität und Datum sind bereits eingetragen — es bleibt **ausdrucken, unterschreiben, hochladen**.
+- Ausgefüllt wird **auf dem Server**, nicht im Browser: die Angaben verlassen den Verein damit nur als fertiges PDF, dessen Inhalt die Familie ohnehin selbst geliefert hat. Die Seite selbst erfährt weiterhin **nur, ob** ein Dokument vorliegt — keine Namen, keine Geburtsdaten.
+- Bei den beiden Ausweisseiten gibt es bewusst keinen Knopf: das sind Fotos eines Dokuments, das der Verein nicht ausstellt.
+
+### Das Formular zum Nachreichen war im dunklen Design unlesbar
+- Auf der Seite zum Nachreichen von Unterlagen war das Feld für die Referenznummer **weisse Schrift auf weissem Grund** — praktisch unlesbar, und zwar in der Standarddarstellung, nicht in einer Randeinstellung. Die beiden Knöpfe waren gar nicht als Knöpfe zu erkennen.
+- Betroffen war ausgerechnet die eine Seite, auf die der Verein Familien schickt, deren Unterlagen fehlen. Behoben — Feld und Knöpfe sehen jetzt aus wie überall sonst auf der Website, hell wie dunkel.
+
 ## [1.24.0] — 2026-08-13
 
 ### Die beiden U18-Mädchenteams nennen jetzt ihre eigenen Jahrgänge

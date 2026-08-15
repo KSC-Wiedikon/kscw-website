@@ -315,7 +315,7 @@
   "membershipCategoryStudentDesc": "Studierende an Universitäten und Fachhochschulen sowie Lernende",
   "membershipCategoryWorking": "Erwerbstätige",
   "membershipCategoryWorkingDesc": "Berufstätige Erwachsene",
-  "membershipFeesNoteVB": "Alle Beiträge verstehen sich pro Saison (September bis Juni). Die Swiss Volley Lizenzgebühren sind nicht im Mitgliederbeitrag enthalten, werden aber zusammen mit diesem auf einer gemeinsamen Rechnung verrechnet.",
+  "membershipFeesNoteVB": "Alle Beiträge verstehen sich pro Saison (September bis Juni). Die Swiss Volley Lizenzgebühr ist im Mitgliederbeitrag enthalten — die Spalte «Davon Lizenz» zeigt, welcher Anteil an den Verband geht.",
   "membershipFeesNoteScorer": "Mitgliederbeitrag für aktive Mitglieder ohne Schreiberlizenz um CHF 100 erhöht.",
   "membershipFeesBasketball": "Basketball",
   "membershipCategoryBBActive1L": "Erwerbstätige 1. Liga",
@@ -332,7 +332,7 @@
   "membershipCategoryBBMinisDesc": "Jüngste Nachwuchsspieler:innen (bis und mit U12)",
   "membershipCategoryPassive": "Passivmitglied",
   "membershipCategoryPassiveDesc": "Unterstützung ohne Spielbetrieb — gilt für beide Sportarten",
-  "membershipFeesNoteBB": "Alle Beiträge verstehen sich pro Saison (September bis Juni). Die Swiss Basketball Verbandslizenz ist nicht im Mitgliederbeitrag enthalten, wird aber zusammen mit diesem auf einer gemeinsamen Rechnung verrechnet.",
+  "membershipFeesNoteBB": "Alle Beiträge verstehen sich pro Saison (September bis Juni). Die Swiss Basketball Verbandslizenz ist im Mitgliederbeitrag enthalten.",
   "membershipFeesNoteBBOfficials": "Mitgliederbeitrag für aktive Mitglieder ohne erfüllte Offiziellen-Pflicht um CHF 100 erhöht (seit Saison 2024/25).",
   "membershipLicenceTitle": "Swiss Volley Lizenzgebühren",
   "membershipLicenceNLL": "Nationalliga-Lizenz (NLL)",
@@ -1049,5 +1049,7 @@
   "faqLinkTeams": "Teams und Trainingszeiten",
   "faqLinkYouth": "Zum Nachwuchs",
   "navFaq": "Häufige Fragen",
-  "membershipFaqLink": "Noch Fragen? Häufige Fragen und Antworten →"
+  "membershipFaqLink": "Noch Fragen? Häufige Fragen und Antworten →",
+  "membershipColLicence": "Davon Lizenz",
+  "membershipFeesNoteLicenceStandard": "* Standardfall — abweichende Vereinbarungen sind möglich."
 }

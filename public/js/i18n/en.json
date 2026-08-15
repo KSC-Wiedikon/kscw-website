@@ -315,7 +315,7 @@
   "membershipCategoryStudentDesc": "Students at universities and colleges, and apprentices",
   "membershipCategoryWorking": "Working adults",
   "membershipCategoryWorkingDesc": "Employed adults",
-  "membershipFeesNoteVB": "All fees are per season (September to June). Swiss Volley licence fees are not included in the membership fee, but are billed together with it on a single invoice.",
+  "membershipFeesNoteVB": "All fees are per season (September to June). The Swiss Volley licence fee is included in the membership fee — the \"of which licence\" column shows the share that goes to the federation.",
   "membershipFeesNoteScorer": "Membership fee for active members without a scorer licence is increased by CHF 100.",
   "membershipFeesBasketball": "Basketball",
   "membershipCategoryBBActive1L": "Working adults 1st league",
@@ -332,7 +332,7 @@
   "membershipCategoryBBMinisDesc": "Our youngest youth players (up to and including U12)",
   "membershipCategoryPassive": "Passive member",
   "membershipCategoryPassiveDesc": "Support without competitive play — applies to both sports",
-  "membershipFeesNoteBB": "All fees are per season (September to June). The Swiss Basketball federation licence is not included in the membership fee, but is billed together with it on a single invoice.",
+  "membershipFeesNoteBB": "All fees are per season (September to June). The Swiss Basketball federation licence is included in the membership fee.",
   "membershipFeesNoteBBOfficials": "Membership fee for active members who do not fulfil their officials duty is increased by CHF 100 (since the 2024/25 season).",
   "membershipLicenceTitle": "Swiss Volley licence fees",
   "membershipLicenceNLL": "National League licence (NLL)",
@@ -1049,5 +1049,7 @@
   "faqLinkTeams": "Teams and training times",
   "faqLinkYouth": "Go to the juniors section",
   "navFaq": "FAQ",
-  "membershipFaqLink": "Still have questions? Read the FAQ →"
+  "membershipFaqLink": "Still have questions? Read the FAQ →",
+  "membershipColLicence": "Of which licence",
+  "membershipFeesNoteLicenceStandard": "* Standard case — different arrangements are possible by agreement."
 }

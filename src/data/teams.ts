@@ -127,25 +127,25 @@ export function expandDisplayName(name: string): string {
 
 const volleyballMen: TeamDef[] = [
   {
-    directusId: '1', teamName: 'H1', slug: 'h1', sport: 'volleyball', category: 'men',
+    directusId: '95', teamName: 'H1', slug: 'h1', sport: 'volleyball', category: 'men',
     chipLabel: 'H1', displayName: 'Herren 1', order: 1,
     chipBg: '#1e40af', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'Herren 2. Liga',
   },
   {
-    directusId: '2', teamName: 'H2', slug: 'h2', sport: 'volleyball', category: 'men',
+    directusId: '93', teamName: 'H2', slug: 'h2', sport: 'volleyball', category: 'men',
     chipLabel: 'H2', displayName: 'Herren 2', order: 2,
     chipBg: '#2563eb', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'Herren 3. Liga Gruppe A',
   },
   {
-    directusId: '3', teamName: 'H3', slug: 'h3', sport: 'volleyball', category: 'men',
+    directusId: '92', teamName: 'H3', slug: 'h3', sport: 'volleyball', category: 'men',
     chipLabel: 'H3', displayName: 'Herren 3', order: 3,
     chipBg: '#3b82f6', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'Herren 3. Liga Gruppe B',
   },
   {
-    directusId: '11', teamName: 'Legends', slug: 'legends', sport: 'volleyball', category: 'men',
+    directusId: '82', teamName: 'Legends', slug: 'legends', sport: 'volleyball', category: 'men',
     chipLabel: 'Legends', displayName: 'Legends', order: 4,
     chipBg: '#1e3a5f', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'Herren 4. Liga Gruppe A',
@@ -154,25 +154,25 @@ const volleyballMen: TeamDef[] = [
 
 const volleyballWomen: TeamDef[] = [
   {
-    directusId: '4', teamName: 'D1', slug: 'd1', sport: 'volleyball', category: 'women',
+    directusId: '80', teamName: 'D1', slug: 'd1', sport: 'volleyball', category: 'women',
     chipLabel: 'D1', displayName: 'Damen 1', order: 1,
     chipBg: '#be123c', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'Frauen 3. Liga Gruppe A',
   },
   {
-    directusId: '5', teamName: 'D2', slug: 'd2', sport: 'volleyball', category: 'women',
+    directusId: '94', teamName: 'D2', slug: 'd2', sport: 'volleyball', category: 'women',
     chipLabel: 'D2', displayName: 'Damen 2', order: 2,
     chipBg: '#e11d48', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'Frauen 3. Liga Gruppe B',
   },
   {
-    directusId: '6', teamName: 'D3', slug: 'd3', sport: 'volleyball', category: 'women',
+    directusId: '81', teamName: 'D3', slug: 'd3', sport: 'volleyball', category: 'women',
     chipLabel: 'D3', displayName: 'Damen 3', order: 3,
     chipBg: '#f43f5e', chipText: '#881337',
     hasDetailPage: true, fallbackLeague: 'Frauen 5. Liga Gruppe A',
   },
   {
-    directusId: '7', teamName: 'D4', slug: 'd4', sport: 'volleyball', category: 'women',
+    directusId: '97', teamName: 'D4', slug: 'd4', sport: 'volleyball', category: 'women',
     chipLabel: 'D4', displayName: 'Damen 4', order: 4,
     chipBg: '#fb7185', chipText: '#881337',
     hasDetailPage: true, fallbackLeague: 'Frauen 5. Liga Gruppe B',
@@ -181,25 +181,19 @@ const volleyballWomen: TeamDef[] = [
 
 const volleyballYouth: TeamDef[] = [
   {
-    directusId: '9', teamName: 'DU23-1', slug: 'du23-1', sport: 'volleyball', category: 'youth',
+    directusId: '67', teamName: 'DU23-1', slug: 'du23-1', sport: 'volleyball', category: 'youth',
     chipLabel: 'DU23-1', displayName: 'Damen U23-1', order: 1,
     chipBg: '#fda4af', chipText: '#881337',
     hasDetailPage: true, fallbackLeague: 'Frauen U23 1. Liga',
   },
   {
-    directusId: '10', teamName: 'DU23-2', slug: 'du23-2', sport: 'volleyball', category: 'youth',
-    chipLabel: 'DU23-2', displayName: 'Damen U23-2', order: 2,
-    chipBg: '#fda4af', chipText: '#881337',
-    hasDetailPage: true, fallbackLeague: 'Frauen U23 2. Liga',
-  },
-  {
-    directusId: '8', teamName: 'HU23-1', slug: 'hu23', sport: 'volleyball', category: 'youth',
+    directusId: '66', teamName: 'HU23-1', slug: 'hu23', sport: 'volleyball', category: 'youth',
     chipLabel: 'HU23', displayName: 'Herren U23', order: 3,
     chipBg: '#60a5fa', chipText: '#1e3a8a',
     hasDetailPage: true, fallbackLeague: 'Männer U23 Gruppe A',
   },
   {
-    directusId: '12', teamName: 'HU20', slug: 'hu20', sport: 'volleyball', category: 'youth',
+    directusId: '79', teamName: 'HU20', slug: 'hu20', sport: 'volleyball', category: 'youth',
     chipLabel: 'HU20', displayName: 'Herren U20', order: 4,
     chipBg: '#93c5fd', chipText: '#1e3a8a',
     hasDetailPage: true, fallbackLeague: 'HU20',
@@ -220,13 +214,13 @@ const volleyballYouth: TeamDef[] = [
 
 const basketballWomen: TeamDef[] = [
   {
-    directusId: '27', team_id: 'bb_4445', slug: 'lions', sport: 'basketball', category: 'women',
+    directusId: '86', team_id: 'bb_4445', slug: 'lions', sport: 'basketball', category: 'women',
     chipLabel: 'Lions', displayName: 'Lions', order: 1,
     chipBg: '#6d28d9', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'D1LRA',
   },
   {
-    directusId: '30', team_id: 'bb_1077', slug: 'rhinos', sport: 'basketball', category: 'women',
+    directusId: '89', team_id: 'bb_1077', slug: 'rhinos', sport: 'basketball', category: 'women',
     chipLabel: 'Rhinos', displayName: 'Rhinos', order: 2,
     chipBg: '#059669', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'D3LR',
@@ -250,19 +244,19 @@ const basketballWomen: TeamDef[] = [
 // those are stable brand names, not numbered squads that shuffle at the rollover.
 const basketballMen: TeamDef[] = [
   {
-    directusId: '20', team_id: 'bb_1348', slug: 'h1', sport: 'basketball', category: 'men',
+    directusId: '75', team_id: 'bb_1348', slug: 'h1', sport: 'basketball', category: 'men',
     chipLabel: 'BB-H1', displayName: 'Herren 1', order: 1,
     chipBg: '#9a3412', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'H1LRA', useLiveName: true,
   },
   {
-    directusId: '21', team_id: 'bb_4829', slug: 'h3', sport: 'basketball', category: 'men',
+    directusId: '76', team_id: 'bb_4829', slug: 'h3', sport: 'basketball', category: 'men',
     chipLabel: 'BB-H3', displayName: 'Herren 3', order: 2,
     chipBg: '#c2410c', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'H3LS', useLiveName: true,
   },
   {
-    directusId: '22', team_id: 'bb_7183', slug: 'h4', sport: 'basketball', category: 'men',
+    directusId: '77', team_id: 'bb_7183', slug: 'h4', sport: 'basketball', category: 'men',
     chipLabel: 'BB-H4', displayName: 'Herren 4', order: 3,
     chipBg: '#ea580c', chipText: '#ffffff',
     hasDetailPage: true, fallbackLeague: 'H4LZ', useLiveName: true,

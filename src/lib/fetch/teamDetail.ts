@@ -1,4 +1,4 @@
-import { DIRECTUS_URL } from '../directus'
+import { DIRECTUS_URL, directusFetch } from '../directus'
 
 /**
  * Build-time hero data for a team detail page.
@@ -94,9 +94,11 @@ function weeklyPattern(rows: unknown): TrainingSlot[] {
 export async function getTeamDetail(directusId: string): Promise<TeamDetail | null> {
   if (!directusId) return null
   try {
-    const res = await fetch(`${DIRECTUS_URL}/kscw/public/team/${encodeURIComponent(directusId)}`)
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const raw = (await res.json())?.data
+    // Through directusFetch, not a bare fetch: this runs for a dozen pages on
+    // every build, so it is a dozen more chances to land in a restart window.
+    const raw = await directusFetch<Record<string, unknown> | null>(
+      `/kscw/public/team/${encodeURIComponent(directusId)}`,
+    )
     if (!raw?.name) return null
     return {
       name: String(raw.name),

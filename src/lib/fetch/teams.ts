@@ -1,5 +1,6 @@
 import { directusFetch, assetUrl } from '../directus'
 import { allTeamDefs, expandDisplayName, type TeamDef, type Training } from '../../data/teams'
+import { volleyballTeams, basketballTeams } from '../../data/team-routes'
 
 /** A weekly training slot derived from live hall slots by /kscw/public/teams. */
 interface LiveTraining {
@@ -30,30 +31,26 @@ export function getActiveTeams(): Promise<Team[]> {
   return _activeTeams
 }
 
-// Retry the live fetch a few times before giving up. A single transient blip
-// during the build otherwise drops every caller to the static fallback and
-// silently ships stale leagues (happened in prod 2026-06-03). Retrying absorbs
-// the blip so the build self-heals; a genuine outage still falls back (logged).
-async function fetchActiveTeamsRaw(attempts = 3): Promise<DirectusTeam[]> {
-  let lastErr: unknown
-  for (let i = 1; i <= attempts; i++) {
-    try {
-      // Custom endpoint (not /items/teams): it exposes the season-stable `team_id`
-      // and a live weekly training summary, neither of which the public role can
-      // read off the raw `teams` collection. Returns only active teams already.
-      return await directusFetch<DirectusTeam[]>('/kscw/public/teams')
-    } catch (err) {
-      lastErr = err
-      if (i < attempts) await new Promise((r) => setTimeout(r, 400 * i))
-    }
+// The retry that absorbs a Directus restart now lives in directusFetch, so every
+// build-time fetch gets it rather than this one call site (the 18.08.2026 deploy
+// died on /items/teams, which had none). What stays here is the log line: a
+// fallback to the static defs silently ships stale leagues, so it must be
+// findable in the build output (happened in prod 2026-06-03).
+async function fetchActiveTeamsRaw(): Promise<DirectusTeam[]> {
+  try {
+    // Custom endpoint (not /items/teams): it exposes the season-stable `team_id`
+    // and a live weekly training summary, neither of which the public role can
+    // read off the raw `teams` collection. Returns only active teams already.
+    return await directusFetch<DirectusTeam[]>('/kscw/public/teams')
+  } catch (err) {
+    console.warn('[teams] live fetch failed — falling back to static defs:', err)
+    throw err
   }
-  console.warn(`[teams] live fetch failed after ${attempts} attempts — falling back to static defs:`, lastErr)
-  throw lastErr
 }
 
 async function fetchActiveTeams(): Promise<Team[]> {
   const items = await fetchActiveTeamsRaw()
-  return items
+  const mapped = items
     .map(t => {
       // Match priority: team_id (season-stable external id, used by basketball) →
       // teamName (volleyball short name; follows the D1/D2 league swap) → directusId
@@ -94,6 +91,67 @@ async function fetchActiveTeams(): Promise<Team[]> {
       }
     })
     .filter((t): t is Team => t !== null)
+
+  reportTableDrift(items, mapped)
+  return mapped
+}
+
+/**
+ * Say out loud, once per build, where the two hand-maintained tables have drifted
+ * from Directus.
+ *
+ * `src/data/teams.ts` and `src/data/team-routes.ts` are the only part of this site
+ * nothing keeps in step with reality. They are consulted ONLY when the live fetch
+ * fails, which is the whole problem: a wrong entry costs nothing on a good day and
+ * is invisible on a bad one. DU23-2 was retired at the June 2026 rollover and sat
+ * in both tables until 18.08.2026, when a build that fell back during a Directus
+ * restart rebuilt /volleyball/du23-2 — and the only thing that noticed was a 404
+ * e2e test, three jobs downstream of the actual cause.
+ *
+ * A warning, not a failure. The live path is correct whenever Directus answers, so
+ * drift must never block a deploy — it just has to stop being silent.
+ */
+function reportTableDrift(live: DirectusTeam[], mapped: Team[]): void {
+  const seen = new Set(mapped.map((t) => `${t.sport}/${t.slug}`))
+  const routes = [...volleyballTeams, ...basketballTeams]
+
+  // A def (or route) that no live team matched. Its page is gone from the real
+  // site, but a fallback build will happily rebuild it — into the sitemap and the
+  // search index too, since both read live-first and fall back to these tables.
+  const retired = [
+    ...allTeamDefs.filter((d) => !seen.has(`${d.sport}/${d.slug}`))
+      .map((d) => `${d.sport}/${d.slug} (teams.ts)`),
+    ...routes.filter((r) => !seen.has(`${r.sport}/${r.slug}`))
+      .map((r) => `${r.sport}/${r.slug} (team-routes.ts)`),
+  ]
+  if (retired.length) {
+    console.warn(
+      '[teams] RETIRED entries still in the hand-maintained tables — a build that '
+      + 'falls back to them will resurrect these pages: ' + retired.join(', '),
+    )
+  }
+
+  // Ids are the softer case: /kscw/public/team/:id hops an archived row to the
+  // active one sharing its `team_id`, so a stale id still resolves. It resolves to
+  // the SQUAD though, not to the label — so when a label moves between squads at
+  // the rollover (the D1/D2 swap), a stale id quietly renders the other team.
+  const drifted = routes.flatMap((r) => {
+    const t = mapped.find((m) => m.sport === r.sport && m.slug === r.slug)
+    return t && t.directusId !== r.directusId
+      ? [`${r.sport}/${r.slug} table=${r.directusId} live=${t.directusId}`]
+      : []
+  })
+  if (drifted.length) {
+    console.warn(
+      '[teams] table ids are a season behind (harmless while the archived-row hop '
+      + 'holds, wrong the moment a label moves between squads): ' + drifted.join(', '),
+    )
+  }
+
+  // The reverse direction is already warned per-team above, but a count makes the
+  // shape of the drift readable at a glance.
+  const dropped = live.length - mapped.length
+  if (dropped > 0) console.warn(`[teams] ${dropped} live team(s) dropped for want of a def.`)
 }
 
 export async function getTeamsBySport(sport: string): Promise<Team[]> {

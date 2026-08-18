@@ -84,10 +84,86 @@ function buildQueryString(params: QueryParams): string {
   return parts.length ? `?${parts.join('&')}` : ''
 }
 
+// ── Build-time retry ───────────────────────────────────────────────────────
+
+/**
+ * A Directus restart is ~12 seconds of 502s, not a blip.
+ *
+ * Measured from the container's own log on 18.08.2026: PM2 stopped the app at
+ * 13:35:14 and "Server started at http://0.0.0.0:8055" landed at 13:35:26.171.
+ * The website's prod build had been pushed 19 seconds earlier — a wiedisync
+ * `ext:deploy:prod` restarts the same container — so it fetched straight into
+ * that window. The only retry in the codebase (3 attempts, 400ms then 800ms,
+ * inside fetchActiveTeamsRaw) gave up 1.2s in, and every OTHER build-time fetch
+ * had none at all, which is why the deploy died on DIRECTUS_STRICT while
+ * `/items/teams` was merely restarting.
+ *
+ * These delays cover ~59s, so a restart is absorbed rather than shipped.
+ */
+const RETRY_DELAYS_MS = [2_000, 4_000, 8_000, 15_000, 30_000]
+
+/**
+ * 4xx is an answer, not a blip. The 13.08.2026 incident was a 403 ("You don't
+ * have permission to access collection teams"); retrying that would spend a
+ * minute per call site arriving at the same error.
+ */
+const TRANSIENT_STATUS = new Set([429, 500, 502, 503, 504])
+
+/**
+ * Tripped once a full retry sequence has been exhausted.
+ *
+ * A genuine outage must not multiply ~59s across the dozens of fetches one build
+ * makes — that turns a 4-minute red build into an hour-long one. After the first
+ * sequence gives up, every later request fails fast: a restart self-heals, an
+ * outage degrades at roughly the old speed.
+ */
+let directusPresumedDown = false
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+
 // ── Core fetch ─────────────────────────────────────────────────────────────
 
 export interface DirectusFetchOptions extends RequestInit {
   token?: string
+}
+
+type AttemptResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: Error; transient: boolean }
+
+/** One try. Separates "Directus answered badly" from "Directus did not answer". */
+async function attemptFetch<T>(
+  path: string,
+  url: string,
+  init: RequestInit,
+): Promise<AttemptResult<T>> {
+  let res: Response
+  try {
+    res = await fetch(url, init)
+  } catch (err) {
+    // Connection refused / reset / DNS — the shape a restart takes when the
+    // proxy drops the connection instead of answering 502.
+    return {
+      ok: false,
+      transient: true,
+      error: err instanceof Error ? err : new Error(String(err)),
+    }
+  }
+
+  if (res.ok) {
+    // Some responses (DELETE 204) have no body
+    if (res.status === 204) return { ok: true, value: undefined as unknown as T }
+    const json = await res.json() as { data: T }
+    return { ok: true, value: json.data }
+  }
+
+  let message = `Directus ${path}: ${res.status} ${res.statusText}`
+  try {
+    const body = await res.json()
+    if (body?.errors?.[0]?.message) message = body.errors[0].message
+  } catch { /* ignore parse error */ }
+
+  return { ok: false, error: new Error(message), transient: TRANSIENT_STATUS.has(res.status) }
 }
 
 /**
@@ -107,22 +183,39 @@ export async function directusFetch<T>(
     ...(extraHeaders as Record<string, string> | undefined ?? {}),
   }
 
-  const res = await fetch(url, { ...rest, headers })
+  // Retry only where repeating is both free and safe: a build-time read. In the
+  // browser a stalled page is worse than a failed one, and a retried mutation is
+  // not the same request twice.
+  const method = (rest.method ?? 'GET').toUpperCase()
+  const mayRetry = typeof window === 'undefined' && method === 'GET'
 
-  if (!res.ok) {
-    let message = `Directus ${path}: ${res.status} ${res.statusText}`
-    try {
-      const body = await res.json()
-      if (body?.errors?.[0]?.message) message = body.errors[0].message
-    } catch { /* ignore parse error */ }
-    throw new Error(message)
+  for (let attempt = 0; ; attempt++) {
+    const result = await attemptFetch<T>(path, url, { ...rest, headers })
+    if (result.ok) return result.value
+
+    const lastAttempt = attempt >= RETRY_DELAYS_MS.length
+    const worthRetrying = mayRetry && result.transient && !directusPresumedDown
+
+    if (!worthRetrying || lastAttempt) {
+      if (worthRetrying && lastAttempt) {
+        directusPresumedDown = true
+        const spent = RETRY_DELAYS_MS.reduce((a, b) => a + b, 0) / 1000
+        console.warn(
+          `[directus] ${path} still failing after ${attempt + 1} attempts over ${spent}s — `
+          + 'treating Directus as down. The rest of this build fails fast into its static '
+          + 'fallbacks instead of waiting again on every fetch.',
+        )
+      }
+      throw result.error
+    }
+
+    const wait = RETRY_DELAYS_MS[attempt]
+    console.warn(
+      `[directus] ${path} failed (${result.error.message}) — `
+      + `retry ${attempt + 1}/${RETRY_DELAYS_MS.length} in ${wait / 1000}s`,
+    )
+    await sleep(wait)
   }
-
-  // Some responses (DELETE 204) have no body
-  if (res.status === 204) return undefined as unknown as T
-
-  const json = await res.json() as { data: T }
-  return json.data
 }
 
 // ── Collection helpers ─────────────────────────────────────────────────────

@@ -325,12 +325,6 @@ const basketballYouth: TeamDef[] = [
     hasDetailPage: false, linkOverride: 'teams/nachwuchs#du12',
   },
   {
-    directusId: '', team_id: 'bb_7444', slug: 'du10', sport: 'basketball', category: 'youth',
-    chipLabel: 'BB-DU10', displayName: 'Damen U10', order: 9,
-    chipBg: '#faf5ff', chipText: '#581c87',
-    hasDetailPage: false, linkOverride: 'teams/nachwuchs#du10',
-  },
-  {
     directusId: '28', team_id: 'bb_5287', slug: 'mu10', sport: 'basketball', category: 'youth',
     chipLabel: 'BB-MU10', displayName: 'Mixed U10', order: 10,
     chipBg: '#14b8a6', chipText: '#042f2e',

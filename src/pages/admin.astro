@@ -1,5 +1,33 @@
 ---
 import '../styles/global.css';
+import { allTeamDefs } from '../data/teams';
+import { volleyballTeams, basketballTeams } from '../data/team-routes';
+
+/**
+ * The two hand-maintained team tables, handed to the dashboard so the "Teams" tab
+ * can show them against live Directus without anyone opening the source.
+ *
+ * They are the only part of this site nothing keeps in step with reality, and they
+ * are read ONLY when a build cannot reach Directus — so a wrong row costs nothing
+ * on a good day and is invisible on a bad one. DU23-2 was retired at the June 2026
+ * rollover and sat in both tables until 18.08.2026, when a build that fell back
+ * during a Directus restart rebuilt /volleyball/du23-2.
+ */
+const teamTable = {
+  defs: allTeamDefs.map((d) => ({
+    slug: d.slug, sport: d.sport, label: d.chipLabel, directusId: d.directusId,
+    team_id: d.team_id ?? null, teamName: d.teamName ?? null,
+    hasDetailPage: d.hasDetailPage,
+  })),
+  routes: [...volleyballTeams, ...basketballTeams].map((r) => ({
+    slug: r.slug, sport: r.sport, directusId: r.directusId,
+  })),
+};
+// Carried on a data- attribute rather than a <script> island, so no raw-HTML sink
+// is needed at all: Astro escapes attribute values, and the allow-list guarded by
+// tests/unit/no-i18n-html.test.ts stays at the two pages that genuinely cannot be
+// expressed any other way. JSON.parse on the other side is the only decoding step.
+const teamTableJson = JSON.stringify(teamTable);
 ---
 <!DOCTYPE html>
 <html lang="de">
@@ -21,6 +49,7 @@ import '../styles/global.css';
 </head>
 <body>
   <div id="admin-app"></div>
+  <div id="kscw-team-table" hidden data-tables={teamTableJson}></div>
 
   <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <script is:inline src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js" integrity="sha384-utBUCeG4SYaCm4m7GQZYr8Hy8Fpy3V4KGjBZaf4WTKOcwhCYpt/0PfeEe3HNlwx8" crossorigin="anonymous"></script>
@@ -162,6 +191,7 @@ import '../styles/global.css';
     function resolveTab(tab) {
       var visible = visibleTabs();
       if (tab === 'admin' && adminAccess.isSuperuser) return 'admin';
+      if (tab === 'teams' && adminAccess.isSuperuser) return 'teams';
       if (tab && visible.indexOf(tab) !== -1) return tab;
       return visible.length ? visible[0] : '';
     }
@@ -176,7 +206,7 @@ import '../styles/global.css';
         el.classList.toggle('active', el.getAttribute('data-tab') === currentTab);
       });
       var fab = document.getElementById('fab-btn');
-      if (fab) fab.style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text') ? 'none' : '';
+      if (fab) fab.style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text' || currentTab === 'teams') ? 'none' : '';
       loadItems();
     }
 
@@ -1119,6 +1149,7 @@ import '../styles/global.css';
             '</div>' +
           '</header>' +
           '<div class="admin-tabs">' + tabsHtml +
+          (adminAccess.isSuperuser ? '<button class="admin-tab' + (currentTab === 'teams' ? ' active' : '') + '" data-tab="teams">Teams</button>' : '') +
           (adminAccess.isSuperuser ? '<button class="admin-tab' + (currentTab === 'admin' ? ' active' : '') + '" data-tab="admin">Admin</button>' : '') +
           '</div>' +
           '<div class="admin-content" id="admin-content"></div>' +
@@ -1156,7 +1187,7 @@ import '../styles/global.css';
           document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
           this.classList.add('active');
           // Hide FAB for registrations (no manual creation)
-          document.getElementById('fab-btn').style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text') ? 'none' : '';
+          document.getElementById('fab-btn').style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text' || currentTab === 'teams') ? 'none' : '';
           loadItems();
         });
       });
@@ -1173,9 +1204,184 @@ import '../styles/global.css';
       // Canonicalise the address bar so the first tab is always shareable and
       // a later Back lands on it rather than an ambiguous /admin/.
       replaceAdminUrl(currentTab, { course: new URLSearchParams(location.search).get('course') });
-      document.getElementById('fab-btn').style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text') ? 'none' : '';
+      document.getElementById('fab-btn').style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text' || currentTab === 'teams') ? 'none' : '';
 
       loadItems();
+    }
+
+    // ── Hand-maintained team tables ───────────────────────────
+    /**
+     * Read-only view of src/data/teams.ts + src/data/team-routes.ts joined against
+     * live Directus. Nothing here writes: the fix for anything it flags is a commit,
+     * not a click. The point is that the drift is visible at all.
+     */
+    function renderTeamTable(host) {
+      host.replaceChildren();
+      var loading = document.createElement('div');
+      loading.className = 'admin-grid-loading';
+      loading.textContent = t('loading');
+      host.appendChild(loading);
+
+      var island = document.getElementById('kscw-team-table');
+      var tables;
+      try {
+        tables = island ? JSON.parse(island.dataset.tables) : { defs: [], routes: [] };
+      } catch (e) {
+        tables = { defs: [], routes: [] };
+      }
+
+      fetch(DIRECTUS_URL + '/kscw/public/teams')
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.json();
+        })
+        .then(function(j) { paintTeamTable(host, tables, (j && j.data) || j || []); })
+        .catch(function(err) {
+          host.replaceChildren();
+          var e = document.createElement('div');
+          e.className = 'admin-empty';
+          e.textContent = 'Live teams could not be loaded — ' + err.message;
+          host.appendChild(e);
+        });
+    }
+
+    function badge(text, cls) {
+      var b = document.createElement('span');
+      b.className = 'admin-badge ' + cls;
+      b.textContent = text;
+      return b;
+    }
+
+    function cell(row, text) {
+      var td = document.createElement('td');
+      if (text !== null && text !== undefined) td.textContent = String(text);
+      row.appendChild(td);
+      return td;
+    }
+
+    function paintTeamTable(host, tables, live) {
+      host.replaceChildren();
+      var defs = tables.defs || [];
+      var routes = tables.routes || [];
+
+      // Same match priority as the build (src/lib/fetch/teams.ts): the season-stable
+      // team_id first, then the volleyball short name, then the numeric id.
+      var defFor = {};
+      var orphanLive = [];
+      live.forEach(function(t) {
+        var found = null;
+        for (var i = 0; i < defs.length; i++) {
+          var d = defs[i];
+          var hit = d.team_id ? (d.sport === t.sport && d.team_id === t.team_id)
+            : d.teamName ? (d.sport === t.sport && d.teamName === t.name)
+              : d.directusId === String(t.id);
+          if (hit) { found = d; break; }
+        }
+        if (found) defFor[found.sport + '/' + found.slug] = t;
+        else orphanLive.push(t);
+      });
+
+      var routeFor = {};
+      routes.forEach(function(r) { routeFor[r.sport + '/' + r.slug] = r; });
+
+      var rows = defs.map(function(d) {
+        var key = d.sport + '/' + d.slug;
+        var t = defFor[key] || null;
+        var route = routeFor[key] || null;
+        var flags = [];
+        if (!t) flags.push(['Retired', 'admin-badge-danger']);
+        // A def's own directusId is a match key ONLY when it carries neither a
+        // team_id nor a teamName (src/lib/fetch/teams.ts tries those first). For
+        // the youth defs, which all match by team_id, it is vestigial — flagging it
+        // would put ten permanent warnings on this page and teach everyone to skim
+        // past the two that matter. The value is still shown, just not alarmed on.
+        var idIsLive = !d.team_id && !d.teamName;
+        if (t && idIsLive && String(t.id) !== String(d.directusId)) flags.push(['teams.ts id', 'admin-badge-gray']);
+        if (t && route && String(t.id) !== String(route.directusId)) flags.push(['team-routes.ts id', 'admin-badge-gray']);
+        if (d.hasDetailPage && !route) flags.push(['No build route', 'admin-badge-danger']);
+        return { def: d, live: t, route: route, flags: flags };
+      });
+
+      // A route with no def builds a page nothing links to.
+      routes.forEach(function(r) {
+        var has = defs.some(function(d) { return d.sport === r.sport && d.slug === r.slug; });
+        if (!has) rows.push({ def: null, route: r, live: null, flags: [['Route with no def', 'admin-badge-danger']] });
+      });
+
+      var drifted = rows.filter(function(r) { return r.flags.length; }).length;
+
+      var intro = document.createElement('div');
+      intro.className = 'admin-empty';
+      intro.style.textAlign = 'left';
+      intro.textContent = defs.length + ' defs and ' + routes.length + ' build routes, hand-maintained in '
+        + 'src/data/teams.ts and src/data/team-routes.ts, against ' + live.length + ' live teams. '
+        + 'They are used only when a build cannot reach Directus. '
+        + (drifted ? drifted + ' entr' + (drifted === 1 ? 'y needs' : 'ies need') + ' attention.'
+                   : 'No drift.');
+      host.appendChild(intro);
+
+      var table = document.createElement('table');
+      table.className = 'admin-table';
+      var head = document.createElement('tr');
+      ['Slug', 'Sport', 'Label', 'Live team', 'Live id', 'teams.ts', 'team-routes.ts', 'Status'].forEach(function(h) {
+        var th = document.createElement('th');
+        th.textContent = h;
+        head.appendChild(th);
+      });
+      table.appendChild(head);
+
+      rows.sort(function(a, b) {
+        return (b.flags.length ? 1 : 0) - (a.flags.length ? 1 : 0)
+          || (a.def || a.route).sport.localeCompare((b.def || b.route).sport)
+          || (a.def || a.route).slug.localeCompare((b.def || b.route).slug);
+      });
+
+      rows.forEach(function(r) {
+        var src = r.def || r.route;
+        var tr = document.createElement('tr');
+        cell(tr, src.slug);
+        cell(tr, src.sport);
+        cell(tr, r.def ? r.def.label : '—');
+        cell(tr, r.live ? r.live.name : '—');
+        cell(tr, r.live ? r.live.id : '—');
+        cell(tr, r.def ? (r.def.directusId || '—') : '—');
+        cell(tr, r.route ? r.route.directusId : '—');
+        var status = document.createElement('td');
+        if (!r.flags.length) status.appendChild(badge('OK', 'admin-badge-green'));
+        else r.flags.forEach(function(f) { status.appendChild(badge(f[0], f[1])); });
+        tr.appendChild(status);
+        table.appendChild(tr);
+      });
+      host.appendChild(table);
+
+      // The silent-drop direction: a team the club added in Directus never appears
+      // anywhere on the site until someone hand-writes a def for it.
+      if (orphanLive.length) {
+        var h = document.createElement('div');
+        h.className = 'admin-empty';
+        h.style.textAlign = 'left';
+        h.textContent = orphanLive.length + ' live team(s) have no def and are dropped from the whole site:';
+        host.appendChild(h);
+
+        var t2 = document.createElement('table');
+        t2.className = 'admin-table';
+        var head2 = document.createElement('tr');
+        ['Live team', 'Sport', 'Id', 'team_id'].forEach(function(x) {
+          var th = document.createElement('th');
+          th.textContent = x;
+          head2.appendChild(th);
+        });
+        t2.appendChild(head2);
+        orphanLive.forEach(function(t) {
+          var tr = document.createElement('tr');
+          cell(tr, t.name);
+          cell(tr, t.sport);
+          cell(tr, t.id);
+          cell(tr, t.team_id || '—');
+          t2.appendChild(tr);
+        });
+        host.appendChild(t2);
+      }
     }
 
     // ── Load Items ────────────────────────────────────────────
@@ -1383,6 +1589,15 @@ import '../styles/global.css';
           host.appendChild(status);
           bindGrantGrid(host, rows);
         });
+        return;
+      }
+
+      // ── Teams tab (superuser) ──
+      // The two hand-maintained tables against live Directus. They are read only
+      // when a build cannot reach Directus, which is why drift in them survives
+      // for months: it is free until the one build that needs them.
+      if (currentTab === 'teams' && adminAccess.isSuperuser) {
+        renderTeamTable(content);
         return;
       }
 

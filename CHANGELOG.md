@@ -2,6 +2,15 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.26.0] — 2026-08-18
+
+### Volle und offene Teams richten sich wieder nach dem Schalter der Trainer:innen
+- Auf der Nachwuchsseite stand bei **DU12** «Team voll» samt Warteliste, obwohl das Team **offen für neue Spielerinnen** war. Der Schalter, den die Trainer:innen umlegen, wurde von einem alten Link in der Vereinsdatenbank **überstimmt** — wer sich anmelden wollte, landete auf der Warteliste statt beim Team.
+- Bei **MU8** verdeckte derselbe Link, dass das Team **Mädchen aufnimmt** und nur bei den Knaben voll ist. Die Karte zeigt jetzt wieder beide Hälften getrennt.
+- Der Link war bei **allen** Teams dieselbe Warteliste — er sagte also nichts aus, überstimmte aber den Schalter. Neu entscheidet **einzig** «offen für neue Spieler:innen», ob eine Karte grün oder golden ist; die Warteliste ist für alle dieselbe und wird automatisch angehängt.
+- Das Kontaktformular folgt derselben Regel: Bei einem **vollen Nachwuchsteam** führt es weiterhin zur Warteliste statt eine Anfrage an die Trainer:innen zu schicken. Aktiv- und Volleyballteams, die gerade niemanden suchen, bleiben wie bisher **direkt kontaktierbar**.
+- Kleinigkeit am Rand: Der Warteliste-Knopf bei **HU14** blieb auf Englisch deutsch — er übersetzt jetzt mit.
+
 ## [1.25.0] — 2026-08-14
 
 ### Fehlende Unterlagen: die Formulare kommen jetzt ausgefüllt

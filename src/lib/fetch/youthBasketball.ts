@@ -25,11 +25,6 @@ export interface YouthTeamInfo {
   // components/YouthTitle.astro. Also the key youth-status.js matches a card
   // by, which is what keeps two teams sharing one age group apart.
   name?: string
-  // Set when the team is full: the waiting-list link (teams.waitlist_url) and
-  // an optional button label (teams.waitlist_label, defaults client-side to
-  // "Warteliste"). Absent → team has space, no waiting-list button shown.
-  waitlistUrl?: string
-  waitlistLabel?: string
   // teams.open_for_players — true when the team is actively recruiting. Drives
   // the green "Open for players" badge + contact link (only when not full).
   openForPlayers?: boolean
@@ -71,12 +66,6 @@ export interface DirectusSlot {
   teams?: Array<{ teams_id: { name: string } | null } | null> | null
 }
 
-interface DirectusTeamWaitlist {
-  name: string
-  waitlist_url: string | null
-  waitlist_label: string | null
-}
-
 interface DirectusTeamOpen {
   id: number | string
   name: string
@@ -111,11 +100,12 @@ function onFetchError(what: string, err: unknown): void {
 // ("HU 18B") are both in live use.
 const CODE_TOKEN = /([HDM])U\s*0*(\d+)/gi
 
-// Club-wide waiting list, used when a youth team is closed but carries no link
-// of its own. Coaches can only toggle open_for_players (wiedisync's roster
-// editor); teams.waitlist_url is not editable there, so without this fallback
-// switching a team to "closed" left its card with no badge and no way in.
-// A team's own waitlist_url still wins — DU12 has a separate form.
+// The club-wide waiting list — the ONE form every full youth team points at.
+// Coaches toggle open_for_players (wiedisync's roster editor); the per-team
+// column is no longer read at all. It used to override the open flag, which
+// silently overruled coaches; on 2026-08-18 every value in that column turned
+// out to be this exact form (DU12's forms.gle short link included), so it
+// carried no information and was cleared.
 // Mirrored in public/js/youth-status.js, kept honest by the sync test.
 export const DEFAULT_WAITLIST_URL =
   'https://docs.google.com/forms/d/e/1FAIpQLSfvak-SELFox7Bv2RVLrjA_uZ2K6vTiKYgRheDtck92VH8crQ/viewform'
@@ -233,32 +223,6 @@ export function isCurrentOrUpcoming(
   return !until || until >= today
 }
 
-// Full-team waiting-list links, keyed by the Directus team name.
-// Kept a SEPARATE fetch from the open-status one below: waitlist_url /
-// waitlist_label used to be non-public and this request 403'd. They ARE
-// public-readable as of 2026-08-08 (verified anonymously), but keeping the
-// fetches split still means a future permission change only drops the
-// "Team voll" buttons — coaches, training and the open badge keep rendering.
-// A team counts as "full" when it has a waitlist_url, or when it is explicitly
-// closed (see DEFAULT_WAITLIST_URL).
-async function fetchWaitlist(): Promise<Record<string, { url: string; label: string }>> {
-  try {
-    const teams = await fetchAllItems<DirectusTeamWaitlist>('teams', {
-      filter: { sport: { _eq: 'basketball' }, active: { _eq: true } },
-      fields: ['name', 'waitlist_url', 'waitlist_label'],
-    })
-    const out: Record<string, { url: string; label: string }> = {}
-    for (const t of teams) {
-      const url = (t.waitlist_url ?? '').trim()
-      if (url && t.name) out[t.name] = { url, label: (t.waitlist_label ?? '').trim() }
-    }
-    return out
-  } catch (err) {
-    onFetchError('the waiting-list fetch (full-team links omitted)', err)
-    return {}
-  }
-}
-
 // Open-for-players status + team id, keyed by the Directus team name.
 // open_for_players is public-readable, so this drives the green "Open for
 // players" badge reliably even though the waitlist fetch above may 403.
@@ -362,7 +326,7 @@ export function dedupeSlots(slots: YouthSlot[]): YouthSlot[] {
 
 export async function getYouthBasketball(): Promise<YouthBasketball> {
   try {
-    const [teams, slots, waitlist, openStatus] = await Promise.all([
+    const [teams, slots, openStatus] = await Promise.all([
       fetchAllItems<DirectusTeam>('teams', {
         filter: { sport: { _eq: 'basketball' }, active: { _eq: true } },
         fields: ['name', 'coach.members_id.first_name', 'coach.members_id.last_name'],
@@ -376,7 +340,6 @@ export async function getYouthBasketball(): Promise<YouthBasketball> {
           'teams.teams_id.name',
         ],
       }),
-      fetchWaitlist(),
       fetchOpenStatus(),
     ])
 
@@ -422,13 +385,6 @@ export async function getYouthBasketball(): Promise<YouthBasketball> {
 
     for (const info of byName.values()) info.slots = dedupeSlots(info.slots)
 
-    for (const [name, w] of Object.entries(waitlist)) {
-      const info = byName.get(name)
-      if (!info) continue
-      info.waitlistUrl = w.url
-      if (w.label) info.waitlistLabel = w.label
-    }
-
     for (const [name, o] of Object.entries(openStatus)) {
       const info = byName.get(name)
       if (!info) continue
@@ -436,15 +392,6 @@ export async function getYouthBasketball(): Promise<YouthBasketball> {
       info.openForPlayers = o.open
       info.openForGirls = o.girls
       info.openForBoys = o.boys
-    }
-
-    // Closed team with no link of its own → club-wide waiting list.
-    // `=== false` is deliberate: openForPlayers stays undefined when the status
-    // fetch failed, and an unknown status must not flip every card to "full".
-    for (const info of byName.values()) {
-      if (!info.waitlistUrl && info.openForPlayers === false) {
-        info.waitlistUrl = DEFAULT_WAITLIST_URL
-      }
     }
 
     // Group into age sections. Sorted by name so a section holding two squads

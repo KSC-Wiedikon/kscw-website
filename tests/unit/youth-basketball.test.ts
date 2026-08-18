@@ -126,6 +126,32 @@ describe('youth basketball — waiting list', () => {
     expect(m![1]).toBe(DEFAULT_WAITLIST_URL);
   });
 
+  it('keeps the contact-form.js mirror of the fallback URL in sync', () => {
+    // Third copy, added 2026-08-18 when the contact-form gate stopped reading
+    // teams.waitlist_url and started using the club-wide constant instead.
+    const cf = readFileSync(resolve(__dirname, '../../public/js/contact-form.js'), 'utf8');
+    const m = cf.match(/var DEFAULT_WAITLIST_URL =\s*'([^']+)'/);
+    expect(m, 'DEFAULT_WAITLIST_URL not found in contact-form.js').toBeTruthy();
+    expect(m![1]).toBe(DEFAULT_WAITLIST_URL);
+  });
+
+  it('never reads teams.waitlist_url anywhere — open_for_players is the authority', () => {
+    // The whole point of the 2026-08-18 change: the column doubled as the
+    // "team is full" flag and outranked open_for_players, silently overruling
+    // coaches. Every value in it turned out to be this same club-wide form.
+    for (const f of [
+      'src/lib/fetch/youthBasketball.ts',
+      'src/components/YouthMeta.astro',
+      'public/js/youth-status.js',
+      'public/js/contact-form.js',
+    ]) {
+      const src = readFileSync(resolve(__dirname, '../..', f), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .split('\n').map(l => l.split('//')[0]).join('\n');
+      expect(src, `${f} still reads waitlist_url`).not.toMatch(/waitlist_url|waitlist_label/);
+    }
+  });
+
   it('only falls back for a team known to be closed, never for an unknown status', () => {
     // Guards the failure mode where a 403/network error on the open-status
     // fetch would otherwise mark every card "Team voll".

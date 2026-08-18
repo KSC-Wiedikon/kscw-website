@@ -12,6 +12,14 @@
     ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
   var TURNSTILE_SITE_KEY = '0x4AAAAAACoYmx3xiDfRbmv9';
 
+  // The club-wide basketball-youth waiting list. Mirrors DEFAULT_WAITLIST_URL in
+  // src/lib/fetch/youthBasketball.ts and public/js/youth-status.js — kept in step
+  // by tests/unit/youth-basketball.test.ts.
+  var DEFAULT_WAITLIST_URL =
+    'https://docs.google.com/forms/d/e/1FAIpQLSfvak-SELFox7Bv2RVLrjA_uZ2K6vTiKYgRheDtck92VH8crQ/viewform';
+  // A [DHM]U<age> token anywhere in the name — "DU18 Spark", "HU 18B", "MU8".
+  var YOUTH_CODE = /([HDM])U\s*0*\d+/i;
+
   var betreffSelect = document.getElementById('betreff');
   var teamGroup = document.getElementById('team-group');
   var teamSelect = document.getElementById('team-select');
@@ -56,6 +64,9 @@
   // Selected-team lookup, keyed by the <option> value (the Directus team id —
   // the discriminator). Used to show the "not recruiting" note on change.
   var currentTeamsById = {};
+  // Which sport the dropdown currently lists — the waiting-list gate is
+  // basketball-youth-only, so the note needs it.
+  var currentSport = '';
 
   function fetchTeams(sport, callback) {
     if (teamCache[sport]) return callback(teamCache[sport]);
@@ -66,7 +77,7 @@
     var url = DIRECTUS_URL + '/items/teams'
       + '?filter[sport][_eq]=' + sport
       + '&filter[active][_eq]=true'
-      + '&fields=id,name,league,open_for_players,waitlist_url,waitlist_label'
+      + '&fields=id,name,league,open_for_players'
       + '&sort=name'
       + '&limit=-1';
 
@@ -108,6 +119,7 @@
     teamSelect.appendChild(makeOption('', i18n.t('generalTeamGeneral') + ' (' + sportLabel + ')', false, false));
 
     // Each team. Keep a lookup so the change handler can read open_for_players.
+    currentSport = sport;
     currentTeamsById = {};
     for (var i = 0; i < teams.length; i++) {
       var t = teams[i];
@@ -131,6 +143,7 @@
     if (!teamGroup || !teamSelect) return;
     teamGroup.style.display = 'none';
     teamSelect.value = '';
+    currentSport = '';
     updateRecruitingNote();
   }
 
@@ -158,22 +171,6 @@
 
   // Only allow http(s)/mailto (and root-relative) URLs into an href — a
   // javascript: URL coming from Directus would otherwise be an XSS sink.
-  /**
-   * Delegates to window.kscwSafeHref (public/js/safe-href.js, loaded
-   * render-blocking from BaseLayout's <head> on every page). Fails CLOSED — if
-   * that file did not load we render unlinked rather than emit a URL nobody
-   * vetted.
-   *
-   * This used to be a local copy whose `u.charAt(0) === '/'` also accepted a
-   * PROTOCOL-RELATIVE `//evil.example`, which inherits the page scheme and
-   * navigates off-site — the exact case the shared guard rejects explicitly
-   * (audit 2026-08-08, finding 16). Two byte-identical copies of that weaker
-   * check existed; SECURITY.md claimed "the pair cannot drift" while it was
-   * actually a quartet. Do not reintroduce a local scheme check.
-   */
-  function safeUrl(value) {
-    return window.kscwSafeHref ? window.kscwSafeHref(value) : '';
-  }
 
   function setSubmitBlocked(blocked) {
     teamBlocksSubmit = blocked;
@@ -186,20 +183,30 @@
     var team = teamSelect ? currentTeamsById[teamSelect.value] : null;
     while (note.firstChild) note.removeChild(note.firstChild);
 
-    var waitlistUrl = team && team.waitlist_url ? safeUrl(team.waitlist_url) : '';
-    if (team && waitlistUrl) {
-      // Full team → offer the waiting list, block the contact submit.
+    // A CLOSED BASKETBALL YOUTH team runs the club-wide waiting list, so a
+    // contact submission must not fan out to the coaches / youth coordinator.
+    //
+    // Deliberately youth-only. This used to key on a non-empty waitlist_url,
+    // which made "full" a property of a hand-typed column rather than of
+    // open_for_players — the same inversion that had DU12 showing "Team voll"
+    // while its coach had it open (2026-08-18). Widening it to every closed team
+    // instead would be worse: 13 active senior and volleyball teams sit at
+    // open_for_players=false and must stay contactable, and pointing a
+    // volleyball enquiry at a basketball youth waiting list is nonsense.
+    // The /kscw/contact backend enforces the identical condition.
+    var isClosedYouth = !!team && currentSport === 'basketball'
+      && YOUTH_CODE.test(team.name || '') && team.open_for_players === false;
+    if (isClosedYouth) {
       var msg = document.createElement('span');
       msg.textContent = i18n.t('contactTeamFullWaitlist', { team: team.name });
       note.appendChild(msg);
       note.appendChild(document.createTextNode(' '));
       var a = document.createElement('a');
-      a.href = waitlistUrl;
+      a.href = DEFAULT_WAITLIST_URL;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
       a.className = 'team-waitlist-link';
-      var lbl = team.waitlist_label ? String(team.waitlist_label).trim() : '';
-      a.textContent = lbl || i18n.t('contactWaitlistCta');
+      a.textContent = i18n.t('contactWaitlistCta');
       note.appendChild(a);
       note.style.display = '';
       setSubmitBlocked(true);

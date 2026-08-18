@@ -5,8 +5,9 @@
  * "Offen für neue Spieler" badge + contact link and the gold "Team voll" /
  * waiting-list button are baked in at build time from Directus. This script
  * re-fetches that status live in the browser and reconciles each card against
- * the current Directus state — so flipping teams.open_for_players (or setting a
- * waitlist_url) shows up immediately, with no site rebuild.
+ * the current Directus state — so flipping teams.open_for_players shows up
+ * immediately, with no site rebuild. open_for_players is the ONLY thing read:
+ * teams.waitlist_url used to override it and is gone (see YouthMeta.astro).
  *
  * The build-time render stays as the no-JS / instant-paint fallback; this just
  * replaces the status rows with fresh ones. Cards are matched to a team by
@@ -105,12 +106,6 @@
     });
   }
 
-  // waitlist_url / waitlist_label are public-readable as of 2026-08-08 (they
-  // were not before, and this request used to 403 into []). Still isolated from
-  // the open fetch so that a future permission change only drops the "Team
-  // voll" buttons rather than the open badges too.
-  function fetchWaitlist() { return fetchRows('name,waitlist_url,waitlist_label'); }
-
   function el(tag, cls) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -124,50 +119,25 @@
     return a;
   }
 
-  // Only allow http(s)/mailto (and root-relative) URLs into an href — a
-  // javascript: URL coming from Directus would otherwise be an XSS sink.
-  // Mirrors the href post-pass in news-modal.js. Returns '' for unsafe URLs.
-  /**
-   * Delegates to window.kscwSafeHref (public/js/safe-href.js, loaded
-   * render-blocking from BaseLayout's <head> on every page). Fails CLOSED — if
-   * that file did not load we render unlinked rather than emit a URL nobody
-   * vetted.
-   *
-   * This used to be a local copy whose `u.charAt(0) === '/'` also accepted a
-   * PROTOCOL-RELATIVE `//evil.example`, which inherits the page scheme and
-   * navigates off-site — the exact case the shared guard rejects explicitly
-   * (audit 2026-08-08, finding 16). Two byte-identical copies of that weaker
-   * check existed; SECURITY.md claimed "the pair cannot drift" while it was
-   * actually a quartet. Do not reintroduce a local scheme check.
-   */
-  function safeUrl(value) {
-    return window.kscwSafeHref ? window.kscwSafeHref(value) : '';
-  }
 
   // Full team → gold "Team voll" badge + waiting-list link. A custom label from
   // Directus renders verbatim; an empty label uses the localisable key.
   // w.badge overrides the badge for the closed half of a split mixed card.
   function buildWaitlist(w) {
+    w = w || {};
     var wrap = el('div', 'youth-waitlist');
     var badge = el('span', 'youth-full-badge');
     badge.setAttribute('data-i18n', w.badge ? w.badge[0] : 'bbTeamFull');
     badge.textContent = w.badge ? w.badge[1] : 'Team voll';
     var a = el('a', 'btn btn-outline btn-sm youth-waitlist-btn');
-    // Validate the scheme before it reaches the href; an unsafe URL renders the
-    // label as a plain (non-clickable) element rather than as a link.
-    var href = safeUrl(w.url);
-    if (href) {
-      a.href = href;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-    }
+    // A compile-time constant, not coach-written varchar — so no scheme check is
+    // needed here any more (see the note in YouthMeta.astro).
+    a.href = DEFAULT_WAITLIST_URL;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
     var label = el('span');
-    if (w.label) {
-      label.textContent = w.label;
-    } else {
-      label.setAttribute('data-i18n', 'bbWaitlistLabel');
-      label.textContent = 'Warteliste';
-    }
+    label.setAttribute('data-i18n', 'bbWaitlistLabel');
+    label.textContent = 'Warteliste';
     a.appendChild(label);
     a.appendChild(arrow());
     wrap.appendChild(badge);
@@ -248,18 +218,16 @@
     }
   }
 
-  function render(openRows, waitRows) {
+  function render(openRows) {
     // Only reconcile against live data when the fetch actually returned rows.
-    // On a fetch error / empty result both arrays are [], so we leave the
-    // server-rendered fallback badges in place rather than wiping every card's
-    // status. (waitRows alone may legitimately be [] — that's the expected 403
-    // while waitlist_url stays non-public — so the open fetch is what gates.)
-    if (!openRows.length && !waitRows.length) return;
+    // On a fetch error the array is [], so we leave the server-rendered fallback
+    // badges in place rather than wiping every card's status.
+    if (!openRows.length) return;
 
     // Status is keyed by the EXACT Directus team name, because an age group can
     // hold more than one squad (DU18 Spark and DU18 Fire both sit under DU18)
     // and a code alone would give them each other's badge.
-    var open = {}, wait = {}, perCode = {};
+    var open = {}, perCode = {};
     function remember(name) {
       var code = cardCode(name);
       if (!code) return '';
@@ -274,12 +242,6 @@
         girls: t.open_for_girls === true,
         boys: t.open_for_boys === true
       };
-    });
-    waitRows.forEach(function (t) {
-      if (!t || !t.name) return;
-      var url = t.waitlist_url ? String(t.waitlist_url).trim() : '';
-      if (!cardCode(t.name) || !url) return;
-      wait[t.name] = { url: url, label: t.waitlist_label ? String(t.waitlist_label).trim() : '' };
     });
 
     // The one team in an age group, or '' when the group holds several. Used to
@@ -299,33 +261,29 @@
       var meta = cards[i];
       var code = (meta.getAttribute('data-team-code') || '').toUpperCase();
       var key = meta.getAttribute('data-team-name') || '';
-      if (!open[key] && !wait[key]) key = soleOf(code) || key;
+      if (!open[key]) key = soleOf(code) || key;
 
       var o = open[key];
-      var w = wait[key];
       // Nothing live to say about this card — leave what the build rendered
       // rather than stripping it to an empty card.
-      if (!o && !w) continue;
+      if (!o) continue;
 
       // Drop the build-rendered status rows; rebuild from live data.
       var stale = meta.querySelectorAll('.youth-open, .youth-waitlist');
       for (var s = 0; s < stale.length; s++) stale[s].parentNode.removeChild(stale[s]);
 
-      // Closed team with no link of its own → club-wide waiting list. Mirrors
-      // the build's rule; requires o to exist, so an unknown status (failed
-      // fetch) never flips a card to "full".
-      if (!w && o && o.open === false) w = { url: DEFAULT_WAITLIST_URL, label: '' };
-      // A waitlist link means "full" and wins over the open badge, matching the
-      // build's `openForPlayers = !waitlistUrl && open` rule.
-      if (w) {
-        meta.appendChild(buildWaitlist(w));
-      } else if (o && o.open) {
+      // open_for_players is the single authority, mirroring YouthMeta.astro's
+      // `isFull` / `openForPlayers`. `=== false` is deliberate: an unknown
+      // status must never flip a card to "full".
+      if (o.open === false) {
+        meta.appendChild(buildWaitlist());
+      } else if (o.open) {
         meta.appendChild(buildOpen(o, code));
         // Split mixed card → the gender it is not taking gets the club-wide
         // waiting list underneath.
         var closed = closedBadge(o, code);
         if (closed) {
-          meta.appendChild(buildWaitlist({ url: DEFAULT_WAITLIST_URL, label: '', badge: closed }));
+          meta.appendChild(buildWaitlist({ badge: closed }));
         }
       }
     }
@@ -335,8 +293,8 @@
     if (window.i18n && window.i18n.applyTranslations) window.i18n.applyTranslations();
   }
 
-  // Both Directus requests and the dictionary run CONCURRENTLY; only the render
-  // waits for all three. This used to be `i18nReady.then(run)`, which held the two
+  // The Directus request and the dictionary run CONCURRENTLY; only the render
+  // waits for both. This used to be `i18nReady.then(run)`, which held the two
   // status requests back until the dictionary had arrived even though open/waitlist
   // state is the same in either language.
   //
@@ -346,8 +304,8 @@
     var ready = (window.i18nReady && window.i18nReady.then)
       ? window.i18nReady.catch(function () {})
       : Promise.resolve();
-    Promise.all([fetchOpen(), fetchWaitlist(), ready]).then(function (res) {
-      render(res[0], res[1]);
+    Promise.all([fetchOpen(), ready]).then(function (res) {
+      render(res[0]);
     });
   })();
 })();

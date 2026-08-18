@@ -11,7 +11,6 @@
 import { DEFAULT_WAITLIST_URL, type YouthTeamInfo } from '../lib/fetch/youthBasketball'
 import { youthAge } from '../lib/birthYears'
 import BirthYears from './BirthYears.astro'
-import { safeHref } from '../lib/safeHref'
 // This component has no locale prop — like every page it renders the German build
 // output, and the data-i18n keys let the client swap to English. The labels come
 // from the dictionary rather than being written twice, so an admin edit reaches the
@@ -33,33 +32,26 @@ const info: YouthTeamInfo = team ?? { coaches: [], slots: [] }
 // a [DHM]U<n> group, so this is only null if a non-group code ever reached it.
 const age = youthAge(code)
 
-// Full team → show a waiting-list button. A custom label (from Directus) is
-// rendered verbatim; an empty label falls back to the i18n "Warteliste" key so
-// the client toggle can localise it. labelKey is undefined for custom labels,
-// which Astro omits, leaving the literal text untouched by the language switch.
-// `waitlist_url` is a bare varchar(500) with no CHECK, and every coach can
-// write it on their own team — so it is untrusted input that gets BAKED into
-// static HTML by the rebuild Flow. Astro escapes the attribute but does not
-// vet the scheme, and `script-src 'unsafe-inline'` is still accepted in the
-// CSP, so a `javascript:` value executed on click for any parent who reached
-// the page before youth-status.js healed the node (audit 2026-08-08,
-// finding 16). Fail closed, matching sponsoren/index.astro: an unsafe URL
-// renders the badge without a link rather than a clickable javascript: href.
-// ⚠ Two values on purpose. `hasWaitlist` is the STATE (this team is full and
-// has a waiting list) and must come from the raw column; `waitlistHref` is the
-// vetted link. Deriving the state from the guarded value would mean an unsafe
-// URL silently flipped a FULL team to "open for players" via `openForPlayers`
-// below — turning a link-safety fix into a wrong-information bug.
-const hasWaitlist = !!info.waitlistUrl?.trim()
-const waitlistHref = safeHref(info.waitlistUrl?.trim())
-const customLabel = info.waitlistLabel?.trim()
-const waitlistLabel = customLabel || 'Warteliste'
-const waitlistLabelKey = customLabel ? undefined : 'bbWaitlistLabel'
+// Full team → show the club-wide waiting-list button.
+//
+// `open_for_players` is the SINGLE authority for open/full. teams.waitlist_url
+// used to be both the link AND the "team is full" flag, and the flag won — so a
+// coach who opened DU12 in wiedisync was silently overruled by a leftover URL on
+// the row (found 2026-08-18: every team's URL turned out to be the same
+// club-wide form anyway, so the column carried no information at all).
+//
+// `=== false` is deliberate: openForPlayers stays undefined when the status
+// fetch failed, and an unknown status must not flip every card to "full".
+//
+// The href is now a compile-time constant instead of coach-written varchar(500),
+// so the URL guard that audit 2026-08-08 finding 16 added here is gone together
+// with the sink it protected — no Directus text reaches this attribute.
+const isFull = info.openForPlayers === false
 
 // Not full + actively recruiting → green "Open for players" badge plus a link
 // into the contact form, prefilled to this exact team (sport + teamId). The
 // /kscw/contact backend routes youth-team submissions to the youth contact.
-const openForPlayers = !hasWaitlist && info.openForPlayers === true
+const openForPlayers = info.openForPlayers === true
 const contactHref = `/club/kontakt?sport=basketball${info.teamId ? `&teamId=${encodeURIComponent(info.teamId)}` : ''}`
 
 // Female youth teams (D-codes: DU18/DU16/…) get the feminine German badge
@@ -116,20 +108,18 @@ const DE_DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Sam
   {info.coaches.length > 0 && (
     <span><strong data-i18n="bbCoachLabel">{t('de', 'bbCoachLabel')}</strong> {info.coaches.join(', ')}</span>
   )}
-  {hasWaitlist && (
+  {isFull && (
     <div class="youth-waitlist">
       <span class="youth-full-badge" data-i18n="bbTeamFull">{t('de', 'bbTeamFull')}</span>
-      {waitlistHref && (
-        <a
-          class="btn btn-outline btn-sm youth-waitlist-btn"
-          href={waitlistHref}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <span data-i18n={waitlistLabelKey}>{waitlistLabel}</span>
-          <span aria-hidden="true">→</span>
-        </a>
-      )}
+      <a
+        class="btn btn-outline btn-sm youth-waitlist-btn"
+        href={DEFAULT_WAITLIST_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span data-i18n="bbWaitlistLabel">{t('de', 'bbWaitlistLabel')}</span>
+        <span aria-hidden="true">→</span>
+      </a>
     </div>
   )}
   {openForPlayers && (

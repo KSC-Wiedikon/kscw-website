@@ -3817,7 +3817,17 @@ button:focus-visible {
 .cal-detail-icon {
   flex-shrink: 0;
   width: 1.25em;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Hand-built Lucide glyphs (see detailIcon() in calendar-grid.ts). They inherit
+   the row's colour, so they follow the theme without a dark-mode override. */
+.cal-detail-glyph {
+  width: 17px;
+  height: 17px;
+  display: block;
+  opacity: 0.75;
 }
 .cal-detail-link {
   color: var(--accent-text);

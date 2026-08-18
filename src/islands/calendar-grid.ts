@@ -120,6 +120,15 @@ if (container) {
   }
   computeLabels()
 
+  // Locale for LONG-form dates ("Mittwoch, 23. September 2026").
+  //
+  // ⚠ Not a violation of the de-CH-always rule in CLAUDE.md — that rule exists
+  // because en-CH renders NUMERIC dates with slashes (30/03/2026). Weekday and
+  // month *names* carry no such problem: en-GB keeps day-before-month and no
+  // slashes, and is what game-modal.js already uses for the same job. The
+  // numeric renders in this file (day chips, formatClosureRange) stay de-CH.
+  const longDateLocale = (): string => (lang === 'de' ? 'de-CH' : 'en-GB')
+
   let currentMonth = new Date()
   currentMonth.setDate(1)
   let games: DirectusGame[] = []
@@ -302,6 +311,63 @@ if (container) {
     const fmt = (key: string) =>
       new Date(key + 'T12:00:00').toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' })
     return startKey === endKey ? fmt(startKey) : `${fmt(startKey)} – ${fmt(endKey)}`
+  }
+
+  // -- Detail-row icons --
+  // Lucide 0.577.0 path data, inlined rather than referenced through an
+  // `<i data-lucide>` placeholder. Modal rows are built when a modal opens —
+  // long after lucide.createIcons() has walked the document — so a placeholder
+  // would sit there unreplaced. Same reason closureIcon() below is hand-built.
+  //
+  // `whistle` is the one exception: Lucide has no whistle, and neither do
+  // Tabler, Phosphor, Iconoir, or Font Awesome's free tiers. This is MingCute's
+  // `whistle-line` (Apache 2.0, mingcute.net) — drawn on the same 24 grid at the
+  // same stroke width, so it needs no retouching to sit with the rest.
+  const ICON_SHAPES: Record<string, Array<[string, Record<string, string>]>> = {
+    calendar: [
+      ['rect', { width: '18', height: '18', x: '3', y: '3', rx: '2' }],
+      ['path', { d: 'M8 2v3m8-3v3' }],
+      ['path', { d: 'M3 9h18' }],
+    ],
+    clock: [
+      ['circle', { cx: '12', cy: '12', r: '10' }],
+      ['path', { d: 'M12 6v6l4 2' }],
+    ],
+    building: [
+      ['path', { d: 'M10 12h4m-4-4h4m0 13v-3a2 2 0 0 0-4 0v3' }],
+      ['path', { d: 'M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2' }],
+      ['path', { d: 'M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16' }],
+    ],
+    pin: [
+      ['path', { d: 'M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0' }],
+      ['circle', { cx: '12', cy: '10', r: '3' }],
+    ],
+    trophy: [
+      ['path', { d: 'M10 14.66V17a1 1 0 0 1-1 1a2 2 0 0 0-2 2v2m7-7.34V17a1 1 0 0 0 1 1a2 2 0 0 1 2 2v2m.916-12H19.5A2.5 2.5 0 0 0 22 7.5V5a1 1 0 0 0-1-1h-3M4 22h16' }],
+      ['path', { d: 'M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z' }],
+      ['path', { d: 'M6.084 10H4.5A2.5 2.5 0 0 1 2 7.5V5a1 1 0 0 1 1-1h3' }],
+    ],
+    hash: [
+      ['path', { d: 'M4 9h16M4 15h16M10 3L8 21m8-18l-2 18' }],
+    ],
+    whistle: [
+      ['path', { d: 'M5.113 16.597a6 6 0 0 0 9.67-1.682l4.472 3.096l2.121-2.121l-7.778-7.778a6 6 0 0 0-8.485 8.485Z' }],
+      ['path', { d: 'M10.77 13.769a2 2 0 1 1-2.83-2.829a2 2 0 0 1 2.828 2.829ZM5.466 7.758a1.5 1.5 0 1 1-2.121-2.121a1.5 1.5 0 0 1 2.121 2.12Z' }],
+    ],
+    alert: [
+      ['path', { d: 'm21.73 18l-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3M12 9v4m0 4h.01' }],
+    ],
+  }
+
+  function detailIcon(name: keyof typeof ICON_SHAPES): SVGElement {
+    const svg = svgEl('svg', {
+      viewBox: '0 0 24 24', class: 'cal-detail-glyph', fill: 'none',
+      stroke: 'currentColor', 'stroke-width': '2',
+      'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+      'aria-hidden': 'true',
+    })
+    for (const [tag, attrs] of ICON_SHAPES[name]) svg.appendChild(svgEl(tag, attrs))
+    return svg
   }
 
   // -- Closure padlock icon --
@@ -528,32 +594,32 @@ if (container) {
     // Date & Time — g.date is YYYY-MM-DD; noon-anchor to avoid TZ day-shift
     const gDateOnly = g.date.length > 10 ? g.date.slice(0, 10) : g.date
     const dateObj = new Date(gDateOnly + 'T12:00:00')
-    const dateStr = dateObj.toLocaleDateString('de-CH', {
+    const dateStr = dateObj.toLocaleDateString(longDateLocale(), {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     })
     const infoList = el('div', 'cal-detail-info')
-    infoList.appendChild(makeInfoRow('\uD83D\uDCC5', dateStr))
-    if (g.time) infoList.appendChild(makeInfoRow('\u23F0', g.time.slice(0, 5)))
+    infoList.appendChild(makeInfoRow(detailIcon('calendar'), dateStr))
+    if (g.time) infoList.appendChild(makeInfoRow(detailIcon('clock'), g.time.slice(0, 5)))
 
     // Hall
     const hall = g.hall
     const hallName = hall?.name
     const hallAddr = [hall?.address, hall?.city].filter(Boolean).join(', ')
     if (hallName) {
-      infoList.appendChild(makeInfoRow('\uD83C\uDFE2', hallName))
+      infoList.appendChild(makeInfoRow(detailIcon('building'), hallName))
     }
     if (hallAddr) {
       const mapsUrl = hall?.maps_url
         || `https://maps.google.com/?q=${encodeURIComponent(hallAddr)}`
-      infoList.appendChild(makeInfoRowLink('\uD83D\uDCCD', hallAddr, mapsUrl))
+      infoList.appendChild(makeInfoRowLink(detailIcon('pin'), hallAddr, mapsUrl))
     }
 
     // League + official game number (Swiss Volley / Basketplan id without the
     // vb_/bb_ source prefix)
-    if (g.league) infoList.appendChild(makeInfoRow('\uD83C\uDFC6', g.league))
+    if (g.league) infoList.appendChild(makeInfoRow(detailIcon('trophy'), g.league))
     const gameNo = g.game_id ? String(g.game_id).replace(/^(vb|bb)_/, '') : ''
     if (gameNo) {
-      infoList.appendChild(makeInfoRow('#\uFE0F\u20E3', `${lang === 'de' ? 'Spiel-Nr.' : 'Game no.'} ${gameNo}`))
+      infoList.appendChild(makeInfoRow(detailIcon('hash'), `${lang === 'de' ? 'Spiel-Nr.' : 'Game no.'} ${gameNo}`))
     }
 
     // Referees (volleyball; filled by the Swiss Volley sync \u2014 new-season games
@@ -565,13 +631,13 @@ if (container) {
         const label = lang === 'de'
           ? `${i + 1}. Schiedsrichter`
           : `${['1st', '2nd', '3rd'][i] || `${i + 1}.`} referee`
-        infoList.appendChild(makeInfoRow('\uD83D\uDE4B', `${label}: ${r.name}`))
+        infoList.appendChild(makeInfoRow(detailIcon('whistle'), `${label}: ${r.name}`))
       })
     }
 
     // Status
     if (g.status === 'postponed') {
-      infoList.appendChild(makeInfoRow('\u26A0\uFE0F', lang === 'de' ? 'Verschoben' : 'Postponed'))
+      infoList.appendChild(makeInfoRow(detailIcon('alert'), lang === 'de' ? 'Verschoben' : 'Postponed'))
     }
 
     modal.appendChild(infoList)
@@ -614,13 +680,13 @@ if (container) {
     // Info — resolve the event's Zurich calendar day (eventDateKey), then
     // noon-anchor that day so the long-format render stays on it in any timezone.
     const dateObj = new Date(eventDateKey(ev.date) + 'T12:00:00')
-    const dateStr = dateObj.toLocaleDateString('de-CH', {
+    const dateStr = dateObj.toLocaleDateString(longDateLocale(), {
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
     })
     const infoList = el('div', 'cal-detail-info')
-    infoList.appendChild(makeInfoRow('\uD83D\uDCC5', dateStr))
-    if (ev.time) infoList.appendChild(makeInfoRow('\u23F0', ev.time.slice(0, 5)))
-    if (ev.location) infoList.appendChild(makeInfoRow('\uD83D\uDCCD', ev.location))
+    infoList.appendChild(makeInfoRow(detailIcon('calendar'), dateStr))
+    if (ev.time) infoList.appendChild(makeInfoRow(detailIcon('clock'), ev.time.slice(0, 5)))
+    if (ev.location) infoList.appendChild(makeInfoRow(detailIcon('pin'), ev.location))
     modal.appendChild(infoList)
 
     // Signup CTA + live count (OpnForm via Directus proxy)
@@ -696,8 +762,8 @@ if (container) {
     modal.appendChild(el('h3', 'cal-modal-title', g.label))
 
     const infoList = el('div', 'cal-detail-info')
-    infoList.appendChild(makeInfoRow('📅', formatClosureRange(g.startDate, g.endDate)))
-    infoList.appendChild(makeInfoRow('🏢', `${affectedHallsLabel}: ${closureHallsLabel(g)}`))
+    infoList.appendChild(makeInfoRow(detailIcon('calendar'), formatClosureRange(g.startDate, g.endDate)))
+    infoList.appendChild(makeInfoRow(detailIcon('building'), `${affectedHallsLabel}: ${closureHallsLabel(g)}`))
     modal.appendChild(infoList)
 
     overlay.appendChild(modal)
@@ -710,16 +776,20 @@ if (container) {
   }
 
   // -- Info row helper --
-  function makeInfoRow(icon: string, text: string): HTMLElement {
+  function makeInfoRow(icon: SVGElement, text: string): HTMLElement {
     const row = el('div', 'cal-detail-row')
-    row.appendChild(el('span', 'cal-detail-icon', icon))
+    const slot = el('span', 'cal-detail-icon')
+    slot.appendChild(icon)
+    row.appendChild(slot)
     row.appendChild(el('span', undefined, text))
     return row
   }
 
-  function makeInfoRowLink(icon: string, text: string, href: string): HTMLElement {
+  function makeInfoRowLink(icon: SVGElement, text: string, href: string): HTMLElement {
     const row = el('div', 'cal-detail-row')
-    row.appendChild(el('span', 'cal-detail-icon', icon))
+    const slot = el('span', 'cal-detail-icon')
+    slot.appendChild(icon)
+    row.appendChild(slot)
     const link = document.createElement('a')
     link.href = href
     link.target = '_blank'
@@ -1167,7 +1237,7 @@ if (container) {
     const modal = el('div', 'cal-modal')
     modal.addEventListener('click', (e) => e.stopPropagation())
 
-    const dateStr = date.toLocaleDateString('de-CH', {
+    const dateStr = date.toLocaleDateString(longDateLocale(), {
       weekday: 'long', day: 'numeric', month: 'long',
     })
 

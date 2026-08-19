@@ -80,6 +80,25 @@
       sitekey: TURNSTILE_SITE_KEY,
       theme: 'auto',
       size: 'flexible',
+      // Resilience: auto-refresh an expired token and auto-retry transient
+      // challenge failures (the 300xxx / 600xxx client-side errors some mobile
+      // browsers and privacy blockers throw) instead of dead-ending the visitor
+      // with a widget that never yields a token (prod, 19.08.2026).
+      'refresh-expired': 'auto',
+      retry: 'auto',
+      'retry-interval': 3000,
+      'expired-callback': function () {
+        try { window.turnstile.reset(turnstileWidgetId); } catch (_) { /* noop */ }
+      },
+      'timeout-callback': function () {
+        try { window.turnstile.reset(turnstileWidgetId); } catch (_) { /* noop */ }
+      },
+      'error-callback': function (code) {
+        // Returning true tells Turnstile we handled it, which suppresses the
+        // "Uncaught TurnstileError" and lets retry:'auto' recover.
+        try { console.error('[mixed-tournament] turnstile error ' + (code || '')); } catch (_) { /* noop */ }
+        return true;
+      },
     });
   }
 

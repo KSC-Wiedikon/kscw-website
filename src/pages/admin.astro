@@ -944,6 +944,22 @@ const teamTableJson = JSON.stringify(teamTable);
           size: 'normal',
           callback: function(token) { turnstileToken = token; },
           'expired-callback': function() { turnstileToken = ''; },
+          // Resilience: recover from transient challenge failures instead of
+          // leaving the login with a widget that never yields a token.
+          'refresh-expired': 'auto',
+          retry: 'auto',
+          'retry-interval': 3000,
+          'timeout-callback': function() {
+            turnstileToken = '';
+            try { window.turnstile.reset(turnstileWidgetId); } catch (_) { /* noop */ }
+          },
+          'error-callback': function(code) {
+            // Returning true suppresses the "Uncaught TurnstileError" and lets
+            // retry:'auto' recover.
+            turnstileToken = '';
+            try { console.error('[admin] turnstile error ' + (code || '')); } catch (_) { /* noop */ }
+            return true;
+          },
         });
       }
       if (window.turnstile) {

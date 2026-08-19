@@ -86,6 +86,26 @@ const KS_OTHER = [
           <input type="email" id="email" name="email" class="form-input" required>
         </div>
 
+        <!-- Already a member. Shown once name + last name + email together match
+             an ACTIVE member (POST /kscw/registration/check-duplicate); the
+             submit button is disabled while it is visible. Existing members
+             re-registering was a recurring, silent source of duplicate member
+             records — five of the club's first 36 registrations. Never fires on
+             a shared family mailbox: the check needs the whole identity. -->
+        <div id="already-member-warn" role="alert" style="display: none;">
+          <strong data-i18n="registrationAlreadyMemberTitle">{t(locale, 'registrationAlreadyMemberTitle')}</strong>
+          <!-- Split into plain data-i18n pieces around literal links: the client
+               i18n engine applies translations as textContent ONLY and has no
+               innerHTML path by design (public/js/i18n.js), so markup inside a
+               dictionary value would render as visible tags after the English
+               swap. Same idiom as the privacy-consent block in club/kontakt.astro. -->
+          <span>
+            <span data-i18n="registrationAlreadyMemberPre">{t(locale, 'registrationAlreadyMemberPre')}</span>
+            <a href="https://wiedisync.kscw.ch" target="_blank" rel="noopener noreferrer">wiedisync.kscw.ch</a><span data-i18n="registrationAlreadyMemberMid">{t(locale, 'registrationAlreadyMemberMid')}</span>
+            <a href="mailto:admin@wiedisync.kscw.ch">admin@wiedisync.kscw.ch</a><span data-i18n="registrationAlreadyMemberPost">{t(locale, 'registrationAlreadyMemberPost')}</span>
+          </span>
+        </div>
+
         <div class="form-group">
           <label for="telefon"><span data-i18n="registrationPhone">{t(locale, 'registrationPhone')}</span> *</label>
           <input type="tel" id="telefon" name="telefon" class="form-input" required>
@@ -731,6 +751,19 @@ const KS_OTHER = [
     transform: translateX(20px);
   }
   /* Form feedback states */
+  #already-member-warn {
+    margin-top: var(--space-sm);
+    padding: var(--space-md);
+    border-radius: var(--radius-md, 8px);
+    border: 1px solid #ef4444;
+    background: rgba(239, 68, 68, 0.08);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+  #already-member-warn strong { display: block; margin-bottom: 0.25rem; }
+  #already-member-warn a { color: var(--kscw-gold, #b8860b); }
+
   #form-feedback {
     padding: 0.875rem 1rem;
     border-radius: var(--radius-md, 8px);

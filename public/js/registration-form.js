@@ -940,6 +940,70 @@
     });
   });
 
+  // ── Already a member ──────────────────────────────────────
+  //
+  // Existing members re-registering was a silent, recurring source of duplicate
+  // member records — five of the club's first 36 registrations, one of them with
+  // the EXACT email already on the member row. The create route now refuses
+  // those (409 already_member); this is the same rule run live so nobody fills
+  // 40 fields and uploads documents first.
+  //
+  // Fires on `change` (not `input`): the check needs first name AND last name
+  // AND email together, and asking the server on every keystroke would be both
+  // useless and noisy. The 350 ms debounce covers autofill, which fires all
+  // three at once.
+  //
+  // ⚠ Advisory only. A network failure or a slow reply must never stop a
+  // legitimate applicant — the server re-runs the identical check and is the
+  // one that actually decides.
+  var alreadyMemberWarn = document.getElementById('already-member-warn');
+  var isAlreadyMember = false;
+  var dupCheckTimer = null;
+  var dupCheckSeq = 0;
+
+  function setAlreadyMember(flag) {
+    isAlreadyMember = flag;
+    if (alreadyMemberWarn) alreadyMemberWarn.style.display = flag ? 'block' : 'none';
+    if (submitBtn) submitBtn.disabled = flag;
+    if (flag && alreadyMemberWarn && alreadyMemberWarn.scrollIntoView) {
+      alreadyMemberWarn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function runDuplicateCheck() {
+    var vorname = val('vorname');
+    var nachname = val('nachname');
+    var email = val('email');
+    // Nothing to ask about until all three are present — and clear any standing
+    // warning, since the identity being checked has changed.
+    if (!vorname || !nachname || !email || email.indexOf('@') < 0) {
+      if (isAlreadyMember) setAlreadyMember(false);
+      return;
+    }
+    var seq = ++dupCheckSeq;
+    fetch(DIRECTUS_URL + '/kscw/registration/check-duplicate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ vorname: vorname, nachname: nachname, email: email }),
+    })
+      .then(function (r) { return r.ok ? r.json() : { already_member: false }; })
+      .then(function (d) {
+        // Drop a reply that a newer edit has already superseded.
+        if (seq !== dupCheckSeq) return;
+        setAlreadyMember(!!d.already_member);
+      })
+      .catch(function () { /* advisory — the create route re-checks */ });
+  }
+
+  ['vorname', 'nachname', 'email'].forEach(function (id) {
+    var input = document.getElementById(id);
+    if (!input) return;
+    input.addEventListener('change', function () {
+      if (dupCheckTimer) clearTimeout(dupCheckTimer);
+      dupCheckTimer = setTimeout(runDuplicateCheck, 350);
+    });
+  });
+
   // ── Turnstile ─────────────────────────────────────────────
   var turnstileWidgetId = null;
   var turnstileContainer = document.getElementById('turnstile-container');
@@ -1314,7 +1378,9 @@
 
   function setLoading(loading) {
     if (!submitBtn) return;
-    submitBtn.disabled = loading;
+    // A failed submit re-enables the button — but not past the already-member
+    // block, which is a hard stop, not a transient error.
+    submitBtn.disabled = loading || isAlreadyMember;
     if (loading) {
       submitBtn.dataset.originalText = submitBtn.textContent;
       submitBtn.textContent = i18n.t('registrationSending');
@@ -1384,6 +1450,14 @@
   form.addEventListener('submit', function (ev) {
     ev.preventDefault();
     hideFeedback();
+
+    // The button is disabled while the already-member block stands, but a form
+    // can still be submitted by pressing Enter in a text field — so the guard
+    // lives here too, not only on the button.
+    if (isAlreadyMember) {
+      logBlock('blocked: already an active member');
+      return showFeedback('error', i18n.t('registrationAlreadyMemberFeedback'));
+    }
 
     var type = (form.querySelector('input[name="membership_type"]:checked') || {}).value;
     if (!type) { logBlock('blocked: no membership type'); return showFeedback('error', i18n.t('registrationValidationRequired')); }
@@ -1690,7 +1764,15 @@
         });
       })
       .then(function (r) {
-        if (!r.ok) return r.json().then(function (d) { throw new Error(d.message || d.error || i18n.t('registrationError')); });
+        if (!r.ok) return r.json().then(function (d) {
+          var err = new Error(d.message || d.error || i18n.t('registrationError'));
+          // The server ran the same identity check and refused. Raise the block
+          // here too: without it the applicant only sees a red line and can hit
+          // submit again forever (the live check may have been skipped — autofill
+          // that never fires `change`, or a request that failed silently).
+          err.code = d.code;
+          throw err;
+        });
         return r.json();
       })
       .then(function (data) {
@@ -1754,6 +1836,7 @@
         // this also captures pure client-side throws (e.g. file too large /
         // wrong type from validateFile) that never hit the network.
         logBlock('submit failed: ' + (err && err.message ? err.message : 'unknown'));
+        if (err && err.code === 'already_member') setAlreadyMember(true);
         showFeedback('error', err.message || i18n.t('registrationError'));
         if (window.turnstile && turnstileWidgetId !== null) {
           window.turnstile.reset(turnstileWidgetId);

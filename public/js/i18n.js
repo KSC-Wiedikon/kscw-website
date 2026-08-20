@@ -117,6 +117,24 @@
 
   /* ── Apply Translations to DOM ────────────────────────────── */
 
+  /**
+   * Write a translated value into an `href`, or into nothing at all.
+   *
+   * Every other target here (textContent, alt, title, …) is inert whatever the
+   * value says. An href is not: dictionary values are admin-editable through
+   * Seitentexte, and `script-src` still carries 'unsafe-inline', so a
+   * `javascript:` value would execute on click — the sponsor `website_url` hole
+   * SECURITY.md records, arriving by a second route. Same guard, same posture:
+   * fail closed, so a rejected value leaves an element with no href rather than
+   * an unvetted one. A missing kscwSafeHref (it loads render-blocking from
+   * BaseLayout's <head>) is treated as a rejection, not as permission.
+   */
+  function applyHref(node, value) {
+    var vetted = typeof window.kscwSafeHref === 'function' ? window.kscwSafeHref(value) : '';
+    if (vetted) node.setAttribute('href', vetted);
+    else node.removeAttribute('href');
+  }
+
   function applyTranslations(container) {
     var root = container || document;
 
@@ -165,6 +183,13 @@
       if (altKey) altNodes[al].setAttribute('alt', t(altKey));
     }
 
+    // data-i18n-href → href attribute (vetted; see applyHref)
+    var hrefNodes = root.querySelectorAll('[data-i18n-href]');
+    for (var h = 0; h < hrefNodes.length; h++) {
+      var hrefKey = hrefNodes[h].getAttribute('data-i18n-href');
+      if (hrefKey) applyHref(hrefNodes[h], t(hrefKey));
+    }
+
     // <meta name="i18n-title"> → document.title
     var metaTitle = document.querySelector('meta[name="i18n-title"]');
     if (metaTitle) {
@@ -188,11 +213,14 @@
   // quote in a key would otherwise widen the selector to elements it never named.
   var KEY_RE = /^[A-Za-z][A-Za-z0-9_]*$/;
 
+  // Third element: the value is a URL and must go through applyHref() rather than
+  // setAttribute(). An override is exactly the case that guard exists for.
   var ATTR_TARGETS = [
     ['data-i18n-placeholder', 'placeholder'],
     ['data-i18n-title', 'title'],
     ['data-i18n-aria-label', 'aria-label'],
-    ['data-i18n-alt', 'alt']
+    ['data-i18n-alt', 'alt'],
+    ['data-i18n-href', 'href', true]
   ];
 
   function directusBase() {
@@ -233,8 +261,12 @@
       for (var a = 0; a < ATTR_TARGETS.length; a++) {
         var attr = ATTR_TARGETS[a][0];
         var target = ATTR_TARGETS[a][1];
+        var isUrl = ATTR_TARGETS[a][2];
         var attrNodes = document.querySelectorAll('[' + attr + '="' + key + '"]');
-        for (var n = 0; n < attrNodes.length; n++) attrNodes[n].setAttribute(target, value);
+        for (var n = 0; n < attrNodes.length; n++) {
+          if (isUrl) applyHref(attrNodes[n], value);
+          else attrNodes[n].setAttribute(target, value);
+        }
       }
     });
 

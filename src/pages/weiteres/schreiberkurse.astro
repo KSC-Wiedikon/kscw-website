@@ -2,6 +2,7 @@
 import PageLayout from '../../layouts/PageLayout.astro';
 import SectionHeader from '../../components/SectionHeader.astro';
 import { t } from '../../lib/i18n';
+import { safeHref } from '../../lib/safeHref';
 
 const locale = 'de';
 ---
@@ -117,7 +118,7 @@ const locale = 'de';
               <h3 style="margin: 0;" data-i18n="scorerCoursesPdf">{t(locale, 'scorerCoursesPdf')}</h3>
             </div>
             <p style="color: var(--text-secondary); flex: 1;" data-i18n="scorerCoursesPdfDesc">{t(locale, 'scorerCoursesPdfDesc')}</p>
-            <a href="https://drive.google.com/file/d/1oJ2V94PEBtP2n0K8yO1oQ3vC3V6MzH1D/view" target="_blank" rel="noopener noreferrer" class="btn btn-blue" style="align-self: flex-start;">
+            <a href={safeHref(t(locale, 'scorerCoursesPdfUrl'))} data-i18n-href="scorerCoursesPdfUrl" target="_blank" rel="noopener noreferrer" class="btn btn-blue" style="align-self: flex-start;">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
               <span data-i18n="scorerCoursesDownload">{t(locale, 'scorerCoursesDownload')}</span>
             </a>
@@ -132,7 +133,7 @@ const locale = 'de';
               <h3 style="margin: 0;" data-i18n="scorerCoursesPpt">{t(locale, 'scorerCoursesPpt')}</h3>
             </div>
             <p style="color: var(--text-secondary); flex: 1;" data-i18n="scorerCoursesPptDesc">{t(locale, 'scorerCoursesPptDesc')}</p>
-            <a href="https://docs.google.com/presentation/d/1vH-x7CF0YlnB3lWVx8Pduj2-mYFkoROO/edit?usp=sharing" target="_blank" rel="noopener noreferrer" class="btn btn-gold" style="align-self: flex-start;">
+            <a href={safeHref(t(locale, 'scorerCoursesPptUrl'))} data-i18n-href="scorerCoursesPptUrl" target="_blank" rel="noopener noreferrer" class="btn btn-gold" style="align-self: flex-start;">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 6px;"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
               <span data-i18n="scorerCoursesOpen">{t(locale, 'scorerCoursesOpen')}</span>
             </a>

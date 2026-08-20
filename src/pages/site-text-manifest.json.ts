@@ -79,7 +79,7 @@ const EXCLUDED_PAGES = new Set(['./admin.astro']);
  */
 const KEY_PATTERN = new RegExp([
   'data-i18n="(?<text>[^"]+)"',
-  'data-i18n-(?:placeholder|title|aria-label|alt)="(?<attr>[^"]+)"',
+  'data-i18n-(?:placeholder|title|aria-label|alt|href)="(?<attr>[^"]+)"',
   '(?<propName>[a-zA-Z]+)Key="(?<prop>[^"]+)"',
   't\\(locale,\\s*[\'"`](?<call>[^\'"`]+)[\'"`]',
   '\\bt\\(\\s*[\'"`](?<runtime>[^\'"`]+)[\'"`]',

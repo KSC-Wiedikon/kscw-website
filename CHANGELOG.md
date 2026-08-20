@@ -2,6 +2,15 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.27.0] — 2026-08-20
+
+### Die Kurspräsentation für Schreiber:innen gibt es jetzt auf Deutsch
+- Auf der Seite **Schreiberkurse** öffnete der Knopf «Kurspräsentation (PPT)» für **alle** die englische Ausgabe — auch für deutschsprachige Besucher:innen, und nichts auf der Karte wies darauf hin. Wer den Kurs auf Deutsch machen wollte, sass vor einer englischen Präsentation.
+- Neu öffnet sich auf der deutschen Website die **deutsche Ausgabe** des Kurses (Saison 2026), auf der englischen weiterhin die englische.
+- Dafür brauchte es etwas, das die Website bisher nicht konnte: Sie übersetzte **Texte**, aber keine **Verlinkungen** — ein Knopf zeigte immer auf dieselbe Datei, egal in welcher Sprache. Jetzt kann ein Link der Sprache folgen wie jeder andere Text auch.
+- Adressen, die auf diesem Weg gesetzt werden, werden vorher **geprüft**: Nur gewöhnliche Web-Adressen werden verlinkt, alles andere wird verworfen, statt ungeprüft in einen Knopf zu wandern.
+- Die **Kursunterlagen als PDF** bleiben vorerst auf Englisch — davon gibt es noch keine deutsche Fassung.
+
 ## [1.26.0] — 2026-08-18
 
 ### Volle und offene Teams richten sich wieder nach dem Schalter der Trainer:innen

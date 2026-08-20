@@ -2,6 +2,14 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.27.1] — 2026-08-20
+
+### Die Vereinsverwaltung lässt sich jetzt am Handy bedienen
+- Die Seite **/admin** war für einen Bildschirm gebaut, den ein Handy nicht hat. Am deutlichsten bei den **Schreiberkursen**: Die Anmeldeliste hat neun Spalten und braucht rund 940 Pixel Breite — auf einem Telefon sah man den Nachnamen, den Vornamen und einen Rest. Genau die Felder, die man **am Kurs selbst** braucht (anwesend, Prüfung bestanden, SV-Lizenz), lagen ausserhalb des Bildschirms.
+- Neu wird aus jeder Zeile eine **Karte**: Name oben, darunter je eine beschriftete Zeile pro Feld. Alles ist sichtbar und mit dem Daumen bedienbar. Am Computer bleibt die Tabelle unverändert.
+- Drei weitere Tabellen — **Mixed-Turnier**, **Teams** und die Rechtevergabe — liefen über den Bildschirmrand hinaus. Weil die Website seitliches Überlaufen abschneidet, waren die rechten Spalten dort nicht bloss ausserhalb des Bildes, sondern **gar nicht erreichbar**. Sie scrollen jetzt in ihrem eigenen Rahmen.
+- Dazu: Schaltflächen sind gross genug für einen Finger, Formularfelder **zoomen auf dem iPhone nicht mehr ungefragt die ganze Seite heran**, Dialoge nutzen die volle Breite statt zwei Drittel davon für Ränder, und das **+** taucht nicht mehr auf Reitern auf, auf denen es nichts zu erstellen gibt.
+
 ## [1.27.0] — 2026-08-20
 
 ### Die Kurspräsentation für Schreiber:innen gibt es jetzt auf Deutsch

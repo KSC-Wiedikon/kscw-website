@@ -7370,6 +7370,21 @@ const teamTableJson = JSON.stringify(teamTable);
       border-radius: 0 0 var(--radius-md) var(--radius-md);
       padding: var(--space-sm) var(--space-md) !important;
     }
+    /* The per-answer editors are built with an inline `font-size:var(--text-sm)`,
+       and an inline style beats the 16px rule above no matter how specific it is —
+       hence !important. Without it every field in the panel zooms iOS in on focus.
+       The label's 150px min-width is a desktop measure that leaves ~60px for the
+       input on a phone, so the pair stacks here instead. */
+    .admin-reg-table tr.reg-detail-row input,
+    .admin-reg-table tr.reg-detail-row select,
+    .admin-reg-table tr.reg-detail-row textarea {
+      font-size: 16px !important;
+      min-height: 40px;
+      min-width: 0 !important;
+      width: 100%;
+      max-width: none !important;
+    }
+    .admin-reg-table tr.reg-detail-row > td > div > div > span:first-child { min-width: 0 !important; }
   }
 
   @media (max-width: 640px) {

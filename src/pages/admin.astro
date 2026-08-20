@@ -205,8 +205,7 @@ const teamTableJson = JSON.stringify(teamTable);
       document.querySelectorAll('.admin-tab').forEach(function(el) {
         el.classList.toggle('active', el.getAttribute('data-tab') === currentTab);
       });
-      var fab = document.getElementById('fab-btn');
-      if (fab) fab.style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text' || currentTab === 'teams') ? 'none' : '';
+      syncFab();
       loadItems();
     }
 
@@ -391,12 +390,17 @@ const teamTableJson = JSON.stringify(teamTable);
         scNo: 'Nein',
         scColFirstName: 'Vorname',
         scColLastName: 'Nachname',
+        scColSelect: 'Auswählen',
         scDetails: 'Alle Angaben',
         scEmailBtn: 'E-Mail senden',
         scEmailCompose: 'Mailprogramm öffnen',
         scEmailCancel: 'Abbrechen',
         scEmailNone: 'Keine E-Mail-Adressen ausgewählt.',
         scSvFromForm: 'Aus dem Formular übernommen (SVRZ-Lizenznummer)',
+        scEdited: '(korrigiert)',
+        scEditedOrig: 'Angemeldet mit: {value} — klicken, um die ursprüngliche Antwort wiederherzustellen',
+        scSvUseMember: 'Register: {value} übernehmen',
+        scSvMemberDiffers: 'Im Mitgliederregister steht {value}. Das Feld zeigt, was die Person bei der Anmeldung angegeben hat.',
         siteText: 'Seitentexte',
         siteTextIntro: 'Texte der Website ändern. Gespeicherte Änderungen sind nach wenigen Sekunden live; der Originaltext bleibt erhalten und kann jederzeit zurückgeholt werden.',
         siteTextPage: 'Seite',
@@ -603,12 +607,17 @@ const teamTableJson = JSON.stringify(teamTable);
         scNo: 'No',
         scColFirstName: 'First name',
         scColLastName: 'Last name',
+        scColSelect: 'Select',
         scDetails: 'All details',
         scEmailBtn: 'Send email',
         scEmailCompose: 'Open mailer',
         scEmailCancel: 'Cancel',
         scEmailNone: 'No email addresses selected.',
         scSvFromForm: 'Pre-filled from the form (SVRZ licence number)',
+        scEdited: '(corrected)',
+        scEditedOrig: 'Signed up with: {value} — click to restore their original answer',
+        scSvUseMember: 'Use register: {value}',
+        scSvMemberDiffers: 'The member register says {value}. This box shows what the person entered when signing up.',
         siteText: 'Page texts',
         siteTextIntro: 'Change the text on the website. A saved change is live within seconds; the original wording is kept and can be restored at any time.',
         siteTextPage: 'Page',
@@ -692,6 +701,30 @@ const teamTableJson = JSON.stringify(teamTable);
       if (!token) return false;
       var access = await loadAccess();
       return access.isSuperuser || access.sections.length > 0;
+    }
+
+    // ── Layout helpers ────────────────────────────────────────
+    // A wide table has to scroll inside its own box. Unwrapped it overflows the
+    // page instead — and global.css sets `overflow-x: hidden` on both html and
+    // body, so the overflow is CLIPPED rather than scrollable: the right-hand
+    // columns are simply unreachable. On a phone that hid most of the
+    // Mixed-Turnier, Teams and grant tables with no way to get at them.
+    function scrollWrap(el) {
+      var box = document.createElement('div');
+      box.className = 'admin-scroll-x';
+      box.appendChild(el);
+      return box;
+    }
+    // Tabs whose content has nothing to create. Was three copies of the same
+    // ternary that had already drifted apart — 'admin' was missing from all of
+    // them, so the + floated over the grant grid.
+    function fabHiddenFor(tab) {
+      return tab === 'registrations' || tab === 'mixed_turnier'
+        || tab === 'site_text' || tab === 'teams' || tab === 'admin';
+    }
+    function syncFab() {
+      var fab = document.getElementById('fab-btn');
+      if (fab) fab.style.display = fabHiddenFor(currentTab) ? 'none' : '';
     }
 
     // ── Escape helpers ────────────────────────────────────────
@@ -1202,8 +1235,7 @@ const teamTableJson = JSON.stringify(teamTable);
           pushAdminUrl(currentTab); // drops any &course= sub-state
           document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
           this.classList.add('active');
-          // Hide FAB for registrations (no manual creation)
-          document.getElementById('fab-btn').style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text' || currentTab === 'teams') ? 'none' : '';
+          syncFab();
           loadItems();
         });
       });
@@ -1220,7 +1252,7 @@ const teamTableJson = JSON.stringify(teamTable);
       // Canonicalise the address bar so the first tab is always shareable and
       // a later Back lands on it rather than an ambiguous /admin/.
       replaceAdminUrl(currentTab, { course: new URLSearchParams(location.search).get('course') });
-      document.getElementById('fab-btn').style.display = (currentTab === 'registrations' || currentTab === 'mixed_turnier' || currentTab === 'site_text' || currentTab === 'teams') ? 'none' : '';
+      syncFab();
 
       loadItems();
     }
@@ -1368,7 +1400,7 @@ const teamTableJson = JSON.stringify(teamTable);
         tr.appendChild(status);
         table.appendChild(tr);
       });
-      host.appendChild(table);
+      host.appendChild(scrollWrap(table));
 
       // The silent-drop direction: a team the club added in Directus never appears
       // anywhere on the site until someone hand-writes a def for it.
@@ -1396,7 +1428,7 @@ const teamTableJson = JSON.stringify(teamTable);
           cell(tr, t.team_id || '—');
           t2.appendChild(tr);
         });
-        host.appendChild(t2);
+        host.appendChild(scrollWrap(t2));
       }
     }
 
@@ -1601,7 +1633,7 @@ const teamTableJson = JSON.stringify(teamTable);
           var status = document.createElement('div');
           status.className = 'admin-grant-status';
           status.id = 'grant-status';
-          host.appendChild(table);
+          host.appendChild(scrollWrap(table));
           host.appendChild(status);
           bindGrantGrid(host, rows);
         });
@@ -2004,7 +2036,7 @@ const teamTableJson = JSON.stringify(teamTable);
       });
 
       table.appendChild(tbody);
-      content.appendChild(table);
+      content.appendChild(scrollWrap(table));
     }
 
     function exportMixedTurnierCSV(items) {
@@ -3427,6 +3459,30 @@ const teamTableJson = JSON.stringify(teamTable);
       _scorerSaveChains[rowMeta.key] = chain;
     }
 
+    // One staff correction to one OpnForm answer. Stored as a JSON document in
+    // scorer_course_attendance.field_overrides and serialized through the same
+    // per-row chain as every other cell, so two quick edits cannot race and lose
+    // one another (each rewrites the WHOLE document, so a stale read would drop
+    // the other field's correction).
+    //
+    // ⚠ TEXT, not an object: wadmin's assertScalarBody rejects a top-level object
+    // in the body for section-scoped Website Admins — and scorer_courses is run by
+    // exactly those. Sending the parsed object would 400 for the people this is for.
+    //
+    // Setting a value back to the participant's original DELETES the key rather
+    // than storing an identical copy, so "corrected" always means "differs from
+    // what they filed" and the revert affordance disappears on its own.
+    function saveScorerOverride(rowMeta, fieldId, value, statusEl) {
+      var row = rowMeta.row;
+      var orig = (row.orig || {})[fieldId];
+      var ovr = row.overrides || (row.overrides = {});
+      var same = String(value == null ? '' : value) === String(orig == null ? '' : orig);
+      if (same) delete ovr[fieldId]; else ovr[fieldId] = value;
+      row.data[fieldId] = same ? orig : value;
+      var keys = Object.keys(ovr);
+      saveScorerField(rowMeta, 'field_overrides', keys.length ? JSON.stringify(ovr) : null, statusEl);
+    }
+
     // "Prüfung bestanden" → the participant gets a confirmation mail. The recipient is
     // resolved SERVER-side from the OpnForm submission (wadmin.js); we deliberately do
     // not pass an address, so this route cannot be used to aim KSCW's sender anywhere.
@@ -3666,12 +3722,26 @@ const teamTableJson = JSON.stringify(teamTable);
             .then(function(res) { return res.ok ? res.json() : { data: {} }; })
             .then(function(j) { return { slug: src.slug, map: (j && j.data) || {} }; })
             .catch(function() { return { slug: src.slug, map: {} }; });
+        })),
+        // Current SV licence from the member register, for signups we can identify.
+        // The licence box otherwise shows whatever the participant typed and never
+        // learns that the club has since corrected it — which is how a box could read
+        // "0000000" while the member record had held the real number for days.
+        // Fails soft: no lookup just means no cross-check, exactly as before.
+        Promise.all(srcList.map(function(src) {
+          return wadmin('scorer_courses',
+            'opnform/forms/' + encodeURIComponent(src.slug) + '/member-licences', {})
+            .then(function(res) { return res.ok ? res.json() : { data: {} }; })
+            .then(function(j) { return { slug: src.slug, map: (j && j.data) || {} }; })
+            .catch(function() { return { slug: src.slug, map: {} }; });
         }))
       ]).then(function(bundle) {
         var results = bundle[0];
         var attRows = (bundle[1] && bundle[1].data) || [];
         var memberAddr = {};
         (bundle[2] || []).forEach(function(r) { memberAddr[r.slug] = r.map || {}; });
+        var memberLic = {};
+        (bundle[3] || []).forEach(function(r) { memberLic[r.slug] = r.map || {}; });
 
         var fields = [], byId = {}, mergedRows = [], errors = [];
         results.forEach(function(rr) {
@@ -3693,6 +3763,39 @@ const teamTableJson = JSON.stringify(teamTable);
         });
         var attByKey = {};
         attRows.forEach(function(a) { if (a && a.sub_key != null) attByKey[String(a.sub_key)] = a; });
+
+        // ── staff corrections (scorer_course_attendance.field_overrides) ──
+        //
+        // Applied HERE, onto row.data, rather than at each place a value is read.
+        // Everything downstream — the columns, the surname sort, the detail panel,
+        // the SVRZ export, the address resolver, the email picker — then works on
+        // corrected data without knowing overrides exist. Patching the half-dozen
+        // readers instead is how one of them gets missed and the export quietly
+        // ships the uncorrected answer.
+        //
+        // ⚠ The participant's own answers are NEVER destroyed: the untouched
+        // payload is kept on row.orig so the detail panel can show what they
+        // actually filed and offer to revert. OpnForm is never written to — an
+        // update there re-fires the form's notification emails (see migration 332).
+        function parseOverrides(a) {
+          if (!a || !a.field_overrides) return {};
+          try {
+            var o = JSON.parse(a.field_overrides);
+            return (o && typeof o === 'object' && !Array.isArray(o)) ? o : {};
+          } catch (e) { return {}; } // corrupt JSON must not blank the whole table
+        }
+        mergedRows.forEach(function(r) {
+          var a = attByKey[r.slug + ':' + r.id];
+          var ovr = parseOverrides(a);
+          r.orig = r.data;
+          r.overrides = ovr;
+          var keys = Object.keys(ovr);
+          if (!keys.length) return;
+          var copy = {};
+          Object.keys(r.data).forEach(function(k) { copy[k] = r.data[k]; });
+          keys.forEach(function(k) { copy[k] = ovr[k]; });
+          r.data = copy;
+        });
 
         var total = mergedRows.length;
         summary.textContent = total + ' ' + (total === 1 ? 'signup' : 'signups')
@@ -4023,8 +4126,11 @@ const teamTableJson = JSON.stringify(teamTable);
         }
 
         var wrap = document.createElement('div');
-        wrap.style.cssText = 'overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-md);';
+        // On a phone the rows below stop being a table and become cards, so the
+        // scroll box and its frame step aside there (see .admin-reg-wrap).
+        wrap.className = 'admin-scroll-x admin-scroll-framed admin-reg-wrap';
         var table = document.createElement('table');
+        table.className = 'admin-reg-table';
         table.style.cssText = 'width:100%;border-collapse:collapse;font-size:var(--text-sm);';
         var COLSPAN = 9; // select, arrow, first, last, present, examPassed, sheet, sv, actions
         var cellCss = 'padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);';
@@ -4084,7 +4190,9 @@ const teamTableJson = JSON.stringify(teamTable);
           var rowMeta = { slug: row.slug, id: row.id, key: key, state: state };
 
           var tr = document.createElement('tr');
+          tr.className = 'reg-row';
           var detailTr = document.createElement('tr');
+          detailTr.className = 'reg-detail-row';
           detailTr.style.display = 'none';
           function toggleDetail() {
             var open = detailTr.style.display === 'none';
@@ -4095,6 +4203,8 @@ const teamTableJson = JSON.stringify(teamTable);
           // select checkbox (email mode only)
           var rowEmail = String(pickVal(d, emailIds) || '').trim();
           var selTd = document.createElement('td');
+          selTd.className = 'reg-c-sel';
+          selTd.setAttribute('data-label', t('scColSelect'));
           selTd.style.cssText = cellCss + 'text-align:center;display:none;';
           var selCb = document.createElement('input');
           selCb.type = 'checkbox';
@@ -4109,6 +4219,7 @@ const teamTableJson = JSON.stringify(teamTable);
 
           // expand/collapse arrow
           var arrowTd = document.createElement('td');
+          arrowTd.className = 'reg-c-arrow';
           arrowTd.style.cssText = cellCss + 'text-align:center;cursor:pointer;color:var(--text-muted);user-select:none;';
           arrowTd.textContent = '▸';
           arrowTd.title = t('scDetails');
@@ -4119,6 +4230,7 @@ const teamTableJson = JSON.stringify(teamTable);
           // table is sorted by, and a sorted column you have to read past is wasted.
           var lnV = pickVal(d, lastNameIds);
           var lnTd = document.createElement('td');
+          lnTd.className = 'reg-c-last';
           lnTd.style.cssText = cellCss + 'cursor:pointer;';
           lnTd.textContent = (lnV == null || lnV === '') ? '—' : String(lnV);
           lnTd.addEventListener('click', toggleDetail);
@@ -4126,6 +4238,7 @@ const teamTableJson = JSON.stringify(teamTable);
 
           var fnV = pickVal(d, firstNameIds);
           var fnTd = document.createElement('td');
+          fnTd.className = 'reg-c-first';
           fnTd.style.cssText = cellCss + 'cursor:pointer;';
           fnTd.textContent = (fnV == null || fnV === '') ? '—' : String(fnV);
           fnTd.addEventListener('click', toggleDetail);
@@ -4135,6 +4248,8 @@ const teamTableJson = JSON.stringify(teamTable);
           statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-left:0.4rem;';
 
           var presentTd = document.createElement('td');
+          presentTd.className = 'reg-c-cell';
+          presentTd.setAttribute('data-label', t('scPresent'));
           presentTd.style.cssText = cellCss + 'text-align:center;';
           var presentCb = document.createElement('input');
           presentCb.type = 'checkbox';
@@ -4154,6 +4269,8 @@ const teamTableJson = JSON.stringify(teamTable);
           // carries an optional note. Clicking the answer already showing clears it back
           // to undecided — the way to undo a mis-click without inventing a third button.
           var resultTd = document.createElement('td');
+          resultTd.className = 'reg-c-cell';
+          resultTd.setAttribute('data-label', t('scExamPassed'));
           resultTd.style.cssText = cellCss + 'text-align:center;white-space:nowrap;';
           var yesBtn = document.createElement('button');
           var noBtn = document.createElement('button');
@@ -4208,6 +4325,8 @@ const teamTableJson = JSON.stringify(teamTable);
           // one. It opens a menu rather than the file, since once a correction can exist
           // "open" is no longer one unambiguous action.
           var sheetTd = document.createElement('td');
+          sheetTd.className = 'reg-c-cell';
+          sheetTd.setAttribute('data-label', t('scExamUploaded'));
           sheetTd.style.cssText = cellCss + 'text-align:center;';
           var sheetBtn = document.createElement('button');
           sheetBtn.type = 'button';
@@ -4243,6 +4362,8 @@ const teamTableJson = JSON.stringify(teamTable);
 
           // SV licence — pre-fill from the form's SVRZ answer when no tracked value yet
           var svTd = document.createElement('td');
+          svTd.className = 'reg-c-cell reg-c-sv';
+          svTd.setAttribute('data-label', t('scSvLicense'));
           svTd.style.cssText = cellCss;
           var svInp = document.createElement('input');
           svInp.type = 'text';
@@ -4255,10 +4376,38 @@ const teamTableJson = JSON.stringify(teamTable);
             saveScorerField(rowMeta, 'sv_license', svInp.value.trim(), statusEl);
           });
           svTd.appendChild(svInp);
+
+          // ── cross-check against the member register ──
+          //
+          // The box above is the participant's own answer until somebody overtypes it,
+          // so a licence the club corrected in wiedisync never reaches this screen. When
+          // the register knows this person and disagrees, say so and offer the register's
+          // value in one click — rather than leaving two numbers to be reconciled by eye
+          // across two systems.
+          //
+          // ⚠ Only ever a SUGGESTION. Most course participants are from other clubs and
+          // have no member row at all, and for them the form is the only source there is;
+          // silently overwriting would be wrong for the majority of the table.
+          var lic = (memberLic[row.slug] || {})[String(row.id)];
+          if (lic && lic.licence && licenceDigits(lic.licence) !== licenceDigits(svInp.value)) {
+            var fix = document.createElement('button');
+            fix.type = 'button';
+            fix.className = 'admin-btn admin-btn-sm';
+            fix.style.cssText = 'margin-top:0.25rem;font-size:var(--text-xs);padding:0.1rem 0.35rem;';
+            fix.textContent = t('scSvUseMember').split('{value}').join(String(lic.licence));
+            fix.title = t('scSvMemberDiffers').split('{value}').join(String(lic.licence));
+            fix.addEventListener('click', function() {
+              svInp.value = String(lic.licence);
+              saveScorerField(rowMeta, 'sv_license', svInp.value, statusEl);
+              fix.remove();
+            });
+            svTd.appendChild(fix);
+          }
           tr.appendChild(svTd);
 
           // actions (delete + save status)
           var actTd = document.createElement('td');
+          actTd.className = 'reg-c-act';
           actTd.style.cssText = cellCss + 'white-space:nowrap;';
           if (row.id != null) {
             var delBtn = document.createElement('button');
@@ -4291,6 +4440,7 @@ const teamTableJson = JSON.stringify(teamTable);
           detailTd.style.cssText = 'padding:0.5rem 0.9rem 0.85rem 2.1rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);';
           var dl = document.createElement('div');
           dl.style.cssText = 'display:flex;flex-direction:column;gap:0.3rem;margin-bottom:0.6rem;';
+          // Read-only facts about the signup itself — not answers, so not editable.
           function addDetail(label, value) {
             if (value == null || value === '') return;
             var item = document.createElement('div');
@@ -4305,11 +4455,85 @@ const teamTableJson = JSON.stringify(teamTable);
           }
           addDetail(t('scColDate'), isoToSwissDateTime(d.created_at));
           if (multi) addDetail(t('scColLang'), row.lang || '');
+
+          // ── every form answer, editable ──
+          //
+          // Corrections are stored against the attendance row, never pushed back to
+          // OpnForm: an update there re-runs StoreFormSubmissionJob, which dispatches
+          // FormSubmitted, which is what sends the form's notification emails — so
+          // fixing a typo would re-mail the participant and scorer@volleyball.kscw.ch
+          // every single time.
+          //
+          // EVERY field is listed, including the ones already shown as columns
+          // (surname, first name, SVRZ): "edit all info" has to mean all of it, and
+          // a name typo is the most likely thing to need fixing. The column re-renders
+          // from row.data on the next open, and the surname sort follows.
+          function addEditable(f) {
+            var wrap = document.createElement('div');
+            wrap.style.cssText = 'display:flex;align-items:center;gap:0.5rem;font-size:var(--text-sm);flex-wrap:wrap;';
+            var lab = document.createElement('span');
+            lab.style.cssText = 'color:var(--text-muted);min-width:150px;';
+            lab.textContent = f.name + ':';
+            var cur = d[f.id];
+            var curStr = (cur == null) ? '' : (Array.isArray(cur) ? cur.join(', ') : String(cur));
+            var inp;
+            if (f.type === 'select' && Array.isArray(f.options) && f.options.length) {
+              // Pick from the same list the participant saw. A hand-typed
+              // "Teilnahme" is a value the SVRZ export cannot read back.
+              inp = document.createElement('select');
+              var opts = f.options.slice();
+              // Keep whatever is on file selectable even if the form's options
+              // have since changed — otherwise opening the row would silently
+              // re-point their answer to the first option in the list.
+              if (curStr && opts.indexOf(curStr) === -1) opts.unshift(curStr);
+              opts.unshift('');
+              opts.forEach(function(o) {
+                var op = document.createElement('option');
+                op.value = o; op.textContent = o || '—';
+                if (o === curStr) op.selected = true;
+                inp.appendChild(op);
+              });
+              // Native <option> inherits the select's background, so the dark
+              // dropdown needs an explicit solid colour or it renders white.
+              inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:#1c1c1e;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+            } else {
+              inp = document.createElement('input');
+              inp.type = (f.type === 'date' ? 'date' : f.type === 'email' ? 'email' : 'text');
+              // A date answer arrives as an ISO timestamp; <input type=date> needs Y-M-D
+              // or it silently renders empty — which reads as "they left it blank".
+              inp.value = (inp.type === 'date' && curStr) ? curStr.substring(0, 10) : curStr;
+              inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+            }
+            var origVal = (row.orig || {})[f.id];
+            var badge = document.createElement('span');
+            badge.style.cssText = 'font-size:var(--text-xs);color:var(--kscw-gold,#b8860b);cursor:pointer;';
+            function paintBadge() {
+              var edited = Object.prototype.hasOwnProperty.call(row.overrides || {}, f.id);
+              badge.textContent = edited ? t('scEdited') : '';
+              badge.title = edited
+                ? t('scEditedOrig').split('{value}').join((origVal == null || origVal === '') ? '—' : String(origVal))
+                : '';
+            }
+            paintBadge();
+            // Click the badge to put the participant's own answer back.
+            badge.addEventListener('click', function() {
+              if (!Object.prototype.hasOwnProperty.call(row.overrides || {}, f.id)) return;
+              var o = (origVal == null) ? '' : (Array.isArray(origVal) ? origVal.join(', ') : String(origVal));
+              inp.value = (inp.tagName === 'INPUT' && inp.type === 'date' && o) ? o.substring(0, 10) : o;
+              saveScorerOverride(rowMeta, f.id, inp.value, statusEl);
+              paintBadge();
+            });
+            inp.addEventListener('change', function() {
+              saveScorerOverride(rowMeta, f.id, inp.value.trim(), statusEl);
+              paintBadge();
+            });
+            wrap.appendChild(lab); wrap.appendChild(inp); wrap.appendChild(badge);
+            dl.appendChild(wrap);
+          }
           fields.forEach(function(f) {
-            if (shownIds[f.id]) return; // already a column
-            var v = d[f.id];
-            if (v == null || v === '') return;
-            addDetail(f.name, fmtAnswer(f, v));
+            // Dividers and other layout blocks are not answers.
+            if (!f || /^nf-/.test(String(f.type || '')) || /divider/i.test(String(f.name || ''))) return;
+            addEditable(f);
           });
           detailTd.appendChild(dl);
 
@@ -4874,7 +5098,7 @@ const teamTableJson = JSON.stringify(teamTable);
         }
 
         var tableWrap = document.createElement('div');
-        tableWrap.style.cssText = 'overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-md);';
+        tableWrap.className = 'admin-scroll-x admin-scroll-framed';
         var table = document.createElement('table');
         table.style.cssText = 'width:100%;border-collapse:collapse;font-size:var(--text-sm);';
         var thead = document.createElement('thead');
@@ -6978,8 +7202,199 @@ const teamTableJson = JSON.stringify(teamTable);
     color: var(--text-muted);
   }
 
+  /* ── Horizontal scroll box ─────────────────────────────────── */
+  /* Every wide table in here lives in one of these. An unwrapped table overflows
+     the page, and global.css clips that overflow (`overflow-x: hidden` on html
+     AND body), so the columns past the viewport edge cannot be reached at all —
+     not by scrolling, not by anything. Measure it with `document.body.scrollWidth`
+     against `documentElement.clientWidth`; documentElement.scrollWidth is clamped
+     by the clip and reports no overflow. */
+  .admin-scroll-x {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+  /* At desktop widths the frame is opt-in, so the two tables that already had one
+     keep it and the three that only gained a scroll box look exactly as before.
+     Below 820px every box gets a frame — see the media query. */
+  .admin-scroll-x.admin-scroll-framed {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+
   /* ── Responsive ────────────────────────────────────────────── */
+  /* 820px, not 640: the registrations table needs ~940px to show its nine
+     columns, so an iPad in portrait (768) is still a screen it does not fit. */
+  @media (max-width: 820px) {
+    /* Reclaim the ~16px per side that the desktop gutter costs on a 390px screen,
+       and leave a runway under the last row so the FAB never covers it. */
+    .admin-header { padding: 0 var(--space-md); }
+    .admin-tabs { padding: var(--space-sm) var(--space-md) 0; }
+    .admin-content { padding: var(--space-md) var(--space-md) 6rem; }
+
+    /* Touch targets. The whole admin is built from .admin-btn-sm, which is 29px
+       tall — under half the 44px a thumb needs, and these are destructive buttons
+       sitting next to each other. */
+    .admin-btn { min-height: 44px; }
+    .admin-btn-sm { min-height: 40px; padding: var(--space-xs) var(--space-sm); }
+    .admin-btn-icon { min-width: 40px; min-height: 40px; font-size: 1.35rem; }
+    .admin-field-check input[type="checkbox"],
+    .admin-grant-grid input[type="checkbox"] { width: 24px; height: 24px; }
+
+    /* iOS Safari zooms the whole page in when a focused field is under 16px, and
+       then leaves it zoomed. Every field in here was 14px. The selectors repeat
+       the [type=…] shape of the base rules above on purpose — a plain
+       `.admin-field input` loses the specificity match and changes nothing. */
+    .admin-field input[type="text"],
+    .admin-field input[type="email"],
+    .admin-field input[type="password"],
+    .admin-field input[type="date"],
+    .admin-field input[type="datetime-local"],
+    .admin-field input[type="number"],
+    .admin-field input[type="file"],
+    .admin-field select,
+    .admin-field textarea,
+    .admin-content input[type="text"],
+    .admin-content input[type="email"],
+    .admin-content input[type="number"],
+    .admin-content input[type="date"],
+    .admin-content input[type="datetime-local"],
+    .admin-content select,
+    .admin-content textarea,
+    .ql-snow .ql-tooltip input[type="text"] { font-size: 16px; }
+
+    /* A one-row textarea holding a whole sentence shows a third of it. */
+    .admin-content textarea.form-input { min-height: 4.5rem; }
+
+    /* Badges and the form-slug line were on one non-wrapping row: the badges got
+       squeezed until their own text wrapped inside the pill, and the slugs ran
+       past the card edge. */
+    .admin-list-meta { flex-wrap: wrap; row-gap: var(--space-xs); }
+
+    .admin-fab { bottom: var(--space-md); right: var(--space-md); }
+
+    /* A clipped table needs the frame to read as scrollable rather than cut off,
+       so on a phone every scroll box gets one — except the registrations table,
+       which is not a table down here at all. */
+    .admin-scroll-x { border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .admin-scroll-x.admin-reg-wrap { border: none; border-radius: 0; overflow-x: visible; }
+
+    /* ── Scorer registrations: table → cards ──────────────────
+       Nine columns in a 390px scroll box shows two and a half of them, and the
+       three that matter at a course (present / exam / licence) are all off the
+       right edge. Each row becomes a card instead: name on top, one labelled
+       line per control. The labels come from the td's data-label, since the
+       header row is gone. Inline `style` on the cells wins over a stylesheet,
+       hence the !important — except on `display`, which JS toggles on the select
+       column and the detail row and which must keep working. */
+    .admin-reg-table,
+    .admin-reg-table tbody { display: block; width: 100%; }
+    .admin-reg-table thead { display: none; }
+
+    .admin-reg-table tr.reg-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--space-sm);
+      padding: var(--space-xs) 0;
+    }
+    .admin-reg-table tr.reg-row > td {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      min-height: 44px;
+      text-align: left !important;
+      white-space: normal !important;
+      border-bottom: none !important;
+      padding: var(--space-xs) var(--space-md) !important;
+    }
+    .admin-reg-table tr.reg-row > td[data-label]::before {
+      content: attr(data-label);
+      flex: 1 1 auto;
+      color: var(--text-muted);
+      font-size: var(--text-xs);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    /* Surname is the card's heading and the arrow sits beside it, so those two
+       share row 1; everything else auto-flows underneath in DOM order. */
+    .admin-reg-table tr.reg-row > td.reg-c-last {
+      grid-column: 1;
+      grid-row: 1;
+      font-size: var(--text-base);
+      font-weight: 700;
+      padding-bottom: 0 !important;
+    }
+    .admin-reg-table tr.reg-row > td.reg-c-arrow {
+      grid-column: 2;
+      grid-row: 1;
+      justify-content: center;
+      min-width: 44px;
+      font-size: 1.1rem;
+    }
+    /* Row 2 explicitly, so the select checkbox that appears in email mode lands
+       under the name lockup instead of between the surname and the first name. */
+    .admin-reg-table tr.reg-row > td.reg-c-first {
+      grid-row: 2;
+      color: var(--text-secondary);
+      min-height: 0;
+      padding-top: 0 !important;
+      padding-bottom: var(--space-xs) !important;
+    }
+    .admin-reg-table tr.reg-row > td.reg-c-cell { border-top: 1px solid var(--border) !important; }
+    .admin-reg-table tr.reg-row > td.reg-c-act {
+      justify-content: flex-end;
+      border-top: 1px solid var(--border) !important;
+    }
+    .admin-reg-table tr.reg-row input[type="checkbox"] { width: 24px !important; height: 24px !important; }
+    .admin-reg-table tr.reg-row > td.reg-c-cell button { min-width: 44px; min-height: 40px; }
+    .admin-reg-table tr.reg-row > td.reg-c-sv input {
+      width: 8rem !important;
+      min-height: 40px;
+      font-size: 16px !important;
+    }
+
+    /* The detail panel is its own <tr>; keep it reading as part of the card above
+       it rather than as a stray block. */
+    .admin-reg-table tr.reg-detail-row { width: 100%; }
+    .admin-reg-table tr.reg-detail-row > td {
+      display: block;
+      margin: calc(var(--space-sm) * -1) 0 var(--space-sm);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 var(--radius-md) var(--radius-md);
+      padding: var(--space-sm) var(--space-md) !important;
+    }
+  }
+
   @media (max-width: 640px) {
+    /* Sheet-style modal: the desktop rule spent 32px of overlay padding plus 32px
+       of body padding per side, leaving 247px of a 390px screen for the form. */
+    .admin-modal-overlay { padding: 0; align-items: flex-end; }
+    .admin-modal-content {
+      max-width: none;
+      max-height: 94dvh;
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      border-bottom: none;
+      margin-top: 0;
+    }
+    .admin-modal-header { padding: var(--space-md); }
+    .admin-modal-body { padding: var(--space-md); }
+    .admin-modal-footer {
+      padding: var(--space-md);
+      margin: var(--space-md) calc(var(--space-md) * -1) calc(var(--space-md) * -1);
+      bottom: calc(var(--space-md) * -1);
+      border-radius: 0;
+    }
+    .admin-modal-footer .admin-btn { flex: 1 1 auto; }
+    .admin-confirm-overlay { align-items: center; padding: var(--space-md); }
+    .admin-confirm-content { border-radius: var(--radius-xl); }
+
     .admin-list-item {
       flex-direction: column;
       align-items: flex-start;
@@ -6987,9 +7402,7 @@ const teamTableJson = JSON.stringify(teamTable);
     .admin-list-actions {
       width: 100%;
       justify-content: flex-end;
-    }
-    .admin-modal-content {
-      margin-top: var(--space-sm);
+      flex-wrap: wrap;
     }
   }
 

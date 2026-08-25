@@ -353,6 +353,7 @@ const teamTableJson = JSON.stringify(teamTable);
         scLegendNone: 'Kein Spielblatt',
         scLegendUploaded: 'Spielblatt vorhanden',
         scLegendCorrected: 'Korrigiert',
+        scLegendPending: 'Noch nicht bewertet',
         scScoresheetCorrectedBy: 'Korrigiert von {who}',
         scScoresheetNotConverted: 'Diese Spielblätter liessen sich nicht in ein PDF umwandeln und liegen im Original im ZIP:',
         scCorrectionTooLarge: 'Die Datei ist grösser als 10 MB. Bitte eine kleinere Datei verwenden.',
@@ -570,6 +571,7 @@ const teamTableJson = JSON.stringify(teamTable);
         scLegendNone: 'No scoresheet',
         scLegendUploaded: 'Scoresheet on file',
         scLegendCorrected: 'Corrected',
+        scLegendPending: 'Not yet marked',
         scScoresheetCorrectedBy: 'Corrected by {who}',
         scScoresheetNotConverted: 'These scoresheets could not be converted to PDF and are in the zip as the original file:',
         scCorrectionTooLarge: 'That file is larger than 10 MB. Please use a smaller one.',
@@ -4191,6 +4193,16 @@ const teamTableJson = JSON.stringify(teamTable);
 
           var tr = document.createElement('tr');
           tr.className = 'reg-row';
+          // A sheet is in and nobody has answered Yes / No on it yet — a to-do that
+          // neither column can show on its own: the icon is green whether or not it has
+          // been marked, and the Yes/No pair is blank whether or not a sheet exists. It
+          // is the PAIR that is the state, so the row carries it. A correction counts as
+          // a sheet: an admin has been in the file, but that is still not a verdict.
+          function paintPending() {
+            var pending = !!(state.exam_file || state.exam_file_corrected) && !state.exam_result;
+            if (pending) tr.classList.add('reg-pending');
+            else tr.classList.remove('reg-pending');
+          }
           var detailTr = document.createElement('tr');
           detailTr.className = 'reg-detail-row';
           detailTr.style.display = 'none';
@@ -4282,6 +4294,7 @@ const teamTableJson = JSON.stringify(teamTable);
             noBtn.setAttribute('aria-pressed', String(r === 'failed'));
             yesBtn.title = r === 'passed' ? t('scExamClearHint') : t('scExamYesHint');
             noBtn.title = r === 'failed' ? t('scExamClearHint') : t('scExamNoHint');
+            paintPending();
           }
           function answerExam(answer) {
             // Clicking the current answer again means "I got that wrong" → undecided.
@@ -4343,6 +4356,7 @@ const teamTableJson = JSON.stringify(teamTable);
             sheetBtn.title = label;
             // The colour carries the meaning, and a screen reader gets none of it.
             sheetBtn.setAttribute('aria-label', label);
+            paintPending();
           }
           paintSheet();
           sheetBtn.addEventListener('click', function(e) {
@@ -4595,6 +4609,17 @@ const teamTableJson = JSON.stringify(teamTable);
             e.appendChild(ic); e.appendChild(tx);
             legend.appendChild(e);
           });
+        // The row pulse is a colour with no icon, so it gets a swatch rather than a
+        // fourth entry in the icon loop — one that pulses exactly as the row does, since
+        // a still square would not be recognisable as the thing it explains.
+        var pendLeg = document.createElement('span');
+        pendLeg.style.cssText = 'display:inline-flex;align-items:center;gap:0.35rem;';
+        var pendSw = document.createElement('span');
+        pendSw.className = 'reg-pending-swatch';
+        var pendTx = document.createElement('span');
+        pendTx.textContent = t('scLegendPending');
+        pendLeg.appendChild(pendSw); pendLeg.appendChild(pendTx);
+        legend.appendChild(pendLeg);
         tableHost.appendChild(legend);
       }).catch(function(err) {
         summary.textContent = '';
@@ -7220,6 +7245,52 @@ const teamTableJson = JSON.stringify(teamTable);
   .admin-scroll-x.admin-scroll-framed {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
+  }
+
+  /* ── Scorer registrations: sheet in, verdict out ──────────── */
+  /* A row whose scoresheet has arrived but that nobody has marked Yes / No breathes
+     a faint yellow, so the worklist is visible without reading two columns per row.
+     Background only — the text keeps the contrast it had — and it bottoms out nearly
+     transparent, so a table where every row is pending still reads as a table rather
+     than a warning. The cells set no background of their own, so the <tr> shows
+     through; below 820px the card rule paints --bg-white onto this same element, but
+     an animated value outranks a normal declaration whatever the specificity, so the
+     card pulses there too.
+
+     The two stops are custom properties so one keyframe serves both themes: the alpha
+     that is a warm breath on the near-black ground is almost nothing on white, and a
+     marker you cannot see in one theme is not a marker. */
+  @keyframes admin-reg-pending {
+    0%, 100% { background-color: var(--reg-pending-lo); }
+    50%      { background-color: var(--reg-pending-hi); }
+  }
+  .admin-reg-table tr.reg-row.reg-pending,
+  .reg-pending-swatch {
+    --reg-pending-lo: rgba(250, 204, 21, 0.04);
+    --reg-pending-hi: rgba(250, 204, 21, 0.13);
+    animation: admin-reg-pending 2.6s ease-in-out infinite;
+  }
+  :root.light .admin-reg-table tr.reg-row.reg-pending,
+  :root.light .reg-pending-swatch {
+    --reg-pending-lo: rgba(202, 138, 4, 0.06);
+    --reg-pending-hi: rgba(202, 138, 4, 0.20);
+  }
+  .reg-pending-swatch {
+    display: inline-block;
+    flex: 0 0 auto;
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(202, 138, 4, 0.5);
+  }
+  /* A pulse nobody can switch off is what this setting exists for. The state still
+     has to be readable, so it stops at the bright end instead of disappearing. */
+  @media (prefers-reduced-motion: reduce) {
+    .admin-reg-table tr.reg-row.reg-pending,
+    .reg-pending-swatch {
+      animation: none;
+      background-color: var(--reg-pending-hi);
+    }
   }
 
   /* ── Responsive ────────────────────────────────────────────── */

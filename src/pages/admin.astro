@@ -2560,8 +2560,9 @@ const teamTableJson = JSON.stringify(teamTable);
     }
 
     // The Acknowledgment form's "National Member Federation of origin" box, from
-    // the code the applicant picked on the registration form ('IT', or 'NONE'
-    // when no federation ever licensed them). Mirrors federationOfOriginForPdf()
+    // the code the applicant picked on the registration form ('IT'; a first-ever
+    // licence is 'CH', since Swiss Basketball is the body issuing it — there is
+    // no "none" answer any more). Mirrors federationOfOriginForPdf()
     // in public/js/registration-form.js — same shared federation table, same
     // English "FED (Country)" shape, so the club can regenerate a form the
     // applicant already downloaded and get the same answer. The country name
@@ -2571,7 +2572,6 @@ const teamTableJson = JSON.stringify(teamTable);
     // federation name, which is what actually identifies the body.
     function federationOfOriginForPdf(code) {
       if (!code) return '';
-      if (code === 'NONE') return 'None (first licence)';
       var country = code;
       try { country = new Intl.DisplayNames(['en'], { type: 'region' }).of(code) || code; } catch (e) {}
       var table = window.KSCW_FEDERATIONS && window.KSCW_FEDERATIONS.basketball;

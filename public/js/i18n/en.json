@@ -606,7 +606,7 @@
   "registrationNationality": "Nationality",
   "registrationNationalityHint": "Select all nationalities you hold — multiple choices are possible. The first one counts as your primary nationality.",
   "registrationFederation": "Federation of origin",
-  "registrationFederationHint": "The national federation that licensed you at age 14 — not necessarily where you first played. Choose “None” if no national federation licensed you at 14.",
+  "registrationFederationHint": "The national federation that first licensed you. If this is your first licence, choose Switzerland — Swiss Volley or Swiss Basketball then becomes your federation of origin.",
   "registrationNationalitySwiss": "Switzerland",
   "registrationNationalityOther": "Other",
   "registrationGender": "Sex",

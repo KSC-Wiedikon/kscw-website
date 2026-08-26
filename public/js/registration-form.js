@@ -478,31 +478,20 @@
 
   // ── Federation of origin (single-select) ─────────────────────
   // The national federation the player was FIRST licensed with — their
-  // federation of origin, not the most recent one. Unlike
-  // nationality this is optional, and "none" is a real answer — it tells the
-  // club there is no transfer certificate to chase, which a blank does not.
+  // federation of origin, not the most recent one.
+  //
+  // There is deliberately NO "none" option. Nobody is federation-less: if this
+  // is the applicant's first licence, it is Swiss Volley / Swiss Basketball
+  // issuing it, so the answer is Switzerland. The old "none at 14" sentinel
+  // both mis-stated that case and swallowed real ones — a player first licensed
+  // by FIPAV at 20 truthfully answered "nobody at 14", and the club then never
+  // chased their transfer certificate. Retired by wiedisync migration 342.
   var fedWrapper = document.getElementById('federation-wrapper');
   var fedTrigger = document.getElementById('federation-trigger');
   var fedTriggerText = document.getElementById('federation-trigger-text');
   var fedSearch = document.getElementById('federation-search');
   var fedOptions = document.getElementById('federation-options');
   var fedHidden = document.getElementById('federation_of_origin');
-
-  // Sentinel stored verbatim; the backend and members.federation_of_origin use
-  // the same literal.
-  var FED_NONE = 'NONE';
-
-  function fedNoneLabel() {
-    // FIVB Sports Regulations, via Swiss Volley: the federation of origin is the
-    // association that licensed the person AT AGE 14 — not wherever they first
-    // played. So this option is about age 14 specifically, and it is also the
-    // point where recreational bodies drop out: Italy's CSI, UISP and PGS are
-    // CONI promotion bodies, not FIVB/FIBA members, so they never licensed anyone
-    // in the sense that matters and there is nothing to transfer.
-    return locale === 'de'
-      ? 'Keiner / mit 14 bei keinem nationalen Verband lizenziert'
-      : 'None / not licensed with a national federation at 14';
-  }
 
   // The federation of origin as FIBA's forms want it: the federation's own name
   // with its country in brackets ("FIP (Italy)"). Deliberately English and
@@ -515,7 +504,6 @@
   function federationOfOriginForPdf() {
     var code = fedHidden ? fedHidden.value : '';
     if (!code) return '';
-    if (code === FED_NONE) return 'None (first licence)';
     var country = countryByCode(code);
     return federationLabelFor(code, country ? (country.en || country.de) : code);
   }
@@ -540,7 +528,7 @@
       // Search matched the plain label above, so the flag is added only now —
       // typing "sui" must not have to get past a flag character.
       var optFlag = countryFlag(value);
-      var shown = value === FED_NONE ? label : federationLabelFor(value, label);
+      var shown = federationLabelFor(value, label);
       div.textContent = optFlag ? optFlag + ' ' + shown : shown;
       div.dataset.shown = shown;
       div.addEventListener('click', function () { selectFederation(value, shown); });
@@ -548,12 +536,11 @@
       return true;
     }
 
-    var anyTop = addOpt(FED_NONE, fedNoneLabel());
     var anyFav = false;
     for (var i = 0; i < favorites.length; i++) {
       if (addOpt(favorites[i].code, countryName(favorites[i]))) anyFav = true;
     }
-    if ((anyTop || anyFav) && !q) {
+    if (anyFav && !q) {
       var hr = document.createElement('hr');
       hr.className = 'nationality-divider';
       fedOptions.appendChild(hr);
@@ -1577,16 +1564,16 @@
       }
     }
 
-    // Federation of origin: a licence needs an explicit answer — a federation or
-    // the "none at 14" sentinel. A blank leaves the club guessing whether a
-    // transfer certificate must be chased, and leaves the basketball
-    // Acknowledgment form's origin box empty; guests are exempt because they are
-    // never licensed.
+    // Federation of origin: a licence needs an explicit answer. A blank leaves
+    // the club guessing whether a transfer certificate must be chased, and
+    // leaves the basketball Acknowledgment form's origin box empty; guests are
+    // exempt because they are never licensed. A first-ever licence is issued
+    // here, so that answer is Switzerland — never a blank.
     if (!isGuest && (type === 'volleyball' || type === 'basketball') && !(fedHidden && fedHidden.value)) {
       logBlock('blocked: ' + type + ' federation of origin not selected');
       return showFeedback('error', locale === 'de'
-        ? 'Bitte wähle deinen Herkunftsverband — oder «Keiner», falls du mit 14 bei keinem nationalen Verband lizenziert warst.'
-        : 'Please select your federation of origin — or "None" if you were not licensed with a national federation at 14.');
+        ? 'Bitte wähle deinen Herkunftsverband — wähle die Schweiz, falls dies deine erste Lizenz ist.'
+        : 'Please select your federation of origin — choose Switzerland if this is your first licence.');
     }
 
     // "Other cantonal school" picked but no specific school chosen.
@@ -2229,7 +2216,8 @@
   // One field is deliberately left blank: the transfer date, which Swiss
   // Basketball / FIBA set, not us. The federation of origin comes from the
   // picker above — it asks exactly what this form's origin box asks, the body
-  // that licensed the player at 14.
+  // that FIRST licensed the player (Swiss Basketball itself for a first-ever
+  // licence).
   var natDeclLink = document.getElementById('bb-doc-natdecl');
   if (natDeclLink) {
     natDeclLink.addEventListener('click', function (e) {

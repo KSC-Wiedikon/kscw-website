@@ -606,7 +606,7 @@
   "registrationNationality": "Nationalität",
   "registrationNationalityHint": "Mehrfachauswahl möglich — wähle alle Staatsangehörigkeiten, die du besitzt. Die erste Auswahl gilt als Hauptnationalität.",
   "registrationFederation": "Herkunftsverband",
-  "registrationFederationHint": "Der nationale Verband, der dich mit 14 lizenziert hat — nicht zwingend dort, wo du zuerst gespielt hast. Wähle «Keiner», wenn dich mit 14 kein nationaler Verband lizenziert hat.",
+  "registrationFederationHint": "Der nationale Verband, der dich zuerst lizenziert hat. Ist dies deine allererste Lizenz, wähle die Schweiz — dann ist Swiss Volley bzw. Swiss Basketball dein Herkunftsverband.",
   "registrationNationalitySwiss": "Schweiz",
   "registrationNationalityOther": "Andere",
   "registrationGender": "Geschlecht",

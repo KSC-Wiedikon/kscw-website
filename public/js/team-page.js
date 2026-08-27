@@ -1011,6 +1011,13 @@
     };
   }
 
+  // Swiss Volley / ProBasket spell our club out in full ("KSC Wiedikon H1").
+  // Collapse that to the club short so both sides of a matchup read alike.
+  function clubShort(name) {
+    if (!name) return '';
+    return String(name).replace(/^KSC\s+Wiedikon\b\s*/i, 'KSCW ').trim();
+  }
+
   function formatDateLocal(iso) {
     if (!iso) return '\u2013';
     try {
@@ -1044,10 +1051,14 @@
     badge.textContent = g.isHome ? i18n.t('teamBadgeHome') : i18n.t('teamBadgeAway');
     tr.appendChild(makeCell(badge, 'gt-loc'));
 
-    // Matchup
+    // Matchup — our own side carries the short name ("KSCW H3"), so a row
+    // still says which team it belongs to once the page is scrolled away from
+    // the hero. A sibling club team on the other side is shortened the same
+    // way, or the row reads "KSC Wiedikon H1 vs KSCW H3".
+    var us = ('KSCW ' + ((teamData && teamData.name) || TEAM || '')).trim();
     var matchup = g.isHome
-      ? ('KSCW vs ' + (g.away_team || ''))
-      : ((g.home_team || '') + ' vs KSCW');
+      ? (us + ' vs ' + clubShort(g.away_team))
+      : (clubShort(g.home_team) + ' vs ' + us);
     tr.appendChild(makeCell(matchup, 'gt-matchup'));
 
     // Score or empty

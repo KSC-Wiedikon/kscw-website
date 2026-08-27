@@ -150,8 +150,20 @@ const locale = 'de';
               changelog, permanently: no data-i18n meant the engine could never
               repair it. */}
           <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
-          <span class="changelog-badge">v1.27.1</span>
+          <span class="changelog-badge">v1.27.2</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.27.2 — 2026-08-27</div>
+          <div class="changelog-group">
+            <h3>Auf der Teamseite sagt jede Spielzeile, um welches Team es geht</h3>
+            <ul>
+              <li>Auf der Seite eines Teams stand bei jedem Spiel nur <strong>KSCW</strong>. Am Handy sind die Heim/Auswärts-Markierung und das Team-Kürzel ausgeblendet — wer über den Seitenkopf hinausgescrollt hatte, las eine Liste von Begegnungen, in der keine Zeile mehr verriet, welches Team da spielt. Neu steht das Kürzel in der Zeile: <strong>KSCW H3 vs VBC Wetzikon H1</strong></li>
+              <li>Bei einem Spiel zweier Vereinsteams stand derselbe Verein in einer Zeile zweimal verschieden geschrieben — «KSC Wiedikon H1 vs KSCW». Beide Seiten heissen jetzt gleich: <strong>KSCW H1 vs KSCW H3</strong></li>
+              <li>Das Kürzel kommt aus der Vereinsdatenbank, nicht aus der Adresse der Seite: Tauschen zwei Teams die Liga, folgt die Beschriftung dem Team. Gegnerische Vereine werden unverändert so geschrieben, wie der Verband sie führt</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.27.1 — 2026-08-20</div>
@@ -927,8 +939,20 @@ const locale = 'de';
               changelog, permanently: no data-i18n meant the engine could never
               repair it. */}
           <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
-          <span class="changelog-badge">v1.27.1</span>
+          <span class="changelog-badge">v1.27.2</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.27.2 — 2026-08-27</div>
+          <div class="changelog-group">
+            <h3>Every fixture on a team page now says which team is playing</h3>
+            <ul>
+              <li>On a team's page each fixture read just <strong>KSCW</strong>. On a phone the home/away marker and the team chip are both hidden — so once you had scrolled past the page header, not a single row still said which of the club's teams it belonged to. The short name is now in the line: <strong>KSCW H3 vs VBC Wetzikon H1</strong></li>
+              <li>When two club teams meet, the same club was spelled two different ways in one line — “KSC Wiedikon H1 vs KSCW”. Both sides now read alike: <strong>KSCW H1 vs KSCW H3</strong></li>
+              <li>The short name comes from the club database rather than the page's address, so if two teams swap leagues the label follows the team. Opposing clubs are still written exactly as the federation lists them</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.27.1 — 2026-08-20</div>

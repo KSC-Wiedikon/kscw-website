@@ -2,6 +2,13 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.27.2] — 2026-08-27
+
+### Auf der Teamseite sagt jede Spielzeile, um welches Team es geht
+- Auf der Seite eines Teams stand bei jedem Spiel nur **KSCW**. Am Handy sind die Heim/Auswärts-Markierung und das Team-Kürzel ausgeblendet — wer also über den Seitenkopf hinausgescrollt hatte, las eine Liste von Begegnungen, in der keine einzige Zeile mehr verriet, welches Team da spielt. Neu steht das Kürzel in der Zeile: **KSCW H3 vs VBC Wetzikon H1**.
+- Bei einem Spiel zweier Vereinsteams stand derselbe Verein in einer Zeile zweimal verschieden geschrieben: «KSC Wiedikon H1 vs KSCW» — links die Schreibweise des Verbands, rechts unsere. Beide Seiten heissen jetzt gleich: **KSCW H1 vs KSCW H3**.
+- Das Kürzel kommt aus der Vereinsdatenbank, nicht aus der Adresse der Seite: Tauschen zwei Teams die Liga, folgt die Beschriftung dem Team und nicht dem alten Link. Gegnerische Vereine werden unverändert so geschrieben, wie der Verband sie führt.
+
 ## [1.27.1] — 2026-08-20
 
 ### Die Vereinsverwaltung lässt sich jetzt am Handy bedienen

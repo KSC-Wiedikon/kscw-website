@@ -411,7 +411,12 @@ const teamTableJson = JSON.stringify(teamTable);
         scColCity: 'Ort',
         scAddressGuessed: 'Angenommen: Weder die Anmeldung noch das Mitgliederregister nennt einen Wohnort. Genau so stünde es auf der SVRZ-Teilnehmerliste.',
         scAddSignup: 'Anmeldung nachtragen',
-        scAddSignupIntro: 'Für Nachzügler, telefonische und mündliche Anmeldungen. Der Eintrag wird direkt bei uns gespeichert und erscheint in der Liste und in beiden Exporten wie jede andere Anmeldung. Es wird keine E-Mail verschickt, und das Anmeldeformular selbst bleibt unberührt.',
+        scAddSignupIntro: 'Für Nachzügler, telefonische und mündliche Anmeldungen. Der Eintrag erscheint in der Liste und in beiden Exporten wie jede andere Anmeldung.',
+        scAddSignupPush: 'Auch im Anmeldeformular erfassen',
+        scAddSignupPushHint: 'Erstellt eine echte Formular-Antwort — die Person erhält die übliche Bestätigungs-E-Mail (Kopie an scorer@volleyball.kscw.ch). Ohne Haken wird die Anmeldung nur bei uns gespeichert, ohne E-Mail.',
+        scAddSignupClosed: 'Das Anmeldeformular ist seit {date} geschlossen.\n\nFür diesen einen Eintrag kurz öffnen und sofort wieder schliessen?',
+        scAddSignupInvalid: 'Das Formular hat die Anmeldung nicht angenommen. Diese Angaben fehlen oder sind ungültig:\n\n{fields}',
+        scAddSignupLeftOpen: 'Die Anmeldung wurde erfasst — aber das Formular konnte nicht wieder geschlossen werden und nimmt gerade Anmeldungen an. Bitte den Anmeldeschluss im Kurs neu speichern.',
         scAddSignupForm: 'Formular',
         scAddSignupNeedName: 'Bitte mindestens Vor- oder Nachname ausfüllen.',
         scAddSignupFailed: 'Die Anmeldung konnte nicht gespeichert werden: ',
@@ -645,7 +650,12 @@ const teamTableJson = JSON.stringify(teamTable);
         scColCity: 'Town',
         scAddressGuessed: 'Assumed: neither the signup nor the member register names a town. This is exactly what the SVRZ Teilnehmerliste would say.',
         scAddSignup: 'Add signup',
-        scAddSignupIntro: 'For latecomers and signups taken by phone or in person. The entry is stored with us directly and appears in the list and in both exports like any other signup. No email is sent, and the registration form itself is left untouched.',
+        scAddSignupIntro: 'For latecomers and signups taken by phone or in person. The entry appears in the list and in both exports like any other signup.',
+        scAddSignupPush: 'Also file it in the registration form',
+        scAddSignupPushHint: 'Creates a real form response — the person gets the usual confirmation email (copy to scorer@volleyball.kscw.ch). Left unticked, the signup is stored with us only, and no email is sent.',
+        scAddSignupClosed: 'The registration form has been closed since {date}.\n\nOpen it briefly for this one entry and close it again immediately?',
+        scAddSignupInvalid: 'The form did not accept this signup. These answers are missing or invalid:\n\n{fields}',
+        scAddSignupLeftOpen: 'The signup was filed — but the form could not be closed again and is currently accepting registrations. Please re-save the registration deadline on the course.',
         scAddSignupForm: 'Form',
         scAddSignupNeedName: 'Please fill in at least a first or last name.',
         scAddSignupFailed: 'The signup could not be saved: ',
@@ -947,6 +957,26 @@ const teamTableJson = JSON.stringify(teamTable);
         inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:#1c1c1e;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
         return inp;
       }
+      if (f.type === 'multi_select' && Array.isArray(f.options) && f.options.length) {
+        // A list, because that is what the answer IS. Rendered as a text box it took a
+        // typed "D1, H1" that only sometimes matched the options — and "Team" is a
+        // required field on both course forms, so a signup filed with a typo in it is
+        // one OpnForm refuses.
+        inp = document.createElement('select');
+        inp.multiple = true;
+        var picked = String(curStr || '').split(',').map(function(x) { return x.trim(); }).filter(Boolean);
+        var all = f.options.slice();
+        picked.forEach(function(v) { if (all.indexOf(v) === -1) all.unshift(v); });
+        inp.size = Math.min(5, Math.max(2, all.length));
+        all.forEach(function(o) {
+          var op = document.createElement('option');
+          op.value = o; op.textContent = o;
+          op.selected = picked.indexOf(o) > -1;
+          inp.appendChild(op);
+        });
+        inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:#1c1c1e;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+        return inp;
+      }
       inp = document.createElement('input');
       inp.type = (f.type === 'date' ? 'date' : f.type === 'email' ? 'email' : 'text');
       // A date answer arrives as an ISO timestamp; <input type=date> needs Y-M-D or it
@@ -954,6 +984,27 @@ const teamTableJson = JSON.stringify(teamTable);
       inp.value = (inp.type === 'date' && curStr) ? curStr.substring(0, 10) : curStr;
       inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
       return inp;
+    }
+
+    // Read one back. A <select multiple>'s .value is only its FIRST selected option,
+    // which is how a two-team signup silently becomes a one-team one.
+    function readAnswerInput(inp) {
+      if (inp && inp.tagName === 'SELECT' && inp.multiple) {
+        return Array.prototype.slice.call(inp.selectedOptions || [])
+          .map(function(o) { return o.value; }).filter(Boolean);
+      }
+      return String(inp && inp.value != null ? inp.value : '').trim();
+    }
+    // Corrections are stored as text ("D1, H1"), so writing one back has to re-select
+    // the options rather than assign a string nothing would show.
+    function setAnswerInput(inp, value) {
+      var str = (value == null) ? '' : (Array.isArray(value) ? value.join(', ') : String(value));
+      if (inp && inp.tagName === 'SELECT' && inp.multiple) {
+        var want = str.split(',').map(function(x) { return x.trim(); }).filter(Boolean);
+        Array.prototype.forEach.call(inp.options, function(o) { o.selected = want.indexOf(o.value) > -1; });
+        return;
+      }
+      inp.value = (inp.tagName === 'INPUT' && inp.type === 'date' && str) ? str.substring(0, 10) : str;
     }
 
     // ── Safe DOM helpers (avoid innerHTML with user data) ─────
@@ -4746,14 +4797,15 @@ const teamTableJson = JSON.stringify(teamTable);
               if (row.manual) return; // nothing to restore — see paintBadge
               if (!Object.prototype.hasOwnProperty.call(row.overrides || {}, f.id)) return;
               var o = (origVal == null) ? '' : (Array.isArray(origVal) ? origVal.join(', ') : String(origVal));
-              inp.value = (inp.tagName === 'INPUT' && inp.type === 'date' && o) ? o.substring(0, 10) : o;
-              saveScorerOverride(rowMeta, f.id, inp.value, statusEl);
+              setAnswerInput(inp, o);
+              saveScorerOverride(rowMeta, f.id, o, statusEl);
               paintBadge();
               paintNames();
               paintAddress();
             });
             inp.addEventListener('change', function() {
-              saveScorerOverride(rowMeta, f.id, inp.value.trim(), statusEl);
+              var v = readAnswerInput(inp);
+              saveScorerOverride(rowMeta, f.id, Array.isArray(v) ? v.join(', ') : v, statusEl);
               paintBadge();
               // The collapsed row is drawn from these same answers — a corrected name or
               // street that only lands on the next open looks like the edit was lost.
@@ -4923,6 +4975,28 @@ const teamTableJson = JSON.stringify(teamTable);
         fieldRow(f.name + ':', inp);
       });
 
+      // Where the signup goes. Unticked it is stored with us only; ticked it becomes a
+      // REAL answer on the form — which is the point, and which also mails the
+      // participant and scorer@volleyball.kscw.ch exactly as their own signup would
+      // have. Off by default: that mail is a thing to choose, not to discover after.
+      var pushWrap = document.createElement('label');
+      pushWrap.style.cssText = 'display:flex;align-items:flex-start;gap:0.5rem;margin-top:1rem;'
+        + 'padding-top:0.75rem;border-top:1px solid var(--border);font-size:var(--text-sm);cursor:pointer;';
+      var pushCb = document.createElement('input');
+      pushCb.type = 'checkbox';
+      pushCb.style.cssText = 'width:18px;height:18px;margin-top:0.15rem;flex:0 0 auto;cursor:pointer;';
+      var pushText = document.createElement('span');
+      var pushLbl = document.createElement('span');
+      pushLbl.textContent = t('scAddSignupPush');
+      var pushHint = document.createElement('span');
+      pushHint.style.cssText = 'display:block;color:var(--text-muted);font-size:var(--text-xs);margin-top:0.15rem;';
+      pushHint.textContent = t('scAddSignupPushHint');
+      pushText.appendChild(pushLbl);
+      pushText.appendChild(pushHint);
+      pushWrap.appendChild(pushCb);
+      pushWrap.appendChild(pushText);
+      body.appendChild(pushWrap);
+
       var errEl = document.createElement('div');
       errEl.style.cssText = 'margin-top:0.5rem;font-size:var(--text-sm);color:#dc2626;white-space:pre-wrap;';
       body.appendChild(errEl);
@@ -4940,22 +5014,27 @@ const teamTableJson = JSON.stringify(teamTable);
       saveBtn.type = 'button';
       saveBtn.className = 'admin-btn admin-btn-primary';
       saveBtn.textContent = t('save');
-      saveBtn.addEventListener('click', function() {
+
+      function collectAnswers() {
         var data = {};
         Object.keys(inputs).forEach(function(id) {
-          var v = String(inputs[id].value == null ? '' : inputs[id].value).trim();
-          if (v) data[id] = v; // an empty answer is no answer, not an empty string
+          var v = readAnswerInput(inputs[id]);
+          // An empty answer is no answer, not an empty string — the form decides
+          // whether it was required, and a blank key would only argue with it.
+          if (Array.isArray(v) ? v.length : v) data[id] = v;
         });
-        // A row with no name cannot be found again: it sorts into the "—" block, names
-        // nobody on the SVRZ Teilnehmerliste and titles no scoresheet.
-        var named = cfg.firstNameIds.concat(cfg.lastNameIds).some(function(id) { return !!data[id]; });
-        if (!named) { errEl.textContent = t('scAddSignupNeedName'); return; }
+        return data;
+      }
 
-        var slug = slugSel ? slugSel.value : cfg.sources[0].slug;
+      // Stored with us. Values are flattened to text because that is what
+      // field_overrides holds and what every reader of it expects.
+      function saveHere(data, slug) {
+        var flat = {};
+        Object.keys(data).forEach(function(id) {
+          flat[id] = Array.isArray(data[id]) ? data[id].join(', ') : data[id];
+        });
         var subId = manualSubmissionId();
-        errEl.textContent = '';
-        saveBtn.disabled = true;
-        wadmin('scorer_courses', 'items/scorer_course_attendance', {
+        return wadmin('scorer_courses', 'items/scorer_course_attendance', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           // field_overrides is TEXT carrying JSON, and it is sent as a STRING: wadmin's
@@ -4965,17 +5044,66 @@ const teamTableJson = JSON.stringify(teamTable);
             sub_key: slug + ':' + subId,
             form_slug: slug,
             submission_id: subId,
-            field_overrides: JSON.stringify(data),
+            field_overrides: JSON.stringify(flat),
           }),
         }).then(function(res) {
           if (!res.ok) throw new Error('HTTP ' + res.status);
-          closeModal();
-          cfg.onSaved();
-        }).catch(function(err) {
-          saveBtn.disabled = false;
-          errEl.textContent = t('scAddSignupFailed') + ((err && err.message) || 'unknown');
         });
-      });
+      }
+
+      function submit(reopenIfClosed) {
+        var data = collectAnswers();
+        // A row with no name cannot be found again: it sorts into the "—" block, names
+        // nobody on the SVRZ Teilnehmerliste and titles no scoresheet.
+        var named = cfg.firstNameIds.concat(cfg.lastNameIds).some(function(id) { return !!data[id]; });
+        if (!named) { errEl.textContent = t('scAddSignupNeedName'); return; }
+        var slug = slugSel ? slugSel.value : cfg.sources[0].slug;
+        errEl.textContent = '';
+        saveBtn.disabled = true;
+
+        function done() { closeModal(); cfg.onSaved(); }
+        function failed(msg) { saveBtn.disabled = false; errEl.textContent = msg; }
+
+        if (!pushCb.checked) {
+          saveHere(data, slug).then(done).catch(function(err) {
+            failed(t('scAddSignupFailed') + ((err && err.message) || 'unknown'));
+          });
+          return;
+        }
+
+        wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(slug) + '/submissions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: data, reopen_if_closed: !!reopenIfClosed }),
+        }).then(function(res) {
+          return res.json().catch(function() { return {}; }).then(function(b) {
+            if (res.ok) { done(); return; }
+            // Shut since its deadline — the ordinary state of a form you are adding a
+            // latecomer to. Ask, then post again with the short reopen.
+            if (res.status === 409 && b.error === 'form_closed') {
+              saveBtn.disabled = false;
+              return confirmModal(t('scAddSignupClosed')
+                .split('{date}').join(b.closes_at ? isoToSwissDate(b.closes_at) : '—'))
+                .then(function(ok) { if (ok) submit(true); });
+            }
+            // The form refused an answer. Naming the fields is the difference between a
+            // fixable message and a hunt through twelve required questions.
+            if (res.status === 422) {
+              var names = (b.fields || []).map(function(f) { return '• ' + (f.name || f.id); }).join('\n');
+              failed(t('scAddSignupInvalid').split('{fields}').join(names || '—'));
+              return;
+            }
+            // The signup IS filed; what failed is putting the deadline back. Say exactly
+            // that — the form is standing open and someone has to close it.
+            if (b.error === 'form_left_open') { failed(t('scAddSignupLeftOpen')); return; }
+            failed(t('scAddSignupFailed') + (b.error || ('HTTP ' + res.status)));
+          });
+        }).catch(function(err) {
+          failed(t('scAddSignupFailed') + ((err && err.message) || 'unknown'));
+        });
+      }
+      saveBtn.addEventListener('click', function() { submit(false); });
+
       footer.appendChild(cancelBtn);
       footer.appendChild(saveBtn);
       body.appendChild(footer);

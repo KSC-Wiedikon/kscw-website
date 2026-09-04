@@ -27,7 +27,7 @@ const SLUG = 'scorerkurs-wiedikon-de';
 
 const FIELD = {
   first: 'f_first', last: 'f_last', mail: 'f_mail', svrz: 'f_svrz',
-  strasse: 'f_strasse', plz: 'f_plz', ort: 'f_ort',
+  strasse: 'f_strasse', plz: 'f_plz', ort: 'f_ort', team: 'f_team',
 };
 const FORM_FIELDS = [
   { id: FIELD.first, name: 'Vorname', type: 'text' },
@@ -37,6 +37,7 @@ const FORM_FIELDS = [
   { id: FIELD.plz, name: 'PLZ', type: 'number' },
   { id: FIELD.ort, name: 'Ort', type: 'text' },
   { id: FIELD.svrz, name: 'SVRZ Lizenznummer', type: 'text' },
+  { id: FIELD.team, name: 'Team', type: 'multi_select', options: ['D1', 'H1'] },
 ];
 
 const COURSE = {
@@ -56,7 +57,12 @@ const SUBMISSIONS = [
 
 type Write = { method: string; url: string; body: Record<string, unknown> | null };
 
-async function stub(page: Page, opts: { attendance?: Record<string, unknown>[] } = {}) {
+type CreateReply = { status: number; body: Record<string, unknown> } | null;
+
+async function stub(page: Page, opts: {
+  attendance?: Record<string, unknown>[];
+  onCreate?: (body: Record<string, unknown> | null, nth: number) => CreateReply;
+} = {}) {
   const attendance = opts.attendance ? opts.attendance.slice() : [];
   const writes: Write[] = [];
   let nextId = 90;
@@ -94,7 +100,18 @@ async function stub(page: Page, opts: { attendance?: Record<string, unknown>[] }
 
     if (url.includes('/member-addresses')) return json({ data: {} });
     if (url.includes('/member-licences')) return json({ data: {} });
-    if (url.includes('/submissions')) return json({ fields: FORM_FIELDS, data: SUBMISSIONS });
+    if (url.includes('/submissions')) {
+      if (method === 'POST') { // filing a signup into the form itself
+        let body: Record<string, unknown> | null = null;
+        try { body = JSON.parse(req.postData() || 'null'); } catch { body = null; }
+        writes.push({ method, url, body });
+        const reply = opts.onCreate ? opts.onCreate(body, writes.length) : null;
+        if (reply) return route.fulfill({ status: reply.status, contentType: 'application/json',
+                                          body: JSON.stringify(reply.body) });
+        return json({ ok: true, submission_id: 'new-1', reopened: false });
+      }
+      return json({ fields: FORM_FIELDS, data: SUBMISSIONS });
+    }
     return json({ data: [] });
   });
 
@@ -199,6 +216,117 @@ test.describe('scorer registrations', () => {
     await expect(added).toBeVisible();
     await expect(added.locator('td.reg-c-last')).toContainText('nachgetragen');
     await expect(added.locator('td.reg-c-addr')).toContainText('8143 Stallikon');
+  });
+
+  test('ticking the box files it in the form itself, and sends the Team as a list',
+    async ({ page }) => {
+      const { writes } = await stub(page);
+      await openRegistrations(page);
+
+      await page.getByRole('button', { name: /Anmeldung nachtragen/ }).click();
+      const modal = page.locator('.admin-modal-body');
+      await modal.locator('label').filter({ hasText: 'Vorname:' }).locator('input').fill('Spät');
+      await modal.locator('label').filter({ hasText: 'Nachname:' }).locator('input').fill('Gemeldet');
+      await modal.locator('label').filter({ hasText: 'Team:' }).locator('select').selectOption(['D1', 'H1']);
+      await page.getByText('Auch im Anmeldeformular erfassen').click();
+      await page.locator('.admin-modal-footer .admin-btn-primary').click();
+
+      await expect.poll(() => writes.length).toBe(1);
+      // The form's own answer endpoint — not the attendance table.
+      expect(writes[0].url).toContain(`opnform/forms/${SLUG}/submissions`);
+      expect(writes[0].url).not.toContain('items/scorer_course_attendance');
+      const body = writes[0].body as Record<string, unknown>;
+      expect(body.reopen_if_closed).toBe(false); // never on the first attempt
+      expect(body.data).toEqual({
+        [FIELD.first]: 'Spät', [FIELD.last]: 'Gemeldet', [FIELD.team]: ['D1', 'H1'],
+      });
+    });
+
+  // The ordinary state of a form you are adding a latecomer to. The short reopen is
+  // asked for out loud and never assumed.
+  test('a closed form is opened only after the admin says so', async ({ page }) => {
+    const { writes } = await stub(page, {
+      onCreate: (_body, nth) => (nth === 1
+        ? { status: 409, body: { error: 'form_closed', closes_at: '2026-08-11T22:00:00+00:00' } }
+        : null),
+    });
+    await openRegistrations(page);
+
+    await page.getByRole('button', { name: /Anmeldung nachtragen/ }).click();
+    const modal = page.locator('.admin-modal-body');
+    await modal.locator('label').filter({ hasText: 'Vorname:' }).locator('input').fill('Spät');
+    await modal.locator('label').filter({ hasText: 'Nachname:' }).locator('input').fill('Gemeldet');
+    await page.getByText('Auch im Anmeldeformular erfassen').click();
+    await page.locator('.admin-modal-footer .admin-btn-primary').click();
+
+    // Swiss date, and the question names the consequence.
+    const confirm = page.locator('.admin-confirm-content');
+    await expect(confirm).toContainText('11.08.2026');
+    await expect(confirm).toContainText('geschlossen');
+    await confirm.locator('.admin-btn-primary').click();
+
+    await expect.poll(() => writes.length).toBe(2);
+    expect((writes[0].body as Record<string, unknown>).reopen_if_closed).toBe(false);
+    expect((writes[1].body as Record<string, unknown>).reopen_if_closed).toBe(true);
+  });
+
+  test('declining the reopen files nothing', async ({ page }) => {
+    const { writes } = await stub(page, {
+      onCreate: () => ({ status: 409, body: { error: 'form_closed', closes_at: '2026-08-11T22:00:00+00:00' } }),
+    });
+    await openRegistrations(page);
+
+    await page.getByRole('button', { name: /Anmeldung nachtragen/ }).click();
+    const modal = page.locator('.admin-modal-body');
+    await modal.locator('label').filter({ hasText: 'Vorname:' }).locator('input').fill('Spät');
+    await modal.locator('label').filter({ hasText: 'Nachname:' }).locator('input').fill('Gemeldet');
+    await page.getByText('Auch im Anmeldeformular erfassen').click();
+    await page.locator('.admin-modal-footer .admin-btn-primary').click();
+
+    await page.locator('.admin-confirm-content .admin-btn').first().click(); // Abbrechen
+    await expect(page.locator('.admin-confirm-content')).toHaveCount(0);
+    await expect(page.locator('.admin-modal-body')).toBeVisible(); // still open, nothing lost
+    expect(writes).toHaveLength(1);
+  });
+
+  // "The form said no" sends an admin hunting through twelve required questions.
+  test('a refused answer is named', async ({ page }) => {
+    await stub(page, {
+      onCreate: () => ({ status: 422, body: { error: 'validation', fields: [
+        { id: FIELD.mail, name: 'E-Mail', messages: ['required'] },
+        { id: FIELD.plz, name: 'PLZ', messages: ['required'] },
+      ] } }),
+    });
+    await openRegistrations(page);
+
+    await page.getByRole('button', { name: /Anmeldung nachtragen/ }).click();
+    const modal = page.locator('.admin-modal-body');
+    await modal.locator('label').filter({ hasText: 'Vorname:' }).locator('input').fill('Spät');
+    await modal.locator('label').filter({ hasText: 'Nachname:' }).locator('input').fill('Gemeldet');
+    await page.getByText('Auch im Anmeldeformular erfassen').click();
+    await page.locator('.admin-modal-footer .admin-btn-primary').click();
+
+    await expect(modal).toContainText('E-Mail');
+    await expect(modal).toContainText('PLZ');
+    await expect(modal).toBeVisible(); // the typed answers survive the rejection
+    await expect(modal.locator('label').filter({ hasText: 'Vorname:' }).locator('input')).toHaveValue('Spät');
+  });
+
+  // The signup is filed; what failed is putting the deadline back.
+  test('a form left open is reported as such', async ({ page }) => {
+    await stub(page, {
+      onCreate: () => ({ status: 500, body: { error: 'form_left_open', closes_at: '2026-08-11T22:00:00+00:00' } }),
+    });
+    await openRegistrations(page);
+
+    await page.getByRole('button', { name: /Anmeldung nachtragen/ }).click();
+    const modal = page.locator('.admin-modal-body');
+    await modal.locator('label').filter({ hasText: 'Vorname:' }).locator('input').fill('Spät');
+    await modal.locator('label').filter({ hasText: 'Nachname:' }).locator('input').fill('Gemeldet');
+    await page.getByText('Auch im Anmeldeformular erfassen').click();
+    await page.locator('.admin-modal-footer .admin-btn-primary').click();
+
+    await expect(modal).toContainText('nimmt gerade Anmeldungen an');
   });
 
   test('a hand-added signup needs a name', async ({ page }) => {

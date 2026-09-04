@@ -402,6 +402,22 @@ const teamTableJson = JSON.stringify(teamTable);
         scEditedOrig: 'Angemeldet mit: {value} — klicken, um die ursprüngliche Antwort wiederherzustellen',
         scSvUseMember: 'Register: {value} übernehmen',
         scSvMemberDiffers: 'Im Mitgliederregister steht {value}. Das Feld zeigt, was die Person bei der Anmeldung angegeben hat.',
+        scSvUseForm: 'Formular: {value} übernehmen',
+        scSvFormDiffers: 'In der Anmeldung wurde {value} angegeben — hier steht eine andere Nummer.',
+        scSvMatchesForm: 'Stimmt mit der Anmeldung überein.',
+        scColAddress: 'Adresse',
+        scColStreet: 'Strasse',
+        scColZip: 'PLZ',
+        scColCity: 'Ort',
+        scAddressGuessed: 'Angenommen: Weder die Anmeldung noch das Mitgliederregister nennt einen Wohnort. Genau so stünde es auf der SVRZ-Teilnehmerliste.',
+        scAddSignup: 'Anmeldung nachtragen',
+        scAddSignupIntro: 'Für Nachzügler, telefonische und mündliche Anmeldungen. Der Eintrag wird direkt bei uns gespeichert und erscheint in der Liste und in beiden Exporten wie jede andere Anmeldung. Es wird keine E-Mail verschickt, und das Anmeldeformular selbst bleibt unberührt.',
+        scAddSignupForm: 'Formular',
+        scAddSignupNeedName: 'Bitte mindestens Vor- oder Nachname ausfüllen.',
+        scAddSignupFailed: 'Die Anmeldung konnte nicht gespeichert werden: ',
+        scManual: 'nachgetragen',
+        scManualHint: 'Von Hand nachgetragen — diese Anmeldung kam nicht über das Formular.',
+        scDeleteManualConfirm: 'Diese nachgetragene Anmeldung wirklich löschen? Sie ist nur hier gespeichert.',
         siteText: 'Seitentexte',
         siteTextIntro: 'Texte der Website ändern. Gespeicherte Änderungen sind nach wenigen Sekunden live; der Originaltext bleibt erhalten und kann jederzeit zurückgeholt werden.',
         siteTextPage: 'Seite',
@@ -620,6 +636,22 @@ const teamTableJson = JSON.stringify(teamTable);
         scEditedOrig: 'Signed up with: {value} — click to restore their original answer',
         scSvUseMember: 'Use register: {value}',
         scSvMemberDiffers: 'The member register says {value}. This box shows what the person entered when signing up.',
+        scSvUseForm: 'Use form: {value}',
+        scSvFormDiffers: 'The signup said {value} — a different number was entered here.',
+        scSvMatchesForm: 'Matches the signup.',
+        scColAddress: 'Address',
+        scColStreet: 'Street',
+        scColZip: 'ZIP',
+        scColCity: 'Town',
+        scAddressGuessed: 'Assumed: neither the signup nor the member register names a town. This is exactly what the SVRZ Teilnehmerliste would say.',
+        scAddSignup: 'Add signup',
+        scAddSignupIntro: 'For latecomers and signups taken by phone or in person. The entry is stored with us directly and appears in the list and in both exports like any other signup. No email is sent, and the registration form itself is left untouched.',
+        scAddSignupForm: 'Form',
+        scAddSignupNeedName: 'Please fill in at least a first or last name.',
+        scAddSignupFailed: 'The signup could not be saved: ',
+        scManual: 'added by hand',
+        scManualHint: 'Added by hand here — this signup did not come through the form.',
+        scDeleteManualConfirm: 'Delete this hand-added signup? It exists only here.',
         siteText: 'Page texts',
         siteTextIntro: 'Change the text on the website. A saved change is live within seconds; the original wording is kept and can be restored at any time.',
         siteTextPage: 'Page',
@@ -888,6 +920,40 @@ const teamTableJson = JSON.stringify(teamTable);
         return isoToSwissDate(v);
       }
       return String(v);
+    }
+
+    // One input for one OpnForm answer, used both to CORRECT an answer in the detail
+    // panel and to type a whole nachgetragene Anmeldung. Shared on purpose: two builders
+    // drift, and the first thing to drift is which fields offer the form's own options —
+    // a hand-typed "Teilnahme" is a value the SVRZ export cannot read back.
+    function buildAnswerInput(f, curStr) {
+      var inp;
+      if (f.type === 'select' && Array.isArray(f.options) && f.options.length) {
+        inp = document.createElement('select');
+        var opts = f.options.slice();
+        // Keep whatever is on file selectable even if the form's options have since
+        // changed — otherwise opening the row would silently re-point their answer to
+        // the first option in the list.
+        if (curStr && opts.indexOf(curStr) === -1) opts.unshift(curStr);
+        opts.unshift('');
+        opts.forEach(function(o) {
+          var op = document.createElement('option');
+          op.value = o; op.textContent = o || '—';
+          if (o === curStr) op.selected = true;
+          inp.appendChild(op);
+        });
+        // Native <option> inherits the select's background, so the dark dropdown needs
+        // an explicit solid colour or it renders white.
+        inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:#1c1c1e;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+        return inp;
+      }
+      inp = document.createElement('input');
+      inp.type = (f.type === 'date' ? 'date' : f.type === 'email' ? 'email' : 'text');
+      // A date answer arrives as an ISO timestamp; <input type=date> needs Y-M-D or it
+      // silently renders empty — which reads as "they left it blank".
+      inp.value = (inp.type === 'date' && curStr) ? curStr.substring(0, 10) : curStr;
+      inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+      return inp;
     }
 
     // ── Safe DOM helpers (avoid innerHTML with user data) ─────
@@ -3612,6 +3678,36 @@ const teamTableJson = JSON.stringify(teamTable);
       var digits = String(v == null ? '' : v).replace(/\D/g, '');
       return !!digits && /^0+$/.test(digits);
     }
+
+    // Two licence numbers are the same number when their digits are, so "337 646" typed
+    // on the form matches "337646" entered here. Compared as raw digits rather than
+    // through licenceDigits(), which blanks anything outside 4-10 digits and would then
+    // report two DIFFERENT out-of-range answers as equal — exactly the pair worth flagging.
+    function sameLicence(a, b) {
+      // "0" and "00000" are the same statement — not licensed yet — and flagging them as
+      // a disagreement would ask an admin to reconcile two ways of writing "none".
+      if (isUnlicensed(a) && isUnlicensed(b)) return true;
+      return String(a == null ? '' : a).replace(/\D/g, '')
+        === String(b == null ? '' : b).replace(/\D/g, '');
+    }
+
+    // ── Nachträge: a signup that never went through the form ────────────────────
+    // A latecomer, a phone call, a name handed over at the hall. It is stored as a
+    // scorer_course_attendance row whose submission_id is `manual-…` and whose answers
+    // live in field_overrides — the same document staff corrections already use. Every
+    // reader downstream (columns, surname sort, detail panel, both exports, the email
+    // picker) then treats it exactly like a form signup, with no second code path.
+    //
+    // ⚠ Deliberately NOT written into OpnForm. Creating a submission there re-runs the
+    // form's notification integrations — the participant AND scorer@volleyball.kscw.ch
+    // get mailed (see migration 332) — and a form past its closes_at rejects the write,
+    // which is precisely the late-signup case this exists for.
+    function manualSubmissionId() {
+      return 'manual-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+    }
+    function isManualSubmission(id) {
+      return String(id == null ? '' : id).indexOf('manual-') === 0;
+    }
     // What that gets written as on the SVRZ list, where "00000" would read like a
     // licence number to whoever transcribes it. German like the rest of the sheet,
     // and in the slash form on purpose: the signup never asks for gender, so the
@@ -3766,6 +3862,26 @@ const teamTableJson = JSON.stringify(teamTable);
         var attByKey = {};
         attRows.forEach(function(a) { if (a && a.sub_key != null) attByKey[String(a.sub_key)] = a; });
 
+        // Nachträge for these forms: attendance rows with no OpnForm submission behind
+        // them. Pushed in with an EMPTY answer set — the override pass below fills it
+        // from field_overrides, which is where a hand-added signup keeps its answers, so
+        // one mechanism serves both a correction and a whole row.
+        var langBySlug = {};
+        srcList.forEach(function(s) { langBySlug[s.slug] = s.lang || ''; });
+        attRows.forEach(function(a) {
+          if (!a || !a.form_slug || !isManualSubmission(a.submission_id)) return;
+          if (!Object.prototype.hasOwnProperty.call(langBySlug, String(a.form_slug))) return;
+          mergedRows.push({
+            // When the admin entered it — the closest thing a nachgetragene Anmeldung
+            // has to a signup date, and the Datum column would read blank otherwise.
+            data: { created_at: a.date_created || '' },
+            id: String(a.submission_id),
+            slug: String(a.form_slug),
+            lang: langBySlug[String(a.form_slug)],
+            manual: true,
+          });
+        });
+
         // ── staff corrections (scorer_course_attendance.field_overrides) ──
         //
         // Applied HERE, onto row.data, rather than at each place a value is read.
@@ -3792,7 +3908,10 @@ const teamTableJson = JSON.stringify(teamTable);
           r.orig = r.data;
           r.overrides = ovr;
           var keys = Object.keys(ovr);
-          if (!keys.length) return;
+          // ALWAYS a copy, even with no corrections on file yet: r.data is mutated in
+          // place as corrections are made, and letting r.orig share the object would
+          // overwrite the participant's own answer with the correction — destroying the
+          // very thing the "(korrigiert)" badge offers to restore, on the first edit.
           var copy = {};
           Object.keys(r.data).forEach(function(k) { copy[k] = r.data[k]; });
           keys.forEach(function(k) { copy[k] = ovr[k]; });
@@ -3871,16 +3990,25 @@ const teamTableJson = JSON.stringify(teamTable);
           var extraFields = fields.filter(function(f) { return !shownIds[f.id]; });
           var headers = [t('scColDate')]
             .concat(multi ? [t('scColLang')] : [])
-            .concat([t('scColFirstName'), t('scColLastName'), t('scPresent'),
+            .concat([t('scColFirstName'), t('scColLastName'),
+                     t('scColStreet'), t('scColZip'), t('scColCity'), t('scPresent'),
                      t('scExamPassed'), t('scSvLicense'), t('scNotes')])
             .concat(extraFields.map(function(f) { return f.name; }));
           var rows = exportMetas.map(function(m) {
             var d = m.row.data, st = m.state;
+            // The RESOLVED address, the same one the SVRZ list gets — the raw answers
+            // are still further right among the extra fields. Someone reading this
+            // export is usually reconciling it against that list, and a street sitting
+            // in a free-text answer three columns over is not the same as an address.
+            var addr = resolveAddress(m);
             return [isoToSwissDateTime(d.created_at)]
               .concat(multi ? [m.row.lang || ''] : [])
               .concat([
                 String(pickVal(d, firstNameIds) || ''),
                 String(pickVal(d, lastNameIds) || ''),
+                addr.street,
+                addr.zip,
+                addr.city,
                 !!st.present,
                 examResultLabel(st.exam_result),
                 m.svInp ? m.svInp.value.trim() : (st.sv_license || m.formSv || ''),
@@ -3993,6 +4121,26 @@ const teamTableJson = JSON.stringify(teamTable);
         var controls = document.createElement('div');
         controls.style.cssText = 'display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;';
         content.insertBefore(controls, tableHost);
+
+        // Nachtrag. Sits outside the `total > 0` block below on purpose: a course with no
+        // signups at all is exactly when someone hands you the first name on paper.
+        // Needs the form's field set to have loaded — with no fields there is nothing to
+        // type a signup into.
+        if (fields.length) {
+          var addBtn = document.createElement('button');
+          addBtn.className = 'admin-btn admin-btn-sm';
+          addBtn.textContent = '+ ' + t('scAddSignup');
+          addBtn.addEventListener('click', function() {
+            openAddSignupModal({
+              sources: srcList,
+              fields: fields,
+              firstNameIds: firstNameIds,
+              lastNameIds: lastNameIds,
+              onSaved: function() { openScorerCourseInline(courseId); },
+            });
+          });
+          controls.appendChild(addBtn);
+        }
 
         if (total > 0) {
           var nameBase = multi ? 'combined' : srcList[0].slug;
@@ -4134,7 +4282,7 @@ const teamTableJson = JSON.stringify(teamTable);
         var table = document.createElement('table');
         table.className = 'admin-reg-table';
         table.style.cssText = 'width:100%;border-collapse:collapse;font-size:var(--text-sm);';
-        var COLSPAN = 9; // select, arrow, first, last, present, examPassed, sheet, sv, actions
+        var COLSPAN = 10; // select, arrow, last, first, address, present, examPassed, sheet, sv, actions
         var cellCss = 'padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);';
         var headCss = 'text-align:left;padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.04);font-weight:600;white-space:nowrap;';
 
@@ -4161,6 +4309,7 @@ const teamTableJson = JSON.stringify(teamTable);
         // Surname first — it is the sort key and what you scan down.
         thRow.appendChild(makeTh(t('scColLastName')));
         thRow.appendChild(makeTh(t('scColFirstName')));
+        thRow.appendChild(makeTh(t('scColAddress')));
         thRow.appendChild(makeTh(t('scPresent'), 'text-align:center;'));
         thRow.appendChild(makeTh(t('scExamPassed'), 'text-align:center;'));
         thRow.appendChild(makeTh(t('scExamUploaded'), 'text-align:center;'));
@@ -4241,20 +4390,67 @@ const teamTableJson = JSON.stringify(teamTable);
           // Last / first name (also clickable to expand). Surname leads: it is what the
           // table is sorted by, and a sorted column you have to read past is wasted.
           var lnV = pickVal(d, lastNameIds);
+          var fnV = pickVal(d, firstNameIds);
           var lnTd = document.createElement('td');
           lnTd.className = 'reg-c-last';
           lnTd.style.cssText = cellCss + 'cursor:pointer;';
-          lnTd.textContent = (lnV == null || lnV === '') ? '—' : String(lnV);
           lnTd.addEventListener('click', toggleDetail);
           tr.appendChild(lnTd);
 
-          var fnV = pickVal(d, firstNameIds);
           var fnTd = document.createElement('td');
           fnTd.className = 'reg-c-first';
           fnTd.style.cssText = cellCss + 'cursor:pointer;';
-          fnTd.textContent = (fnV == null || fnV === '') ? '—' : String(fnV);
           fnTd.addEventListener('click', toggleDetail);
           tr.appendChild(fnTd);
+
+          // Redrawn after a correction in the detail panel — the columns are painted from
+          // row.data, and a fixed name that only appears once the view is closed and
+          // reopened reads like the edit did not take. lnV/fnV are re-read with it: the
+          // exam confirm and the scoresheet filename both name the person from them.
+          function paintNames() {
+            lnV = pickVal(d, lastNameIds);
+            fnV = pickVal(d, firstNameIds);
+            lnTd.textContent = (lnV == null || lnV === '') ? '—' : String(lnV);
+            fnTd.textContent = (fnV == null || fnV === '') ? '—' : String(fnV);
+            if (!row.manual) return;
+            // Where the row came from, in the column every view shows: this one was
+            // typed in here and has no form submission behind it.
+            var badge = document.createElement('span');
+            badge.textContent = t('scManual');
+            badge.title = t('scManualHint');
+            badge.style.cssText = 'margin-left:0.4rem;padding:0.05rem 0.3rem;white-space:nowrap;'
+              + 'border:1px solid var(--border);border-radius:var(--radius-sm);'
+              + 'font-size:var(--text-xs);color:var(--text-muted);';
+            lnTd.appendChild(badge);
+          }
+          paintNames();
+
+          // Adresse — the answer the SVRZ Teilnehmerliste cannot do without, and until
+          // now the one you had to open every row to see. It shows exactly what the
+          // export would ship, fallback included: a guessed town is printed in italics
+          // with a "?", because on the list it will look like an address either way.
+          var addrTd = document.createElement('td');
+          addrTd.className = 'reg-c-cell reg-c-addr';
+          addrTd.setAttribute('data-label', t('scColAddress'));
+          addrTd.style.cssText = cellCss + 'cursor:pointer;line-height:1.35;';
+          addrTd.addEventListener('click', toggleDetail);
+          function paintAddress() {
+            var a = resolveAddress({ row: row });
+            var town = [a.zip, a.city].filter(Boolean).join(' ');
+            addrTd.textContent = '';
+            addrTd.title = a.guessed ? t('scAddressGuessed') : '';
+            var street = document.createElement('div');
+            street.textContent = a.street || '—';
+            if (!a.street) street.style.color = 'var(--text-muted)';
+            var place = document.createElement('div');
+            place.textContent = a.guessed ? (town + ' ?') : (town || '—');
+            place.style.cssText = 'color:var(--text-muted);font-size:var(--text-xs);'
+              + (a.guessed ? 'font-style:italic;' : '');
+            addrTd.appendChild(street);
+            addrTd.appendChild(place);
+          }
+          paintAddress();
+          tr.appendChild(addrTd);
 
           var statusEl = document.createElement('span');
           statusEl.style.cssText = 'font-size:var(--text-xs);color:var(--text-muted);margin-left:0.4rem;';
@@ -4385,11 +4581,40 @@ const teamTableJson = JSON.stringify(teamTable);
           svInp.value = state.sv_license || formSv;
           svInp.placeholder = t('scSvLicense');
           svInp.style.cssText = 'width:110px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
-          if (!state.sv_license && formSv) svInp.title = t('scSvFromForm');
           svInp.addEventListener('change', function() {
             saveScorerField(rowMeta, 'sv_license', svInp.value.trim(), statusEl);
+            paintSvSource();
           });
           svTd.appendChild(svInp);
+
+          // ── does this still match what they wrote on the form? ──
+          //
+          // The box shows the TRACKED value as soon as anyone types one, and from then
+          // on the participant's own answer is invisible here — so a transposed digit
+          // entered in this column quietly becomes the number that goes to SVRZ and
+          // names their scoresheet file. When the two disagree, say so, and offer the
+          // signup's answer back in one click. Compared as digits, so "337 646" and
+          // "337646" are one number and not a disagreement.
+          var svFormBtn = document.createElement('button');
+          svFormBtn.type = 'button';
+          svFormBtn.className = 'admin-btn admin-btn-sm';
+          svFormBtn.style.cssText = 'margin-top:0.25rem;font-size:var(--text-xs);padding:0.1rem 0.35rem;display:none;';
+          svFormBtn.addEventListener('click', function() {
+            svInp.value = formSv;
+            saveScorerField(rowMeta, 'sv_license', formSv, statusEl);
+            paintSvSource();
+          });
+          function paintSvSource() {
+            var differs = !!formSv && !sameLicence(svInp.value, formSv);
+            svInp.title = differs
+              ? t('scSvFormDiffers').split('{value}').join(formSv)
+              : (formSv ? (state.sv_license ? t('scSvMatchesForm') : t('scSvFromForm')) : '');
+            svFormBtn.textContent = t('scSvUseForm').split('{value}').join(formSv);
+            svFormBtn.title = t('scSvFormDiffers').split('{value}').join(formSv);
+            svFormBtn.style.display = differs ? '' : 'none';
+          }
+          paintSvSource();
+          svTd.appendChild(svFormBtn);
 
           // ── cross-check against the member register ──
           //
@@ -4403,7 +4628,7 @@ const teamTableJson = JSON.stringify(teamTable);
           // have no member row at all, and for them the form is the only source there is;
           // silently overwriting would be wrong for the majority of the table.
           var lic = (memberLic[row.slug] || {})[String(row.id)];
-          if (lic && lic.licence && licenceDigits(lic.licence) !== licenceDigits(svInp.value)) {
+          if (lic && lic.licence && !sameLicence(lic.licence, svInp.value)) {
             var fix = document.createElement('button');
             fix.type = 'button';
             fix.className = 'admin-btn admin-btn-sm';
@@ -4413,6 +4638,7 @@ const teamTableJson = JSON.stringify(teamTable);
             fix.addEventListener('click', function() {
               svInp.value = String(lic.licence);
               saveScorerField(rowMeta, 'sv_license', svInp.value, statusEl);
+              paintSvSource(); // the register's number may itself differ from the form's
               fix.remove();
             });
             svTd.appendChild(fix);
@@ -4428,10 +4654,19 @@ const teamTableJson = JSON.stringify(teamTable);
             delBtn.className = 'admin-btn admin-btn-sm admin-btn-danger';
             delBtn.textContent = t('delete');
             delBtn.addEventListener('click', function() {
-              confirmModal(t('confirmDelete'), { danger: true, confirmLabel: t('delete') }).then(function(ok) {
+              // A nachgetragene Anmeldung has no OpnForm submission to delete — it IS the
+              // attendance row, so that is what goes. Deleting it through the form route
+              // would 404 on a submission id OpnForm has never heard of.
+              confirmModal(row.manual ? t('scDeleteManualConfirm') : t('confirmDelete'),
+                           { danger: true, confirmLabel: t('delete') }).then(function(ok) {
                 if (!ok) return;
                 delBtn.disabled = true;
-                wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(row.slug) + '/submissions/' + encodeURIComponent(row.id), { method: 'DELETE' })
+                var req = row.manual
+                  ? (state.id != null
+                      ? wadmin('scorer_courses', 'items/scorer_course_attendance/' + state.id, { method: 'DELETE' })
+                      : Promise.resolve({ ok: true }))
+                  : wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(row.slug) + '/submissions/' + encodeURIComponent(row.id), { method: 'DELETE' });
+                req
                   .then(function(res) {
                     if (!res.ok) throw new Error('HTTP ' + res.status);
                     openScorerCourseInline(courseId); // refresh
@@ -4490,39 +4725,16 @@ const teamTableJson = JSON.stringify(teamTable);
             lab.textContent = f.name + ':';
             var cur = d[f.id];
             var curStr = (cur == null) ? '' : (Array.isArray(cur) ? cur.join(', ') : String(cur));
-            var inp;
-            if (f.type === 'select' && Array.isArray(f.options) && f.options.length) {
-              // Pick from the same list the participant saw. A hand-typed
-              // "Teilnahme" is a value the SVRZ export cannot read back.
-              inp = document.createElement('select');
-              var opts = f.options.slice();
-              // Keep whatever is on file selectable even if the form's options
-              // have since changed — otherwise opening the row would silently
-              // re-point their answer to the first option in the list.
-              if (curStr && opts.indexOf(curStr) === -1) opts.unshift(curStr);
-              opts.unshift('');
-              opts.forEach(function(o) {
-                var op = document.createElement('option');
-                op.value = o; op.textContent = o || '—';
-                if (o === curStr) op.selected = true;
-                inp.appendChild(op);
-              });
-              // Native <option> inherits the select's background, so the dark
-              // dropdown needs an explicit solid colour or it renders white.
-              inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:#1c1c1e;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
-            } else {
-              inp = document.createElement('input');
-              inp.type = (f.type === 'date' ? 'date' : f.type === 'email' ? 'email' : 'text');
-              // A date answer arrives as an ISO timestamp; <input type=date> needs Y-M-D
-              // or it silently renders empty — which reads as "they left it blank".
-              inp.value = (inp.type === 'date' && curStr) ? curStr.substring(0, 10) : curStr;
-              inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
-            }
+            var inp = buildAnswerInput(f, curStr);
             var origVal = (row.orig || {})[f.id];
             var badge = document.createElement('span');
             badge.style.cssText = 'font-size:var(--text-xs);color:var(--kscw-gold,#b8860b);cursor:pointer;';
             function paintBadge() {
-              var edited = Object.prototype.hasOwnProperty.call(row.overrides || {}, f.id);
+              // A nachgetragene Anmeldung has no participant answer to differ from — every
+              // value in it was typed here, so "(korrigiert)" would be labelling the whole
+              // row as a correction of nothing.
+              var edited = !row.manual
+                && Object.prototype.hasOwnProperty.call(row.overrides || {}, f.id);
               badge.textContent = edited ? t('scEdited') : '';
               badge.title = edited
                 ? t('scEditedOrig').split('{value}').join((origVal == null || origVal === '') ? '—' : String(origVal))
@@ -4531,15 +4743,22 @@ const teamTableJson = JSON.stringify(teamTable);
             paintBadge();
             // Click the badge to put the participant's own answer back.
             badge.addEventListener('click', function() {
+              if (row.manual) return; // nothing to restore — see paintBadge
               if (!Object.prototype.hasOwnProperty.call(row.overrides || {}, f.id)) return;
               var o = (origVal == null) ? '' : (Array.isArray(origVal) ? origVal.join(', ') : String(origVal));
               inp.value = (inp.tagName === 'INPUT' && inp.type === 'date' && o) ? o.substring(0, 10) : o;
               saveScorerOverride(rowMeta, f.id, inp.value, statusEl);
               paintBadge();
+              paintNames();
+              paintAddress();
             });
             inp.addEventListener('change', function() {
               saveScorerOverride(rowMeta, f.id, inp.value.trim(), statusEl);
               paintBadge();
+              // The collapsed row is drawn from these same answers — a corrected name or
+              // street that only lands on the next open looks like the edit was lost.
+              paintNames();
+              paintAddress();
             });
             wrap.appendChild(lab); wrap.appendChild(inp); wrap.appendChild(badge);
             dl.appendChild(wrap);
@@ -4628,6 +4847,142 @@ const teamTableJson = JSON.stringify(teamTable);
         errDiv.textContent = t('loadError') + (err && err.message ? err.message : 'unknown');
         tableHost.appendChild(errDiv);
       });
+    }
+
+    // ── Anmeldung nachtragen ───────────────────────────────────
+    // The form's own field set, in the form's own order, so a hand-added signup carries
+    // the same answers as one that came through the form — and therefore lands in the
+    // same columns, the same surname sort and both exports with no special case.
+    //
+    // Saved as a scorer_course_attendance row (see manualSubmissionId): nothing reaches
+    // OpnForm, so nobody is emailed and a form long past its deadline is no obstacle.
+    function openAddSignupModal(cfg) {
+      var modal = document.getElementById('admin-modal');
+      modal.textContent = '';
+
+      var content = document.createElement('div');
+      content.className = 'admin-modal-content';
+
+      var hdr = document.createElement('div');
+      hdr.className = 'admin-modal-header';
+      var h2 = document.createElement('h2');
+      h2.textContent = t('scAddSignup');
+      hdr.appendChild(h2);
+      var closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'admin-modal-close';
+      closeBtn.textContent = '×';
+      closeBtn.addEventListener('click', closeModal);
+      hdr.appendChild(closeBtn);
+      content.appendChild(hdr);
+
+      var body = document.createElement('div');
+      body.className = 'admin-modal-body';
+
+      var intro = document.createElement('p');
+      intro.style.cssText = 'margin:0 0 1rem;font-size:var(--text-sm);color:var(--text-muted);';
+      intro.textContent = t('scAddSignupIntro');
+      body.appendChild(intro);
+
+      function fieldRow(labelText, el) {
+        var wrap = document.createElement('label');
+        wrap.style.cssText = 'display:flex;align-items:center;gap:0.5rem;font-size:var(--text-sm);'
+          + 'flex-wrap:wrap;margin-bottom:0.5rem;';
+        var lab = document.createElement('span');
+        lab.style.cssText = 'color:var(--text-muted);min-width:150px;';
+        lab.textContent = labelText;
+        wrap.appendChild(lab);
+        wrap.appendChild(el);
+        body.appendChild(wrap);
+      }
+
+      // Which form the row belongs to — asked only in the combined view, where there is
+      // something to choose. The slug is not cosmetic: the Kursdatum, the language column
+      // and the SVRZ export all resolve the course through it.
+      var slugSel = null;
+      if (cfg.sources.length > 1) {
+        slugSel = document.createElement('select');
+        slugSel.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;'
+          + 'font-size:var(--text-sm);background:#1c1c1e;border:1px solid var(--border);'
+          + 'border-radius:var(--radius-sm);color:var(--text-primary);';
+        cfg.sources.forEach(function(src) {
+          var op = document.createElement('option');
+          op.value = src.slug;
+          op.textContent = src.lang ? (src.lang + ' — ' + src.slug) : src.slug;
+          slugSel.appendChild(op);
+        });
+        fieldRow(t('scAddSignupForm') + ':', slugSel);
+      }
+
+      var inputs = {};
+      cfg.fields.forEach(function(f) {
+        // Dividers and other layout blocks are not answers — same rule as the detail panel.
+        if (!f || /^nf-/.test(String(f.type || '')) || /divider/i.test(String(f.name || ''))) return;
+        var inp = buildAnswerInput(f, '');
+        inputs[f.id] = inp;
+        fieldRow(f.name + ':', inp);
+      });
+
+      var errEl = document.createElement('div');
+      errEl.style.cssText = 'margin-top:0.5rem;font-size:var(--text-sm);color:#dc2626;white-space:pre-wrap;';
+      body.appendChild(errEl);
+
+      // Nested in the body, not beside it: .admin-modal-footer pulls itself out to the
+      // content edges with negative margins and overhangs as a direct child.
+      var footer = document.createElement('div');
+      footer.className = 'admin-modal-footer';
+      var cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'admin-btn';
+      cancelBtn.textContent = t('cancel');
+      cancelBtn.addEventListener('click', closeModal);
+      var saveBtn = document.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'admin-btn admin-btn-primary';
+      saveBtn.textContent = t('save');
+      saveBtn.addEventListener('click', function() {
+        var data = {};
+        Object.keys(inputs).forEach(function(id) {
+          var v = String(inputs[id].value == null ? '' : inputs[id].value).trim();
+          if (v) data[id] = v; // an empty answer is no answer, not an empty string
+        });
+        // A row with no name cannot be found again: it sorts into the "—" block, names
+        // nobody on the SVRZ Teilnehmerliste and titles no scoresheet.
+        var named = cfg.firstNameIds.concat(cfg.lastNameIds).some(function(id) { return !!data[id]; });
+        if (!named) { errEl.textContent = t('scAddSignupNeedName'); return; }
+
+        var slug = slugSel ? slugSel.value : cfg.sources[0].slug;
+        var subId = manualSubmissionId();
+        errEl.textContent = '';
+        saveBtn.disabled = true;
+        wadmin('scorer_courses', 'items/scorer_course_attendance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          // field_overrides is TEXT carrying JSON, and it is sent as a STRING: wadmin's
+          // assertScalarBody rejects a nested object for section-scoped Website Admins —
+          // who are exactly the people this section is run by.
+          body: JSON.stringify({
+            sub_key: slug + ':' + subId,
+            form_slug: slug,
+            submission_id: subId,
+            field_overrides: JSON.stringify(data),
+          }),
+        }).then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          closeModal();
+          cfg.onSaved();
+        }).catch(function(err) {
+          saveBtn.disabled = false;
+          errEl.textContent = t('scAddSignupFailed') + ((err && err.message) || 'unknown');
+        });
+      });
+      footer.appendChild(cancelBtn);
+      footer.appendChild(saveBtn);
+      body.appendChild(footer);
+
+      content.appendChild(body);
+      modal.appendChild(content);
+      modal.style.display = 'flex';
     }
 
     // ── Modal (Create / Edit) ─────────────────────────────────

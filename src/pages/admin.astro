@@ -3893,13 +3893,24 @@ const teamTableJson = JSON.stringify(teamTable);
         (bundle[3] || []).forEach(function(r) { memberLic[r.slug] = r.map || {}; });
 
         var fields = [], byId = {}, mergedRows = [], errors = [];
+        // …and, separately, what each form asks on its own. The DE and EN forms do NOT
+        // share every field id — PLZ/Ort were added to each form separately, so the
+        // merged set carries "ZIP Code"+"Place" AND "PLZ"+"Ort", two of which are always
+        // blank for any given signup. The merged list is right for the table and the
+        // combined export (a column has to cover both); anything showing ONE signup has
+        // to use its own form's set, or half the fields on screen belong to a form that
+        // person never opened.
+        var fieldsBySlug = {};
         results.forEach(function(rr) {
           if (rr.error) { errors.push(rr.src.slug + ': ' + rr.error); return; }
           var p = rr.payload || {};
+          var own = [];
           (p.fields || []).forEach(function(f) {
             if (!f || typeof f.type !== 'string' || f.type.indexOf('nf-') === 0) return;
+            own.push(f);
             if (!byId[f.id]) { byId[f.id] = f; fields.push(f); }
           });
+          fieldsBySlug[rr.src.slug] = own;
           (p.data || []).forEach(function(r) {
             var d = (r && r.data) || r || {};
             mergedRows.push({
@@ -4185,6 +4196,7 @@ const teamTableJson = JSON.stringify(teamTable);
             openAddSignupModal({
               sources: srcList,
               fields: fields,
+              fieldsBySlug: fieldsBySlug,
               firstNameIds: firstNameIds,
               lastNameIds: lastNameIds,
               onSaved: function() { openScorerCourseInline(courseId); },
@@ -4815,7 +4827,10 @@ const teamTableJson = JSON.stringify(teamTable);
             wrap.appendChild(lab); wrap.appendChild(inp); wrap.appendChild(badge);
             dl.appendChild(wrap);
           }
-          fields.forEach(function(f) {
+          // This person's own form, in its own order and its own language — not the
+          // merged set, which would list the other language's PLZ/Ort as two more
+          // permanently empty boxes and read like missing answers.
+          (fieldsBySlug[row.slug] || fields).forEach(function(f) {
             // Dividers and other layout blocks are not answers.
             if (!f || /^nf-/.test(String(f.type || '')) || /divider/i.test(String(f.name || ''))) return;
             addEditable(f);
@@ -4936,7 +4951,7 @@ const teamTableJson = JSON.stringify(teamTable);
       intro.textContent = t('scAddSignupIntro');
       body.appendChild(intro);
 
-      function fieldRow(labelText, el) {
+      function fieldRow(labelText, el, host) {
         var wrap = document.createElement('label');
         wrap.style.cssText = 'display:flex;align-items:center;gap:0.5rem;font-size:var(--text-sm);'
           + 'flex-wrap:wrap;margin-bottom:0.5rem;';
@@ -4945,7 +4960,7 @@ const teamTableJson = JSON.stringify(teamTable);
         lab.textContent = labelText;
         wrap.appendChild(lab);
         wrap.appendChild(el);
-        body.appendChild(wrap);
+        (host || body).appendChild(wrap);
       }
 
       // Which form the row belongs to — asked only in the combined view, where there is
@@ -4966,14 +4981,37 @@ const teamTableJson = JSON.stringify(teamTable);
         fieldRow(t('scAddSignupForm') + ':', slugSel);
       }
 
+      // The questions of the form being filed into — NOT the merged set of both. The DE
+      // and EN forms do not share every field id (PLZ/Ort differ), so the merged list
+      // shows the other language's address boxes as well: two extra fields that belong
+      // to no form on screen, and that the create route rightly refuses as unknown.
+      var fieldsHost = document.createElement('div');
+      body.appendChild(fieldsHost);
+
       var inputs = {};
-      cfg.fields.forEach(function(f) {
-        // Dividers and other layout blocks are not answers — same rule as the detail panel.
-        if (!f || /^nf-/.test(String(f.type || '')) || /divider/i.test(String(f.name || ''))) return;
-        var inp = buildAnswerInput(f, '');
-        inputs[f.id] = inp;
-        fieldRow(f.name + ':', inp);
-      });
+      function renderFields() {
+        var slug = slugSel ? slugSel.value : cfg.sources[0].slug;
+        var list = (cfg.fieldsBySlug && cfg.fieldsBySlug[slug]) || cfg.fields;
+        // Carry what has already been typed across a form switch. Most ids are shared
+        // between the two forms, so re-typing a name because you picked the wrong
+        // language first is work the dialog can spare you.
+        var typed = {};
+        Object.keys(inputs).forEach(function(id) {
+          var v = readAnswerInput(inputs[id]);
+          if (Array.isArray(v) ? v.length : v) typed[id] = Array.isArray(v) ? v.join(', ') : v;
+        });
+        inputs = {};
+        fieldsHost.textContent = '';
+        list.forEach(function(f) {
+          // Dividers and other layout blocks are not answers — same rule as the detail panel.
+          if (!f || /^nf-/.test(String(f.type || '')) || /divider/i.test(String(f.name || ''))) return;
+          var inp = buildAnswerInput(f, typed[f.id] || '');
+          inputs[f.id] = inp;
+          fieldRow(f.name + ':', inp, fieldsHost);
+        });
+      }
+      renderFields();
+      if (slugSel) slugSel.addEventListener('change', renderFields);
 
       // Where the signup goes. Unticked it is stored with us only; ticked it becomes a
       // REAL answer on the form — which is the point, and which also mails the

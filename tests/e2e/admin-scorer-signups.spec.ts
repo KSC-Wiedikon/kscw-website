@@ -40,6 +40,26 @@ const FORM_FIELDS = [
   { id: FIELD.team, name: 'Team', type: 'multi_select', options: ['D1', 'H1'] },
 ];
 
+// The English form asks the same questions under DIFFERENT ids for ZIP/Place — they were
+// added to each form separately, not duplicated — which is why anything showing one
+// signup has to use that signup's own form rather than the merged set.
+const SLUG_EN = 'scorerkurs-wiedikon-en';
+const EN_FIELD = { zip: 'f_zip_en', place: 'f_place_en' };
+const FORM_FIELDS_EN = [
+  { id: FIELD.first, name: 'First name', type: 'text' },
+  { id: FIELD.last, name: 'Last name', type: 'text' },
+  { id: FIELD.mail, name: 'Email', type: 'email' },
+  { id: FIELD.strasse, name: 'Street and number', type: 'text' },
+  { id: EN_FIELD.zip, name: 'ZIP Code', type: 'number' },
+  { id: EN_FIELD.place, name: 'Place', type: 'text' },
+];
+
+const COURSE_BOTH = {
+  id: 2, slug_id: 'sk-2026-02', title_de: 'Scorerkurs zweisprachig', title_en: 'Scorer course bilingual',
+  date_iso: '2026-02-21', time: '10:00:00', mode: 'in_person', active: true,
+  form_slug_de: SLUG, form_slug_en: SLUG_EN,
+};
+
 const COURSE = {
   id: 1, slug_id: 'sk-2026-01', title_de: 'Scorerkurs Wiedikon', title_en: 'Scorer Course Wiedikon',
   date_iso: '2026-01-24', time: '10:00:00', mode: 'in_person', active: true,
@@ -75,7 +95,7 @@ async function stub(page: Page, opts: {
       route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
 
     if (url.includes('/wadmin/me')) return json({ isSuperuser: true, sections: ['scorer_courses'] });
-    if (url.includes('items/scorer_courses')) return json({ data: [COURSE] });
+    if (url.includes('items/scorer_courses')) return json({ data: [COURSE, COURSE_BOTH] });
 
     if (url.includes('items/scorer_course_attendance')) {
       let body: Record<string, unknown> | null = null;
@@ -110,7 +130,9 @@ async function stub(page: Page, opts: {
                                           body: JSON.stringify(reply.body) });
         return json({ ok: true, submission_id: 'new-1', reopened: false });
       }
-      return json({ fields: FORM_FIELDS, data: SUBMISSIONS });
+      return url.includes(SLUG_EN)
+        ? json({ fields: FORM_FIELDS_EN, data: [] })
+        : json({ fields: FORM_FIELDS, data: SUBMISSIONS });
     }
     return json({ data: [] });
   });
@@ -327,6 +349,65 @@ test.describe('scorer registrations', () => {
     await page.locator('.admin-modal-footer .admin-btn-primary').click();
 
     await expect(modal).toContainText('nimmt gerade Anmeldungen an');
+  });
+
+  // Both forms in one view. The merged field set is right for the table and the combined
+  // export, and wrong for anything showing ONE signup: it carries both languages' PLZ and
+  // Ort, so half the address boxes belong to a form that person never opened — and the
+  // create route rightly refuses them as unknown fields.
+  test.describe('a course with a DE and an EN form', () => {
+    async function openBoth(page: Page) {
+      await page.goto('/admin/?tab=scorer_courses&course=2');
+      await page.waitForSelector('.admin-reg-table');
+      await expect(page.locator('.admin-loading')).toHaveCount(0);
+    }
+
+    test('the dialog asks the questions of the form being filed into', async ({ page }) => {
+      await stub(page);
+      await openBoth(page);
+      await page.getByRole('button', { name: /Anmeldung nachtragen/ }).click();
+      const modal = page.locator('.admin-modal-body');
+
+      // The picker starts on the first source (EN), so the EN questions are on screen.
+      await expect(modal).toContainText('ZIP Code');
+      await expect(modal).toContainText('Place');
+      await expect(modal).not.toContainText('PLZ:');
+      await expect(modal).not.toContainText('Ort:');
+
+      // Switching the form swaps the whole question set, labels and all…
+      await modal.locator('label').filter({ hasText: 'Formular:' }).locator('select')
+        .selectOption(SLUG);
+      await expect(modal).toContainText('PLZ');
+      await expect(modal).toContainText('Ort');
+      await expect(modal).not.toContainText('ZIP Code');
+      await expect(modal).not.toContainText('Place');
+      await expect(modal).toContainText('SVRZ Lizenznummer'); // DE-only field appears
+    });
+
+    test('switching the form keeps what has already been typed', async ({ page }) => {
+      await stub(page);
+      await openBoth(page);
+      await page.getByRole('button', { name: /Anmeldung nachtragen/ }).click();
+      const modal = page.locator('.admin-modal-body');
+
+      await modal.locator('label').filter({ hasText: 'First name:' }).locator('input').fill('Vergesslich');
+      await modal.locator('label').filter({ hasText: 'Formular:' }).locator('select').selectOption(SLUG);
+      // Same field id in both forms, so the answer survives the switch.
+      await expect(modal.locator('label').filter({ hasText: 'Vorname:' }).locator('input'))
+        .toHaveValue('Vergesslich');
+    });
+
+    test('an expanded row lists its own form, not both', async ({ page }) => {
+      await stub(page);
+      await openBoth(page);
+      // Every signup here came through the German form.
+      await row(page, 'Bernasconi').locator('td.reg-c-arrow').click();
+      const detail = page.locator('tr.reg-detail-row').filter({ hasText: 'Bernasconi' })
+        .or(page.locator('tr.reg-detail-row').first());
+      await expect(detail).toContainText('PLZ');
+      await expect(detail).not.toContainText('ZIP Code');
+      await expect(detail).not.toContainText('Place');
+    });
   });
 
   test('a hand-added signup needs a name', async ({ page }) => {

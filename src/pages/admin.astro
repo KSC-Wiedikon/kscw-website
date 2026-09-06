@@ -3892,7 +3892,7 @@ const teamTableJson = JSON.stringify(teamTable);
         var memberLic = {};
         (bundle[3] || []).forEach(function(r) { memberLic[r.slug] = r.map || {}; });
 
-        var fields = [], byId = {}, mergedRows = [], errors = [];
+        var fields = [], byId = {}, langById = {}, mergedRows = [], errors = [];
         // …and, separately, what each form asks on its own. The DE and EN forms do NOT
         // share every field id — PLZ/Ort were added to each form separately, so the
         // merged set carries "ZIP Code"+"Place" AND "PLZ"+"Ort", two of which are always
@@ -3908,7 +3908,7 @@ const teamTableJson = JSON.stringify(teamTable);
           (p.fields || []).forEach(function(f) {
             if (!f || typeof f.type !== 'string' || f.type.indexOf('nf-') === 0) return;
             own.push(f);
-            if (!byId[f.id]) { byId[f.id] = f; fields.push(f); }
+            if (!byId[f.id]) { byId[f.id] = f; fields.push(f); langById[f.id] = rr.src.lang || ''; }
           });
           fieldsBySlug[rr.src.slug] = own;
           (p.data || []).forEach(function(r) {
@@ -4049,13 +4049,56 @@ const teamTableJson = JSON.stringify(teamTable);
         // what the row shows: the live inputs first, then the tracked value, then
         // the form's own SVRZ answer.
         function buildScorerExport() {
-          var extraFields = fields.filter(function(f) { return !shownIds[f.id]; });
+          // The DE and EN forms carry their own PLZ/Ort under DIFFERENT field ids (see the
+          // merged-field note where `fields` is built), so the union hands this export
+          // "ZIP Code"+"Place" AND "PLZ"+"Ort" — four columns where two belong, each one
+          // blank for every signup that came through the other form. Collapse each
+          // cross-form group into a single column: the value is pickVal across the whole
+          // group (the same merge the resolved address columns already do), so one column
+          // answers for both forms instead of the reader reconciling two half-filled pairs.
+          //
+          // Grouped by MEANING, not by name: strasse and adresse stay separate because the
+          // pre-split free-text box can hold an entire address, and folding it into the
+          // street column would quietly restate a whole address as a street.
+          var mergeGroups = [strasseIds, plzIds, ortIds, addressIds];
+          var groupOf = {};
+          mergeGroups.forEach(function(ids, gi) {
+            ids.forEach(function(id) { if (groupOf[id] === undefined) groupOf[id] = gi; });
+          });
+          // Which name the merged column takes: the EN form's, per the English-export
+          // convention — and so the header does not depend on which form loaded first.
+          var labelOf = {};
+          mergeGroups.forEach(function(ids, gi) {
+            var best = null;
+            ids.forEach(function(id) {
+              if (!byId[id]) return;
+              if (!best || (langById[id] === 'en' && langById[best.id] !== 'en')) best = byId[id];
+            });
+            if (best) labelOf[gi] = best.name;
+          });
+          var seenGroup = {};
+          var extraFields = fields.filter(function(f) {
+            if (shownIds[f.id]) return false;
+            var gi = groupOf[f.id];
+            if (gi === undefined) return true;      // ungrouped field — keeps its own column
+            if (seenGroup[gi]) return false;        // this group already has its column
+            seenGroup[gi] = 1;
+            return true;
+          });
+          function extraHeader(f) {
+            var gi = groupOf[f.id];
+            return (gi !== undefined && labelOf[gi]) ? labelOf[gi] : f.name;
+          }
+          function extraValue(f, d) {
+            var gi = groupOf[f.id];
+            return gi === undefined ? fmtAnswer(f, d[f.id]) : fmtAnswer(f, pickVal(d, mergeGroups[gi]));
+          }
           var headers = [t('scColDate')]
             .concat(multi ? [t('scColLang')] : [])
             .concat([t('scColFirstName'), t('scColLastName'),
                      t('scColStreet'), t('scColZip'), t('scColCity'), t('scPresent'),
                      t('scExamPassed'), t('scSvLicense'), t('scNotes')])
-            .concat(extraFields.map(function(f) { return f.name; }));
+            .concat(extraFields.map(extraHeader));
           var rows = exportMetas.map(function(m) {
             var d = m.row.data, st = m.state;
             // The RESOLVED address, the same one the SVRZ list gets — the raw answers
@@ -4076,7 +4119,7 @@ const teamTableJson = JSON.stringify(teamTable);
                 m.svInp ? m.svInp.value.trim() : (st.sv_license || m.formSv || ''),
                 m.noteInp ? m.noteInp.value : (st.notes || ''),
               ])
-              .concat(extraFields.map(function(f) { return fmtAnswer(f, d[f.id]); }));
+              .concat(extraFields.map(function(f) { return extraValue(f, d); }));
           });
           return { headers: headers, rows: rows };
         }

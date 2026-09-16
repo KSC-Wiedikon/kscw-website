@@ -1,6 +1,5 @@
 ---
 import PageLayout from '../../../layouts/PageLayout.astro';
-import CTA from '../../../components/CTA.astro';
 import YouthCards from '../../../components/YouthCards.astro';
 import { t } from '../../../lib/i18n';
 import { getYouthBasketball } from '../../../lib/fetch/youthBasketball';
@@ -109,17 +108,6 @@ const GROUPS = [
       </div>
     </div>
   </section>
-
-  <!-- CTA -->
-  <CTA
-    title={t(locale, 'bbYouthCTA')}
-    titleKey="bbYouthCTA"
-    text={t(locale, 'bbYouthCTAText')}
-    textKey="bbYouthCTAText"
-    buttonLabel={t(locale, 'bbYouthCTAButton')}
-    buttonLabelKey="bbYouthCTAButton"
-    buttonHref="/club/kontakt?sport=basketball&team=Nachwuchs"
-  />
 
   <script src="../../../islands/scroll-animations.ts"></script>
   <!-- Eligible Jahrgänge, recomputed live: the categories shift on 1 August and

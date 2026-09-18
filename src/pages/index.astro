@@ -407,7 +407,30 @@ try {
       }
 
       // ── Fetch games from Directus ──
-      var today = new Date().toISOString().slice(0, 10);
+      // Europe/Zurich calendar day, NOT new Date().toISOString() — that reads
+      // UTC, which lags Zurich by 1-2h. Between local midnight and ~02:00 CEST
+      // a visitor's "today" would still resolve to yesterday's UTC date, so a
+      // game from the day before kept showing in "Upcoming" until well into
+      // the next morning. Same bug class as the all-day-event fix (see
+      // CHANGELOG), different call site — this one wasn't covered by that fix.
+      var today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });
+
+      // The club names a season for the year it starts in ("2026/27" runs
+      // Jun 2026 → May 2027) and rolls over Jun 1 — see wiedisync
+      // src/utils/season.ts, the canonical definition this mirrors. Used to
+      // keep "Recent Results" from padding out with last season's leftovers
+      // (e.g. basketball's last completed game before its new season kicks
+      // off) once the current season's own results run out.
+      function currentSeasonLabel() {
+        var parts = today.split('-');
+        var y = parseInt(parts[0], 10);
+        var m = parseInt(parts[1], 10);
+        var startYear = m >= 6 ? y : y - 1;
+        var endYY = String((startYear + 1) % 100);
+        if (endYY.length < 2) endYY = '0' + endYY;
+        return startYear + '/' + endYY;
+      }
+
       var gameFields = 'id,game_id,date,time,home_team,away_team,home_score,away_score,status,type,league,season,sets_json,kscw_team.id,kscw_team.name,kscw_team.sport,kscw_team.color,hall.id,hall.name,hall.address';
 
       function mapGame(g) {
@@ -434,7 +457,7 @@ try {
         var isUpcoming = direction === 'upcoming';
         var filter = isUpcoming
           ? { _and: [{ date: { _gte: today } }, { status: { _neq: 'cancelled' } }] }
-          : { status: { _eq: 'completed' } };
+          : { _and: [{ status: { _eq: 'completed' } }, { season: { _eq: currentSeasonLabel() } }] };
         if (sport !== 'all') {
           var sportFilter = { kscw_team: { sport: { _eq: sport } } };
           filter = { _and: (filter._and || [filter]).concat(sportFilter) };

@@ -408,6 +408,34 @@
   var teamPayload = null;
 
   /**
+   * Games keyed by game_id, holding just the `hall` object.
+   *
+   * /kscw/public/team/<id> (below) doesn't select the hall relation on its
+   * upcoming_games/results rows — only on upcoming_trainings, where hall_name/
+   * hall_address come through fine. The homepage widget (index.astro) queries
+   * /items/games directly with `hall.id,hall.name,hall.address` in its fields
+   * list and gets venues; this mirrors that same query, scoped to this team,
+   * so the game-info modal's Venue section (public/js/game-modal.js) has
+   * something to render instead of silently disappearing.
+   */
+  var gameHalls = null;
+
+  function loadGameHalls() {
+    if (!TEAM_DIRECTUS_ID) return Promise.resolve({});
+    var fields = 'game_id,hall.id,hall.name,hall.address';
+    var filter = encodeURIComponent(JSON.stringify({ kscw_team: { id: { _eq: TEAM_DIRECTUS_ID } } }));
+    return fetch(DIRECTUS_URL + '/items/games?fields=' + encodeURIComponent(fields) + '&limit=-1&filter=' + filter)
+      .then(function (r) { return r.ok ? r.json() : { data: [] }; })
+      .then(function (j) {
+        var map = {};
+        (j.data || []).forEach(function (g) { if (g.game_id && g.hall) map[g.game_id] = g.hall; });
+        gameHalls = map;
+        return map;
+      })
+      .catch(function () { gameHalls = {}; return {}; });
+  }
+
+  /**
    * ⚠ Issue the request WITHOUT waiting for the dictionary.
    *
    * This whole function used to sit behind `window.i18nReady.then(...)`, which
@@ -487,8 +515,9 @@
           var score = (g.home_score != null && g.away_score != null)
             ? g.home_score + ':' + g.away_score : (g.score || null);
           var isHome = g.isHome != null ? g.isHome : g.type === 'home';
+          var gameId = g.game_id || g.id;
           return {
-            game_id: g.game_id || g.id,
+            game_id: gameId,
             date: g.date,
             time: g.time || '',
             home_team: g.home_team,
@@ -497,7 +526,7 @@
             isHome: isHome,
             league: g.league || teamData.league || '',
             season: g.season || teamData.season || '',
-            hall: g.hall || null,
+            hall: g.hall || (gameHalls && gameHalls[gameId]) || null,
             sets_json: g.sets_json || null,
             sport: g.sport || teamData.sport || 'volleyball',
             status: g.status || (score ? 'completed' : 'scheduled'),
@@ -1608,12 +1637,13 @@
   // either language.
   (function start() {
     var payload = loadTeamPayload();
+    var halls = loadGameHalls();
     var ready = (window.i18nReady && window.i18nReady.then)
       ? window.i18nReady
       : Promise.resolve('de');
     // The dictionary promise never rejects, but be explicit: a broken i18n must
     // not take the roster down with it.
-    Promise.all([payload, ready.catch(function () { return 'de'; })])
+    Promise.all([payload, halls, ready.catch(function () { return 'de'; })])
       .then(function (r) { return renderTeam(r[0]); })
       .catch(function () { hideSection('kader'); hideSection('training'); });
   })();

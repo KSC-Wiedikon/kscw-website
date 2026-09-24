@@ -1,0 +1,65 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import { t } from '../lib/i18n';
+import { versionedAsset } from '../lib/assetVersion';
+
+const locale = 'de';
+---
+<PageLayout
+  title={t(locale, 'liveMetaTitle')}
+  titleKey="liveMetaTitle"
+  description={t(locale, 'liveMetaDescription')}
+  descriptionKey="liveMetaDescription"
+  locale={locale}
+  pageTitle={t(locale, 'liveTitle')}
+  pageTitleKey="liveTitle"
+  pageSubtitle={t(locale, 'liveSubtitle')}
+  pageSubtitleKey="liveSubtitle"
+>
+  <section class="section">
+    <div class="container live-wrap" id="live-root">
+      <div class="live-toolbar">
+        <span id="live-sport" class="live-chip" hidden></span>
+        <span id="live-status" class="live-pill" data-tone="pending" role="status">
+          <span class="live-dot" aria-hidden="true"></span>
+          <span id="live-status-label" data-i18n="liveStatusConnecting">{t(locale, 'liveStatusConnecting')}</span>
+        </span>
+      </div>
+
+      <!-- Filled by /js/live.js. The empty state is the no-JS / first-paint view,
+           the same card the script renders when the board is idle. -->
+      <div id="live-board" aria-live="polite">
+        <div class="live-empty">
+          <p class="live-empty-title" data-i18n="liveNoMatch">{t(locale, 'liveNoMatch')}</p>
+          <p class="live-empty-hint" data-i18n="liveNoMatchHint">{t(locale, 'liveNoMatchHint')}</p>
+        </div>
+      </div>
+
+      <div class="live-meta">
+        <span id="live-event" class="live-event" hidden></span>
+        <span id="live-updated"></span>
+      </div>
+
+      <p class="live-scope" data-i18n="liveScopeNote">{t(locale, 'liveScopeNote')}</p>
+
+      <section id="live-recent" class="live-recent" hidden>
+        <h2 data-i18n="liveRecentTitle">{t(locale, 'liveRecentTitle')}</h2>
+        <div class="live-recent-scroll">
+          <table class="live-recent-table">
+            <thead>
+              <tr>
+                <th data-i18n="liveRecentMatch">{t(locale, 'liveRecentMatch')}</th>
+                <th class="live-num" data-i18n="liveRecentResult">{t(locale, 'liveRecentResult')}</th>
+                <th class="live-num live-hide-sm" data-i18n="liveRecentSets">{t(locale, 'liveRecentSets')}</th>
+                <th class="live-num" data-i18n="liveRecentWhen">{t(locale, 'liveRecentWhen')}</th>
+              </tr>
+            </thead>
+            <tbody id="live-recent-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </section>
+
+  <script is:inline src={versionedAsset('js/live.js')}></script>
+</PageLayout>

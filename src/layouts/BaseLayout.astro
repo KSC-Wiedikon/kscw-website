@@ -243,6 +243,8 @@ const ogImageUrl = new URL(ogImage, Astro.site).href;
       if (tag) tag.addEventListener('load', whenParsed);
     })();
   </script>
+  <!-- "Live now" pill → /live while the hall scoreboard runs a match (30 s poll, fixed-position, no CLS). -->
+  <script is:inline defer src={versionedAsset('js/live-now.js')}></script>
   <script src="../islands/nav-mobile.ts"></script>
   <script src="../islands/theme-toggle.ts"></script>
   <script src="../islands/scroll-progress.ts"></script>

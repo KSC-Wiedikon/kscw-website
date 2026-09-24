@@ -68,6 +68,16 @@ try {
     </div>
   </section>
 
+  <!-- Livestreams — upcoming games with a website video link in wiedisync. Hidden
+       until public/js/livestreams.js finds at least one, so a week without streams
+       renders exactly as before. -->
+  <section class="section section-livestreams" id="livestreams-section" hidden>
+    <div class="container">
+      <SectionHeader title={t(locale, 'homeLivestreams')} titleKey="homeLivestreams" />
+      <div class="stream-grid" id="livestreams"></div>
+    </div>
+  </section>
+
   <!-- Games (upcoming + recent results side-by-side on desktop) -->
   <section class="section" id="games">
     <div class="container">
@@ -181,6 +191,7 @@ try {
   <!-- Client-side data loading -->
   <script is:inline src="/js/scoreboard.js"></script>
   <script is:inline src="/js/game-modal.js"></script>
+  <script is:inline src="/js/livestreams.js"></script>
   <!-- DOMPurify vendored locally (audit WEB-SEC-4): the news-body XSS sanitizer
        must not depend on a third-party CDN's availability. Same-origin /self load;
        version pinned to 3.2.4. Update public/js/vendor/purify.min.js to bump. -->

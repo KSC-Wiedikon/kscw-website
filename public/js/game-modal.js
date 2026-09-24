@@ -164,23 +164,41 @@
     return svg;
   }
 
+  // A website link on a game not played yet is its livestream (see livestreams.js):
+  // the row is highlighted and the icon reads as a stream badge rather than a replay.
+  // Judged by date, not status/score: team-page rows carry status 'completed' and a
+  // 0 score for every fixture (their feed has a score field on unplayed games too).
+  function isUpcoming(game) {
+    if (!game || game.status === 'cancelled' || !game.date) return false;
+    var today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });
+    return String(game.date).slice(0, 10) >= today;
+  }
+
   function addVideoIcons(tr, list) {
     var cell = tr.querySelector('.gt-date');
     if (!cell || cell.querySelector('.gt-video')) return;
     var isDE = (document.documentElement.lang || 'de') !== 'en';
+    var stream = isUpcoming(tr._gameData);
+    if (stream) tr.classList.add('gt-row-stream');
     list.forEach(function (r, i) {
       // https only — the server enforces it too; never hand an href anything else.
       if (!r || typeof r.url !== 'string' || !/^https:\/\//i.test(r.url)) return;
       var a = document.createElement('a');
-      a.className = 'gt-video';
+      a.className = stream ? 'gt-video gt-video--stream' : 'gt-video';
       a.href = r.url;
       a.target = '_blank';
       a.rel = 'noopener noreferrer';
-      var label = r.title || (list.length > 1 ? 'Video ' + (i + 1) : 'Video');
+      var base = stream ? 'Livestream' : 'Video';
+      var label = r.title || (list.length > 1 ? base + ' ' + (i + 1) : base);
       a.title = label;
       a.setAttribute('aria-label', label + (isDE ? ' (neues Fenster)' : ' (new window)'));
       // The row itself opens the game modal — the icon must not.
       a.addEventListener('click', function (e) { e.stopPropagation(); });
+      if (stream && i === 0) {
+        var dot = document.createElement('span');
+        dot.className = 'live-dot';
+        a.appendChild(dot);
+      }
       a.appendChild(createVideoSvg());
       cell.appendChild(a);
     });

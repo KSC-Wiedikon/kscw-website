@@ -333,13 +333,21 @@ try {
         // 3: time
         tr.appendChild(makeCell(game.time ? game.time.slice(0, 5) : '', 'gt-time'));
 
-        // 4: team chip
-        tr.appendChild(makeCell(createChip(game), 'gt-team'));
+        // 4: team chip(s) — a derby carries both of ours, home side first
+        if (game.derbyTeams) {
+          var chips = document.createElement('span');
+          chips.className = 'gt-team-chips';
+          game.derbyTeams.forEach(function(t) { var c = createChip(t); if (c) chips.appendChild(c); });
+          tr.appendChild(makeCell(chips, 'gt-team'));
+        } else {
+          tr.appendChild(makeCell(createChip(game), 'gt-team'));
+        }
 
-        // 5: home/away
+        // 5: home/away (derby: neither — both sides are ours)
         var badge = document.createElement('span');
-        badge.className = 'game-badge ' + (isHome ? 'home' : 'away');
-        if (isHome) setTr(badge, 'teamBadgeHome', 'Heim');
+        badge.className = 'game-badge ' + (game.derbyTeams ? 'derby' : isHome ? 'home' : 'away');
+        if (game.derbyTeams) setTr(badge, 'gameBadgeDerby', 'Derby');
+        else if (isHome) setTr(badge, 'teamBadgeHome', 'Heim');
         else setTr(badge, 'homeBadgeAwayShort', 'Ausw.');
         tr.appendChild(makeCell(badge, 'gt-loc'));
 
@@ -365,7 +373,9 @@ try {
           var scoreSpan = document.createElement('span');
           scoreSpan.className = 'game-score';
           var tied = game.homeScore === game.awayScore;
-          if (tied && game.sport === 'basketball') {
+          if (game.derbyTeams) {
+            // A club win either way — no win/loss colour.
+          } else if (tied && game.sport === 'basketball') {
             scoreSpan.className += ' tie';
           } else {
             var homeWin = game.homeScore > game.awayScore;
@@ -473,6 +483,22 @@ try {
         };
       }
 
+      // A club-internal game (derby) is one fixture stored as two rows — one per
+      // KSCW team — sharing the federation game_id. Show it once, with both chips.
+      // The home side's row is kept, so the modal reads it as a home game.
+      function mergeDerbies(games) {
+        var out = [], byKey = {};
+        games.forEach(function(g) {
+          var prev = g.gameId ? byKey[g.gameId] : null;
+          if (!prev) { byKey[g.gameId] = g; out.push(g); return; }
+          var home = prev.isHome ? prev : g, away = prev.isHome ? g : prev;
+          var merged = Object.assign({}, home, { derbyTeams: [home, away] });
+          out[out.indexOf(prev)] = merged;
+          byKey[g.gameId] = merged;
+        });
+        return out;
+      }
+
       function buildGameUrl(sport, direction) {
         var isUpcoming = direction === 'upcoming';
         var filter = isUpcoming
@@ -492,7 +518,8 @@ try {
         }
         var sort = isUpcoming ? 'date,time' : '-date,-time';
         return DIRECTUS_URL + '/items/games?fields=' + encodeURIComponent(gameFields)
-          + '&sort=' + sort + '&limit=5&filter=' + encodeURIComponent(JSON.stringify(filter));
+          // 8, not 5: a derby's two rows collapse into one (mergeDerbies).
+          + '&sort=' + sort + '&limit=8&filter=' + encodeURIComponent(JSON.stringify(filter));
       }
 
       // Fill an unsynced game with the hall scoreboard's score (provisional —
@@ -519,7 +546,7 @@ try {
           ['upcoming', 'completed'].forEach(function(dir) {
             fetches.push(
               fetch(buildGameUrl(sport, dir)).then(function(r) { return r.json(); })
-                .then(function(data) { cachedGames[dir][sport] = (data.data || []).map(mapGame); })
+                .then(function(data) { cachedGames[dir][sport] = mergeDerbies((data.data || []).map(mapGame)).slice(0, 5); })
             );
           });
         });

@@ -174,9 +174,14 @@
     return String(game.date).slice(0, 10) >= today;
   }
 
+  // Own cell at the right end of the row (grid column before the score), not in
+  // the date cell: tucked beside the date it was easy to miss.
   function addVideoIcons(tr, list) {
-    var cell = tr.querySelector('.gt-date');
-    if (!cell || cell.querySelector('.gt-video')) return;
+    if (tr.querySelector('.gt-rec')) return;
+    var cell = document.createElement('td');
+    cell.className = 'gt-rec';
+    var scoreCell = tr.querySelector('.gt-score');
+    tr.insertBefore(cell, scoreCell || null);
     var isDE = (document.documentElement.lang || 'de') !== 'en';
     var stream = isUpcoming(tr._gameData);
     if (stream) tr.classList.add('gt-row-stream');
@@ -200,6 +205,10 @@
         a.appendChild(dot);
       }
       a.appendChild(createVideoSvg());
+      var text = document.createElement('span');
+      text.className = 'gt-video-label';
+      text.textContent = list.length > 1 ? String(i + 1) : base;
+      a.appendChild(text);
       cell.appendChild(a);
     });
   }

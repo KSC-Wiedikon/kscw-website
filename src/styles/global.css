@@ -1453,7 +1453,7 @@ tr:hover td {
 .game-table tbody { display: block; }
 .game-table tr {
   display: grid;
-  grid-template-columns: auto auto auto auto 1fr auto;
+  grid-template-columns: auto auto auto auto 1fr auto auto;
   grid-template-rows: auto auto;
   column-gap: var(--space-sm);
   row-gap: 4px;
@@ -1471,7 +1471,8 @@ tr:hover td {
 .gt-time    { grid-column: 3; grid-row: 1; }
 .gt-loc     { grid-column: 4; grid-row: 1; }
 .gt-matchup { grid-column: 5; grid-row: 1; }
-.gt-score   { grid-column: 6; grid-row: 1; }
+.gt-rec     { grid-column: 6; grid-row: 1; display: flex; gap: 4px; }
+.gt-score   { grid-column: 7; grid-row: 1; }
 .gt-team    { grid-column: 2 / 5; grid-row: 2; padding-top: 2px; }
 .game-table tr:hover td {
   background: rgba(74, 85, 162, 0.05);
@@ -1502,22 +1503,31 @@ tr:hover td {
   white-space: nowrap;
 }
 .gt-score { text-align: right; white-space: nowrap; width: 4rem; }
-/* Video recording link(s) — sits in the date cell, like the cup trophy, because
-   that is the only cell every breakpoint keeps. Padding gives a usable tap target. */
+/* Upcoming tables have no scores: don't reserve their width, so a video pill
+   sits at the right edge instead of 4rem in. */
+.game-table:not(:has(.game-score)) .gt-score { width: 0; }
+/* Video recording link(s) — a labelled pill in its own cell at the right end of
+   the row (public/js/game-modal.js addVideoIcons). */
 .gt-video {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 5px;
   vertical-align: middle;
-  margin-left: 2px;
-  padding: 6px;
-  margin-block: -6px;
+  padding: 4px 10px;
   color: var(--accent-text);
-  border-radius: 6px;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 .gt-video:hover, .gt-video:focus-visible { background: rgba(74, 85, 162, 0.12); }
 /* Livestream: an upcoming game carrying a website video link (livestreams.js). */
-.gt-video--stream { gap: 4px; color: #dc2626; }
+.gt-video--stream { color: #dc2626; }
+.gt-video--stream:hover, .gt-video--stream:focus-visible { background: rgba(220, 38, 38, 0.12); }
 :root:not(.light) .gt-video--stream { color: #f87171; }
 .gt-video--stream .live-dot { animation: live-pulse 1.4s ease-in-out infinite; }
 /* On the row, not its cells: team pages lay cells out with gaps, and per-cell
@@ -1623,6 +1633,10 @@ tr.gt-row-stream > td { background: transparent; }
 }
 .game-badge.home { color: var(--accent-text); }
 .game-badge.away { color: var(--bb-orange); }
+/* Club-internal game — both sides are KSCW (homepage merges the two rows). */
+.game-badge.derby { color: var(--kscw-gold); }
+.light .game-badge.derby { color: #a16207; }
+.gt-team-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
 .game-empty {
   text-align: center;
   padding: var(--space-lg);
@@ -1660,6 +1674,8 @@ tr.gt-row-stream > td { background: transparent; }
   .gt-icon, .gt-loc, .gt-team { display: none; }
   .gt-date { grid-column: 1; grid-row: 1; align-self: center; }
   .gt-time { grid-column: 2; grid-row: 1; align-self: center; }
+  /* Shares the top line with the time, pushed to the right edge. */
+  .gt-rec { grid-column: 2; grid-row: 1; justify-self: end; align-self: center; }
   .gt-matchup {
     grid-column: 1 / -1;
     grid-row: 2;

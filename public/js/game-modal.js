@@ -288,7 +288,7 @@
     teamsRow.appendChild(homeEl);
 
     var center = el('div', 'gm-score-center');
-    if (game.status === 'completed' && (game.score || (game.homeScore != null && game.awayScore != null))) {
+    if ((game.status === 'completed' || game.provisional) && (game.score || (game.homeScore != null && game.awayScore != null))) {
       var homeS = game.homeScore || 0;
       var awayS = game.awayScore || 0;
       var isHome = game.type === 'home' || game.isHome;

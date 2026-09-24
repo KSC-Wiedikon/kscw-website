@@ -192,6 +192,7 @@ try {
   <script is:inline src="/js/scoreboard.js"></script>
   <script is:inline src="/js/game-modal.js"></script>
   <script is:inline src="/js/livestreams.js"></script>
+  <script is:inline src="/js/pending-results.js"></script>
   <!-- DOMPurify vendored locally (audit WEB-SEC-4): the news-body XSS sanitizer
        must not depend on a third-party CDN's availability. Same-origin /self load;
        version pinned to 3.2.4. Update public/js/vendor/purify.min.js to bump. -->
@@ -383,6 +384,10 @@ try {
           scoreSpan.appendChild(homeScoreEl);
           scoreSpan.appendChild(sepEl);
           scoreSpan.appendChild(awayScoreEl);
+          if (game.provisional) {
+            scoreSpan.className += ' provisional';
+            scoreSpan.title = tr18n('gameScoreProvisional', 'Resultat der Hallen-Anzeigetafel — noch nicht offiziell');
+          }
           tr.appendChild(makeCell(scoreSpan, 'gt-score'));
         } else {
           tr.appendChild(makeCell('', 'gt-score'));
@@ -446,10 +451,13 @@ try {
       var gameFields = 'id,game_id,date,time,home_team,away_team,home_score,away_score,status,type,league,season,sets_json,kscw_team.id,kscw_team.name,kscw_team.sport,kscw_team.color,hall.id,hall.name,hall.address';
 
       function mapGame(g) {
+        // A `scheduled` game carries a 0:0 placeholder until the sync writes the
+        // result — never show that as a score.
+        var hasScore = g.status !== 'scheduled' && g.home_score != null && g.away_score != null;
         return {
           id: g.id, gameId: g.game_id, date: g.date, time: g.time,
           homeTeam: g.home_team, awayTeam: g.away_team,
-          homeScore: g.home_score, awayScore: g.away_score,
+          homeScore: hasScore ? g.home_score : null, awayScore: hasScore ? g.away_score : null,
           status: g.status, type: g.type, league: g.league, season: g.season,
           setsJson: g.sets_json ? (typeof g.sets_json === 'string' ? JSON.parse(g.sets_json) : g.sets_json) : null,
           teamId: g.kscw_team ? String(g.kscw_team.id) : null,
@@ -459,7 +467,7 @@ try {
           teamShort: g.kscw_team ? g.kscw_team.name : '',
           isHome: g.type === 'home',
           opponent: g.type === 'home' ? g.away_team : g.home_team,
-          score: (g.home_score != null && g.away_score != null) ? g.home_score + ':' + g.away_score : null,
+          score: hasScore ? g.home_score + ':' + g.away_score : null,
           hall: g.hall || null,
           sport: g.kscw_team ? g.kscw_team.sport : 'volleyball'
         };
@@ -469,7 +477,15 @@ try {
         var isUpcoming = direction === 'upcoming';
         var filter = isUpcoming
           ? { _and: [{ date: { _gte: today } }, { status: { _neq: 'cancelled' } }] }
-          : { _and: [{ status: { _eq: 'completed' } }, { season: { _eq: currentSeasonLabel() } }] };
+          // Plus played games whose result has not synced yet (still `scheduled`,
+          // date gone) — see public/js/pending-results.js.
+          : { _and: [
+              { _or: [
+                { status: { _eq: 'completed' } },
+                { _and: [{ status: { _eq: 'scheduled' } }, { date: { _lt: today } }] }
+              ] },
+              { season: { _eq: currentSeasonLabel() } }
+            ] };
         if (sport !== 'all') {
           var sportFilter = { kscw_team: { sport: { _eq: sport } } };
           filter = { _and: (filter._and || [filter]).concat(sportFilter) };
@@ -479,9 +495,26 @@ try {
           + '&sort=' + sort + '&limit=5&filter=' + encodeURIComponent(JSON.stringify(filter));
       }
 
+      // Fill an unsynced game with the hall scoreboard's score (provisional —
+      // once the sync marks it `completed`, the official score replaces it).
+      function applyLiveScores(games, liveRows) {
+        if (!window.KSCWPendingResults) return;
+        games.forEach(function(g) {
+          if (g.status !== 'scheduled') return;
+          var live = KSCWPendingResults.liveScore(g, liveRows);
+          if (!live) return;
+          g.homeScore = live.home; g.awayScore = live.away;
+          g.score = live.home + ':' + live.away;
+          if (live.sets.length) g.setsJson = live.sets;
+          g.provisional = true;
+        });
+      }
+
       function fetchGames() {
         var sports = ['all', 'volleyball', 'basketball'];
         var fetches = [];
+        var seasonStart = currentSeasonLabel().slice(0, 4) + '-06-01';
+        var live = window.KSCWPendingResults ? KSCWPendingResults.loadLive(seasonStart) : Promise.resolve([]);
         sports.forEach(function(sport) {
           ['upcoming', 'completed'].forEach(function(dir) {
             fetches.push(
@@ -490,7 +523,9 @@ try {
             );
           });
         });
-        Promise.all(fetches).then(function() {
+        Promise.all(fetches.concat(live)).then(function(r) {
+          var liveRows = r[r.length - 1];
+          ['all', 'volleyball', 'basketball'].forEach(function(sp) { applyLiveScores(cachedGames.completed[sp] || [], liveRows); });
           renderGameTable('upcoming-games-list', cachedGames.upcoming.all, false);
           renderGameTable('recent-results-list', cachedGames.completed.all, true);
           requestAnimationFrame(observeNewFadeIns);

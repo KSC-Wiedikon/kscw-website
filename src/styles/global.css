@@ -1502,6 +1502,20 @@ tr:hover td {
   white-space: nowrap;
 }
 .gt-score { text-align: right; white-space: nowrap; width: 4rem; }
+/* Video recording link(s) — sits in the date cell, like the cup trophy, because
+   that is the only cell every breakpoint keeps. Padding gives a usable tap target. */
+.gt-video {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  margin-left: 2px;
+  padding: 6px;
+  margin-block: -6px;
+  color: var(--accent-text);
+  border-radius: 6px;
+}
+.gt-video:hover, .gt-video:focus-visible { background: rgba(74, 85, 162, 0.12); }
 .game-sport-icon {
   display: inline-flex;
   align-items: center;

@@ -1157,6 +1157,7 @@
     }
     table.appendChild(tbody);
     container.appendChild(table);
+    if (window.KSCWRecordings) KSCWRecordings.decorate(table);
 
     // Click → modal
     table.addEventListener('click', function (e) {

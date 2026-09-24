@@ -404,6 +404,7 @@ try {
           frag.appendChild(buildGameRow(games[i], showScore));
         }
         tbody.appendChild(frag);
+        if (window.KSCWRecordings) KSCWRecordings.decorate(tbl);
       }
 
       // ── Fetch games from Directus ──

@@ -127,47 +127,98 @@
     }
   }
 
-  // Public video links for a game (wiedisync migration 375). Only links a coach
-  // toggled "Show on website" are ever served; member-only ones stay in wiedisync.
+  // ── Video recordings on game rows (wiedisync migration 375) ─────────────
+  // Only links a coach toggled "Show on website" are ever served; member-only ones
+  // stay in wiedisync. One batched request per table, cached per game key, so a
+  // tab/language re-render does not refetch.
   var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  var recordingCache = {}; // key → [{ url, title }] ([] = fetched, none)
 
   function recordingKey(game) {
     // team pages carry only the federation key in `id`; the homepage has both.
-    var key = game.gameId || game.id;
+    var key = game && (game.gameId || game.id);
     key = key == null ? '' : String(key);
     return /^(\d+|(vb|bb)_[A-Za-z0-9_-]+)$/.test(key) ? key : null;
   }
 
-  function hostLabel(url) {
-    try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return url; }
+  function createVideoSvg() {
+    var ns = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('width', '18');
+    svg.setAttribute('height', '18');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-width', '2');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+    var p = document.createElementNS(ns, 'path');
+    p.setAttribute('d', 'm16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5');
+    var r = document.createElementNS(ns, 'rect');
+    r.setAttribute('x', '2'); r.setAttribute('y', '6');
+    r.setAttribute('width', '14'); r.setAttribute('height', '12'); r.setAttribute('rx', '2');
+    svg.appendChild(p);
+    svg.appendChild(r);
+    return svg;
   }
 
-  function loadRecordings(game, slot) {
-    var key = recordingKey(game);
-    if (!key) return;
-    fetch(DIRECTUS_URL + '/kscw/public/games/' + encodeURIComponent(key) + '/recordings')
-      .then(function (r) { return r.ok ? r.json() : { data: [] }; })
-      .then(function (res) {
-        var list = (res && res.data) || [];
-        // https only — the server enforces it too; never hand an href anything else.
-        list = list.filter(function (r) { return r && typeof r.url === 'string' && /^https:\/\//i.test(r.url); });
-        if (!list.length || !slot.isConnected) return;
-        var section = el('div', 'gm-section');
-        section.appendChild(el('div', 'gm-section-title', 'Video'));
-        list.forEach(function (r) {
-          var a = el('a', 'gm-link', (r.title || hostLabel(r.url)) + ' \u2197');
-          a.href = r.url;
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          var row = el('div', 'gm-row');
-          row.appendChild(a);
-          section.appendChild(row);
-        });
-        slot.appendChild(section);
-      })
-      .catch(function () { /* no video section — the rest of the modal is unaffected */ });
+  function addVideoIcons(tr, list) {
+    var cell = tr.querySelector('.gt-date');
+    if (!cell || cell.querySelector('.gt-video')) return;
+    var isDE = (document.documentElement.lang || 'de') !== 'en';
+    list.forEach(function (r, i) {
+      // https only — the server enforces it too; never hand an href anything else.
+      if (!r || typeof r.url !== 'string' || !/^https:\/\//i.test(r.url)) return;
+      var a = document.createElement('a');
+      a.className = 'gt-video';
+      a.href = r.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      var label = r.title || (list.length > 1 ? 'Video ' + (i + 1) : 'Video');
+      a.title = label;
+      a.setAttribute('aria-label', label + (isDE ? ' (neues Fenster)' : ' (new window)'));
+      // The row itself opens the game modal — the icon must not.
+      a.addEventListener('click', function (e) { e.stopPropagation(); });
+      a.appendChild(createVideoSvg());
+      cell.appendChild(a);
+    });
   }
+
+  function decorateRecordings(root) {
+    if (!root) return;
+    var rows = Array.prototype.slice.call(root.querySelectorAll('tr')).filter(function (tr) {
+      return tr._gameData && recordingKey(tr._gameData);
+    });
+    if (!rows.length) return;
+    var apply = function () {
+      rows.forEach(function (tr) {
+        var list = recordingCache[recordingKey(tr._gameData)];
+        if (list && list.length) addVideoIcons(tr, list);
+      });
+    };
+    var missing = [];
+    rows.forEach(function (tr) {
+      var k = recordingKey(tr._gameData);
+      if (!(k in recordingCache) && missing.indexOf(k) === -1) missing.push(k);
+    });
+    if (!missing.length) { apply(); return; }
+    var chunks = [];
+    for (var i = 0; i < missing.length; i += 300) chunks.push(missing.slice(i, i + 300));
+    Promise.all(chunks.map(function (keys) {
+      return fetch(DIRECTUS_URL + '/kscw/public/game-recordings?games=' + encodeURIComponent(keys.join(',')))
+        .then(function (r) { return r.ok ? r.json() : { data: {} }; })
+        .then(function (res) {
+          var data = (res && res.data) || {};
+          keys.forEach(function (k) { recordingCache[k] = Array.isArray(data[k]) ? data[k] : []; });
+        });
+    }))
+      .then(apply)
+      .catch(function () { /* no icons — the table is unaffected */ });
+  }
+
+  window.KSCWRecordings = { decorate: decorateRecordings };
 
   window.showGameModal = function (game, locale) {
     if (overlay) close();
@@ -343,11 +394,6 @@
 
       modal.appendChild(officials);
     }
-
-    // ── Video recordings (filled asynchronously; stays empty when there are none)
-    var recordingsSlot = el('div');
-    modal.appendChild(recordingsSlot);
-    loadRecordings(game, recordingsSlot);
 
     // ── Venue section
     var hallData = game.hall;

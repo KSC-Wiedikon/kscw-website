@@ -2,6 +2,13 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.29.0] — 2026-09-24
+
+### Gespielte Spiele erscheinen sofort unter den Resultaten
+- Ein Spiel erschien bisher erst unter **«Letzte Resultate»**, wenn Swiss Volley bzw. Swiss Basketball das Resultat übermittelt hatte — ein Spiel von gestern stand weder bei den kommenden Spielen noch bei den Resultaten.
+- Neu steht jedes gespielte Spiel sofort in den Resultaten, auf der Startseite und auf der Teamseite.
+- Wurde das Spiel auf der Hallen-Anzeigetafel geführt, steht deren Resultat schon da — kursiv und leicht abgeblendet, weil es noch nicht offiziell ist. Sobald das offizielle Resultat eintrifft, ersetzt es dieses automatisch.
+
 ## [1.28.2] — 2026-09-11
 
 ### Die Volleyball-Tabelle nennt nur noch den Gesamtbeitrag

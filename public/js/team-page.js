@@ -436,6 +436,57 @@
   }
 
   /**
+   * Played games whose result has not synced yet: still `scheduled`, date gone.
+   * /kscw/public/team/<id> returns `completed` results and games from today on,
+   * so these fell between both lists. Merged into Results by renderTeam, with the
+   * hall scoreboard's score when it recorded the game (public/js/pending-results.js).
+   * Raw endpoint row shape; `home_score`/`away_score` are null unless the board
+   * had a score — the 0:0 a scheduled game carries is a placeholder.
+   */
+  var pendingGames = [];
+
+  function loadPendingGames() {
+    if (!TEAM_DIRECTUS_ID) return Promise.resolve([]);
+    var today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });
+    var y = parseInt(today.slice(0, 4), 10);
+    var startYear = parseInt(today.slice(5, 7), 10) >= 6 ? y : y - 1;
+    var season = startYear + '/' + String((startYear + 1) % 100).padStart(2, '0');
+    var fields = 'game_id,date,time,home_team,away_team,type,league,season,hall.id,hall.name,hall.address';
+    var filter = encodeURIComponent(JSON.stringify({ _and: [
+      { kscw_team: { id: { _eq: TEAM_DIRECTUS_ID } } },
+      { status: { _eq: 'scheduled' } },
+      { date: { _lt: today } },
+      { season: { _eq: season } }
+    ] }));
+    var games = fetch(DIRECTUS_URL + '/items/games?fields=' + encodeURIComponent(fields) + '&sort=-date,-time&limit=10&filter=' + filter)
+      .then(function (r) { return r.ok ? r.json() : { data: [] }; })
+      .then(function (j) { return j.data || []; });
+    var PR = window.KSCWPendingResults;
+    var live = PR ? PR.loadLive(startYear + '-06-01') : Promise.resolve([]);
+    return Promise.all([games, live])
+      .then(function (r) {
+        pendingGames = r[0].map(function (g) {
+          var row = {
+            game_id: g.game_id, date: g.date, time: g.time,
+            home_team: g.home_team, away_team: g.away_team, type: g.type,
+            league: g.league, season: g.season, hall: g.hall || null,
+            home_score: null, away_score: null, status: 'scheduled'
+          };
+          var score = PR && PR.liveScore({ date: g.date, homeTeam: g.home_team, awayTeam: g.away_team, sport: location.pathname.indexOf('/basketball/') === 0 ? 'basketball' : 'volleyball' }, r[1]);
+          if (score) {
+            row.home_score = score.home;
+            row.away_score = score.away;
+            if (score.sets.length) row.sets_json = score.sets;
+            row.provisional = true;
+          }
+          return row;
+        });
+        return pendingGames;
+      })
+      .catch(function () { pendingGames = []; return []; });
+  }
+
+  /**
    * ⚠ Issue the request WITHOUT waiting for the dictionary.
    *
    * This whole function used to sit behind `window.i18nReady.then(...)`, which
@@ -505,7 +556,11 @@
           : (raw.captain != null ? [raw.captain] : []);
         var trainings = raw.upcoming_trainings || raw.trainings || [];
         var rawUpcoming = raw.upcoming_games || raw.upcoming || [];
-        var rawResults = raw.results || [];
+        var rawResults = (raw.results || []).concat(pendingGames).sort(function (a, b) {
+          var ka = (a.date || '').slice(0, 10) + ' ' + (a.time || '');
+          var kb = (b.date || '').slice(0, 10) + ' ' + (b.time || '');
+          return ka < kb ? 1 : ka > kb ? -1 : 0;
+        }).slice(0, 10);
         var rankings = raw.rankings || [];
         var barrageRankings = raw.barrage_rankings || [];
         var sponsors = raw.sponsors || [];
@@ -532,7 +587,8 @@
             status: g.status || (score ? 'completed' : 'scheduled'),
             referees: g.referees || null,
             scorer_team: g.scorer_team || null,
-            bb_officials: g.bb_officials || null
+            bb_officials: g.bb_officials || null,
+            provisional: !!g.provisional
           };
         }
         var upcoming = rawUpcoming.map(mapGame);
@@ -1057,7 +1113,8 @@
       scorerTeam: g.scorer_team || null,
       scorerName: g.scorer_name || null,
       bbOfficials: g.bb_officials || null,
-      opponent: g.isHome ? g.away_team : g.home_team
+      opponent: g.isHome ? g.away_team : g.home_team,
+      provisional: !!g.provisional
     };
   }
 
@@ -1122,6 +1179,10 @@
       var loss = g.isHome ? homeS < awayS : awayS < homeS;
       if (win) scoreSpan.className += ' win';
       else if (loss) scoreSpan.className += ' loss';
+      if (g.provisional) {
+        scoreSpan.className += ' provisional';
+        scoreSpan.title = i18n.t('gameScoreProvisional');
+      }
       scoreSpan.textContent = g.score;
       tr.appendChild(makeCell(scoreSpan, 'gt-score'));
     } else {
@@ -1639,12 +1700,13 @@
   (function start() {
     var payload = loadTeamPayload();
     var halls = loadGameHalls();
+    var pending = loadPendingGames();
     var ready = (window.i18nReady && window.i18nReady.then)
       ? window.i18nReady
       : Promise.resolve('de');
     // The dictionary promise never rejects, but be explicit: a broken i18n must
     // not take the roster down with it.
-    Promise.all([payload, halls, ready.catch(function () { return 'de'; })])
+    Promise.all([payload, halls, pending, ready.catch(function () { return 'de'; })])
       .then(function (r) { return renderTeam(r[0]); })
       .catch(function () { hideSection('kader'); hideSection('training'); });
   })();

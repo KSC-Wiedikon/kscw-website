@@ -1611,6 +1611,9 @@ tr.gt-row-stream > td { background: transparent; }
 .game-score.win { color: var(--success); }
 .game-score.loss { color: var(--danger); }
 .game-score.tie { color: var(--kscw-gold); }
+/* Hall-scoreboard score of a game the official sync has not reached yet
+   (public/js/pending-results.js) — replaced once the game is `completed`. */
+.game-score.provisional { font-style: italic; opacity: 0.75; cursor: help; }
 .game-badge {
   font-size: var(--text-xs);
   font-weight: 600;

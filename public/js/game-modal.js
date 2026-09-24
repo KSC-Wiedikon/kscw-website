@@ -127,6 +127,48 @@
     }
   }
 
+  // Public video links for a game (wiedisync migration 375). Only links a coach
+  // toggled "Show on website" are ever served; member-only ones stay in wiedisync.
+  var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+
+  function recordingKey(game) {
+    // team pages carry only the federation key in `id`; the homepage has both.
+    var key = game.gameId || game.id;
+    key = key == null ? '' : String(key);
+    return /^(\d+|(vb|bb)_[A-Za-z0-9_-]+)$/.test(key) ? key : null;
+  }
+
+  function hostLabel(url) {
+    try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return url; }
+  }
+
+  function loadRecordings(game, slot) {
+    var key = recordingKey(game);
+    if (!key) return;
+    fetch(DIRECTUS_URL + '/kscw/public/games/' + encodeURIComponent(key) + '/recordings')
+      .then(function (r) { return r.ok ? r.json() : { data: [] }; })
+      .then(function (res) {
+        var list = (res && res.data) || [];
+        // https only — the server enforces it too; never hand an href anything else.
+        list = list.filter(function (r) { return r && typeof r.url === 'string' && /^https:\/\//i.test(r.url); });
+        if (!list.length || !slot.isConnected) return;
+        var section = el('div', 'gm-section');
+        section.appendChild(el('div', 'gm-section-title', 'Video'));
+        list.forEach(function (r) {
+          var a = el('a', 'gm-link', (r.title || hostLabel(r.url)) + ' \u2197');
+          a.href = r.url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          var row = el('div', 'gm-row');
+          row.appendChild(a);
+          section.appendChild(row);
+        });
+        slot.appendChild(section);
+      })
+      .catch(function () { /* no video section — the rest of the modal is unaffected */ });
+  }
+
   window.showGameModal = function (game, locale) {
     if (overlay) close();
 
@@ -301,6 +343,11 @@
 
       modal.appendChild(officials);
     }
+
+    // ── Video recordings (filled asynchronously; stays empty when there are none)
+    var recordingsSlot = el('div');
+    modal.appendChild(recordingsSlot);
+    loadRecordings(game, recordingsSlot);
 
     // ── Venue section
     var hallData = game.hall;

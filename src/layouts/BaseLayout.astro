@@ -197,6 +197,21 @@ const ogImageUrl = new URL(ogImage, Astro.site).href;
             'Load failed',
             /^Non-Error promise rejection captured/,
           ],
+          // Chrome on iOS injects its own minified scripts (translate, autofill)
+          // and WebKit attributes their frames to the document URL, so they pass
+          // allowUrls. 25.09.2026: "Maximum call stack size exceeded" at
+          // /basketball/:190:70 in `Qk` — a page that is 123 lines long. Our code
+          // lives in .js files or short unminified inline scripts; an event with
+          // no frame in any .js file on CriOS is the browser's, not ours.
+          // error-logger.js still reports these to Directus.
+          beforeSend: function (event) {
+            if (!/CriOS/.test(navigator.userAgent)) return event;
+            var ex = event.exception && event.exception.values && event.exception.values[0];
+            var frames = ex && ex.stacktrace && ex.stacktrace.frames;
+            if (!frames || !frames.length) return event;
+            var inScript = frames.some(function (f) { return /\.js(\?|$)/.test(f.filename || ''); });
+            return inScript ? event : null;
+          },
         });
       }
       if (typeof Sentry !== 'undefined') { initSentry(); return; }

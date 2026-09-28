@@ -1,8 +1,10 @@
 ---
 // Scorer-exam scoresheet upload. Anonymous by design — course participants are mostly
-// not KSCW members and have no login. The gate is the email they registered with:
-// /kscw/scorer-exam/lookup checks it against the OpnForm signup lists and mints a
-// short-lived signed ticket, and only that ticket authorizes the upload.
+// not KSCW members and have no login. The gate is the MAILBOX they registered with:
+// /kscw/scorer-exam/lookup checks the typed email against the OpnForm signup lists and
+// mails that address a link back to this page carrying a signed ticket (#ticket=…);
+// only that ticket authorizes the upload. The page never learns whether an address
+// matched (2026-09-28 audit).
 //
 // Canonical path is the ASCII /weiteres/schreiberkurse/pruefung, matching every other
 // slug on the site; public/_redirects 301s the umlaut spelling onto it.
@@ -48,24 +50,43 @@ const locale = 'de';
               </div>
               <div id="exam-turnstile" class="form-group"></div>
               <button type="submit" class="btn btn-blue" id="exam-email-submit">
-                <span data-i18n="scorerExamContinue">{t(locale, 'scorerExamContinue')}</span>
+                <span data-i18n="scorerExamSendLink">{t(locale, 'scorerExamSendLink')}</span>
               </button>
             </form>
           </div>
         </div>
 
-        <!-- Step 2 — upload (revealed after a successful lookup) -->
+        <!-- Step 1b — link requested (same message whether or not the address matched) -->
+        <div class="card exam-card" id="exam-step-sent" hidden>
+          <div class="card-body exam-done">
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            <h2 data-i18n="scorerExamLinkSent">{t(locale, 'scorerExamLinkSent')}</h2>
+            <p class="exam-help" data-i18n="scorerExamLinkSentHint">{t(locale, 'scorerExamLinkSentHint')}</p>
+            <div class="exam-done-actions">
+              <button type="button" class="btn btn-outline btn-sm" id="exam-other-address">
+                <span data-i18n="scorerExamUseOtherAddress">{t(locale, 'scorerExamUseOtherAddress')}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Opening an emailed link -->
+        <div class="card exam-card" id="exam-step-loading" hidden>
+          <div class="card-body">
+            <p class="exam-help" data-i18n="scorerExamOpeningLink">{t(locale, 'scorerExamOpeningLink')}</p>
+          </div>
+        </div>
+
+        <!-- Step 2 — upload (only reachable from the emailed link) -->
         <div class="card exam-card" id="exam-step-file" hidden>
           <div class="card-body">
             <h2 class="exam-step-title" data-i18n="scorerExamStepFile">{t(locale, 'scorerExamStepFile')}</h2>
             <p id="exam-greeting" class="exam-greeting"></p>
-            <div class="form-group" id="exam-course-group" hidden>
-              <label class="form-label" for="exam-course" data-i18n="scorerExamPickCourse">{t(locale, 'scorerExamPickCourse')}</label>
-              <select class="form-select" id="exam-course"></select>
-            </div>
+            <p id="exam-course-line" class="exam-course-line" hidden></p>
             <div id="exam-already" class="exam-notice" hidden></div>
             <form id="exam-file-form" novalidate>
-              <div class="form-group">
+              <p id="exam-licence-on-file" class="exam-notice" data-i18n="scorerExamLicenceOnFile" hidden>{t(locale, 'scorerExamLicenceOnFile')}</p>
+              <div class="form-group" id="exam-licence-group">
                 <label class="form-label" for="exam-licence" data-i18n="scorerExamLicenceLabel">{t(locale, 'scorerExamLicenceLabel')}</label>
                 <input
                   class="form-input"
@@ -153,6 +174,11 @@ const locale = 'de';
   }
   .exam-greeting {
     font-weight: 600;
+    margin: 0 0 var(--space-sm);
+  }
+  .exam-course-line {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
     margin: 0 0 var(--space-lg);
   }
   .exam-notice {

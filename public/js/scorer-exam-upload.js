@@ -1,9 +1,16 @@
 /**
  * Scorer-exam scoresheet upload (/weiteres/schreiberkurse/pruefung).
  *
- * Two steps: prove which registration you are (email → signed ticket), then send the
- * bytes. The ticket is minted and verified server-side (scorer-exam.js); this file
- * never decides who anyone is, it only carries the ticket back.
+ * Two entry points, one page:
+ *   1. No ticket in the URL → ask for the email. /lookup MAILS the registered address a
+ *      link to this page and answers { ok: true } whatever the address was, so this page
+ *      only ever says "if it's registered, check your inbox" (2026-09-28 audit: the
+ *      ticket used to come back to the browser, so knowing someone's email was enough to
+ *      upload as them, and a 404 told you whether they were registered).
+ *   2. Opened from that link (#ticket=… in the fragment) → strip the ticket from the
+ *      address bar, ask /ticket what to show, then upload.
+ * The ticket is minted and verified server-side (scorer-exam.js); this file never decides
+ * who anyone is, it only carries the ticket back.
  *
  * ⚠ The upload puts ticket + filename in the QUERY STRING, not in request headers.
  * Directus answers preflight with `access-control-allow-headers: Content-Type,
@@ -22,6 +29,8 @@
   if (!emailForm) return;
 
   var stepEmail = document.getElementById('exam-step-email');
+  var stepSent = document.getElementById('exam-step-sent');
+  var stepLoading = document.getElementById('exam-step-loading');
   var stepFile = document.getElementById('exam-step-file');
   var stepDone = document.getElementById('exam-step-done');
   var emailInput = document.getElementById('exam-email');
@@ -30,16 +39,19 @@
   var fileInput = document.getElementById('exam-file');
   var fileSubmit = document.getElementById('exam-file-submit');
   var licenceInput = document.getElementById('exam-licence');
-  var licenceHelp = document.querySelector('label[for="exam-licence"] ~ .exam-help');
+  var licenceGroup = document.getElementById('exam-licence-group');
+  var licenceOnFile = document.getElementById('exam-licence-on-file');
   var greeting = document.getElementById('exam-greeting');
-  var courseGroup = document.getElementById('exam-course-group');
-  var courseSelect = document.getElementById('exam-course');
+  var courseLine = document.getElementById('exam-course-line');
+  var otherAddressBtn = document.getElementById('exam-other-address');
   var already = document.getElementById('exam-already');
   var feedback = document.getElementById('exam-feedback');
   var againBtn = document.getElementById('exam-again');
   var turnstileHost = document.getElementById('exam-turnstile');
 
-  var matches = [];
+  // The one signup this page is uploading for, set only from an emailed link.
+  var ticket = '';
+  var info = null;
   var turnstileWidgetId = null;
 
   function t(key, params) {
@@ -126,7 +138,7 @@
     if (window.turnstile && turnstileWidgetId !== null) window.turnstile.reset(turnstileWidgetId);
   }
 
-  /* ── Step 1: who are you ───────────────────────────────────── */
+  /* ── Step 1: send me a link ────────────────────────────────── */
 
   emailForm.addEventListener('submit', function (e) {
     e.preventDefault();
@@ -140,7 +152,7 @@
     emailSubmit.disabled = true;
     var label = emailSubmit.querySelector('span');
     var restore = label ? label.getAttribute('data-i18n') : null;
-    if (label) setText(label, 'scorerExamChecking');
+    if (label) setText(label, 'scorerExamSending');
 
     fetch(DIRECTUS_URL + '/kscw/scorer-exam/lookup', {
       method: 'POST',
@@ -153,12 +165,12 @@
         });
       })
       .then(function (r) {
-        if (r.status === 404) { showError('scorerExamNotRegistered'); return; }
         if (r.status === 429) { showError('scorerExamRateLimited'); return; }
         if (r.status === 400 && r.body.error === 'captcha_failed') { showError('scorerExamCaptchaFailed'); return; }
-        if (r.status !== 200 || !r.body.data || !r.body.data.length) { showError('scorerExamNetworkError'); return; }
-        matches = r.body.data;
-        enterUploadStep();
+        if (r.status !== 200 || !r.body.ok) { showError('scorerExamNetworkError'); return; }
+        // Deliberately the same message for every address: the server does not tell us
+        // whether it matched, and the page must not pretend to know.
+        show(stepSent);
       })
       .catch(function () { showError('scorerExamNetworkError'); })
       .finally(function () {
@@ -168,56 +180,104 @@
       });
   });
 
+  otherAddressBtn.addEventListener('click', function () {
+    clearError();
+    show(stepEmail);
+    emailInput.focus();
+  });
+
+  function show(step) {
+    [stepEmail, stepSent, stepLoading, stepFile, stepDone].forEach(function (el) {
+      if (el) el.hidden = el !== step;
+    });
+  }
+
+  /* ── Opened from the emailed link ──────────────────────────── */
+
+  /** The ticket from the fragment (what the mail links to) or, defensively, the query. */
+  function ticketFromUrl() {
+    var hash = String(window.location.hash || '').replace(/^#/, '');
+    var fromHash = new URLSearchParams(hash).get('ticket');
+    if (fromHash) return fromHash;
+    return new URLSearchParams(window.location.search).get('ticket') || '';
+  }
+
+  // Take the ticket out of the address bar straight away, so it does not end up in a
+  // bookmark, a screenshot, a shared link or the browser's synced history entry.
+  function stripTicketFromUrl() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      params.delete('ticket');
+      var qs = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (qs ? '?' + qs : ''));
+    } catch (_) { /* old browser: the ticket just stays visible */ }
+  }
+
+  function openTicket(tk) {
+    show(stepLoading);
+    fetch(DIRECTUS_URL + '/kscw/scorer-exam/ticket', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket: tk }),
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (body) {
+          return { status: res.status, body: body };
+        });
+      })
+      .then(function (r) {
+        if (r.status === 200 && r.body.data) {
+          ticket = tk;
+          info = r.body.data;
+          enterUploadStep();
+          return;
+        }
+        show(stepEmail);
+        if (r.status === 403) { showError('scorerExamLinkInvalid'); return; }
+        if (r.status === 429) { showError('scorerExamRateLimited'); return; }
+        showError('scorerExamNetworkError');
+      })
+      .catch(function () {
+        show(stepEmail);
+        showError('scorerExamNetworkError');
+      });
+  }
+
   function enterUploadStep() {
-    var first = matches[0].first_name || '';
+    var first = info.first_name || '';
     greeting.textContent = first ? t('scorerExamHello') + ' ' + first + ' 👋' : '';
     greeting.hidden = !first;
-
-    // One course is the normal case; only ask which when the answer isn't obvious.
-    if (matches.length > 1) {
-      courseSelect.textContent = '';
-      matches.forEach(function (m, i) {
-        var opt = document.createElement('option');
-        opt.value = String(i);
-        opt.textContent = t('scorerExamCourseOf') + ' ' + fmtDate(m.course_date);
-        courseSelect.appendChild(opt);
-      });
-      courseGroup.hidden = false;
+    if (info.course_date) {
+      courseLine.textContent = t('scorerExamCourseOf') + ' ' + fmtDate(info.course_date);
+      courseLine.hidden = false;
     } else {
-      courseGroup.hidden = true;
+      courseLine.hidden = true;
     }
-    courseSelect.onchange = renderForCourse;
-    renderForCourse();
-
-    stepEmail.hidden = true;
-    stepFile.hidden = false;
-    stepDone.hidden = true;
-    // Focus whichever field still needs an answer.
-    if (licenceInput.value) fileInput.focus(); else licenceInput.focus();
+    renderStatus();
+    show(stepFile);
+    if (info.licence_on_file) fileInput.focus(); else licenceInput.focus();
   }
 
-  function current() {
-    var idx = matches.length > 1 ? Number(courseSelect.value || 0) : 0;
-    return matches[idx] || matches[0];
-  }
-
-  // Everything that depends on WHICH signup is selected. Called on entry and whenever the
-  // course picker changes, so switching course cannot leave the other course's licence
-  // or "already uploaded" notice on screen.
-  function renderForCourse() {
-    var m = current();
-    if (m && m.uploaded_on) {
-      already.textContent = t('scorerExamAlreadyUploaded', { date: fmtDate(m.uploaded_on) });
+  // The number itself never reaches the browser (2026-09-28 audit) — only whether we
+  // have one. With one on file the field is not asked at all: the server keeps the
+  // recorded number and would ignore a typed one anyway.
+  function renderStatus() {
+    if (info && info.uploaded_on) {
+      already.textContent = t('scorerExamAlreadyUploaded', { date: fmtDate(info.uploaded_on) });
       already.hidden = false;
     } else {
       already.hidden = true;
     }
-    // Pre-fill rather than lock: the number we hold may be a typo, and the participant is
-    // the one who can see the real one.
-    licenceInput.value = (m && m.licence) || '';
-    if (licenceHelp) {
-      setText(licenceHelp, (m && m.licence) ? 'scorerExamLicenceKnown' : 'scorerExamLicenceHelp');
-    }
+    var onFile = !!(info && info.licence_on_file);
+    licenceGroup.hidden = onFile;
+    licenceInput.required = !onFile;
+    licenceOnFile.hidden = !onFile;
+  }
+
+  var initialTicket = ticketFromUrl();
+  if (initialTicket) {
+    stripTicketFromUrl();
+    openTicket(initialTicket);
   }
 
   /* ── Step 2: the bytes ─────────────────────────────────────── */
@@ -233,11 +293,18 @@
     e.preventDefault();
     clearError();
 
-    var licence = normalizeLicence(licenceInput.value);
-    if (!licence) {
-      showError(String(licenceInput.value).trim() ? 'scorerExamLicenceInvalid' : 'scorerExamLicenceMissing');
-      licenceInput.focus();
-      return;
+    if (!ticket || !info) { show(stepEmail); showError('scorerExamLinkInvalid'); return; }
+
+    // With a licence on file the field is hidden and nothing is sent: the server keeps
+    // the recorded number.
+    var licence = '';
+    if (!info.licence_on_file) {
+      licence = normalizeLicence(licenceInput.value);
+      if (!licence) {
+        showError(String(licenceInput.value).trim() ? 'scorerExamLicenceInvalid' : 'scorerExamLicenceMissing');
+        licenceInput.focus();
+        return;
+      }
     }
 
     var file = fileInput.files && fileInput.files[0];
@@ -246,16 +313,13 @@
     // from watching 40 MB upload before being told no.
     if (file.size > MAX_BYTES) { showError('scorerExamTooLarge'); return; }
 
-    var m = current();
-    if (!m || !m.ticket) { showError('scorerExamExpired'); return; }
-
     fileSubmit.disabled = true;
     var label = fileSubmit.querySelector('span');
     var restore = label ? label.getAttribute('data-i18n') : null;
     if (label) setText(label, 'scorerExamUploading');
 
     var url = DIRECTUS_URL + '/kscw/scorer-exam/upload'
-      + '?ticket=' + encodeURIComponent(m.ticket)
+      + '?ticket=' + encodeURIComponent(ticket)
       + '&licence=' + encodeURIComponent(licence)
       + '&filename=' + encodeURIComponent(file.name || '');
 
@@ -271,16 +335,23 @@
       })
       .then(function (r) {
         if (r.status === 200) {
-          m.uploaded_on = (r.body.data && r.body.data.uploaded_on) || null;
-          m.licence = licence; // so "upload another" pre-fills what was just accepted
-          stepFile.hidden = true;
-          stepDone.hidden = false;
+          info.uploaded_on = (r.body.data && r.body.data.uploaded_on) || null;
+          // The server stored the typed number, so "upload another" need not ask again.
+          if (licence) info.licence_on_file = true;
+          show(stepDone);
           fileInput.value = '';
           return;
         }
         if (r.status === 413) { showError('scorerExamTooLarge'); return; }
         if (r.status === 415) { showError('scorerExamBadType'); return; }
-        if (r.status === 403) { showError('scorerExamExpired'); return; }
+        if (r.status === 403) {
+          // Expired (24h) or the course was closed: the only way on is a fresh link.
+          ticket = '';
+          info = null;
+          show(stepEmail);
+          showError('scorerExamLinkInvalid');
+          return;
+        }
         if (r.status === 429) { showError('scorerExamRateLimited'); return; }
         if (r.status === 422) {
           showError(r.body.error === 'licence_invalid' ? 'scorerExamLicenceInvalid' : 'scorerExamLicenceMissing');
@@ -297,9 +368,8 @@
 
   againBtn.addEventListener('click', function () {
     clearError();
-    stepDone.hidden = true;
-    stepFile.hidden = false;
-    renderForCourse();
+    renderStatus();
+    show(stepFile);
     fileInput.focus();
   });
 })();

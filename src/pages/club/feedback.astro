@@ -150,8 +150,25 @@ const locale = 'de';
               changelog, permanently: no data-i18n meant the engine could never
               repair it. */}
           <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
-          <span class="changelog-badge">v1.29.0</span>
+          <span class="changelog-badge">v1.30.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.30.0 — 2026-09-28</div>
+          <div class="changelog-group">
+            <h3>Sicherheits- und Fehlerbereinigung nach einem Audit</h3>
+            <ul>
+              <li><strong>Feedback-Formular</strong>: Meldungen mit Screenshot gingen wahrscheinlich verloren. Das Formular sendet jetzt an einen eigenen, geschützten Endpunkt (mit Captcha, Grössen- und Mengenbegrenzung); Screenshots landen in einem privaten Ordner</li>
+              <li><strong>News</strong>: Ein archivierter oder als Entwurf gespeicherter Artikel war weiterhin öffentlich sichtbar. «Archivieren» nimmt einen Artikel jetzt wirklich von der Website</li>
+              <li><strong>Teamseiten</strong>: Kommende Spiele zeigten im Spiel-Fenster ein Resultat von «0 : 0», als wären sie gespielt. Heute gespielte Spiele erscheinen nicht mehr bei den kommenden Spielen</li>
+              <li><strong>Schreiberkurse</strong>: Eine Kurszeit wie «18.00» liess die ganze Kursliste verschwinden. Sie wird jetzt erkannt, und ein fehlerhafter Kurs blendet nicht mehr alle anderen aus. Eine bereits bewertete Prüfung kann nicht mehr überschrieben werden</li>
+              <li><strong>Anmeldung</strong>: Ausweis-Uploads brauchen ein kurzlebiges Upload-Ticket; der Dateityp wird am Inhalt geprüft, nicht am Dateinamen</li>
+              <li><strong>Newsletter</strong>: Ein ungültiger Abmelde- oder Bestätigungslink meldet jetzt einen Fehler, statt fälschlich «abgemeldet» anzuzeigen</li>
+              <li><strong>Sprache &amp; Datum</strong>: Ein schneller Doppelklick auf den Sprachumschalter konnte die falsche Sprache hinterlassen; die News-Liste zeigt Daten jetzt im Format TT.MM.JJJJ; «heute» richtet sich überall nach Schweizer Zeit</li>
+              <li><strong>Hinter den Kulissen</strong>: strengere Content-Security-Policy (nur noch die tatsächlich genutzten CDN-Dateien), sichere Weiterleitung der alten /de/- und /en/-Adressen, Fehlerberichte ohne Links mit persönlichen Angaben, und die Live-Website wird erst nach bestandenen Tests veröffentlicht</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.29.0 — 2026-09-24</div>
@@ -988,8 +1005,25 @@ const locale = 'de';
               changelog, permanently: no data-i18n meant the engine could never
               repair it. */}
           <span data-i18n="changelogTitle">{t(locale, 'changelogTitle')}</span>
-          <span class="changelog-badge">v1.29.0</span>
+          <span class="changelog-badge">v1.30.0</span>
         </h2>
+
+        <div class="changelog-entry">
+          <div class="changelog-meta">v1.30.0 — 2026-09-28</div>
+          <div class="changelog-group">
+            <h3>Security and bug clean-up after an audit</h3>
+            <ul>
+              <li><strong>Feedback form</strong>: reports with a screenshot were probably being lost. The form now posts to its own protected endpoint (captcha, size and volume limits); screenshots are stored in a private folder</li>
+              <li><strong>News</strong>: an archived or draft article stayed publicly visible. “Archive” now really takes an article off the site</li>
+              <li><strong>Team pages</strong>: upcoming games showed a “0 : 0” result in the game window, as if already played. Games played today no longer appear under upcoming games</li>
+              <li><strong>Scorer courses</strong>: a course time like “18.00” made the whole course list disappear. It is now understood, and one broken course no longer hides all the others. An exam that has already been graded can no longer be overwritten</li>
+              <li><strong>Registration</strong>: ID uploads need a short-lived upload ticket; the file type is checked from its content, not its name</li>
+              <li><strong>Newsletter</strong>: an invalid unsubscribe or confirmation link now reports an error instead of wrongly saying “unsubscribed”</li>
+              <li><strong>Language &amp; dates</strong>: a fast double click on the language toggle could leave the wrong language; the news list now shows dates as DD.MM.YYYY; “today” follows Swiss time everywhere</li>
+              <li><strong>Behind the scenes</strong>: a stricter Content Security Policy (only the CDN files actually used), safe redirects for the old /de/ and /en/ addresses, error reports without links carrying personal details, and the live site is only published after the tests pass</li>
+            </ul>
+          </div>
+        </div>
 
         <div class="changelog-entry">
           <div class="changelog-meta">v1.29.0 — 2026-09-24</div>

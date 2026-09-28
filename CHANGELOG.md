@@ -2,6 +2,18 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.30.0] — 2026-09-28
+
+### Sicherheits- und Fehlerbereinigung nach einem Audit
+- **Feedback-Formular**: Meldungen mit Screenshot gingen wahrscheinlich verloren. Das Formular sendet jetzt an einen eigenen, geschützten Endpunkt (mit Captcha, Grössen- und Mengenbegrenzung); Screenshots landen in einem privaten Ordner.
+- **News**: Ein archivierter oder als Entwurf gespeicherter Artikel war weiterhin öffentlich sichtbar. «Archivieren» nimmt einen Artikel jetzt wirklich von der Website.
+- **Teamseiten**: Kommende Spiele zeigten im Spiel-Fenster ein Resultat von «0 : 0», als wären sie gespielt. Heute gespielte Spiele erscheinen nicht mehr bei den kommenden Spielen.
+- **Schreiberkurse**: Eine Kurszeit wie «18.00» liess die ganze Kursliste verschwinden. Sie wird jetzt erkannt, und ein fehlerhafter Kurs blendet nicht mehr alle anderen aus. Eine bereits bewertete Prüfung kann nicht mehr überschrieben werden.
+- **Anmeldung**: Ausweis-Uploads brauchen ein kurzlebiges Upload-Ticket; der Dateityp wird am Inhalt geprüft, nicht am Dateinamen.
+- **Newsletter**: Ein ungültiger Abmelde- oder Bestätigungslink meldet jetzt einen Fehler, statt fälschlich «abgemeldet» anzuzeigen.
+- **Sprache & Datum**: Ein schneller Doppelklick auf den Sprachumschalter konnte die falsche Sprache hinterlassen; die News-Liste zeigt Daten jetzt im Format TT.MM.JJJJ; «heute» richtet sich überall nach Schweizer Zeit.
+- **Hinter den Kulissen**: strengere Content-Security-Policy (nur noch die tatsächlich genutzten CDN-Dateien), sichere Weiterleitung der alten /de/- und /en/-Adressen, Fehlerberichte ohne Links mit persönlichen Angaben, und die Live-Website wird erst nach bestandenen Tests veröffentlicht.
+
 ## [1.29.0] — 2026-09-24
 
 ### Gespielte Spiele erscheinen sofort unter den Resultaten

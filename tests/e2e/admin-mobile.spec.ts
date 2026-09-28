@@ -70,10 +70,19 @@ async function stubAdmin(page: Page) {
           [FIELD.last]: 'Müller', [FIELD.mail]: 'jonas@example.ch', [FIELD.svrz]: '' },
       ] });
     }
-    if (url.includes('items/mixed_tournament_signups')) {
+    // The Mixed-Turnier tab reads two server-built routes (audit 2026-09-28, F-10);
+    // the shapes are wadmin.js's /signups rows and mixedParticipantRow().
+    if (url.includes('/wadmin/mixed_turnier/signups')) {
       return json({ data: [
-        { id: 1, first_name: 'Nina', last_name: 'Steinbrüchel', email: 'nina@example.ch',
-          sex: 'f', date_created: '2026-08-01T10:00:00Z' },
+        { id: 1, name: 'Nina Steinbrüchel', email: 'nina@example.ch', sex: 'f', is_member: true,
+          teams: ['D2'], position_1: 'Zuspiel', position_2: 'Aussen', position_3: '',
+          notes: '', date_created: '2026-08-01T10:00:00Z', source: 'website' },
+      ] });
+    }
+    if (url.includes('/wadmin/mixed_turnier/participants')) {
+      return json({ data: [
+        { name: 'Jonas Müller-Hofstetter', sex: 'm', positions: ['Mitte', 'Diagonal'],
+          status: 'confirmed', date: '2026-08-02', source: 'wiedisync' },
       ] });
     }
     if (url.includes('items/news')) {

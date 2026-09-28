@@ -22,11 +22,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # The full suite (build + unit + e2e) gates the deploy — dev previews included, so a
+  # preview is never mistaken for a tested build. Only the two test-login secrets are
+  # passed; inheriting all secrets would hand CLOUDFLARE_API_TOKEN to npm ci + Playwright.
+  test:
+    uses: ./.github/workflows/test.yml
+    secrets:
+      TEST_ADMIN_EMAIL: ${{ secrets.TEST_ADMIN_EMAIL }}
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
@@ -38,10 +50,14 @@ jobs:
       - name: Build
         env:
           DIRECTUS_URL: ${{ github.ref_name == 'prod' && 'https://directus.kscw.ch' || 'https://directus-dev.kscw.ch' }}
-        # Matches the old Cloudflare build command exactly. Note `npx astro build`
-        # skips npm lifecycle hooks, so `prebuild`/`site-text` does NOT run — keep it
-        # that way unless you also change it on the Cloudflare side.
-        run: npx astro build
+        # `npm run build`, NOT `npx astro build`: only the npm script runs the `prebuild`
+        # hook (scripts/fetch-site-text.mjs), which bakes the admin's Seitentexte
+        # overrides into the HTML. Without it src/generated/site-text.json stays at its
+        # committed empty state and every live page ships the pre-edit German until the
+        # browser overlay catches up. The hook never fails a build (it keeps the last
+        # known overrides and exits 0); DIRECTUS_URL above steers it too.
+        # kscw-web is a Direct Upload project — Cloudflare runs no build of its own.
+        run: npm run build
 
       - name: Deploy
         env:

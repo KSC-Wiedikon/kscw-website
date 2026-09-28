@@ -21,6 +21,9 @@
   // the crawler's view correct, this makes an edit visible without waiting for a
   // rebuild. It is deliberately never awaited — see loadOverrides().
   var overrides = { de: {}, en: {} };
+  // True only once /kscw/site-text has answered. "No overrides" and "could not
+  // ask" must not look the same — see applyOverrides().
+  var overridesLoaded = false;
 
   window.i18nReady = new Promise(function (resolve) {
     readyResolve = resolve;
@@ -70,12 +73,13 @@
     return fetch(url);
   }
 
-  function loadTranslations(lang) {
-    if (cache[lang]) {
-      currentLang = lang;
-      document.documentElement.lang = lang;
-      return Promise.resolve(cache[lang]);
-    }
+  /**
+   * Get a dictionary into the cache. Does NOT switch the active language — that
+   * is activate()'s job, and it is kept separate so a response that arrives late
+   * can be dropped (see langSeq).
+   */
+  function fetchDictionary(lang) {
+    if (cache[lang]) return Promise.resolve(cache[lang]);
 
     // Content hash injected by BaseLayout (window.__I18N_V). Falls back to an
     // UNVERSIONED url rather than a stale literal: revalidating is a cheap
@@ -88,13 +92,58 @@
       })
       .then(function (data) {
         cache[lang] = data;
-        currentLang = lang;
-        document.documentElement.lang = lang;
         return data;
       });
   }
 
+  function activate(lang) {
+    currentLang = lang;
+    document.documentElement.lang = lang;
+  }
+
+  // Bumped by every language request (the initial load and each toggle). A
+  // response is applied only if no newer request was made while it was in
+  // flight. Without it, a fast double click EN→DE could finish with DE (cached,
+  // instant) first and EN (network) last, leaving the page English while the
+  // visitor had just chosen German (audit 2026-09-28, F-49).
+  var langSeq = 0;
+
+
   /* ── Translation Lookup ───────────────────────────────────── */
+
+  // `{count}`-style placeholders. Same helper as scripts/fetch-site-text.mjs.
+  function placeholderSet(value) {
+    var found = String(value).match(/\{[a-zA-Z0-9_]+\}/g) || [];
+    var set = {};
+    for (var i = 0; i < found.length; i++) set[found[i]] = true;
+    return set;
+  }
+
+  function samePlaceholders(a, b) {
+    var pa = placeholderSet(a);
+    var pb = placeholderSet(b);
+    var ka = Object.keys(pa);
+    if (ka.length !== Object.keys(pb).length) return false;
+    for (var i = 0; i < ka.length; i++) if (!pb[ka[i]]) return false;
+    return true;
+  }
+
+  /**
+   * The override for `key`, if it passes the rule the build applies
+   * (scripts/fetch-site-text.mjs → sanitize): the key must exist in the shipped
+   * dictionary, and the override must carry the same `{placeholder}` set as the
+   * default. The runtime layer used to skip both, so an override that dropped
+   * `{team}` rendered a sentence with the team name missing — on the live page,
+   * seconds after the save, while the build quietly refused the same row (audit
+   * 2026-09-28, F-47). Checked at lookup time because only then is the
+   * dictionary it is compared against guaranteed to be loaded.
+   */
+  function validOverride(lang, key, fallback) {
+    var over = overrides[lang] || {};
+    if (!Object.prototype.hasOwnProperty.call(over, key)) return undefined;
+    if (fallback === undefined) return undefined;
+    return samePlaceholders(over[key], fallback) ? over[key] : undefined;
+  }
 
   function t(key, params) {
     var strings = cache[currentLang] || {};
@@ -102,9 +151,15 @@
     // applyTranslations() means every consumer of window.i18n.t() — the news list,
     // the calendar, team pages — picks up an edit too, including content rendered
     // long after the overrides arrived.
-    var over = overrides[currentLang] || {};
-    var value = Object.prototype.hasOwnProperty.call(over, key) ? over[key] : strings[key];
-    if (value === undefined) return key;
+    var shipped = strings[key];
+    var over = validOverride(currentLang, key, shipped);
+    var value = over !== undefined ? over : shipped;
+    if (value === undefined) {
+      // No dictionary at all (both the requested language and the German
+      // fallback failed to load): an empty string, never the raw key name, which
+      // is what a visitor used to read in every script-built label (F-48).
+      return cache[currentLang] ? key : '';
+    }
 
     if (params) {
       Object.keys(params).forEach(function (k) {
@@ -224,8 +279,11 @@
   ];
 
   function directusBase() {
-    // Same host-based split as team-page.js / scoreboard.js: no build-time config
-    // reaches this file, and a Pages preview deliberately reads production text.
+    // The backend BaseLayout injected (window.__KSCW_DIRECTUS, audit 2026-09-28,
+    // F-41): the same Directus the build baked its site-text overrides from
+    // (scripts/fetch-site-text.mjs reads DIRECTUS_URL too), so a preview reads
+    // the text it was built with. The host split is only a fallback.
+    if (window.__KSCW_DIRECTUS) return window.__KSCW_DIRECTUS;
     var h = window.location.hostname;
     return (h === 'localhost' || h === '127.0.0.1')
       ? 'https://directus-dev.kscw.ch'
@@ -249,9 +307,28 @@
    * ~990: this is a handful of querySelectorAll calls, not a second full pass.
    */
   function applyOverrides() {
+    // No dictionary means nothing to validate an override against, and t()
+    // answers '' — writing that would blank the server-rendered German text.
+    // Leave the DOM as the build shipped it.
+    if (!cache[currentLang]) return;
     var map = overrides[currentLang] || {};
 
-    Object.keys(map).forEach(function (key) {
+    // Keys the BUILD baked an override into the German HTML (BaseLayout →
+    // window.__I18N_BAKED). If that override has since been deleted, the
+    // server-rendered node still shows it and — German getting no DOM pass —
+    // nothing would put the shipped wording back until the next rebuild (audit
+    // 2026-09-28, F-46). Re-render those keys too; t() now returns the
+    // dictionary value for them. Only once the override fetch has SUCCEEDED: an
+    // unreachable Directus must not revert a live override to the old text.
+    var keys = Object.keys(map);
+    var baked = currentLang === 'de' && overridesLoaded && window.__I18N_BAKED;
+    if (baked && baked.length) {
+      for (var b = 0; b < baked.length; b++) {
+        if (!Object.prototype.hasOwnProperty.call(map, baked[b])) keys.push(baked[b]);
+      }
+    }
+
+    keys.forEach(function (key) {
       if (!KEY_RE.test(key)) return;
       var value = t(key);
 
@@ -274,12 +351,12 @@
     // need the same treatment as the two applyTranslations() blocks that own them.
     var metaTitle = document.querySelector('meta[name="i18n-title"]');
     var titleKey = metaTitle && metaTitle.getAttribute('content');
-    if (titleKey && Object.prototype.hasOwnProperty.call(map, titleKey)) {
+    if (titleKey && keys.indexOf(titleKey) !== -1) {
       document.title = t(titleKey);
     }
     var metaDesc = document.querySelector('meta[name="i18n-description"]');
     var descKey = metaDesc && metaDesc.getAttribute('content');
-    if (descKey && Object.prototype.hasOwnProperty.call(map, descKey)) {
+    if (descKey && keys.indexOf(descKey) !== -1) {
       var descTarget = document.querySelector('meta[name="description"]');
       if (descTarget) descTarget.setAttribute('content', t(descKey));
     }
@@ -310,6 +387,7 @@
           });
         });
         overrides = next;
+        overridesLoaded = true;
       })
       .catch(function (err) {
         // Not console.error: on a site with no overrides saved this is the normal
@@ -337,7 +415,12 @@
 
   function setLang(lang) {
     try { localStorage.setItem(STORAGE_KEY, lang); } catch (e) { /* private mode */ }
-    return loadTranslations(lang).then(function () {
+    var seq = ++langSeq;
+    return fetchDictionary(lang).then(function () {
+      // A newer toggle was made while this dictionary was loading — it owns the
+      // page now (F-49).
+      if (seq !== langSeq) return;
+      activate(lang);
       applyTranslations();
       updateLangButtons(lang);
       document.dispatchEvent(new CustomEvent('langChanged', { detail: { lang: lang } }));
@@ -347,9 +430,9 @@
       if (window.console && console.error) {
         console.error('[i18n] failed to switch to "' + lang + '":', err);
       }
-      // loadTranslations() sets <html lang> only on success, so nothing to undo
-      // here — but the buttons were already showing the requested language.
-      updateLangButtons(currentLang);
+      // activate() sets <html lang> only on success, so nothing to undo here —
+      // but the buttons were already showing the requested language.
+      if (seq === langSeq) updateLangButtons(currentLang);
     });
   }
 
@@ -378,8 +461,13 @@
   // subsystems await window.i18nReady (team pages, calendar, scorer courses, youth
   // status) and would hang forever on a pending promise, rendering a blank page
   // rather than a degraded one.
-  var pendingDictionary = loadTranslations(activeLang)
-    .then(function () { return activeLang; })
+  var initSeq = ++langSeq;
+  var pendingDictionary = fetchDictionary(activeLang)
+    .then(function () {
+      // A toggle made while the first dictionary was in flight wins (F-49).
+      if (initSeq === langSeq) activate(activeLang);
+      return currentLang;
+    })
     .catch(function (err) {
       if (window.console && console.error) {
         console.error('[i18n] failed to load "' + activeLang + '" dictionary:', err);
@@ -391,7 +479,14 @@
       // top of otherwise-German text. German is server-rendered, so falling back
       // costs nothing.
       document.documentElement.lang = currentLang;
-      return currentLang;
+      // …but German still needs its DICTIONARY for everything a script builds
+      // (t() is how the team pages, calendar and forms label their nodes). It used
+      // to stay unloaded, and every such label read as its raw key name (audit
+      // 2026-09-28, F-48). Never rejects: if German fails too, t() returns ''.
+      if (activeLang === 'de') return currentLang;
+      return fetchDictionary('de')
+        .then(function () { if (initSeq === langSeq) activate('de'); return currentLang; })
+        .catch(function () { return currentLang; });
     });
 
   // Started alongside the dictionary rather than after it, and never awaited by

@@ -33,7 +33,7 @@ CI (`.github/workflows/test.yml`) runs build + unit + e2e tests on every push to
 | Rule | Detail |
 |------|--------|
 | CSS | Custom design system in `src/styles/global.css` — **never rewrite to Tailwind** |
-| i18n | Single-URL routing — one page per path. German renders at build time via `t()` (`src/lib/i18n.ts`); English is swapped in client-side by `public/js/i18n.js` using `data-i18n` attributes. Dictionaries: `public/js/i18n/{de,en}.json`. Admin edits from `/admin` → Seitentexte are layered on top of these: baked into the build by `scripts/fetch-site-text.mjs` (a `prebuild` step) and applied in the browser by `i18n.js`, so an edit shows up without a rebuild. Render German through `t(locale, 'key')` — never a hardcoded literal next to a `data-i18n` attribute, or the override cannot reach the build output (`tests/unit/site-text.test.ts` enforces this). Legacy `/de/…` `/en/…` URLs 301 to the canonical path via `public/_redirects`. |
+| i18n | Single-URL routing — one page per path. German renders at build time via `t()` (`src/lib/i18n.ts`); English is swapped in client-side by `public/js/i18n.js` using `data-i18n` attributes. Dictionaries: `public/js/i18n/{de,en}.json`. Admin edits from `/admin` → Seitentexte are layered on top of these: baked into the build by `scripts/fetch-site-text.mjs` (a `prebuild` step) and applied in the browser by `i18n.js`, so an edit shows up without a rebuild. Render German through `t(locale, 'key')` — never a hardcoded literal next to a `data-i18n` attribute, or the override cannot reach the build output (`tests/unit/site-text.test.ts` enforces this). Legacy `/de/…` `/en/…` URLs 301 to the canonical path via `functions/_middleware.js`. |
 | Team data | Hybrid — build-time fetch in frontmatter via `src/lib/fetch/*` (instant-paint / no-JS fallback), refreshed client-side from Directus (`public/js/team-page.js` etc.) |
 | News/events | Build-time fetch in frontmatter + runtime via Directus REST |
 | Board/contacts | Static JSON in `src/data/` |
@@ -58,7 +58,7 @@ Same convention as `wiedisync`:
 Cloudflare Pages — pushes to `prod` trigger the live deploy.
 - **Live domain**: `https://kscw.ch` (custom-domain cutover 2026-06-18)
 - **Dev preview**: pushes to `dev` build a CF Pages preview deploy
-- `kscw-website.pages.dev` 302-redirects to `https://kscw.ch` via `functions/_middleware.js` — a **time-bound** transitional measure, keep until at least 2026-07-08 (see the comment in that file before removing it)
+- `functions/_middleware.js` serves the legacy `/de/…` `/en/…` 301s (moved out of `public/_redirects` 2026-09-28 — a `/:splat` rule was an open redirect via `/de//evil.example`). `public/_routes.json` limits Functions to `/de`, `/de/*`, `/en`, `/en/*`; never add a `/de` or `/en` rule to `_redirects` (Cloudflare skips it for Function-served paths). The old `kscw-website.pages.dev` → `kscw.ch` 302 was removed with it (its window closed 2026-07-08)
 - **Directus prod**: `https://directus.kscw.ch`
 - **Directus dev**: `https://directus-dev.kscw.ch`
 
@@ -73,13 +73,14 @@ Cloudflare Pages — pushes to `prod` trigger the live deploy.
 ## Runtime Layer
 `public/js/` is a vanilla-JS runtime (no framework) covering: the i18n engine (`i18n.js` + `i18n/{de,en}.json`), forms with Cloudflare Turnstile (registration, feedback, contact, newsletter), `error-logger.js` (JSONL/Sentry telemetry), `search.js`, `scoreboard.js`, `team-page.js`.
 
-### Load order — four rules that were expensive to find (2026-08-12)
+### Load order — five rules that were expensive to find (2026-08-12, rule 5 2026-09-28)
 An audit measured an English visitor reading a complete German page for **1.7–2.7 s**, and a CLS of **0.95** on team pages. Both were ordering, not speed. Undoing any of these brings them straight back:
 
 1. **The dictionary request is issued by the inline pre-paint script at the top of `BaseLayout.astro`'s `<head>`**, and handed to `i18n.js` via `window.__I18N_PRE`. It must not move behind a DOM event or below another blocking script — it was `DOMContentLoaded`-gated, which put it after the whole document. Request time: 2250 ms → 175 ms.
 2. **Await `i18nReady` before RENDERING, never before FETCHING.** Nothing in Directus depends on the language, so chaining serialises two independent round trips. Use `Promise.all([payload, i18nReady])`.
 3. **Anything a page script writes gets a `data-i18n` key on the node**, not just translated text (`setTr()` in `index.astro`). Nodes built during body parse are filled from an empty dictionary and stay in the build language forever otherwise. The `i18nApplied` event is the load-time repair signal — `langChanged` is toggle-only and has thirteen listeners, several of which re-fetch.
 4. **Client renderers that replace server-rendered markup must clear their container** (`renderHero` in `team-page.js`) and keep their markup in step with the Astro component (`TeamHero.astro` / `TeamPhoto.astro`), or the swap becomes a visible jump.
+5. **`window.__KSCW_DIRECTUS` and `window.__I18N_BAKED` are set by inline scripts in `BaseLayout.astro`'s `<head>` and must stay above every script that talks to Directus** (`error-logger.js` included); `admin.astro` has its own `<head>` and repeats the `__KSCW_DIRECTUS` selection — keep the two copies in step (2026-09-28, F-41 / F-46).
 
 Tests: `tests/e2e/i18n-first-paint.spec.ts`, `data-parallel-load.spec.ts`, `team-page-build-time.spec.ts`, `i18n-runtime-strings.spec.ts`, `fonts-self-hosted.spec.ts`. Read the header of `data-parallel-load.spec.ts` before editing it — three timing-based shapes were tried and abandoned; it pins the dictionary request *open* rather than timing anything.
 

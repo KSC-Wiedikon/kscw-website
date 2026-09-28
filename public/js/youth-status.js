@@ -60,7 +60,9 @@
   // season's slots are already in the HTML before their first week, and any
   // genuinely new slot is a Directus edit that does trigger a rebuild.
   function pruneExpiredSlots() {
-    var today = new Date().toISOString().slice(0, 10);
+    // The Zurich day, not the UTC one (audit 2026-09-28, F-53) — same rule as
+    // zurichToday() in src/lib/zurichTime.ts.
+    var today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });
     for (var i = 0; i < cards.length; i++) {
       var meta = cards[i];
       var lines = meta.querySelectorAll('.youth-slot[data-valid-until]');
@@ -80,8 +82,8 @@
 
   pruneExpiredSlots();
 
-  var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
 
   var FILTER = encodeURIComponent(JSON.stringify({ sport: { _eq: 'basketball' }, active: { _eq: true } }));
   var BASE = DIRECTUS_URL + '/items/teams?limit=-1&filter=' + FILTER + '&fields=';

@@ -108,10 +108,21 @@ describe('Swiss Basketball licence by age band', () => {
     expect(fees.BB_LICENCE).toEqual({ senior: 150, U20: 115, U18: 90, U16: 80, U14: 55, U12: 40 });
   });
 
-  it('seasons start on 1 August (UTC), named by the first calendar year', () => {
-    expect(fees.seasonStartYear(new Date('2026-07-31T23:59:59Z'))).toBe(2025);
-    expect(fees.seasonStartYear(new Date('2026-08-01T00:00:00Z'))).toBe(2026);
+  // 1 July, not 1 August: the same cut-over as the season label and the minor
+  // check in registration-form.js, so a July applicant is priced on the band of
+  // the season the form says they are registering for (audit 2026-09-28, F-56).
+  it('seasons start on 1 July (UTC), named by the first calendar year', () => {
+    expect(fees.seasonStartYear(new Date('2026-06-30T23:59:59Z'))).toBe(2025);
+    expect(fees.seasonStartYear(new Date('2026-07-01T00:00:00Z'))).toBe(2026);
+    expect(fees.seasonStartYear(new Date('2026-07-31T23:59:59Z'))).toBe(2026);
     expect(fees.seasonStartYear(new Date('2027-03-01T12:00:00Z'))).toBe(2026);
+  });
+
+  it('agrees with the season registration-form.js prints on the licence PDF', () => {
+    // currentSeasonLabel() there: (getMonth() + 1) >= 7 → July. Read from source so
+    // the two cannot drift apart silently again.
+    const form = readFileSync(resolve(process.cwd(), 'public/js/registration-form.js'), 'utf8');
+    expect(form).toMatch(/function currentSeasonLabel\(\)[\s\S]{0,200}\(now\.getMonth\(\) \+ 1\) >= 7/);
   });
 
   // Bands per src/lib/birthYears.ts for 2026/27: U12 = 2015–2016, U14 = 2013–2014,

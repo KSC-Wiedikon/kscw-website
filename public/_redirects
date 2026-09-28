@@ -1,17 +1,4 @@
-# Single-URL migration: the site dropped the /de and /en URL prefixes (one URL
-# per page, language toggled client-side). 301 every old bilingual URL to its
-# canonical German-slug path so existing links, bookmarks and search results
-# keep working. Cloudflare Pages: first match wins — specific rules first.
-
-# English pages that had a translated slug map to the German canonical slug.
-/en/volleyball/regulations    /volleyball/reglemente      301
-/en/volleyball/scheduling     /volleyball/spielplanung    301
-/en/basketball/scheduling     /basketball/spielplanung    301
-
-# Retired mixed-tournament pages (previously redirected to the sport overview).
-/de/volleyball/mixed-turnier      /volleyball   301
-/en/volleyball/mixed-tournament   /volleyball   301
-/en/volleyball/mixed-turnier      /volleyball   301
+# Cloudflare Pages: first match wins — specific rules first.
 
 # Scorer-exam upload: the page was announced with the umlaut spelling, but every slug on
 # this site is ASCII, so /pruefung is canonical and the umlaut 301s onto it. Both the
@@ -20,10 +7,11 @@
 /weiteres/schreiberkurse/pr%C3%BCfung   /weiteres/schreiberkurse/pruefung   301
 /weiteres/schreiberkurse/prüfung        /weiteres/schreiberkurse/pruefung   301
 
-# Everything else: same slug, just drop the locale prefix.
-/de/*   /:splat   301
-/en/*   /:splat   301
-
-# Bare locale roots → home.
-/de   /   301
-/en   /   301
+# The legacy locale URLs of the single-URL migration (/de, /en, /de/* and /en/*,
+# including the translated-slug and retired-page ones) are NOT redirected here any
+# more: they live in functions/_middleware.js (2026-09-28). As `/de/*  /:splat  301`
+# they were an open redirect — `/de//evil.example` became `Location: //evil.example`
+# — and a splat cannot be normalised in this file. Do not add a /de or /en rule
+# here: Cloudflare skips `_redirects` for requests a Function serves, and
+# public/_routes.json sends every /de and /en request to the Function, so such a
+# rule would silently never fire.

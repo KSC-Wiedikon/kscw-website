@@ -86,8 +86,10 @@ export function safeHref(raw: unknown): string {
 
   // Protocol-relative ("//evil.example") looks like a path but inherits the
   // page scheme and navigates off-site — the open-redirect / phishing vector.
-  // A sponsor linking outward must write the scheme explicitly.
-  if (cleaned.startsWith('//')) return '';
+  // A sponsor linking outward must write the scheme explicitly. The URL
+  // parser treats a backslash as "/" for http(s) base URLs, so "\\evil.example"
+  // and "/\\evil.example" are the same vector in disguise (audit 2026-09-28, F-58).
+  if (/^[\\/]{2}/.test(cleaned)) return '';
 
   const scheme = cleaned.match(SCHEME_RE);
 

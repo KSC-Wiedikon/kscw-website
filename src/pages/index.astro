@@ -202,8 +202,8 @@ try {
     (function () {
       'use strict';
 
-      var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+      var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
 
       // Read a translation at call time so re-renders pick up the active language.
       // Falls back to the German default if i18n hasn't loaded yet.
@@ -502,7 +502,10 @@ try {
       function buildGameUrl(sport, direction) {
         var isUpcoming = direction === 'upcoming';
         var filter = isUpcoming
-          ? { _and: [{ date: { _gte: today } }, { status: { _neq: 'cancelled' } }] }
+          // Not `completed` either: a game played earlier today is still dated
+          // today, and used to sit under Upcoming as well as Recent Results
+          // (audit 2026-09-28, F-51).
+          ? { _and: [{ date: { _gte: today } }, { status: { _nin: ['cancelled', 'completed'] } }] }
           // Plus played games whose result has not synced yet (still `scheduled`,
           // date gone) — see public/js/pending-results.js.
           : { _and: [
@@ -542,16 +545,24 @@ try {
         var fetches = [];
         var seasonStart = currentSeasonLabel().slice(0, 4) + '-06-01';
         var live = window.KSCWPendingResults ? KSCWPendingResults.loadLive(seasonStart) : Promise.resolve([]);
+        // Each fetch settles on its own. With Promise.all, ONE failed request (a
+        // 403 on the basketball filter, a dropped connection) rejected the lot
+        // and both tables stayed on "Laden…" forever (audit 2026-09-28, F-52).
+        // A failed list is now an empty list, and renderGameTable shows its
+        // empty state.
         sports.forEach(function(sport) {
           ['upcoming', 'completed'].forEach(function(dir) {
             fetches.push(
-              fetch(buildGameUrl(sport, dir)).then(function(r) { return r.json(); })
+              fetch(buildGameUrl(sport, dir))
+                .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
                 .then(function(data) { cachedGames[dir][sport] = mergeDerbies((data.data || []).map(mapGame)).slice(0, 5); })
+                .catch(function(err) { cachedGames[dir][sport] = []; console.warn('Failed to fetch games:', err); })
             );
           });
         });
-        Promise.all(fetches.concat(live)).then(function(r) {
-          var liveRows = r[r.length - 1];
+        var liveSettled = Promise.resolve(live).catch(function() { return []; });
+        Promise.all(fetches.concat(liveSettled)).then(function(r) {
+          var liveRows = r[r.length - 1] || [];
           ['all', 'volleyball', 'basketball'].forEach(function(sp) { applyLiveScores(cachedGames.completed[sp] || [], liveRows); });
           renderGameTable('upcoming-games-list', cachedGames.upcoming.all, false);
           renderGameTable('recent-results-list', cachedGames.completed.all, true);
@@ -721,9 +732,18 @@ try {
         var grid = document.getElementById('news-grid');
         if (!grid) return;
         var newsFields = 'id,title,title_en,slug,excerpt,body,category,author,published_at,image,date_created';
-        // Published-only is enforced by the Directus Public role permission; is_published is not readable anonymously.
-        fetch(DIRECTUS_URL + '/items/news?fields=' + encodeURIComponent(newsFields) + '&sort=-published_at&limit=2')
-          .then(function(res) { return res.json(); })
+        // Published-only, twice over: the Public role's row filter is the real gate,
+        // and this filter is the second line of defence (audit 2026-09-28, F-07).
+        // The role filter used to test only published_at, so an "archived"
+        // (is_published=false) article with a past date stayed public. ⚠ Needs
+        // is_published in the Public news field list (setup-permissions.mjs) —
+        // filtering on an unreadable field 403s the whole query.
+        var newsFilter = { is_published: { _eq: true }, published_at: { _lte: '$NOW' } };
+        fetch(DIRECTUS_URL + '/items/news?fields=' + encodeURIComponent(newsFields)
+          + '&filter=' + encodeURIComponent(JSON.stringify(newsFilter)) + '&sort=-published_at&limit=2')
+          // A refused query (403, 5xx) keeps the build-time cards instead of
+          // replacing them with an empty list.
+          .then(function(res) { if (!res.ok) throw new Error('HTTP ' + res.status); return res.json(); })
           .then(function(data) {
             cachedArticles = data.data || [];
             renderNews();

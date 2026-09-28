@@ -258,6 +258,7 @@
   // Works even for older/paginated articles not in the initial list render, by
   // fetching the single article from Directus by slug. Static site, runtime data.
   function directusBase() {
+    if (window.__KSCW_DIRECTUS) return window.__KSCW_DIRECTUS;
     var h = window.location.hostname;
     return (h === 'localhost' || h === '127.0.0.1')
       ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
@@ -269,7 +270,12 @@
     var base = directusBase();
     var fields = 'id,title,title_en,slug,excerpt,body,category,author,published_at,image,date_created';
     var url = base + '/items/news?fields=' + encodeURIComponent(fields)
-      + '&filter=' + encodeURIComponent(JSON.stringify({ slug: { _eq: slug } }))
+      // Published-only as a second line of defence behind the Public role's row
+      // filter, so a shared ?news= link to an archived article opens nothing
+      // (audit 2026-09-28, F-07). Needs is_published in the Public field list.
+      + '&filter=' + encodeURIComponent(JSON.stringify({
+        slug: { _eq: slug }, is_published: { _eq: true }, published_at: { _lte: '$NOW' },
+      }))
       + '&limit=1';
     fetch(url)
       .then(function (r) { return r.json(); })

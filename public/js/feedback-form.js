@@ -1,15 +1,23 @@
 /**
  * KSCW Feedback Form — Type selection, validation, file upload, submission
  *
- * Submits to POST /items/feedback on Directus.
- * Uses multipart/form-data for screenshot file upload.
- * Includes Turnstile CAPTCHA token in form body.
+ * Submits to POST /kscw/public/feedback (kscw-endpoints) as multipart/form-data,
+ * with the optional screenshot as the `screenshot` file part and the Turnstile
+ * token in the X-Turnstile-Token header.
+ *
+ * ⚠ It used to POST this same FormData to /items/feedback. The Directus items
+ * controller only parses JSON, so req.body arrived as {} and the title,
+ * description, email and screenshot were all dropped (audit 2026-09-28, F-08).
+ * The endpoint verifies Turnstile server-side, rate-limits, caps lengths, puts
+ * the screenshot in the private feedback folder and creates the row itself.
+ * The field names below are that endpoint's contract — rename one here and it
+ * must be renamed there too.
  */
 (function () {
   'use strict';
 
-  var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
   var TURNSTILE_SITE_KEY = '0x4AAAAAACoYmx3xiDfRbmv9';
   var MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
   var ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
@@ -275,18 +283,20 @@
       formData.append('screenshot', selectedFile);
     }
 
-    fetch(DIRECTUS_URL + '/items/feedback', {
+    fetch(DIRECTUS_URL + '/kscw/public/feedback', {
       method: 'POST',
       headers: { 'X-Turnstile-Token': data.turnstileResponse },
       body: formData,
     })
       .then(function (res) {
-        if (!res.ok) {
-          return res.json().then(function (err) {
-            throw new Error(err.message || 'HTTP ' + res.status);
-          });
-        }
-        return res.json();
+        // A non-JSON error body (proxy 502, WAF page) must still surface as the
+        // generic message, not as a JSON parse error.
+        return res.json().catch(function () { return {}; }).then(function (body) {
+          if (!res.ok || !body || body.ok !== true) {
+            throw new Error('HTTP ' + res.status);
+          }
+          return body;
+        });
       })
       .then(function () {
         var successMsg = selectedType === 'bug'
@@ -303,10 +313,8 @@
         selectedType = 'bug';
       })
       .catch(function (err) {
-        var errMsg = (err && err.message && err.message !== 'HTTP 400')
-          ? err.message
-          : msg('error');
-        showFeedback(errMsg, 'error');
+        // Server error text is never shown: it is English, internal, or both.
+        showFeedback(msg('error'), 'error');
       })
       .finally(function () {
         // Single-use token: resetting only on success (where this used to live) left

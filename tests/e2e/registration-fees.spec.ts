@@ -52,10 +52,12 @@ const THIS_YEAR = new Date().getFullYear();
 const DOB_ADULT = '1990-01-01';
 const DOB_YOUTH_U16 = `${THIS_YEAR - 15}-01-01`;   // turns 15 this year → U16+
 const DOB_YOUTH_UNDER = `${THIS_YEAR - 14}-01-01`; // one year younger → not yet
-// Swiss Basketball prices the licence by SEASON age band (seasons turn on
-// 1 August; U14 = born season−13..season−12 per src/lib/birthYears.ts), so the
-// basketball probe is derived from the season, not the calendar year.
-const SEASON = new Date().getUTCMonth() >= 7 ? new Date().getUTCFullYear() : new Date().getUTCFullYear() - 1;
+// Swiss Basketball prices the licence by SEASON age band (U14 = born
+// season−13..season−12 per src/lib/birthYears.ts), so the basketball probe is
+// derived from the season, not the calendar year. The PRICING season turns on
+// 1 JULY (registration-fees.js seasonStartYear, audit 2026-09-28 F-56) — not the
+// 1 August of birthYears.ts — so this must mirror that, or every July run fails.
+const SEASON = new Date().getUTCMonth() >= 6 ? new Date().getUTCFullYear() : new Date().getUTCFullYear() - 1;
 const DOB_BB_U14 = `${SEASON - 13}-06-01`;         // oldest U14 Jahrgang → CHF 55, and never U16+ by calendar year
 
 test.beforeEach(async ({ page }) => {

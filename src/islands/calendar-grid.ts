@@ -1,8 +1,10 @@
 // Calendar Grid — Vanilla JS month grid fetching games from Directus
 // With filter toolbar, sport/team colors, and iCal subscribe modal
 
-const DIRECTUS_URL = (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'))
-  ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch'
+import { safeHref } from '../lib/safeHref'
+import { getDirectusUrl } from '../lib/directus'
+
+const DIRECTUS_URL = getDirectusUrl()
 
 interface DirectusTeam {
   id: number
@@ -609,7 +611,9 @@ if (container) {
       infoList.appendChild(makeInfoRow(detailIcon('building'), hallName))
     }
     if (hallAddr) {
-      const mapsUrl = hall?.maps_url
+      // maps_url is Directus data we did not author — vet the scheme before it
+      // reaches an href, falling back to the address search (audit 2026-09-28, PR-5).
+      const mapsUrl = safeHref(hall?.maps_url)
         || `https://maps.google.com/?q=${encodeURIComponent(hallAddr)}`
       infoList.appendChild(makeInfoRowLink(detailIcon('pin'), hallAddr, mapsUrl))
     }

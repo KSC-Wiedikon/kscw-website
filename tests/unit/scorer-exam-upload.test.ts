@@ -124,6 +124,28 @@ describe('scorer exam upload — SVRZ licence', () => {
   });
 });
 
+// wiedisync scorer-exam.js (2026-09-28 audit, F-14): /upload answers 409 already_graded
+// once an admin has recorded a verdict, and /ticket may report `graded` up front. The
+// licence rule is 205df80's `licence_on_file` flow, tested above.
+describe('scorer exam upload — graded exams', () => {
+  it('has a DE and EN message for an already graded exam, and uses it', () => {
+    expect(deDict.scorerExamAlreadyGraded).toBeTruthy();
+    expect(enDict.scorerExamAlreadyGraded).toBeTruthy();
+    expect(js).toContain("showError('scorerExamAlreadyGraded')");
+  });
+
+  it('maps a 409 already_graded to that message, not a generic error', () => {
+    const i = js.indexOf("r.status === 409 && r.body.error === 'already_graded'");
+    expect(i).toBeGreaterThan(-1);
+    expect(js.indexOf("showError('scorerExamAlreadyGraded')", i)).toBeGreaterThan(i);
+  });
+
+  it('shows the graded notice up front and keeps the upload button disabled', () => {
+    expect(js).toContain("setText(already, 'scorerExamAlreadyGraded')");
+    expect(js).toContain('fileSubmit.disabled = !!(info && info.graded);');
+  });
+});
+
 describe('scorer exam upload — page', () => {
   it('loads Turnstile and the upload runtime', () => {
     expect(page).toContain('https://challenges.cloudflare.com/turnstile/v0/api.js');
@@ -152,10 +174,20 @@ describe('scorer exam upload — page', () => {
     expect(redirects).toMatch(/schreiberkurse\/pr%C3%BCfung\s+\/weiteres\/schreiberkurse\/pruefung\s+301/);
   });
 
-  // The umlaut rules must precede the catch-all /de/* and /en/* rules: Cloudflare Pages
-  // is first-match-wins.
-  it('orders the umlaut redirect before the locale catch-alls', () => {
-    expect(redirects.indexOf('pr%C3%BCfung')).toBeLessThan(redirects.indexOf('/de/*'));
+  // There used to be /de/* and /en/* catch-alls in _redirects that the umlaut rules had
+  // to precede (first-match-wins). Those moved to functions/_middleware.js (F-40), so
+  // what matters now is that no locale rule creeps back in: it would shadow nothing
+  // useful, never fire (the Function owns /de and /en), and reopen the open redirect.
+  // Comments are stripped first — the file explains the move in prose.
+  it('has no /de or /en rule left for the umlaut redirect to race', () => {
+    const rules = redirects.split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith('#'));
+    expect(rules.length).toBeGreaterThan(0);
+    for (const rule of rules) {
+      const source = rule.split(/\s+/)[0];
+      expect(source, rule).not.toMatch(/^\/(de|en)(\/|$)/);
+    }
   });
 });
 

@@ -60,35 +60,39 @@ const halls = [...new Map(
   <p class="text-muted text-sm" data-i18n="teamLoadingTrainings">{t(locale, 'teamLoadingTrainings')}</p>
 )}
 
-<style>
-  .training-table {
+<style is:global>
+  /* Global, scoped under .training-pattern: public/js/team-page.js rebuilds this
+     exact markup client-side, and Astro's scoped styles (data-astro-cid-*) would
+     not reach nodes it creates — the rows would lose their layout on handover
+     (audit 2026-09-28, F-50). */
+  .training-pattern .training-table {
     width: 100%;
     border-collapse: collapse;
     margin-bottom: var(--space-md);
   }
-  .training-table td {
+  .training-pattern .training-table td {
     padding: var(--space-sm) var(--space-md);
     border-bottom: 1px solid var(--border);
     vertical-align: baseline;
   }
-  .training-table tr:last-child td {
+  .training-pattern .training-table tr:last-child td {
     border-bottom: none;
   }
-  .training-day {
+  .training-pattern .training-day {
     font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap;
   }
-  .training-time {
+  .training-pattern .training-time {
     font-variant-numeric: tabular-nums;
     color: var(--text-secondary);
     white-space: nowrap;
   }
-  .training-hall {
+  .training-pattern .training-hall {
     color: var(--text-secondary);
     width: 100%;
   }
-  .training-halls {
+  .training-pattern .training-halls {
     font-size: var(--text-sm);
     color: var(--text-muted);
     line-height: 1.7;

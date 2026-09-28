@@ -73,8 +73,10 @@
     if (cleaned === '') return '';
 
     // Protocol-relative ("//evil.example") looks like a path but inherits the
-    // page scheme and navigates off-site — the open-redirect vector.
-    if (cleaned.slice(0, 2) === '//') return '';
+    // page scheme and navigates off-site — the open-redirect vector. The URL
+    // parser treats a backslash as "/" for http(s) base URLs, so "\\evil.example"
+    // and "/\\evil.example" are the same thing in disguise (audit 2026-09-28, F-58).
+    if (/^[\\/]{2}/.test(cleaned)) return '';
 
     var scheme = cleaned.match(SCHEME_RE);
 

@@ -16,8 +16,8 @@
   var path = window.location.pathname.replace(/\/+$/, '');
   if (path === '/live' || path === '/admin') return;
 
-  var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
   var POLL_MS = 30000;
   var URL_ = DIRECTUS_URL + '/items/live_scores?limit=1&filter[channel][_eq]=kscw'
     + '&fields=status,team_a_short,team_b_short,points_a,points_b';

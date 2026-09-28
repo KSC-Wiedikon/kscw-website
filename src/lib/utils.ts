@@ -3,6 +3,8 @@
  * Extracted from public/js/data.js for reuse across components and islands
  */
 
+import { zurichToday } from './zurichTime';
+
 /** Club timezone — all dates render as the wall-clock day in Zurich. */
 const CLUB_TZ = 'Europe/Zurich';
 
@@ -134,9 +136,10 @@ export function getLeagueKey(sport: string, league: string): string {
 }
 
 /**
- * Get today's date in ISO format (YYYY-MM-DD)
+ * Get today's date in ISO format (YYYY-MM-DD) — the Zurich day, not the UTC one
+ * (audit 2026-09-28, F-53). Kept as an alias of {@link zurichToday} for callers.
  * @returns Today's date as ISO string
  */
 export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return zurichToday();
 }

@@ -131,8 +131,8 @@
   // Only links a coach toggled "Show on website" are ever served; member-only ones
   // stay in wiedisync. One batched request per table, cached per game key, so a
   // tab/language re-render does not refetch.
-  var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
   var recordingCache = {}; // key → [{ url, title }] ([] = fetched, none)
 
   function recordingKey(game) {
@@ -168,8 +168,14 @@
   // the row is highlighted and the icon reads as a stream badge rather than a replay.
   // Judged by date, not status/score: team-page rows carry status 'completed' and a
   // 0 score for every fixture (their feed has a score field on unplayed games too).
+  //
+  // A game that is already played (completed, or carrying a provisional hall
+  // scoreboard score) is not upcoming even when it is dated today — it showed a
+  // "Livestream" pill under Recent Results (audit 2026-09-28, F-51). Team-page
+  // rows now carry the real status too (F-12), so this gate holds there as well.
   function isUpcoming(game) {
     if (!game || game.status === 'cancelled' || !game.date) return false;
+    if (game.status === 'completed' || game.provisional) return false;
     var today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });
     return String(game.date).slice(0, 10) >= today;
   }
@@ -434,7 +440,12 @@
       if (addr) {
         venue.appendChild(infoRow(isDE ? 'Adresse' : 'Address', addr));
       }
-      var mapsUrl = hallData.mapsUrl || hallData.maps_url;
+      // Hall maps_url is Directus data we did not author: vet it through the
+      // shared scheme guard (loaded by BaseLayout) before it reaches an href.
+      // Fails closed — no guard, no link (audit 2026-09-28, PR-5).
+      var rawMapsUrl = hallData.mapsUrl || hallData.maps_url;
+      var mapsUrl = rawMapsUrl && typeof window.kscwSafeHref === 'function'
+        ? window.kscwSafeHref(rawMapsUrl) : '';
       if (mapsUrl) {
         var mapsLink = el('a', 'gm-link', 'Google Maps \u2197');
         mapsLink.href = mapsUrl;

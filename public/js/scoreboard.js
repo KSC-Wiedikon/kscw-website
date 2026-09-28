@@ -10,8 +10,8 @@
 (function () {
   'use strict';
 
-  var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
 
   // teamIdMap: maps Directus team IDs to short display names
   var teamIdMap = {};
@@ -401,6 +401,34 @@
     container.appendChild(card);
   }
 
+  // ── Season choice ───────────────────────────────────────────────────
+  // The newest season that has as many KSCW teams as this sport ever fields,
+  // capped at two. It used to be simply the newest season with ANY row, so when
+  // the sync wrote one team's new-season standings in the summer, the whole
+  // scoreboard jumped to a one-team, zero-games season and the finished season
+  // vanished (audit 2026-09-28, F-57). The cap keeps a sport that only ever has
+  // one team from being pinned to its first season forever.
+  function pickSeason(rows) {
+    var teamsBySeason = {};
+    var maxTeams = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var season = rows[i].season;
+      if (!season) continue;
+      var set = teamsBySeason[season] || (teamsBySeason[season] = {});
+      set[rows[i].team_id] = true;
+    }
+    var seasons = Object.keys(teamsBySeason);
+    for (var j = 0; j < seasons.length; j++) {
+      maxTeams = Math.max(maxTeams, Object.keys(teamsBySeason[seasons[j]]).length);
+    }
+    var needed = Math.min(2, maxTeams);
+    seasons.sort(function (a, b) { return b.localeCompare(a); });
+    for (var k = 0; k < seasons.length; k++) {
+      if (Object.keys(teamsBySeason[seasons[k]]).length >= needed) return seasons[k];
+    }
+    return null;
+  }
+
   // ── Main render function ────────────────────────────────────────────
   window.renderScoreboard = function (containerId, sportFilter, rankingsData) {
     var container = document.getElementById(containerId);
@@ -427,10 +455,7 @@
         return r.team_id && r.team_id.indexOf(prefix) === 0 && !!teamIdMap[r.team_id];
       });
 
-      // Find latest season
-      var seasons = sportRows.map(function (r) { return r.season; }).filter(Boolean);
-      seasons.sort(function (a, b) { return b.localeCompare(a); });
-      var latestSeason = seasons[0] || null;
+      var latestSeason = pickSeason(sportRows);
       var seasonRows = latestSeason
         ? sportRows.filter(function (r) { return r.season === latestSeason; })
         : sportRows;
@@ -440,6 +465,8 @@
 
     container.appendChild(grid);
   };
+  // Exposed for tests/unit/scoreboard-season.test.ts.
+  window.renderScoreboard.pickSeason = pickSeason;
 
   // ── Auto-render: fetch rankings from Directus, then render ──────────
   function autoRender() {

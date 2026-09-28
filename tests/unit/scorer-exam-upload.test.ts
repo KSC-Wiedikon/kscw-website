@@ -65,7 +65,7 @@ describe('scorer exam upload — transport contract', () => {
   });
 
   it('url-encodes the ticket (it is base64url + a dot separator)', () => {
-    expect(js).toMatch(/encodeURIComponent\(m\.ticket\)/);
+    expect(js).toMatch(/encodeURIComponent\(ticket\)/);
   });
 
   it('sends the SVRZ licence with the upload', () => {
@@ -156,5 +156,42 @@ describe('scorer exam upload — page', () => {
   // is first-match-wins.
   it('orders the umlaut redirect before the locale catch-alls', () => {
     expect(redirects.indexOf('pr%C3%BCfung')).toBeLessThan(redirects.indexOf('/de/*'));
+  });
+});
+
+// 2026-09-28 audit: /lookup MAILS the ticket; it must never come back to the browser, and
+// the page must not reveal whether an address is registered.
+describe('scorer exam upload — emailed ticket link', () => {
+  it('reads the ticket from the URL fragment and strips it from the address bar', () => {
+    expect(js).toMatch(/location\.hash/);
+    expect(js).toMatch(/get\('ticket'\)/);
+    expect(js).toMatch(/history\.replaceState/);
+    // Stripped BEFORE the network call, so a failed /ticket request cannot leave it visible.
+    expect(js.indexOf('stripTicketFromUrl();')).toBeLessThan(js.indexOf('openTicket(initialTicket)'));
+  });
+
+  it('asks /ticket for display data with the ticket in the body, not the URL', () => {
+    expect(js).toContain("/kscw/scorer-exam/ticket'");
+    expect(js).toMatch(/JSON\.stringify\(\{ ticket: tk \}\)/);
+  });
+
+  it('never takes a ticket, name or licence from the /lookup answer', () => {
+    const lookup = js.slice(js.indexOf("/kscw/scorer-exam/lookup'"), js.indexOf('otherAddressBtn.addEventListener'));
+    expect(lookup).not.toMatch(/r\.body\.data/);
+    expect(lookup).not.toMatch(/status === 404/);
+    expect(lookup).toMatch(/r\.body\.ok/);
+  });
+
+  it('uses licence_on_file instead of pre-filling a licence number', () => {
+    expect(js).toContain('licence_on_file');
+    expect(js).not.toMatch(/licenceInput\.value\s*=\s*\(?\s*m/);
+    expect(page).toContain('id="exam-licence-group"');
+    expect(page).toContain('data-i18n="scorerExamLicenceOnFile"');
+  });
+
+  it('shows the neutral "check your inbox" step', () => {
+    expect(page).toContain('id="exam-step-sent"');
+    expect(deDict.scorerExamLinkSentHint).toMatch(/^Falls/);
+    expect(enDict.scorerExamLinkSentHint).toMatch(/^If this address/);
   });
 });

@@ -7,8 +7,16 @@
 
 // ── URL detection ──────────────────────────────────────────────────────────
 
+/** The two backends this site may talk to. Anything else is ignored. */
+const KNOWN_DIRECTUS = ['https://directus.kscw.ch', 'https://directus-dev.kscw.ch']
+
 export function getDirectusUrl(): string {
   if (typeof window !== 'undefined') {
+    // BaseLayout injects the backend the page was built against (live hosts
+    // pinned to prod, localhost to dev). Before it existed, a Pages preview
+    // built from directus-dev refreshed from prod (audit 2026-09-28, F-41).
+    const injected = (window as unknown as { __KSCW_DIRECTUS?: unknown }).__KSCW_DIRECTUS
+    if (typeof injected === 'string' && KNOWN_DIRECTUS.includes(injected)) return injected
     const h = window.location.hostname
     if (h === 'localhost' || h === '127.0.0.1') return 'https://directus-dev.kscw.ch'
     return 'https://directus.kscw.ch'

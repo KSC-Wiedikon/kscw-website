@@ -74,8 +74,8 @@ const locale = 'de';
     (function () {
       'use strict';
 
-      var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-        ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+      var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
 
       var PAGE_SIZE = 12;
       var offset = 0;
@@ -98,11 +98,16 @@ const locale = 'de';
           if (empty) { empty.style.display = 'none'; grid.appendChild(empty); }
         }
         var newsFields = 'id,title,title_en,slug,excerpt,body,category,author,published_at,image,date_created';
-        // Published-only is enforced by the Directus Public role permission; is_published is not readable anonymously.
-        var filter = {};
+        // Published-only, twice over: the Public role's row filter is the real gate,
+        // and this filter is the second line of defence (audit 2026-09-28, F-07).
+        // The role filter used to test only published_at, so an "archived"
+        // (is_published=false) article with a past date stayed public. ⚠ Needs
+        // is_published in the Public news field list (setup-permissions.mjs) —
+        // filtering on an unreadable field 403s the whole query.
+        var filter = { is_published: { _eq: true }, published_at: { _lte: '$NOW' } };
         if (currentFilter !== 'all') filter.category = { _eq: currentFilter };
         var url = DIRECTUS_URL + '/items/news?fields=' + encodeURIComponent(newsFields)
-          + (Object.keys(filter).length ? '&filter=' + encodeURIComponent(JSON.stringify(filter)) : '')
+          + '&filter=' + encodeURIComponent(JSON.stringify(filter))
           + '&sort=-published_at&limit=' + PAGE_SIZE + '&offset=' + offset;
 
         fetch(url)
@@ -145,7 +150,12 @@ const locale = 'de';
               meta.className = 'flex items-center gap-sm mb-md';
               var dateSpan = document.createElement('span');
               dateSpan.className = 'news-date';
-              dateSpan.textContent = new Date(date).toLocaleDateString('de-CH', { timeZone: 'Europe/Zurich' });
+              // Explicit 2-digit parts: bare de-CH drops leading zeros ("3.6.2026").
+              // Same shape as formatDate() and the homepage cards — dd.mm.yyyy
+              // (audit 2026-09-28, F-55).
+              dateSpan.textContent = new Date(date).toLocaleDateString('de-CH', {
+                timeZone: 'Europe/Zurich', day: '2-digit', month: '2-digit', year: 'numeric',
+              });
               meta.appendChild(dateSpan);
               var badge = document.createElement('span');
               badge.className = 'badge ' + badgeClass;

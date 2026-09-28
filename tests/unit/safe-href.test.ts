@@ -60,6 +60,13 @@ const REJECTED: Array<[string, string]> = [
   ['protocol-relative', '//evil.example'],
   ['protocol-relative with path', '//evil.example/logo.png'],
   ['protocol-relative, spaced', '  //evil.example'],
+  // The URL parser reads "\\" as "/" in a special-scheme (http/https) context,
+  // so every two-slash mix below navigates to evil.example (audit 2026-09-28, F-58).
+  ['backslash-backslash', '\\\\evil.example'],
+  ['slash-backslash', '/\\evil.example'],
+  ['backslash-slash', '\\/evil.example'],
+  ['backslash pair, spaced', '  \\\\evil.example/x'],
+  ['backslash pair behind a tab', TAB + '\\\\evil.example'],
 ];
 
 /** Values that must survive untouched — rejecting these would break the site. */
@@ -72,6 +79,7 @@ const ACCEPTED: Array<[string, string]> = [
   ['mailto', 'mailto:kontakt@kscw.ch'],
   ['tel', 'tel:+41441234567'],
   ['root-relative', '/weiteres/datenschutz'],
+  ['relative with a later backslash', '/weiteres\\datenschutz'],
   ['fragment', '#kontakt'],
   ['query only', '?tab=news'],
 ];

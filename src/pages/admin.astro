@@ -28,6 +28,16 @@ const teamTable = {
 // tests/unit/no-i18n-html.test.ts stays at the two pages that genuinely cannot be
 // expressed any other way. JSON.parse on the other side is the only decoding step.
 const teamTableJson = JSON.stringify(teamTable);
+/**
+ * Backend selection, same rule as BaseLayout.astro (audit 2026-09-28, F-41). This
+ * page has its own <html> and does not go through BaseLayout, so the selection is
+ * repeated here: kscw.ch is pinned to prod and localhost to dev whatever the build
+ * said, anything else (a Pages preview) follows the build's DIRECTUS_URL, and only
+ * the two known Directus origins are ever accepted. Keep the two copies in step.
+ */
+const KNOWN_DIRECTUS = ['https://directus.kscw.ch', 'https://directus-dev.kscw.ch'];
+const envDirectus = String(import.meta.env.DIRECTUS_URL || '').replace(/\/+$/, '');
+const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'https://directus.kscw.ch';
 ---
 <!DOCTYPE html>
 <html lang="de">
@@ -40,7 +50,16 @@ const teamTableJson = JSON.stringify(teamTable);
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" href="/images/kscw_trio.png" type="image/png">
-  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet" integrity="sha384-ecIckRi4QlKYya/FQUbBUjS4qp65jF/J87Guw5uzTbO1C1Jfa/6kYmd6dXUF6D7i" crossorigin="anonymous">
+  {/* F-41: must stay above the dashboard script, which reads it for DIRECTUS_URL. */}
+  <script is:inline define:vars={{ buildDirectus }}>
+    (function () {
+      var h = location.hostname;
+      window.__KSCW_DIRECTUS = (h === 'kscw.ch' || h === 'www.kscw.ch') ? 'https://directus.kscw.ch'
+        : (h === 'localhost' || h === '127.0.0.1') ? 'https://directus-dev.kscw.ch'
+        : buildDirectus;
+    })();
+  </script>
   <script is:inline>
     if (localStorage.getItem('kscw-theme') === 'light') {
       document.documentElement.classList.add('light');
@@ -51,7 +70,6 @@ const teamTableJson = JSON.stringify(teamTable);
   <div id="admin-app"></div>
   <div id="kscw-team-table" hidden data-tables={teamTableJson}></div>
 
-  <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
   <script is:inline src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js" integrity="sha384-utBUCeG4SYaCm4m7GQZYr8Hy8Fpy3V4KGjBZaf4WTKOcwhCYpt/0PfeEe3HNlwx8" crossorigin="anonymous"></script>
   <script is:inline src="https://cdn.jsdelivr.net/npm/dompurify@3.2.4/dist/purify.min.js" integrity="sha384-eEu5CTj3qGvu9PdJuS+YlkNi7d2XxQROAFYOr59zgObtlcux1ae1Il3u7jvdCSWu" crossorigin="anonymous"></script>
   <script is:inline src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js" integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI" crossorigin="anonymous"></script>
@@ -62,10 +80,15 @@ const teamTableJson = JSON.stringify(teamTable);
   (function() {
     'use strict';
 
-    var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-      ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+    // Set by the <head> script above (F-41). Re-checked against the two known origins
+    // so this page, which holds an admin token, can never be pointed anywhere else;
+    // the old hostname rule stays as the fallback.
+    var DIRECTUS_URL = (window.__KSCW_DIRECTUS === 'https://directus.kscw.ch'
+        || window.__KSCW_DIRECTUS === 'https://directus-dev.kscw.ch')
+      ? window.__KSCW_DIRECTUS
+      : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
     var AUTH_KEY = 'kscw_admin_auth';
-    var TURNSTILE_SITE_KEY = '0x4AAAAAACoYmx3xiDfRbmv9';
     var app = document.getElementById('admin-app');
     var currentTab = 'news';
     var adminAccess = { isSuperuser: false, sections: [] };
@@ -98,8 +121,6 @@ const teamTableJson = JSON.stringify(teamTable);
     }
     var adminLang = readAdminLang();
     var quillInstance = null;
-    var turnstileWidgetId = null;
-    var turnstileToken = '';
 
     // ── Directus auth token management ───────────────────────
     function storeAuth(result) {
@@ -114,20 +135,50 @@ const teamTableJson = JSON.stringify(teamTable);
       if (!raw) return null;
       try { return JSON.parse(raw); } catch(e) { return null; }
     }
+    // Single-flight: a tab that loads several lists fires several wadmin() calls at once.
+    // Each used to POST /auth/refresh with the SAME refresh token; Directus rotates it on
+    // the first, so the others lean on its grace period — and once that is gone, the loser
+    // clears the session under the winner. One shared promise, one refresh (F-65).
+    var refreshPromise = null;
+    function refreshAuth(auth) {
+      if (refreshPromise) return refreshPromise;
+      refreshPromise = (async function() {
+        try {
+          var res = await fetch(DIRECTUS_URL + '/auth/refresh', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ refresh_token: auth.refresh_token, mode: 'json' }),
+          });
+          if (!res.ok) { sessionStorage.removeItem(AUTH_KEY); return null; }
+          var data = await res.json();
+          storeAuth(data.data);
+          return data.data.access_token;
+        } finally {
+          refreshPromise = null;
+        }
+      })();
+      return refreshPromise;
+    }
     async function getValidToken() {
       var auth = getAuth();
       if (!auth) return null;
-      if (auth.expires_at - Date.now() < 30000) {
-        var res = await fetch(DIRECTUS_URL + '/auth/refresh', {
+      if (auth.expires_at - Date.now() < 30000) return refreshAuth(auth);
+      return auth.access_token;
+    }
+    // Revoke the refresh token server-side, not just forget it — clearing sessionStorage
+    // alone leaves a live refresh token valid for its full TTL (F-64). The token is read
+    // first and the local session dropped synchronously, so a login that completes while
+    // the revoke is in flight is never wiped by it. Best effort: a network failure must
+    // never keep the user logged in locally.
+    async function logoutAdmin() {
+      var auth = getAuth();
+      sessionStorage.removeItem(AUTH_KEY);
+      if (!auth || !auth.refresh_token) return;
+      try {
+        await fetch(DIRECTUS_URL + '/auth/logout', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ refresh_token: auth.refresh_token, mode: 'json' }),
         });
-        if (!res.ok) { sessionStorage.removeItem(AUTH_KEY); return null; }
-        var data = await res.json();
-        storeAuth(data.data);
-        return data.data.access_token;
-      }
-      return auth.access_token;
+      } catch (e) { /* offline — the local session is already gone */ }
     }
     // Section data goes through the gated endpoint. /users/me,
     // items/teams, /files and /assets stay direct (see spec).
@@ -137,6 +188,43 @@ const teamTableJson = JSON.stringify(teamTable);
       var o = opts || {};
       var headers = Object.assign({}, o.headers || {}, { 'Authorization': 'Bearer ' + token });
       return fetch(DIRECTUS_URL + '/kscw/wadmin/' + section + '/' + subpath, Object.assign({}, o, { headers: headers }));
+    }
+    // Every row of a generic wadmin items read, a page at a time (F-24). A single
+    // `limit=50` silently cut lists and exports — the ClubDesk CSV held only the 50
+    // newest approvals. `path` is 'items/<collection>?…' without limit/page. Rejects on
+    // any non-2xx, so a caller can never mistake a refused read for an empty list.
+    var WADMIN_PAGE_SIZE = 200;
+    var WADMIN_MAX_PAGES = 50;
+    async function wadminAll(section, path) {
+      var rows = [];
+      for (var page = 1; page <= WADMIN_MAX_PAGES; page++) {
+        var res = await wadmin(section, path + (path.indexOf('?') === -1 ? '?' : '&')
+          + 'limit=' + WADMIN_PAGE_SIZE + '&page=' + page, {});
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        var batch = ((await res.json()) || {}).data || [];
+        rows = rows.concat(batch);
+        if (batch.length < WADMIN_PAGE_SIZE) return rows;
+      }
+      return rows;
+    }
+    // All submissions of one OpnForm form (100 per upstream page), in the
+    // { src, payload } / { src, error } shape the scorer views consume.
+    var SUBMISSION_MAX_PAGES = 20;
+    function fetchAllSubmissions(src) {
+      var base = 'opnform/forms/' + encodeURIComponent(src.slug) + '/submissions?per_page=100';
+      var payload = null;
+      function next(page) {
+        return wadmin('scorer_courses', base + '&page=' + page, {}).then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          return res.json();
+        }).then(function(p) {
+          if (!payload) payload = p;
+          else payload.data = (payload.data || []).concat(p.data || []);
+          var last = Math.min(SUBMISSION_MAX_PAGES, Number(p.last_page) || 1);
+          return page < last ? next(page + 1) : { src: src, payload: payload };
+        });
+      }
+      return next(1).catch(function(e) { return { src: src, error: (e && e.message) || 'error' }; });
     }
     // Mutates module-scope adminAccess AND returns it; callers MUST await before reading adminAccess.
     // A transient /me failure must NOT downgrade an already-good access (server still
@@ -234,7 +322,7 @@ const teamTableJson = JSON.stringify(teamTable);
         publish: 'Publizieren',
         confirmTitle: 'Bestätigen',
         confirmOk: 'OK',
-        confirmArchive: 'Diese News archivieren? Sie wird von der öffentlichen Seite entfernt.',
+        confirmArchive: 'Diese News archivieren? Sie wird von der öffentlichen Seite entfernt und das Veröffentlichungsdatum gelöscht – beim erneuten Publizieren gilt das Datum von heute.',
         confirmPublish: 'Diese News publizieren? Sie wird auf der öffentlichen Seite sichtbar.',
         archiveError: 'Fehler beim Aktualisieren: ',
         confirmDelete: 'Diesen Eintrag wirklich löschen?',
@@ -265,6 +353,9 @@ const teamTableJson = JSON.stringify(teamTable);
         minParticipants: 'Min. Teilnehmer',
         maxParticipants: 'Max. Teilnehmer',
         requiredParticipants: 'Pflicht-Teilnehmer',
+        startTime: 'Startzeit',
+        endTime: 'Endzeit',
+        eventTeamsInApp: 'Teams und eingeladene Mitglieder werden in Wiedisync verwaltet – hier bleiben sie beim Speichern unverändert.',
         requireNoteIfAbsent: 'Begründung bei Absage erforderlich',
         search: 'Suchen...',
         cancel: 'Abbrechen',
@@ -272,6 +363,9 @@ const teamTableJson = JSON.stringify(teamTable);
         saving: 'Wird gespeichert...',
         saveError: 'Fehler beim Speichern: ',
         translationFailed: 'Übersetzung fehlgeschlagen',
+        titleOtherLang: 'Titel (Englisch)',
+        translateTitle: 'Übersetzen',
+        translateTitleHint: 'Schickt den Titel an einen externen Übersetzungsdienst (MyMemory). Ergebnis vor dem Speichern prüfen.',
         create: 'Neu erstellen',
         forgotPassword: 'Passwort vergessen?',
         resetPasswordInfo: 'Gib deine E-Mail-Adresse ein und klicke auf «Passwort zurücksetzen». Du erhältst eine E-Mail mit einem Link zum Setzen deines Passworts.',
@@ -312,6 +406,8 @@ const teamTableJson = JSON.stringify(teamTable);
         scDateIso: 'Datum (JJJJ-MM-TT, leer = noch offen)',
         scScorerExpert: 'Schreiberexperte (für den SVRZ-Export)',
         scTime: 'Uhrzeit (HH:MM)',
+        scTimeInvalid: 'Uhrzeit im Format HH:MM eingeben, z. B. 18:30',
+        scFieldNotWritable: 'Dieses Feld darf nur ein Superuser ändern — nichts wurde gespeichert: ',
         scMode: 'Modus',
         scModeInPerson: 'Vor Ort',
         scModeRecorded: 'Aufzeichnung',
@@ -374,6 +470,7 @@ const teamTableJson = JSON.stringify(teamTable);
         scExamFailedConfirm: 'Prüfung als nicht bestanden erfassen?\n\n{name} erhält automatisch eine E-Mail mit diesem Ergebnis.',
         scExamResultMailSent: 'E-Mail gesendet an',
         scExamResultMailFailed: 'Ergebnis erfasst — die E-Mail konnte aber nicht gesendet werden.',
+        scExamResultNotSaved: 'Ergebnis NICHT gespeichert — deshalb wurde keine E-Mail gesendet. Bitte erneut versuchen.',
         scExportNoLicence: 'Für {count} Person(en) fehlt die SV-Lizenznummer. Der SVRZ braucht sie auf der Teilnehmerliste, und ihre Spielblätter werden im ZIP nach Namen statt nach Nummer benannt.\n\n{names}',
         scExportGuessedCity: 'Für {count} Person(en) ist kein Wohnort bekannt — weder aus der Anmeldung noch aus den Mitgliederdaten. Auf der Teilnehmerliste steht bei ihnen «{city}» ohne PLZ. Das ist eine Annahme, keine Angabe:\n\n{names}',
         scExportAnyway: 'Trotzdem exportieren?',
@@ -473,7 +570,7 @@ const teamTableJson = JSON.stringify(teamTable);
         publish: 'Publish',
         confirmTitle: 'Confirm',
         confirmOk: 'OK',
-        confirmArchive: 'Archive this news item? It will be removed from the public site.',
+        confirmArchive: 'Archive this news item? It will be removed from the public site and its publish date cleared — republishing dates it today.',
         confirmPublish: 'Publish this news item? It will be visible on the public site.',
         archiveError: 'Error updating: ',
         confirmDelete: 'Are you sure you want to delete this entry?',
@@ -504,6 +601,9 @@ const teamTableJson = JSON.stringify(teamTable);
         minParticipants: 'Min. participants',
         maxParticipants: 'Max. participants',
         requiredParticipants: 'Required participants',
+        startTime: 'Start time',
+        endTime: 'End time',
+        eventTeamsInApp: 'Teams and invited members are managed in Wiedisync — saving here leaves them unchanged.',
         requireNoteIfAbsent: 'Require note if not joining',
         search: 'Search...',
         cancel: 'Cancel',
@@ -511,6 +611,9 @@ const teamTableJson = JSON.stringify(teamTable);
         saving: 'Saving...',
         saveError: 'Error saving: ',
         translationFailed: 'Translation failed',
+        titleOtherLang: 'Title (German)',
+        translateTitle: 'Translate',
+        translateTitleHint: 'Sends the title to an external translation service (MyMemory). Check the result before saving.',
         create: 'Create new',
         forgotPassword: 'Forgot password?',
         resetPasswordInfo: 'Enter your email address and click "Reset password". You will receive an email with a link to set your password.',
@@ -551,6 +654,8 @@ const teamTableJson = JSON.stringify(teamTable);
         scDateIso: 'Date (YYYY-MM-DD, empty = TBA)',
         scScorerExpert: 'Scorer expert (for the SVRZ export)',
         scTime: 'Time (HH:MM)',
+        scTimeInvalid: 'Enter the time as HH:MM, e.g. 18:30',
+        scFieldNotWritable: 'Only a superuser may change this field — nothing was saved: ',
         scMode: 'Mode',
         scModeInPerson: 'In person',
         scModeRecorded: 'Recording',
@@ -613,6 +718,7 @@ const teamTableJson = JSON.stringify(teamTable);
         scExamFailedConfirm: 'Record the exam as not passed?\n\n{name} will automatically receive an email with this result.',
         scExamResultMailSent: 'Email sent to',
         scExamResultMailFailed: 'Result recorded — but the email could not be sent.',
+        scExamResultNotSaved: 'Result NOT saved — so no email was sent. Please try again.',
         scExportNoLicence: 'The SV licence number is missing for {count} person(s). SVRZ needs it on the Teilnehmerliste, and their scoresheets will be named after the person rather than the number in the zip.\n\n{names}',
         scExportGuessedCity: 'No town is known for {count} person(s) — neither from their signup nor from the member records. The Teilnehmerliste will say "{city}" for them, with no postcode. That is an assumption, not a stated address:\n\n{names}',
         scExportAnyway: 'Export anyway?',
@@ -699,33 +805,9 @@ const teamTableJson = JSON.stringify(teamTable);
       var dict = i18n[adminLang];
       return (dict && dict[key]) || i18n.en[key] || key;
     }
-    var cachedTeams = null; // [{id, name, sport}]
-    var cachedMembers = null; // [{id, first_name, last_name, email}]
-
-    // ── Data caches ───────────────────────────────────────────
-    function fetchTeams() {
-      if (cachedTeams) return Promise.resolve(cachedTeams);
-      return getValidToken().then(function(token) {
-        return fetch(DIRECTUS_URL + '/items/teams?filter[active][_eq]=true&sort=sport,name&fields=id,name,sport&limit=-1', {
-          headers: { 'Authorization': 'Bearer ' + token },
-        });
-      }).then(function(res) { return res.json(); })
-        .then(function(data) { cachedTeams = data.data; return cachedTeams; });
-    }
-    function fetchMembers() {
-      if (cachedMembers) return Promise.resolve(cachedMembers);
-      // WEB-ADM-2 (residual): this pulls every user's email directly from /users.
-      // Safe today because the admin page is reachable only by manager-admins
-      // (no non-admin "Website Admin" gated role exists yet). If such a gated
-      // role IS ever introduced (per the design spec), this direct /users call
-      // MUST be re-scoped — a website-only admin should not read member emails.
-      return getValidToken().then(function(token) {
-        return fetch(DIRECTUS_URL + '/users?sort=first_name,last_name&fields=id,first_name,last_name,email&limit=-1', {
-          headers: { 'Authorization': 'Bearer ' + token },
-        });
-      }).then(function(res) { return res.json(); })
-        .then(function(data) { cachedMembers = data.data; return cachedMembers; });
-    }
+    // The team and member pickers (and their /items/teams + /users caches) were removed
+    // with the event form's junction writes — F-23. /users was the WEB-ADM-2 residual:
+    // every user's email, pulled straight into the page.
 
     // ── Auth helpers ──────────────────────────────────────────
     // Ask the SERVER who this is, rather than pattern-matching role.name here.
@@ -837,6 +919,86 @@ const teamTableJson = JSON.stringify(teamTable);
       if (isNaN(d.getTime())) return '';
       var p = zurichParts(d);
       return p.day + '.' + p.month + '.' + p.year;
+    }
+    // What a news row's publication fields become for a given toggle state (F-07).
+    // The Public read of `news` is filtered on published_at (set and not in the future)
+    // — is_published alone never took an article off the public site, so "Archive" left it
+    // on the homepage, /news and /feed.xml, and a draft saved with the toggle off went live
+    // on its default date. Unpublished therefore means published_at = null as well; a
+    // publish keeps the date it already has (a future one schedules it) or takes today.
+    function newsPublication(isPublished, date, previous) {
+      if (!isPublished) return { is_published: false, published_at: null };
+      return { is_published: true, published_at: date || previous || zurichToday() };
+    }
+    // Today's date on the Zurich wall clock, as 'yyyy-mm-dd'. Not
+    // new Date().toISOString(): between 00:00 and 02:00 here that is still yesterday (F-53).
+    function zurichToday() {
+      var p = zurichParts(new Date());
+      return p.year + '-' + p.month + '-' + p.day;
+    }
+    // Addresses typed into a public form end up in a mailto: URL. "a@b.ch?bcc=spy@x.ch"
+    // passed the old "has an @" check and some mail clients honoured the bcc (F-20).
+    // So: a plain addr-spec only, and each part percent-encoded on the way in.
+    var PLAIN_EMAIL_RE = /^[A-Za-z0-9._+'-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$/;
+    function isPlainEmail(e) {
+      return typeof e === 'string' && e.length <= 254 && PLAIN_EMAIL_RE.test(e);
+    }
+    function mailtoHref(emails) {
+      return 'mailto:' + emails.filter(isPlainEmail).map(function(e) {
+        var at = e.lastIndexOf('@');
+        return encodeURIComponent(e.slice(0, at)) + '@' + encodeURIComponent(e.slice(at + 1));
+      }).join(',');
+    }
+    // Scorer-course start time -> 'HH:MM', '' when blank, null when unreadable (F-11).
+    // The public card feeds it straight into a Zurich→UTC conversion; anything else
+    // ("18.00", common here) made that NaN, threw inside render(), and hid EVERY
+    // course on /weiteres/schreiberkurse. So the usual Swiss spellings are accepted
+    // and stored canonically, and the rest is refused at save.
+    function normalizeCourseTime(v) {
+      var s = String(v == null ? '' : v).trim();
+      if (!s) return '';
+      var m = s.match(/^(\d{1,2})(?:\s*[:.hH]\s*(\d{2}))?\s*(?:h|uhr)?$/i);
+      if (!m) return null;
+      var h = Number(m[1]), mi = m[2] ? Number(m[2]) : 0;
+      if (h > 23 || mi > 59) return null;
+      return (h < 10 ? '0' : '') + h + ':' + (mi < 10 ? '0' : '') + mi;
+    }
+    // ── Event form ⇄ row (F-23) ──────────────────────────────────
+    // The events.event_type values, as wiedisync's Event type lists them.
+    var EVENT_TYPES = ['verein', 'social', 'meeting', 'tournament', 'trainingsweekend', 'friendly', 'other'];
+    function eventTypeOptions(current) {
+      var opts = EVENT_TYPES.slice();
+      if (current && opts.indexOf(current) === -1) opts.push(current); // never lose an unknown value
+      return opts;
+    }
+    // Row -> the form's date and time inputs. All-day rows are stored as a bare date
+    // (the app writes 'yyyy-mm-dd'); timed rows are UTC instants, shown on the Zurich clock.
+    function eventDateInputs(item) {
+      var out = { startDate: '', startTime: '', endDate: '', endTime: '' };
+      if (!item) return out;
+      if (item.all_day) {
+        out.startDate = String(item.start_date || '').substring(0, 10);
+        out.endDate = String(item.end_date || '').substring(0, 10);
+        return out;
+      }
+      var s = isoToZurichInput(item.start_date).split('T');
+      var e = isoToZurichInput(item.end_date).split('T');
+      out.startDate = s[0] || ''; out.startTime = s[1] || '';
+      out.endDate = e[0] || ''; out.endTime = e[1] || '';
+      return out;
+    }
+    // The form's inputs -> start_date/end_date/all_day, mirroring wiedisync's EventForm.
+    function eventDatePayload(allDay, startDate, startTime, endDate, endTime) {
+      if (allDay) {
+        return { all_day: true, start_date: startDate || null, end_date: endDate || startDate || null };
+      }
+      return {
+        all_day: false,
+        start_date: startDate ? zurichInputToISO(startDate + 'T' + (startTime || '00:00')) : null,
+        end_date: (endDate || startDate)
+          ? zurichInputToISO((endDate || startDate) + 'T' + (endTime || startTime || '00:00'))
+          : null,
+      };
     }
     // 'yyyy-mm-ddTHH:MM' read as Zurich wall-clock -> UTC ISO instant.
     function zurichInputToISO(v) {
@@ -1077,7 +1239,6 @@ const teamTableJson = JSON.stringify(teamTable);
                 '</div>' +
               '</div>' +
               '<div id="login-error" class="admin-error" style="display:none;"></div>' +
-              '<div id="admin-turnstile"></div>' +
               '<button type="submit" class="admin-login-btn">' + t('login') + '</button>' +
             '</form>' +
             '<a href="https://wiedisync.kscw.ch/auth/forgot-password" target="_blank" rel="noopener noreferrer" class="admin-forgot-link">' + t('forgotPassword') + '</a>' +
@@ -1085,45 +1246,11 @@ const teamTableJson = JSON.stringify(teamTable);
         '</div>'
       );
 
-      // Render Turnstile widget
-      var adminTurnstileEl = document.getElementById('admin-turnstile');
-      function renderAdminTurnstile() {
-        if (!adminTurnstileEl || !window.turnstile) return;
-        if (turnstileWidgetId !== null) return;
-        turnstileWidgetId = window.turnstile.render(adminTurnstileEl, {
-          sitekey: TURNSTILE_SITE_KEY,
-          theme: 'auto',
-          size: 'normal',
-          callback: function(token) { turnstileToken = token; },
-          'expired-callback': function() { turnstileToken = ''; },
-          // Resilience: recover from transient challenge failures instead of
-          // leaving the login with a widget that never yields a token.
-          'refresh-expired': 'auto',
-          retry: 'auto',
-          'retry-interval': 3000,
-          'timeout-callback': function() {
-            turnstileToken = '';
-            try { window.turnstile.reset(turnstileWidgetId); } catch (_) { /* noop */ }
-          },
-          'error-callback': function(code) {
-            // Returning true suppresses the "Uncaught TurnstileError" and lets
-            // retry:'auto' recover.
-            turnstileToken = '';
-            try { console.error('[admin] turnstile error ' + (code || '')); } catch (_) { /* noop */ }
-            return true;
-          },
-        });
-      }
-      if (window.turnstile) {
-        renderAdminTurnstile();
-      } else {
-        var tsPoll = 0;
-        var tsInterval = setInterval(function() {
-          tsPoll++;
-          if (window.turnstile) { clearInterval(tsInterval); renderAdminTurnstile(); }
-          if (tsPoll > 50) clearInterval(tsInterval);
-        }, 100);
-      }
+      // No Turnstile here (F-26). The widget sent its token header, but no auth.login
+      // filter ever verified it, so it was decoration that cost a third-party script
+      // on the page with the admin's password in it. Brute-force protection is
+      // Directus's own RATE_LIMITER / LOGIN_STALL_TIME. If a server-side check is ever
+      // added, the widget has to come back in the same change — or login locks out.
 
       document.getElementById('login-form').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -1135,7 +1262,6 @@ const teamTableJson = JSON.stringify(teamTable);
         btn.textContent = t('loggingIn');
 
         var headers = { 'Content-Type': 'application/json' };
-        if (turnstileToken) headers['X-Turnstile-Token'] = turnstileToken;
 
         fetch(DIRECTUS_URL + '/auth/login', {
           method: 'POST', headers: headers,
@@ -1153,7 +1279,7 @@ const teamTableJson = JSON.stringify(teamTable);
             if (!authorized) {
               errEl.textContent = t('loginDenied');
               errEl.style.display = 'block';
-              sessionStorage.removeItem(AUTH_KEY);
+              logoutAdmin();
               btn.disabled = false;
               btn.textContent = t('login');
             } else {
@@ -1165,10 +1291,6 @@ const teamTableJson = JSON.stringify(teamTable);
             errEl.style.display = 'block';
             btn.disabled = false;
             btn.textContent = t('login');
-            if (window.turnstile && turnstileWidgetId !== null) {
-              window.turnstile.reset(turnstileWidgetId);
-              turnstileToken = '';
-            }
           });
       });
 
@@ -1261,7 +1383,7 @@ const teamTableJson = JSON.stringify(teamTable);
         '</div>'
       );
       document.getElementById('denied-logout').addEventListener('click', function() {
-        sessionStorage.removeItem(AUTH_KEY);
+        logoutAdmin();
         render();
       });
     }
@@ -1333,7 +1455,7 @@ const teamTableJson = JSON.stringify(teamTable);
       app.appendChild(modalDiv);
 
       document.getElementById('logout-btn').addEventListener('click', function() {
-        sessionStorage.removeItem(AUTH_KEY);
+        logoutAdmin();
         render();
       });
 
@@ -1563,12 +1685,11 @@ const teamTableJson = JSON.stringify(teamTable);
       // ── Registrations tab ──
       if (currentTab === 'registrations') {
         var regStatusFilter = window._regStatusFilter || 'pending';
-        wadmin('registrations', 'items/registrations'
-            + '?filter[status][_eq]=' + regStatusFilter
-            + '&sort=-submitted_at&limit=50', {})
-          .then(function(r) { return r.json(); })
-          .then(function(data) {
-            renderRegistrationsList(data.data || [], regStatusFilter);
+        wadminAll('registrations', 'items/registrations'
+            + '?filter[status][_eq]=' + encodeURIComponent(regStatusFilter)
+            + '&sort=-submitted_at')
+          .then(function(rows) {
+            renderRegistrationsList(rows, regStatusFilter);
           })
           .catch(function(err) {
             content.textContent = '';
@@ -1581,19 +1702,23 @@ const teamTableJson = JSON.stringify(teamTable);
       }
 
       // ── Mixed Turnier tab ── (combined: website signups + Wiedisync participations)
+      // Two server-built routes (F-10). The old tab read mixed_tournament_signups (dropped
+      // by wiedisync migration 014) plus raw participations/members — the last two were
+      // never in this section's scope, so every call 403'd, nothing checked res.ok, and
+      // the organiser saw "Wiedisync: 0" instead of an error. The server picks the
+      // columns and already leaves out app answers from members who also used the form.
       if (currentTab === 'mixed_turnier') {
-        Promise.all([
-          wadmin('mixed_turnier', 'items/mixed_tournament_signups?sort=-date_created&limit=-1', {})
-            .then(function(r) { return r.json(); }),
-          wadmin('mixed_turnier', 'items/participations?filter[activity_type][_eq]=event&filter[activity_id][_eq]=5&fields=id,member,status,note,date_created&limit=-1', {})
-            .then(function(r) { return r.json(); }),
-          wadmin('mixed_turnier', 'items/members?fields=id,first_name,last_name,sex&limit=-1', {})
-            .then(function(r) { return r.json(); })
-        ]).then(function(results) {
-            var signups = results[0].data || [];
-            var participations = results[1].data || [];
-            var members = results[2].data || [];
-            renderMixedTurnierList(signups, participations, members);
+        var mtGet = function(sub) {
+          return wadmin('mixed_turnier', sub, {}).then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          });
+        };
+        Promise.all([mtGet('signups'), mtGet('participants')])
+          .then(function(results) {
+            var signups = mixedTurnierRows(results[0] && results[0].data);
+            var participants = mixedTurnierRows(results[1] && results[1].data);
+            renderMixedTurnierList(signups.concat(participants));
           })
           .catch(function(err) {
             content.textContent = '';
@@ -1771,10 +1896,8 @@ const teamTableJson = JSON.stringify(teamTable);
       var collection = currentTab === 'news' ? 'news' : 'events';
       var sort = currentTab === 'news' ? '-published_at' : '-start_date';
 
-      wadmin(collection, 'items/' + collection + '?sort=' + sort + '&limit=50', {})
-        .then(function(res) { return res.json(); })
-        .then(function(result) {
-          var items = result.data || [];
+      wadminAll(collection, 'items/' + collection + '?sort=' + sort)
+        .then(function(items) {
           content.textContent = '';
 
           if (!items.length) {
@@ -1831,8 +1954,11 @@ const teamTableJson = JSON.stringify(teamTable);
             var actions = document.createElement('div');
             actions.className = 'admin-list-actions';
 
-            // Responses button (events only, when signup_url set)
-            if (currentTab === 'events' && item.signup_url) {
+            // Responses button (events only, when signup_url set). It reads through the
+            // scorer_courses OpnForm routes, which only accept a scorer course's own form
+            // slugs from anyone but a superuser — so for everyone else it could only 403
+            // (F-25). Superuser-only until an events-scoped route binds the event's slug.
+            if (currentTab === 'events' && item.signup_url && adminAccess.isSuperuser) {
               var slugMatch = String(item.signup_url).match(/\/forms\/([a-z0-9][a-z0-9-]{0,80})/i);
               if (slugMatch) {
                 var respBtn = document.createElement('button');
@@ -1870,7 +1996,7 @@ const teamTableJson = JSON.stringify(teamTable);
                   wadmin(collection, 'items/' + collection + '/' + item.id, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ is_published: !willArchive }),
+                    body: JSON.stringify(newsPublication(!willArchive, null, item.published_at)),
                   })
                     .then(function(res) {
                       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -2021,55 +2147,37 @@ const teamTableJson = JSON.stringify(teamTable);
     }
 
     // ── Mixed Turnier list ────────────────────────────────────────
-    function renderMixedTurnierList(signups, participations, members) {
-      var content = document.getElementById('admin-content');
-      content.textContent = '';
-
-      // Build member lookup: id → { first_name, last_name, sex }
-      var memberMap = {};
-      members.forEach(function(m) { memberMap[m.id] = m; });
-
-      // Build combined list: start with signups, then add Wiedisync-only participations
-      var signupMemberIds = {};
-      var combined = [];
-
-      // Add all website signups
-      signups.forEach(function(s) {
-        if (s.member_id) signupMemberIds[s.member_id] = true;
-        combined.push({
-          date: s.date_created ? s.date_created.substring(0, 10) : '',
-          name: s.name || '',
-          email: s.email || '',
-          sex: s.sex || '',
-          teams: s.teams || [],
-          position_1: s.position_1 || '',
-          position_2: s.position_2 || '',
-          position_3: s.position_3 || '',
-          is_member: !!s.is_member,
-          notes: s.notes || '',
-          source: 'website'
-        });
-      });
-
-      // Add Wiedisync-only participations (members who responded in app, not via website)
-      participations.forEach(function(p) {
-        if (signupMemberIds[p.member]) return; // already in signups
-        var m = memberMap[p.member] || {};
-        var positions = (p.note || '').split(' > ').filter(Boolean);
-        combined.push({
-          date: p.date_created ? p.date_created.substring(0, 10) : '',
-          name: ((m.first_name || '') + ' ' + (m.last_name || '')).trim() || 'Member #' + p.member,
-          email: '',
-          sex: m.sex || '',
-          teams: [],
+    // Rows of /wadmin/mixed_turnier/{signups,participants} -> the table's row shape.
+    // Website rows carry position_1..3; app rows carry `positions` (an array, or the
+    // app's older "1st > 2nd > 3rd" note string).
+    function mixedTurnierRows(data) {
+      return (Array.isArray(data) ? data : []).map(function(p) {
+        var web = p.source === 'website';
+        var positions = web
+          ? [p.position_1, p.position_2, p.position_3]
+          : (Array.isArray(p.positions) ? p.positions : String(p.positions || '').split(' > '));
+        positions = positions.map(function(x) { return String(x == null ? '' : x).trim(); });
+        if (!web) positions = positions.filter(Boolean);
+        return {
+          date: String(p.date || p.date_created || '').substring(0, 10),
+          name: String(p.name || ''),
+          email: web ? String(p.email || '') : '',
+          sex: String(p.sex || ''),
+          teams: web && Array.isArray(p.teams) ? p.teams : [],
           position_1: positions[0] || '',
           position_2: positions[1] || '',
           position_3: positions[2] || '',
-          is_member: true,
-          notes: '',
-          source: 'wiedisync'
-        });
+          is_member: web ? !!p.is_member : true,
+          notes: web ? String(p.notes || '') : '',
+          source: web ? 'website' : 'wiedisync',
+        };
       });
+    }
+
+    function renderMixedTurnierList(combined) {
+      var content = document.getElementById('admin-content');
+      content.textContent = '';
+      var websiteCount = combined.filter(function(i) { return i.source === 'website'; }).length;
 
       // Sort alphabetically by name (locale-aware, case-insensitive)
       combined.sort(function(a, b) {
@@ -2083,7 +2191,7 @@ const teamTableJson = JSON.stringify(teamTable);
       summaryDiv.className = 'admin-summary-bar';
       summaryDiv.innerHTML = '<strong>' + combined.length + ' ' + t('mixedTurnierSignups') + '</strong>' +
         ' \u2014 ' + maleCount + 'M / ' + femaleCount + 'F' +
-        ' <span style="margin-left:12px;font-size:0.8rem;color:var(--text-muted,#64748b);">(Website: ' + signups.length + ' / Wiedisync: ' + (combined.length - signups.length) + ')</span>';
+        ' <span style="margin-left:12px;font-size:0.8rem;color:var(--text-muted,#64748b);">(Website: ' + websiteCount + ' / Wiedisync: ' + (combined.length - websiteCount) + ')</span>';
       content.appendChild(summaryDiv);
 
       if (combined.length > 0) {
@@ -2250,22 +2358,26 @@ const teamTableJson = JSON.stringify(teamTable);
         (item.membership_type === 'basketball' ? '<div class="admin-field"><label>Federation of origin</label><div>' +
           escapeHtml(federationOfOriginForPdf(item.federation_of_origin) || '—') + '</div></div>' : '') +
 
+        // ID scans and licence documents go through wadmin's registrations file route
+        // (F-21): a plain /assets link carries no token and 403'd for every
+        // section-granted admin. The buttons fetch with the bearer token and open the
+        // bytes as a blob.
         (item.id_upload_front ? '<div class="admin-field"><label>ID front</label>' +
-          '<a href="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.id_upload_front) + '" target="_blank" class="admin-btn admin-btn-sm">View</a></div>' : '') +
+          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.id_upload_front) + '">View</button></div>' : '') +
         (item.id_upload_back ? '<div class="admin-field"><label>ID back</label>' +
-          '<a href="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.id_upload_back) + '" target="_blank" class="admin-btn admin-btn-sm">View</a></div>' : '') +
+          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.id_upload_back) + '">View</button></div>' : '') +
         (item.bb_doc_lizenz ? '<div class="admin-field"><label>License application (PDF)</label>' +
-          '<a href="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.bb_doc_lizenz) + '" target="_blank" class="admin-btn admin-btn-sm">View</a></div>' : '') +
+          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_lizenz) + '">View</button></div>' : '') +
         (item.bb_doc_freibrief ? '<div class="admin-field"><label>Release letter / Freibrief (PDF)</label>' +
-          '<a href="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.bb_doc_freibrief) + '" target="_blank" class="admin-btn admin-btn-sm">View</a></div>' : '') +
+          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_freibrief) + '">View</button></div>' : '') +
         (item.bb_doc_selfdecl ? '<div class="admin-field"><label>Self Declaration (PDF)</label>' +
-          '<a href="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.bb_doc_selfdecl) + '" target="_blank" class="admin-btn admin-btn-sm">View</a></div>' : '') +
+          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_selfdecl) + '">View</button></div>' : '') +
         (item.bb_doc_natdecl ? '<div class="admin-field"><label>National Team Decl. (PDF)</label>' +
-          '<a href="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.bb_doc_natdecl) + '" target="_blank" class="admin-btn admin-btn-sm">View</a></div>' : '') +
+          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_natdecl) + '">View</button></div>' : '') +
         (item.bb_doc_u18parents ? '<div class="admin-field"><label>Parental consent U18 (PDF)</label>' +
-          '<a href="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.bb_doc_u18parents) + '" target="_blank" class="admin-btn admin-btn-sm">View</a></div>' : '') +
+          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_u18parents) + '">View</button></div>' : '') +
         (item.bb_doc_schoolcert ? '<div class="admin-field"><label>School certificate (PDF)</label>' +
-          '<a href="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.bb_doc_schoolcert) + '" target="_blank" class="admin-btn admin-btn-sm">View</a></div>' : '') +
+          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_schoolcert) + '">View</button></div>' : '') +
 
         // Flag a basketball registration missing any document its licensing
         // situation requires (Freibrief for a Swiss-club transfer, the FIBA
@@ -2326,6 +2438,10 @@ const teamTableJson = JSON.stringify(teamTable);
       document.getElementById('modal-form').addEventListener('submit', function(e) {
         e.preventDefault();
         saveRegistration(item.id);
+      });
+
+      modal.querySelectorAll('[data-reg-file]').forEach(function(btn) {
+        btn.addEventListener('click', function() { openRegistrationFile(btn.getAttribute('data-reg-file')); });
       });
 
       var approveBtn = document.getElementById('reg-approve');
@@ -2432,20 +2548,19 @@ const teamTableJson = JSON.stringify(teamTable);
 
         if (status === 'rejected') {
           var itemRes = await wadmin('registrations', 'items/registrations/' + id, {});
-          var itemData = (await itemRes.json()).data;
+          if (!itemRes.ok) throw new Error('HTTP ' + itemRes.status);
+          var itemData = (await itemRes.json()).data || {};
 
-          if (itemData.id_upload_front) {
-            await fetch(DIRECTUS_URL + '/files/' + itemData.id_upload_front, {
-              method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token },
-            });
-          }
-          if (itemData.id_upload_back) {
-            await fetch(DIRECTUS_URL + '/files/' + itemData.id_upload_back, {
-              method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token },
-            });
+          // The documents go first, and each delete is checked: the row is what points
+          // at them, so deleting it after a silent file failure orphaned the ID (F-21).
+          // Every document column, not just the ID scans — once the row is gone nothing
+          // references a basketball licence PDF any more, and no route can reach it.
+          for (var rc = 0; rc < REGISTRATION_DOC_COLUMNS.length; rc++) {
+            if (itemData[REGISTRATION_DOC_COLUMNS[rc]]) await deleteRegistrationFile(itemData[REGISTRATION_DOC_COLUMNS[rc]]);
           }
 
-          await wadmin('registrations', 'items/registrations/' + id, { method: 'DELETE' });
+          var delRes = await wadmin('registrations', 'items/registrations/' + id, { method: 'DELETE' });
+          if (!delRes.ok) throw new Error('HTTP ' + delRes.status);
         }
 
         closeModal();
@@ -2453,6 +2568,69 @@ const teamTableJson = JSON.stringify(teamTable);
       } catch(err) {
         alert(t('saveError') + err.message);
       }
+    }
+
+    // ── Registration ID scans (wadmin C4 routes, registrations grant) ──
+    // Mirrors wadmin.js REGISTRATION_FILE_COLUMNS — the columns the file routes accept.
+    var REGISTRATION_DOC_COLUMNS = [
+      'id_upload_front', 'id_upload_back',
+      'bb_doc_lizenz', 'bb_doc_freibrief', 'bb_doc_selfdecl',
+      'bb_doc_natdecl', 'bb_doc_u18parents', 'bb_doc_schoolcert',
+    ];
+    // A 404 means the file is already gone, which is the state a delete wants.
+    async function deleteRegistrationFile(fileId) {
+      var res = await wadmin('registrations', 'files/' + encodeURIComponent(fileId), { method: 'DELETE' });
+      if (!res.ok && res.status !== 404) throw new Error('HTTP ' + res.status + ' deleting file');
+    }
+    // Which registration uploads may be SHOWN in a tab. A blob: URL renders in THIS
+    // page's origin under this page's CSP (script-src 'unsafe-inline'), and drops the
+    // `sandbox` CSP the API puts on non-image/PDF files — so an applicant's SVG or HTML
+    // "ID scan" opened as a blob would run as kscw.ch, next to the admin token (the new
+    // tab even gets a copy of sessionStorage). Raster images only; everything else —
+    // PDFs included, whose viewer the page's object-src 'none' may refuse — is saved.
+    var REG_FILE_INLINE_RE = /^image\/(png|jpe?g|gif|webp|avif)$/;
+    function registrationFileDisposition(contentType) {
+      var type = String(contentType || '').split(';')[0].trim().toLowerCase();
+      return REG_FILE_INLINE_RE.test(type) ? { inline: true, type: type } : { inline: false, type: 'application/octet-stream' };
+    }
+    function registrationFileExt(contentType) {
+      var type = String(contentType || '');
+      return /pdf/i.test(type) ? '.pdf'
+        : (/png/i.test(type) ? '.png'
+        : (/jpe?g/i.test(type) ? '.jpg'
+        : (/webp/i.test(type) ? '.webp'
+        : (/gif/i.test(type) ? '.gif'
+        : (/heic|heif/i.test(type) ? '.heic' : '')))));
+    }
+    function openRegistrationFile(fileId) {
+      // Opened synchronously so the popup blocker sees the click; filled once the bytes
+      // arrive — or closed again when the file is saved instead of shown.
+      var win = window.open('', '_blank');
+      var disp = null;
+      wadmin('registrations', 'files/' + encodeURIComponent(fileId), {})
+        .then(function(res) {
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          disp = registrationFileDisposition(res.headers.get('content-type'));
+          disp.ext = registrationFileExt(res.headers.get('content-type'));
+          return res.blob();
+        })
+        .then(function(raw) {
+          // Re-typed, never the response's own type: only the allowlisted image types
+          // survive; anything else becomes an opaque download.
+          var blob = new Blob([raw], { type: disp.type });
+          if (!disp.inline) {
+            if (win) win.close();
+            downloadBlob(blob, 'dokument_' + String(fileId).slice(0, 8) + disp.ext);
+            return;
+          }
+          var url = URL.createObjectURL(blob);
+          if (win) win.location.href = url; else window.open(url, '_blank');
+          setTimeout(function() { URL.revokeObjectURL(url); }, 60000);
+        })
+        .catch(function(err) {
+          if (win) win.close();
+          alert(t('loadError') + (err.message || err));
+        });
     }
 
     // Identity documents are downloaded and then deleted from Directus — we keep
@@ -2464,7 +2642,6 @@ const teamTableJson = JSON.stringify(teamTable);
     // applicant's name and deleted the real scan straight afterwards.
     async function downloadRegistrationFiles(item) {
       try {
-        var token = await getValidToken();
         var files = [];
         if (item.id_upload_front) files.push({ id: item.id_upload_front, name: 'ID_front' });
         if (item.id_upload_back) files.push({ id: item.id_upload_back, name: 'ID_back' });
@@ -2473,9 +2650,7 @@ const teamTableJson = JSON.stringify(teamTable);
         // Phase 1 — fetch everything and verify it before deleting anything.
         var fetched = [];
         for (var i = 0; i < files.length; i++) {
-          var res = await fetch(DIRECTUS_URL + '/assets/' + files[i].id, {
-            headers: { 'Authorization': 'Bearer ' + token },
-          });
+          var res = await wadmin('registrations', 'files/' + encodeURIComponent(files[i].id) + '?download=1', {});
           if (!res.ok) throw new Error('HTTP ' + res.status + ' fetching ' + files[i].name);
           var type = res.headers.get('content-type') || '';
           var blob = await res.blob();
@@ -2483,12 +2658,7 @@ const teamTableJson = JSON.stringify(teamTable);
           // A blob URL carries no filename, so the extension has to come from the
           // content type — without it the saved file has no extension at all and
           // will not open on a double-click.
-          var ext = /pdf/i.test(type) ? '.pdf'
-            : (/png/i.test(type) ? '.png'
-            : (/jpe?g/i.test(type) ? '.jpg'
-            : (/webp/i.test(type) ? '.webp'
-            : (/gif/i.test(type) ? '.gif'
-            : (/heic|heif/i.test(type) ? '.heic' : '')))));
+          var ext = registrationFileExt(type);
           fetched.push({ id: files[i].id, blob: blob, name: item.nachname + '_' + item.vorname + '_' + files[i].name + ext });
         }
 
@@ -2496,10 +2666,10 @@ const teamTableJson = JSON.stringify(teamTable);
         fetched.forEach(function(f) { downloadBlob(f.blob, f.name); });
 
         // Phase 3 — only now drop the originals.
+        // wadmin's DELETE also nulls the row's column; the PATCH below stays as the
+        // belt-and-braces for a file that was already gone.
         for (var d = 0; d < fetched.length; d++) {
-          await fetch(DIRECTUS_URL + '/files/' + fetched[d].id, {
-            method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token },
-          });
+          await deleteRegistrationFile(fetched[d].id);
         }
 
         await wadmin('registrations', 'items/registrations/' + item.id, {
@@ -2845,7 +3015,7 @@ const teamTableJson = JSON.stringify(teamTable);
       // fail to map.
       var csv = headers.join(';') + '\n' + rows.join('\n');
       var blob = new Blob([toCp1252Bytes(csv)], { type: 'text/csv;charset=windows-1252;' });
-      downloadBlob(blob, 'kscw_anmeldungen_' + new Date().toISOString().substring(0, 10) + '.csv');
+      downloadBlob(blob, 'kscw_anmeldungen_' + zurichToday() + '.csv');
     }
 
     // Bytes for the ClubDesk CSV. Same repertoire and same transliteration as
@@ -2879,6 +3049,15 @@ const teamTableJson = JSON.stringify(teamTable);
     // SECURITY: Neutralize spreadsheet formula prefixes (=, +, -, @, TAB, CR) so
     // attacker-controlled fields cannot execute formulas / DDE when admins open
     // the CSV in Excel / Numbers / LibreOffice.
+    // Spreadsheet formula injection: a cell that starts with = + - @ (or a tab/CR that
+    // Excel strips before looking) is evaluated, so `=HYPERLINK(...)` typed into a public
+    // form runs when an admin opens the export. A leading ' makes it text. The TSV
+    // writer had no such guard at all (F-19).
+    function formulaSafe(s) {
+      return /^[=+\-@\t\r]/.test(s) ? "'" + s : s;
+    }
+    // Same rule as formulaSafe, inlined: tests/unit/admin-clubdesk-csv.test.ts loads
+    // csvSafe on its own.
     function csvSafe(val) {
       var s = String(val == null ? '' : val);
       if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
@@ -2886,8 +3065,7 @@ const teamTableJson = JSON.stringify(teamTable);
     }
 
     function csvEscape(val) {
-      val = String(val == null ? '' : val);
-      if (/^[=+\-@\t\r]/.test(val)) val = "'" + val;
+      val = formulaSafe(String(val == null ? '' : val));
       if (val.indexOf(';') !== -1 || val.indexOf('"') !== -1 || val.indexOf('\n') !== -1 || val.charAt(0) === "'") {
         return '"' + val.replace(/"/g, '""') + '"';
       }
@@ -3551,6 +3729,8 @@ const teamTableJson = JSON.stringify(teamTable);
     // second edit cannot race the create (the POST is what mints the row id;
     // a following edit then PATCHes it). A failed op sets the status but does
     // not block later edits. The DB's unique sub_key is the final backstop.
+    // Resolves true when the write landed, false when it failed — never rejects, so the
+    // chain keeps going; a caller with a side effect (the exam mail) must check it.
     function saveScorerField(rowMeta, field, value, statusEl) {
       var st = rowMeta.state;
       st[field] = value;
@@ -3573,9 +3753,10 @@ const teamTableJson = JSON.stringify(teamTable);
       };
       var chain = (_scorerSaveChains[rowMeta.key] || Promise.resolve())
         .then(run)
-        .then(function() { setScorerStatus(statusEl, 'saved'); },
-              function() { setScorerStatus(statusEl, 'error'); });
+        .then(function() { setScorerStatus(statusEl, 'saved'); return true; },
+              function() { setScorerStatus(statusEl, 'error'); return false; });
       _scorerSaveChains[rowMeta.key] = chain;
+      return chain;
     }
 
     // One staff correction to one OpnForm answer. Stored as a JSON document in
@@ -3666,7 +3847,11 @@ const teamTableJson = JSON.stringify(teamTable);
           }
         ).then(function(res) {
           return res.json().catch(function() { return {}; }).then(function(body) {
-            if (!res.ok) throw new Error(body.error || ('HTTP ' + res.status));
+            if (!res.ok) {
+              var mailErr = new Error(body.error || ('HTTP ' + res.status));
+              mailErr.code = body.error || '';
+              throw mailErr;
+            }
             // The address comes back from the server, which resolved it from the signup —
             // showing it is how you confirm the mail went where you meant.
             showToast('✉ ' + t('scExamResultMailSent') + ' ' + (body.to || ''), 'success');
@@ -3675,7 +3860,14 @@ const teamTableJson = JSON.stringify(teamTable);
       };
       var chain = (_scorerSaveChains[rowMeta.key] || Promise.resolve())
         .then(run)
-        .catch(function() {
+        .catch(function(err) {
+          // 409 result_not_saved: the server compared the verdict on record with the one
+          // this mail would announce and they differ — the save did NOT land, so "result
+          // recorded" would be false (F-18). Say that instead, so the admin re-saves.
+          if (err && err.code === 'result_not_saved') {
+            showToast('✕ ' + t('scExamResultNotSaved'), 'error');
+            return;
+          }
           // The result IS recorded — only the mail failed. Say exactly that, so nobody
           // re-clicks trying to fix a record that was never broken.
           showToast('✕ ' + t('scExamResultMailFailed'), 'error');
@@ -3852,11 +4044,7 @@ const teamTableJson = JSON.stringify(teamTable);
 
       Promise.all([
         Promise.all(srcList.map(function(src) {
-          return wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(src.slug) + '/submissions?per_page=100', {})
-            .then(function(res) {
-              if (!res.ok) return { src: src, error: 'HTTP ' + res.status };
-              return res.json().then(function(p) { return { src: src, payload: p }; });
-            }).catch(function(e) { return { src: src, error: (e && e.message) || 'error' }; });
+          return fetchAllSubmissions(src);
         })),
         wadmin('scorer_courses', 'items/scorer_course_attendance?limit=-1', {})
           .then(function(res) { return res.ok ? res.json() : { data: [] }; })
@@ -4372,11 +4560,11 @@ const teamTableJson = JSON.stringify(teamTable);
             selectBoxes.forEach(function(b) {
               if (!b.cb.checked) return;
               var e = String(b.email || '').trim();
-              if (!e || e.indexOf('@') === -1 || seen[e.toLowerCase()]) return;
+              if (!isPlainEmail(e) || seen[e.toLowerCase()]) return;
               seen[e.toLowerCase()] = 1; emails.push(e);
             });
             if (!emails.length) { alert(t('scEmailNone')); return; }
-            window.location.href = 'mailto:' + emails.join(',');
+            window.location.href = mailtoHref(emails);
           });
           controls.appendChild(emailBtn);
           cancelBtn = document.createElement('button');
@@ -4627,8 +4815,12 @@ const teamTableJson = JSON.stringify(teamTable);
               if (!r.ok) return;
               state.exam_result = answer;
               paintResult();
-              saveScorerField(rowMeta, 'exam_result', answer, statusEl);
-              sendExamResultMail(rowMeta, answer, r.note);
+              // The verdict mail goes out only once the verdict is stored (F-18): a mail
+              // announcing a result the record does not hold cannot be taken back.
+              saveScorerField(rowMeta, 'exam_result', answer, statusEl).then(function(saved) {
+                if (saved) sendExamResultMail(rowMeta, answer, r.note);
+                else showToast('✕ ' + t('scExamResultNotSaved'), 'error');
+              });
             });
           }
           [[yesBtn, 'passed', t('scExamYes')], [noBtn, 'failed', t('scExamNo')]].forEach(function(spec) {
@@ -5253,8 +5445,8 @@ const teamTableJson = JSON.stringify(teamTable);
         formHtml += fieldInput('location', t('scLocation'), item ? (item.location || '') : 'Sportanlage Irchel (Theory Room), Winterthurerstrasse 190, 8057 Zürich');
         formHtml += fieldInput('host_note', t('scHostNote'), item ? (item.host_note || '') : 'Hosted by VBC Spada, Powered by KSC Wiedikon');
         formHtml += fieldNumber('duration_hours', t('scDurationHours'), item ? item.duration_hours : 4, { step: '0.5' });
-        formHtml += fieldInput('form_slug_de', t('scFormSlugDe'), item ? (item.form_slug_de || '') : '', { placeholder: 'scorer-2026-07-08-de' });
-        formHtml += fieldInput('form_slug_en', t('scFormSlugEn'), item ? (item.form_slug_en || '') : '', { placeholder: 'scorer-2026-07-08-en' });
+        formHtml += fieldInput('form_slug_de', t('scFormSlugDe'), item ? (item.form_slug_de || '') : '', { placeholder: 'scorer-2026-07-08-de', readonly: !adminAccess.isSuperuser });
+        formHtml += fieldInput('form_slug_en', t('scFormSlugEn'), item ? (item.form_slug_en || '') : '', { placeholder: 'scorer-2026-07-08-en', readonly: !adminAccess.isSuperuser });
         // Entered as Zurich wall-clock; stored as a UTC instant. Saving mirrors it
         // onto each linked OpnForm's closes_at — the card lock alone is cosmetic,
         // OpnForm is what turns a late submission away. #sc-closes-drift is filled
@@ -5272,7 +5464,19 @@ const teamTableJson = JSON.stringify(teamTable);
       formHtml += fieldInput('title', t('title'), titleVal, true);
 
       if (isNews) {
-        formHtml += '<input type="hidden" name="title_en" value="' + escapeAttr(otherVal) + '">';
+        // The other-language title is a visible, editable field, filled by machine
+        // translation only when the admin presses the button (F-28). It used to be a
+        // hidden input translated on every keystroke — drafts went to MyMemory before
+        // anyone chose to publish them, and an English-UI admin saved an unreviewed
+        // German title as the site's primary one.
+        formHtml += '<div class="admin-field">' +
+          '<label for="f-title_en">' + escapeHtml(t('titleOtherLang')) + '</label>' +
+          '<input type="text" name="title_en" id="f-title_en" value="' + escapeAttr(otherVal) + '">' +
+          '<div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.35rem;">' +
+            '<button type="button" class="admin-btn admin-btn-sm" id="title-translate-btn">' + escapeHtml(t('translateTitle')) + '</button>' +
+            '<small class="admin-hint" id="title-translate-status">' + escapeHtml(t('translateTitleHint')) + '</small>' +
+          '</div>' +
+        '</div>';
         formHtml += '<input type="hidden" name="slug" value="' + escapeAttr(item ? item.slug : '') + '">';
         formHtml += fieldTextarea('excerpt', t('excerpt'), item ? item.excerpt : '');
         formHtml += '<div class="admin-field"><label>' + t('content') + '</label><div id="quill-editor" style="min-height:200px;"></div></div>';
@@ -5281,45 +5485,46 @@ const teamTableJson = JSON.stringify(teamTable);
         if (item && item.image) {
           formHtml += '<div class="admin-field"><img src="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.image + '?width=200&quality=80') + '" style="max-height:100px;border-radius:var(--radius-md);"></div>';
         }
-        formHtml += fieldDate('published_at', t('publishDate'), item ? (item.published_at || '').substring(0, 10) : new Date().toISOString().substring(0, 10));
+        // Empty for an unpublished row (its date is cleared); a new article defaults to
+        // today on the Zurich clock. The save only keeps it when the toggle is on.
+        formHtml += fieldDate('published_at', t('publishDate'), item ? (item.published_at || '').substring(0, 10) : zurichToday());
         formHtml += fieldCheckbox('is_published', t('isPublished'), item ? item.is_published : true, { toggle: true });
       } else {
         // Events form
-        formHtml += fieldSelect('event_type', t('type'), ['verein', 'social', 'meeting', 'tournament', 'other'], item ? item.event_type : 'verein');
-        formHtml += fieldDate('start_date', t('startDate'), item ? (item.start_date || '').substring(0, 10) : '');
-        formHtml += fieldDate('end_date', t('endDate'), item ? (item.end_date || '').substring(0, 10) : '');
+        // Every event_type the column allows, plus whatever the row already holds: a
+        // select that cannot show the stored value silently rewrites it to the first
+        // option on save (friendly/trainingsweekend became 'verein' — F-23).
+        formHtml += fieldSelect('event_type', t('type'), eventTypeOptions(item ? item.event_type : null), item ? item.event_type : 'verein');
+        // Timed events keep their clock: date + time on the Zurich wall clock, stored
+        // back as UTC instants. A date-only field saved every timed event at midnight.
+        var evInputs = eventDateInputs(item);
+        formHtml += fieldDate('start_date', t('startDate'), evInputs.startDate);
+        formHtml += fieldTime('start_time', t('startTime'), evInputs.startTime);
+        formHtml += fieldDate('end_date', t('endDate'), evInputs.endDate);
+        formHtml += fieldTime('end_time', t('endTime'), evInputs.endTime);
         formHtml += fieldCheckbox('all_day', t('allDay'), item ? item.all_day : true);
         formHtml += fieldInput('location', t('location'), item ? (item.location || '') : '');
         formHtml += fieldInput('signup_url', 'Signup link (OpnForm)', item ? (item.signup_url || '') : '', { placeholder: 'https://forms.kscw.ch/forms/...' });
         formHtml += '<div class="admin-field"><label>' + t('description') + '</label><div id="quill-editor" style="min-height:150px;"></div></div>';
 
         // Participation section
-        var hasParticipation = item && (item.respond_by || (item.teams && item.teams.length) || item.max_players || item.min_players || item.require_note_if_absent || (item.required_participants && item.required_participants.length));
+        var hasParticipation = item && (item.respond_by || (item.teams && item.teams.length) || item.max_players || item.min_participants || item.require_note_if_absent);
         formHtml += fieldCheckbox('participation_required', t('participationRequired'), !!hasParticipation);
         formHtml += '<div id="participation-fields" style="' + (hasParticipation ? '' : 'display:none;') + '">';
-        formHtml += fieldDate('respond_by', t('respondBy'), item ? (item.respond_by || '').substring(0, 10) : '');
+        // A datetime, like the app writes it — a bare date was stored as 00:00 UTC.
+        formHtml += fieldDateTime('respond_by', t('respondBy'), item ? isoToZurichInput(item.respond_by) : '');
 
-        // Teams selector (placeholder — filled dynamically)
-        formHtml += '<div class="admin-field">' +
-          '<label>' + t('teams') + '</label>' +
-          '<div class="admin-team-presets" id="team-presets"></div>' +
-          '<div class="admin-multiselect-tags" id="teams-tags"></div>' +
-          '<div id="teams-dropdown" class="admin-multiselect-dropdown" style="display:none;"></div>' +
-          '<input type="hidden" name="teams" value="' + escapeAttr(item && item.teams ? JSON.stringify(item.teams) : '[]') + '">' +
-        '</div>';
+        // Teams (events_teams) and invited members (events_members) are M2M junctions.
+        // The old selectors wrote plain team ids into `teams`, which Directus reads as
+        // JUNCTION row ids — re-pointing other events' team links onto this one — and
+        // `required_participants` / `min_players` are not columns at all, so those
+        // writes were dropped. Section-scoped admins cannot send the nested junction
+        // shape anyway (assertScalarBody), so this form leaves both relations alone.
+        formHtml += '<div class="admin-field"><small class="admin-hint">' + escapeHtml(t('eventTeamsInApp')) + '</small></div>';
 
-        formHtml += fieldNumber('min_players', t('minParticipants'), item ? item.min_players : '');
+        formHtml += fieldNumber('min_participants', t('minParticipants'), item ? item.min_participants : '');
         formHtml += fieldNumber('max_players', t('maxParticipants'), item ? item.max_players : '');
         formHtml += fieldCheckbox('require_note_if_absent', t('requireNoteIfAbsent'), item ? !!item.require_note_if_absent : false, { toggle: true });
-
-        // Required participants (multi-search select — filled dynamically)
-        formHtml += '<div class="admin-field">' +
-          '<label>' + t('requiredParticipants') + '</label>' +
-          '<input type="text" id="member-search" placeholder="' + t('search') + '" autocomplete="off">' +
-          '<div class="admin-multiselect-tags" id="members-tags"></div>' +
-          '<div id="members-dropdown" class="admin-multiselect-dropdown" style="display:none;"></div>' +
-          '<input type="hidden" name="required_participants" value="' + escapeAttr(item && item.required_participants ? JSON.stringify(item.required_participants) : '[]') + '">' +
-        '</div>';
 
         formHtml += '</div>'; // close participation-fields
       }
@@ -5369,12 +5574,13 @@ const teamTableJson = JSON.stringify(teamTable);
         }
       }
 
-      // Auto-generate slug + silent auto-translate title (news only, skip for sponsors)
+      // Auto-generate slug; translate the title only on request (news only)
       if (isNews && currentTab !== 'sponsors') {
         var titleInput = document.querySelector('#modal-form [name="title"]');
         var slugInput = document.querySelector('#modal-form [name="slug"]');
         var titleEnInput = document.querySelector('#modal-form [name="title_en"]');
-        var translateTimer = null;
+        var translateBtn = document.getElementById('title-translate-btn');
+        var translateStatus = document.getElementById('title-translate-status');
 
         function generateSlug(text) {
           return text.toLowerCase()
@@ -5382,42 +5588,43 @@ const teamTableJson = JSON.stringify(teamTable);
             .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         }
 
-        function autoTranslate(text) {
-          if (!text || text.length < 3) { titleEnInput.value = ''; return; }
+        function translateTitle(text) {
+          if (!text || text.length < 3) return;
           var tgtLang = adminLang === 'de' ? 'en' : 'de';
-          // WEB-SEC-5 / WEB-ADM-6 (info, accepted): the admin-typed news/event
-          // title is sent to api.mymemory.translated.net (third party) for
-          // auto-translation. This is a conscious choice — titles are published
-          // publicly anyway, so there is no confidential data leaving the admin.
+          // WEB-SEC-5 / WEB-ADM-6 (info, accepted): the title goes to
+          // api.mymemory.translated.net (third party) — but only when the admin presses
+          // Translate, and the result lands in an editable field to be checked (F-28).
+          translateBtn.disabled = true;
+          translateStatus.style.color = 'var(--text-muted)';
+          translateStatus.textContent = '…';
           fetch('https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text) + '&langpair=' + adminLang + '|' + tgtLang)
             .then(function(r) { return r.json(); })
             .then(function(data) {
               var translated = data.responseData && data.responseData.translatedText;
-              if (translated) {
-                if (translated === translated.toUpperCase() && text !== text.toUpperCase()) {
-                  translated = translated.charAt(0).toUpperCase() + translated.slice(1).toLowerCase();
-                }
-                titleEnInput.value = translated;
+              if (!translated) throw new Error('empty');
+              if (translated === translated.toUpperCase() && text !== text.toUpperCase()) {
+                translated = translated.charAt(0).toUpperCase() + translated.slice(1).toLowerCase();
               }
+              titleEnInput.value = translated;
+              translateStatus.textContent = t('translateTitleHint');
+              titleEnInput.focus();
             })
-            .catch(function() { /* silent fail */ });
+            .catch(function() {
+              translateStatus.style.color = '#dc2626';
+              translateStatus.textContent = '✕ ' + t('translationFailed');
+            })
+            .then(function() { translateBtn.disabled = false; });
         }
 
-        if (titleInput) {
+        if (titleInput && !isEdit && slugInput) {
           titleInput.addEventListener('input', function() {
-            if (!isEdit && slugInput) {
-              slugInput.value = generateSlug(this.value);
-            }
-            clearTimeout(translateTimer);
-            translateTimer = setTimeout(function() {
-              autoTranslate(titleInput.value.trim());
-            }, 600);
+            slugInput.value = generateSlug(this.value);
           });
         }
-
-        // Translate on load if editing and no translation exists yet
-        if (isEdit && titleInput && titleInput.value && !titleEnInput.value) {
-          autoTranslate(titleInput.value.trim());
+        if (translateBtn && titleInput && titleEnInput) {
+          translateBtn.addEventListener('click', function() {
+            translateTitle(titleInput.value.trim());
+          });
         }
       }
 
@@ -5430,8 +5637,6 @@ const teamTableJson = JSON.stringify(teamTable);
             partFields.style.display = this.checked ? '' : 'none';
           });
         }
-        initTeamsSelector(item);
-        initMembersSelector(item);
       }
 
       // Close handlers
@@ -5621,11 +5826,7 @@ const teamTableJson = JSON.stringify(teamTable);
       }
 
       Promise.all(srcList.map(function(src) {
-        return wadmin('scorer_courses', 'opnform/forms/' + encodeURIComponent(src.slug) + '/submissions?per_page=100', {})
-          .then(function(res) {
-            if (!res.ok) return { src: src, error: 'HTTP ' + res.status };
-            return res.json().then(function(p) { return { src: src, payload: p }; });
-          }).catch(function(e) { return { src: src, error: (e && e.message) || 'error' }; });
+        return fetchAllSubmissions(src);
       })).then(function(results) {
         body.textContent = '';
 
@@ -5773,7 +5974,7 @@ const teamTableJson = JSON.stringify(teamTable);
     // Tabs/newlines inside a value are flattened to spaces so one field
     // can never break the row/column grid.
     function tsvEscape(val) {
-      return String(val == null ? '' : val).replace(/[\t\r\n]+/g, ' ').trim();
+      return formulaSafe(String(val == null ? '' : val).replace(/[\t\r\n]+/g, ' ').trim());
     }
     function downloadBlob(blob, filename) {
       var url = URL.createObjectURL(blob);
@@ -6148,7 +6349,10 @@ const teamTableJson = JSON.stringify(teamTable);
         // original: seeing the sheet in the wrong format beats not seeing it at all.
         var ext = /png/i.test(type) ? '.png' : (/jpe?g/i.test(type) ? '.jpg'
           : (/avif/i.test(type) ? '.avif' : (/heic|heif/i.test(type) ? '.heic' : '')));
-        return { blob: new Blob([bytes], { type: type || 'application/octet-stream' }), ext: ext };
+        // F-21 blob-origin rule: openScoresheet() puts this blob in a kscw.ch tab, so
+        // never build it from the server's Content-Type — an allowlisted image type
+        // or octet-stream (which the browser saves instead of rendering).
+        return { blob: new Blob([bytes], { type: registrationFileDisposition(type).type }), ext: ext };
       }
     }
 
@@ -6546,14 +6750,27 @@ const teamTableJson = JSON.stringify(teamTable);
           payload.title_en = form.querySelector('[name="title_en"]').value.trim();
           payload.date_iso = form.querySelector('[name="date_iso"]').value || null;
           payload.scorer_expert = form.querySelector('[name="scorer_expert"]').value.trim() || null;
-          payload.time = form.querySelector('[name="time"]').value.trim() || null;
+          var scTime = normalizeCourseTime(form.querySelector('[name="time"]').value);
+          if (scTime === null) throw new Error(t('scTimeInvalid'));
+          payload.time = scTime || null;
           payload.mode = form.querySelector('[name="mode"]').value;
           payload.location = form.querySelector('[name="location"]').value.trim() || null;
           payload.host_note = form.querySelector('[name="host_note"]').value.trim() || null;
           var scDuration = form.querySelector('[name="duration_hours"]').value;
           payload.duration_hours = scDuration && Number(scDuration) > 0 ? Number(scDuration) : null;
-          payload.form_slug_de = normalizeFormSlug(form.querySelector('[name="form_slug_de"]').value) || null;
-          payload.form_slug_en = normalizeFormSlug(form.querySelector('[name="form_slug_en"]').value) || null;
+          // The form slugs bind a course to the OpnForm submissions (names, emails, exam
+          // files) its admins can then read, so only a superuser may set them; wadmin
+          // refuses them from anyone else (C5). Others never send them at all — and a
+          // superuser sends one only when it was actually edited, so an untouched stored
+          // value (e.g. a full forms.kscw.ch URL) is never rewritten by normalizeFormSlug
+          // as a side effect of saving an unrelated field.
+          if (adminAccess.isSuperuser) {
+            ['form_slug_de', 'form_slug_en'].forEach(function(k) {
+              var typed = String(form.querySelector('[name="' + k + '"]').value || '').trim();
+              var stored = String((existingItem && existingItem[k]) || '').trim();
+              if (typed !== stored) payload[k] = normalizeFormSlug(typed) || null;
+            });
+          }
           // datetime-local yields Zurich wall-clock; the column is a UTC instant.
           payload.registration_closes = zurichInputToISO(form.querySelector('[name="registration_closes"]').value);
           var scSortVal = form.querySelector('[name="sort"]').value;
@@ -6568,14 +6785,17 @@ const teamTableJson = JSON.stringify(teamTable);
             payload.title = translatedTitle || rawTitle;       // translation is DE
           } else {
             payload.title = rawTitle;                          // input is DE
-            if (translatedTitle) payload.title_en = translatedTitle; // translation is EN
+            payload.title_en = translatedTitle.trim() || null;  // other field is EN — may be cleared
           }
           payload.slug = form.querySelector('[name="slug"]').value;
           payload.excerpt = form.querySelector('[name="excerpt"]').value;
           payload.body = quillInstance ? DOMPurify.sanitize(quillInstance.root.innerHTML) : '';
           payload.category = form.querySelector('[name="category"]').value;
-          payload.published_at = form.querySelector('[name="published_at"]').value;
-          payload.is_published = form.querySelector('[name="is_published"]').checked;
+          Object.assign(payload, newsPublication(
+            form.querySelector('[name="is_published"]').checked,
+            form.querySelector('[name="published_at"]').value,
+            existingItem ? existingItem.published_at : null
+          ));
 
           var imageInput = form.querySelector('[name="image"]');
           if (imageInput && imageInput.files.length > 0) {
@@ -6584,33 +6804,31 @@ const teamTableJson = JSON.stringify(teamTable);
         } else {
           payload.title = form.querySelector('[name="title"]').value;
           payload.event_type = form.querySelector('[name="event_type"]').value;
-          payload.start_date = form.querySelector('[name="start_date"]').value;
-          payload.end_date = form.querySelector('[name="end_date"]').value || form.querySelector('[name="start_date"]').value;
-          payload.all_day = form.querySelector('[name="all_day"]').checked;
+          Object.assign(payload, eventDatePayload(
+            form.querySelector('[name="all_day"]').checked,
+            form.querySelector('[name="start_date"]').value,
+            form.querySelector('[name="start_time"]').value,
+            form.querySelector('[name="end_date"]').value,
+            form.querySelector('[name="end_time"]').value
+          ));
           payload.location = form.querySelector('[name="location"]').value;
           payload.description = quillInstance ? DOMPurify.sanitize(quillInstance.root.innerHTML) : '';
 
+          // teams / invited members are deliberately not written — see the form.
           var participationRequired = form.querySelector('[name="participation_required"]').checked;
           if (participationRequired) {
-            payload.respond_by = form.querySelector('[name="respond_by"]').value || null;
-            var teamsVal = form.querySelector('[name="teams"]').value;
-            var teamsArr; try { teamsArr = JSON.parse(teamsVal || '[]'); } catch (_) { teamsArr = []; }
-            payload.teams = teamsArr;
-            var minP = form.querySelector('[name="min_players"]').value;
+            payload.respond_by = zurichInputToISO(form.querySelector('[name="respond_by"]').value);
+            var minP = form.querySelector('[name="min_participants"]').value;
             var maxP = form.querySelector('[name="max_players"]').value;
-            payload.min_players = minP ? Number(minP) : 0;
+            payload.min_participants = minP ? Number(minP) : 0;
             payload.max_players = maxP ? Number(maxP) : 0;
             payload.require_note_if_absent = form.querySelector('[name="require_note_if_absent"]').checked;
-            var reqParts; try { reqParts = JSON.parse(form.querySelector('[name="required_participants"]').value || '[]'); } catch (_) { reqParts = []; }
-            payload.required_participants = reqParts;
           } else {
             // Clear participation fields
             payload.respond_by = null;
-            payload.teams = [];
-            payload.min_players = 0;
+            payload.min_participants = 0;
             payload.max_players = 0;
             payload.require_note_if_absent = false;
-            payload.required_participants = [];
           }
         }
 
@@ -6626,6 +6844,10 @@ const teamTableJson = JSON.stringify(teamTable);
         });
         if (!res.ok) {
           var errData = await res.json().catch(function() { return {}; });
+          // wadmin's per-field write policy (C5): { error: 'field_not_writable', field }.
+          if (res.status === 403 && errData.error === 'field_not_writable') {
+            throw new Error(t('scFieldNotWritable') + (errData.field || ''));
+          }
           throw new Error(errData.errors ? errData.errors[0].message : 'HTTP ' + res.status);
         }
 
@@ -6634,7 +6856,7 @@ const teamTableJson = JSON.stringify(teamTable);
         // stored, so a push failure is reported without pretending the save failed —
         // but it is reported, because until it lands the form still takes sign-ups.
         if (isScorerCourse) {
-          var pushSlugs = courseFormSlugs(payload);
+          var pushSlugs = courseFormSlugs(Object.assign({}, existingItem || {}, payload));
           if (pushSlugs.length) {
             var failed = await pushClosesToForms(pushSlugs, payload.registration_closes);
             if (failed.length) alert(t('scClosesPushFailed') + ' (' + failed.join(', ') + ')');
@@ -6658,6 +6880,7 @@ const teamTableJson = JSON.stringify(teamTable);
         '<label for="f-' + name + '">' + escapeHtml(label) + '</label>' +
         '<input type="text" name="' + name + '" id="f-' + name + '" value="' + escapeAttr(value || '') + '"' +
           (placeholder ? ' placeholder="' + escapeAttr(placeholder) + '"' : '') +
+          (opts && typeof opts === 'object' && opts.readonly ? ' readonly' : '') +
           (required ? ' required' : '') + '>' +
       '</div>';
     }
@@ -6671,6 +6894,12 @@ const teamTableJson = JSON.stringify(teamTable);
       return '<div class="admin-field">' +
         '<label for="f-' + name + '">' + escapeHtml(label) + '</label>' +
         '<input type="date" name="' + name + '" id="f-' + name + '" value="' + escapeAttr(value || '') + '">' +
+      '</div>';
+    }
+    function fieldTime(name, label, value) {
+      return '<div class="admin-field">' +
+        '<label for="f-' + name + '">' + escapeHtml(label) + '</label>' +
+        '<input type="time" name="' + name + '" id="f-' + name + '" value="' + escapeAttr(value || '') + '">' +
       '</div>';
     }
     // Value/return are Zurich wall-clock ('yyyy-mm-ddTHH:MM') — convert at the
@@ -6720,205 +6949,6 @@ const teamTableJson = JSON.stringify(teamTable);
       '</div>';
     }
 
-    // ── Teams multi-select with presets ─────────────────────
-    function initTeamsSelector(item) {
-      var selectedTeams = (item && item.teams) ? item.teams.slice() : [];
-      var hiddenInput = document.querySelector('[name="teams"]');
-      var tagsContainer = document.getElementById('teams-tags');
-      var presetsContainer = document.getElementById('team-presets');
-      if (!hiddenInput || !tagsContainer || !presetsContainer) return;
-
-      function syncHidden() {
-        hiddenInput.value = JSON.stringify(selectedTeams);
-      }
-
-      function renderTags(teams) {
-        tagsContainer.textContent = '';
-        selectedTeams.forEach(function(tid) {
-          var team = teams ? teams.find(function(t) { return t.id === tid; }) : null;
-          var tag = document.createElement('span');
-          tag.className = 'admin-tag';
-          tag.textContent = team ? team.name : tid;
-          var removeBtn = document.createElement('button');
-          removeBtn.type = 'button';
-          removeBtn.className = 'admin-tag-remove';
-          removeBtn.textContent = '\u00d7';
-          removeBtn.addEventListener('click', function() {
-            selectedTeams = selectedTeams.filter(function(id) { return id !== tid; });
-            syncHidden();
-            renderTags(teams);
-          });
-          tag.appendChild(removeBtn);
-          tagsContainer.appendChild(tag);
-        });
-      }
-
-      fetchTeams().then(function(teams) {
-        // Preset buttons
-        var presets = [
-          { label: t('allTeams'), filter: function() { return teams; } },
-          { label: 'Volleyball', filter: function() { return teams.filter(function(tt) { return tt.sport === 'volleyball'; }); } },
-          { label: 'Basketball', filter: function() { return teams.filter(function(tt) { return tt.sport === 'basketball'; }); } }
-        ];
-        presets.forEach(function(p) {
-          var btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'admin-btn admin-btn-sm';
-          btn.textContent = p.label;
-          btn.addEventListener('click', function() {
-            selectedTeams = p.filter().map(function(t) { return t.id; });
-            syncHidden();
-            renderTags(teams);
-          });
-          presetsContainer.appendChild(btn);
-        });
-
-        // Clear button
-        var clearBtn = document.createElement('button');
-        clearBtn.type = 'button';
-        clearBtn.className = 'admin-btn admin-btn-sm admin-btn-danger';
-        clearBtn.textContent = t('none');
-        clearBtn.addEventListener('click', function() {
-          selectedTeams = [];
-          syncHidden();
-          renderTags(teams);
-        });
-        presetsContainer.appendChild(clearBtn);
-
-        // Individual team checkboxes
-        var dropdown = document.getElementById('teams-dropdown');
-        dropdown.style.display = '';
-        dropdown.style.maxHeight = '200px';
-        dropdown.style.overflowY = 'auto';
-        teams.forEach(function(team) {
-          var label = document.createElement('label');
-          label.className = 'admin-dropdown-item';
-          var cb = document.createElement('input');
-          cb.type = 'checkbox';
-          cb.checked = selectedTeams.includes(team.id);
-          cb.addEventListener('change', function() {
-            if (this.checked) {
-              if (!selectedTeams.includes(team.id)) selectedTeams.push(team.id);
-            } else {
-              selectedTeams = selectedTeams.filter(function(id) { return id !== team.id; });
-            }
-            syncHidden();
-            renderTags(teams);
-          });
-          var sportBadge = document.createElement('span');
-          sportBadge.className = 'admin-badge';
-          sportBadge.textContent = team.sport === 'volleyball' ? 'VB' : 'BB';
-          sportBadge.style.marginLeft = '4px';
-          label.appendChild(cb);
-          var nameSpan = document.createElement('span');
-          nameSpan.textContent = ' ' + team.name + ' ';
-          label.appendChild(nameSpan);
-          label.appendChild(sportBadge);
-          dropdown.appendChild(label);
-        });
-
-        renderTags(teams);
-      });
-    }
-
-    // ── Members multi-search select ──────────────────────────
-    function initMembersSelector(item) {
-      var selectedMembers = (item && item.required_participants) ? item.required_participants.slice() : [];
-      var hiddenInput = document.querySelector('[name="required_participants"]');
-      var tagsContainer = document.getElementById('members-tags');
-      var searchInput = document.getElementById('member-search');
-      var dropdown = document.getElementById('members-dropdown');
-      if (!hiddenInput || !tagsContainer || !searchInput || !dropdown) return;
-
-      var allMembers = [];
-
-      function syncHidden() {
-        hiddenInput.value = JSON.stringify(selectedMembers);
-      }
-
-      function memberName(m) {
-        return (m.first_name || '') + ' ' + (m.last_name || '');
-      }
-
-      function renderTags() {
-        tagsContainer.textContent = '';
-        selectedMembers.forEach(function(mid) {
-          var member = allMembers.find(function(m) { return m.id === mid; });
-          var tag = document.createElement('span');
-          tag.className = 'admin-tag';
-          tag.textContent = member ? memberName(member).trim() : mid;
-          var removeBtn = document.createElement('button');
-          removeBtn.type = 'button';
-          removeBtn.className = 'admin-tag-remove';
-          removeBtn.textContent = '\u00d7';
-          removeBtn.addEventListener('click', function() {
-            selectedMembers = selectedMembers.filter(function(id) { return id !== mid; });
-            syncHidden();
-            renderTags();
-          });
-          tag.appendChild(removeBtn);
-          tagsContainer.appendChild(tag);
-        });
-      }
-
-      function renderDropdown(query) {
-        dropdown.textContent = '';
-        if (!query) { dropdown.style.display = 'none'; return; }
-        var q = query.toLowerCase();
-        var matches = allMembers.filter(function(m) {
-          if (selectedMembers.includes(m.id)) return false;
-          var name = memberName(m).toLowerCase();
-          var email = (m.email || '').toLowerCase();
-          return name.indexOf(q) !== -1 || email.indexOf(q) !== -1;
-        }).slice(0, 20);
-
-        if (!matches.length) {
-          dropdown.style.display = 'none';
-          return;
-        }
-
-        dropdown.style.display = '';
-        matches.forEach(function(m) {
-          var option = document.createElement('div');
-          option.className = 'admin-dropdown-option';
-          var nameText = document.createElement('span');
-          nameText.textContent = memberName(m).trim();
-          option.appendChild(nameText);
-          if (m.email) {
-            var emailSpan = document.createElement('span');
-            emailSpan.className = 'admin-dropdown-email';
-            emailSpan.textContent = m.email;
-            option.appendChild(emailSpan);
-          }
-          option.addEventListener('click', function() {
-            selectedMembers.push(m.id);
-            syncHidden();
-            renderTags();
-            searchInput.value = '';
-            dropdown.style.display = 'none';
-          });
-          dropdown.appendChild(option);
-        });
-      }
-
-      fetchMembers().then(function(members) {
-        allMembers = members;
-        renderTags();
-
-        searchInput.addEventListener('input', function() {
-          renderDropdown(this.value);
-        });
-        searchInput.addEventListener('focus', function() {
-          if (this.value) renderDropdown(this.value);
-        });
-        // Close dropdown on outside click
-        document.addEventListener('click', function(e) {
-          if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-            dropdown.style.display = 'none';
-          }
-        });
-      });
-    }
 
     // ── Admin grant grid helpers ──────────────────────────────
     function bindGrantGrid(host, rows) {
@@ -7325,13 +7355,6 @@ const teamTableJson = JSON.stringify(teamTable);
     color: var(--text-muted);
     margin-bottom: var(--space-xl);
     opacity: 0.7;
-  }
-
-  #admin-turnstile {
-    display: flex;
-    justify-content: center;
-    margin: var(--space-md) 0;
-    min-height: 65px;
   }
 
   .admin-login-btn {

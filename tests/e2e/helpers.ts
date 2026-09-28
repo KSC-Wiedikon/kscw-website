@@ -9,9 +9,10 @@ export type Lang = 'de' | 'en';
  * (`kscw-locale`) and otherwise falls back to the browser language.
  *
  * Two consequences for tests:
- *  - The legacy /de/… and /en/… URLs only exist as 301s in public/_redirects,
- *    which is Cloudflare-only — `astro preview` serves plain 404s for them, so
- *    tests must use the canonical path.
+ *  - The legacy /de/… and /en/… URLs only exist as 301s issued by the Pages
+ *    Function in functions/_middleware.js (moved out of public/_redirects on
+ *    2026-09-28, F-40), which is Cloudflare-only — `astro preview` runs no
+ *    Functions and serves plain 404s for them, so tests must use the canonical path.
  *  - Without a stored choice the language follows the browser locale, and
  *    Playwright's default is en-US — an unseeded page renders ENGLISH. Any
  *    assertion on German copy has to ask for 'de' explicitly.

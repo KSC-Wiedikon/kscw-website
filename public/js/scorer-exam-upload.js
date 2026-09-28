@@ -20,8 +20,8 @@
 (function () {
   'use strict';
 
-  var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
   var TURNSTILE_SITE_KEY = '0x4AAAAAACoYmx3xiDfRbmv9';
   var MAX_BYTES = 10 * 1024 * 1024; // keep in sync with UPLOAD_MAX_BYTES in scorer-exam.js
 
@@ -255,6 +255,7 @@
     }
     renderStatus();
     show(stepFile);
+    if (info.graded) return; // nothing to fill in — the notice says why
     if (info.licence_on_file) fileInput.focus(); else licenceInput.focus();
   }
 
@@ -262,12 +263,19 @@
   // have one. With one on file the field is not asked at all: the server keeps the
   // recorded number and would ignore a typed one anyway.
   function renderStatus() {
-    if (info && info.uploaded_on) {
+    // Graded (2026-09-28 audit, F-14): /upload answers 409 already_graded, so say it
+    // up-front (when /ticket reports `graded`) instead of after a 10 MB transfer.
+    if (info && info.graded) {
+      setText(already, 'scorerExamAlreadyGraded');
+      already.hidden = false;
+    } else if (info && info.uploaded_on) {
       already.textContent = t('scorerExamAlreadyUploaded', { date: fmtDate(info.uploaded_on) });
+      already.removeAttribute('data-i18n'); // interpolated — re-rendered here, not by the toggle
       already.hidden = false;
     } else {
       already.hidden = true;
     }
+    fileSubmit.disabled = !!(info && info.graded);
     var onFile = !!(info && info.licence_on_file);
     licenceGroup.hidden = onFile;
     licenceInput.required = !onFile;
@@ -294,6 +302,7 @@
     clearError();
 
     if (!ticket || !info) { show(stepEmail); showError('scorerExamLinkInvalid'); return; }
+    if (info.graded) { showError('scorerExamAlreadyGraded'); return; }
 
     // With a licence on file the field is hidden and nothing is sent: the server keeps
     // the recorded number.
@@ -344,6 +353,13 @@
         }
         if (r.status === 413) { showError('scorerExamTooLarge'); return; }
         if (r.status === 415) { showError('scorerExamBadType'); return; }
+        if (r.status === 409 && r.body.error === 'already_graded') {
+          // Graded after the link was opened: nothing more this page can do.
+          info.graded = true;
+          renderStatus();
+          showError('scorerExamAlreadyGraded');
+          return;
+        }
         if (r.status === 403) {
           // Expired (24h) or the course was closed: the only way on is a fresh link.
           ticket = '';
@@ -361,7 +377,7 @@
       })
       .catch(function () { showError('scorerExamNetworkError'); })
       .finally(function () {
-        fileSubmit.disabled = false;
+        fileSubmit.disabled = !!(info && info.graded);
         if (label && restore) setText(label, restore);
       });
   });

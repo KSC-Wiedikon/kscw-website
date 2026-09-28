@@ -24,8 +24,16 @@
     return (window.i18n && window.i18n.getLang && window.i18n.getLang()) ||
       document.documentElement.lang || 'de';
   }
+  // Active-language labels come from the i18n engine, so a Seitentexte override
+  // shows here exactly as it does on the page itself (audit 2026-09-28, F-54).
+  // The locally fetched dictionaries are only the fallback — and the bilingual
+  // haystack, which needs BOTH languages at once.
   function tr(key) {
     if (!key) return '';
+    if (window.i18n && typeof window.i18n.t === 'function') {
+      var live = window.i18n.t(key);
+      if (live && live !== key) return live;
+    }
     var d = dicts || {};
     var l = lang();
     return (d[l] && d[l][key]) || (d.de && d.de[key]) || key;
@@ -35,10 +43,18 @@
   function ensureData() {
     if (index || loading) return Promise.resolve();
     loading = true;
+    // Same content-hashed URLs the engine uses (BaseLayout → window.__I18N_V).
+    // Unversioned, these were a separate cache entry that could serve a
+    // four-hour-old dictionary after a deploy (F-54) — and a second download of
+    // a file the engine already has.
+    function dictUrl(l) {
+      var v = (window.__I18N_V && window.__I18N_V[l]) || '';
+      return '/js/i18n/' + l + '.json' + (v ? '?v=' + v : '');
+    }
     return Promise.all([
       fetch('/search-index.json').then(function (r) { return r.json(); }),
-      fetch('/js/i18n/de.json').then(function (r) { return r.json(); }),
-      fetch('/js/i18n/en.json').then(function (r) { return r.json(); })
+      fetch(dictUrl('de')).then(function (r) { return r.json(); }),
+      fetch(dictUrl('en')).then(function (r) { return r.json(); })
     ]).then(function (res) {
       index = res[0];
       dicts = { de: res[1], en: res[2] };

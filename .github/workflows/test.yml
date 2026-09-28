@@ -1,8 +1,21 @@
 name: Test
 
+# Runs on every push to dev and prod — but not from its own trigger: it is CALLED by
+# deploy-cloudflare-pages.yml as the `test` job the deploy `needs:` (2026-09-28), so a
+# commit that breaks the CSP / XSS / site-text regression tests never reaches the live
+# site, and the suite runs once per push rather than twice. workflow_dispatch keeps a
+# manual run possible.
 on:
-  push:
-    branches: [dev, prod]
+  workflow_call:
+    secrets:
+      TEST_ADMIN_EMAIL:
+        required: false
+      TEST_ADMIN_PASSWORD:
+        required: false
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   test:
@@ -11,6 +24,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v6
         with:

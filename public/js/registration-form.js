@@ -8,8 +8,8 @@
 (function () {
   'use strict';
 
-  var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
   var TURNSTILE_SITE_KEY = '0x4AAAAAACoYmx3xiDfRbmv9';
 
   var form = document.getElementById('registration-form');
@@ -995,6 +995,63 @@
   var turnstileWidgetId = null;
   var turnstileContainer = document.getElementById('turnstile-container');
 
+  // ── Upload ticket (audit 2026-09-28, F-09) ───────────────
+  // /kscw/registration/upload was an anonymous disk-fill channel. The backend now
+  // accepts a signed upload ticket (a bounded number of uploads over ~2 h) minted
+  // by /kscw/registration/upload-ticket in exchange for a Turnstile token, and
+  // gives unticketed uploads only a small shared budget — until
+  // REGISTRATION_UPLOAD_REQUIRE_TICKET flips, after which they are refused.
+  //
+  // The widget's FIRST solve buys the ticket, and the widget is then reset so a
+  // fresh token is ready for the submit (tokens are single-use). This happens as
+  // the page loads — documents are picked, and uploaded eagerly, long before the
+  // applicant reaches the submit button — and it is attempted once only: a
+  // failure leaves uploads unticketed, exactly as before, never blocks the form.
+  var uploadTicket = null;
+  var uploadTicketPromise = null;
+  var uploadTicketExpiresAt = 0;
+  var uploadTicketRenewed = false;
+
+  function mintUploadTicket(token) {
+    if (uploadTicket || uploadTicketPromise || !token) return;
+    uploadTicketPromise = fetch(DIRECTUS_URL + '/kscw/registration/upload-ticket', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ turnstile_token: token }),
+    })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        uploadTicket = (data && typeof data.ticket === 'string') ? data.ticket : null;
+        // Renew a minute early so an upload never races the expiry.
+        var ttl = data && Number(data.expires_in) > 0 ? Number(data.expires_in) : 2 * 60 * 60;
+        uploadTicketExpiresAt = Date.now() + Math.max(0, ttl - 60) * 1000;
+      })
+      .catch(function () { /* stays unticketed */ })
+      .then(function () {
+        // The token was spent on the ticket either way; fetch a fresh one.
+        if (window.turnstile && turnstileWidgetId !== null) {
+          try { window.turnstile.reset(turnstileWidgetId); } catch (_) { /* noop */ }
+        }
+        return uploadTicket;
+      });
+  }
+
+  /** The ticket, waiting for one in flight; null when there is none. */
+  function currentUploadTicket() {
+    // A form left open past the ticket's lifetime (~2 h) would otherwise upload
+    // with a dead ticket — refused outright once the backend requires one. Buy a
+    // new one, once, with the widget's current token (the widget is reset after).
+    if (uploadTicket && !uploadTicketRenewed && Date.now() > uploadTicketExpiresAt) {
+      uploadTicketRenewed = true;
+      uploadTicket = null;
+      uploadTicketPromise = null;
+      var fresh = '';
+      try { fresh = (window.turnstile && turnstileWidgetId !== null) ? (window.turnstile.getResponse(turnstileWidgetId) || '') : ''; } catch (_) { /* noop */ }
+      mintUploadTicket(fresh);
+    }
+    return uploadTicketPromise ? uploadTicketPromise.then(function () { return uploadTicket; }) : Promise.resolve(uploadTicket);
+  }
+
   function renderTurnstile() {
     if (!turnstileContainer || !window.turnstile) return;
     if (turnstileWidgetId !== null) return;
@@ -1008,6 +1065,7 @@
       'refresh-expired': 'auto',
       retry: 'auto',
       'retry-interval': 3000,
+      callback: function (token) { mintUploadTicket(token); },
       'expired-callback': function () {
         // Token went stale (valid only ~5 min; this form takes longer to fill).
         // Reset so a fresh token is fetched and the submit handler doesn't
@@ -2176,11 +2234,15 @@
     // Dedicated registration-upload endpoint: the file is created inside the
     // PRIVATE registration folder server-side (never anon-readable, unlike the
     // old anonymous POST /files which left folder-less files), with MIME/size
-    // enforced by the backend too.
-    return fetch(DIRECTUS_URL + '/kscw/registration/upload?filename=' + encodeURIComponent(file.name || 'document'), {
-      method: 'POST',
-      headers: { 'Content-Type': file.type || 'application/octet-stream' },
-      body: file,
+    // enforced by the backend too. Carries the upload ticket when there is one
+    // (see mintUploadTicket).
+    return currentUploadTicket().then(function (ticket) {
+      return fetch(DIRECTUS_URL + '/kscw/registration/upload?filename=' + encodeURIComponent(file.name || 'document')
+        + (ticket ? '&ticket=' + encodeURIComponent(ticket) : ''), {
+        method: 'POST',
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        body: file,
+      });
     })
       .then(function (r) {
         if (!r.ok) throw new Error('File upload failed');

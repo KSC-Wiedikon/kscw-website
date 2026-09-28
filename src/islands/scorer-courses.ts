@@ -11,6 +11,7 @@
 import { getUpcomingScorerCourses, isRegistrationClosed, localeSlug, normalizeFormSlug, type ScorerCourse } from '../data/scorer-courses';
 import { formatDate, formatDateTime } from '../lib/utils';
 import { getDirectusUrl } from '../lib/directus';
+import { normalizeHHMM, zurichToUTC } from '../lib/zurichTime';
 
 // Location, host note ("Hosted by / Powered by") and duration are per-course
 // Directus fields, editable in /admin. An empty location/host note hides that
@@ -58,7 +59,10 @@ if (container) {
     titleDe: String(r.title_de ?? ''),
     titleEn: String(r.title_en ?? ''),
     dateISO: (r.date_iso as string | null) ?? null,
-    time: (r.time as string | null) ?? null,
+    // "18.00" / "18h00" are normal Swiss input; anything that is not a time at
+    // all becomes null (card shows the date alone) instead of reaching the
+    // calendar maths as NaN (audit 2026-09-28, F-11).
+    time: normalizeHHMM(r.time),
     mode: (['in_person', 'recorded', 'both'].includes(r.mode as string)
       ? (r.mode as ScorerCourse['mode'])
       : 'in_person'),
@@ -74,28 +78,8 @@ if (container) {
       : null,
   });
 
-  // Wall-clock Europe/Zurich → exact UTC instant, DST-safe (CET/CEST
-  // offset is resolved for the given date via Intl, not hard-coded).
-  const zurichToUTC = (dateISO: string, hhmm: string): Date => {
-    const [y, m, d] = dateISO.split('-').map(Number);
-    const [hh, mi] = hhmm.split(':').map(Number);
-    const asUTC = Date.UTC(y, m - 1, d, hh, mi, 0);
-    const dtf = new Intl.DateTimeFormat('en-US', {
-      timeZone: 'Europe/Zurich', hour12: false,
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', second: '2-digit',
-    });
-    const p = Object.fromEntries(
-      dtf.formatToParts(new Date(asUTC))
-        .filter((x) => x.type !== 'literal')
-        .map((x) => [x.type, x.value]),
-    ) as Record<string, string>;
-    const hour = p.hour === '24' ? '00' : p.hour;
-    const zurichAsUTC = Date.UTC(
-      +p.year, +p.month - 1, +p.day, +hour, +p.minute, +p.second,
-    );
-    return new Date(asUTC - (zurichAsUTC - asUTC));
-  };
+  // Wall-clock Europe/Zurich → UTC lives in src/lib/zurichTime.ts, where it
+  // returns null on an unparseable date/time instead of an Invalid Date.
 
   const gcalStamp = (dt: Date): string =>
     dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
@@ -107,6 +91,7 @@ if (container) {
   // "Termin nicht gefunden".
   const gcalUrl = (course: ScorerCourse, title: string, signupUrl: string): string => {
     const start = zurichToUTC(course.dateISO as string, course.time || DEFAULT_TIME);
+    if (!start) return '';   // unparseable date — no calendar button rather than a throw
     const end = new Date(start.getTime() + (course.durationHours ?? DEFAULT_HOURS) * 3600_000);
     const withLocation = course.mode === 'in_person' || course.mode === 'both';
     const detailsBase = withLocation && course.hostNote ? `${title}\n\n${course.hostNote}` : title;
@@ -134,134 +119,146 @@ if (container) {
     const locale = getLang();
     container.textContent = '';
     for (const course of courses) {
-      const slug = localeSlug(course, locale);
-      const title = locale === 'en' ? course.titleEn : course.titleDe;
-      const signupUrl = slug ? `https://forms.kscw.ch/forms/${slug}` : '';
-
-      const card = el('div', { class: 'card' });
-      const body = el('div', {
-        class: 'card-body',
-        style: 'display: flex; flex-direction: column; gap: var(--space-md);',
-      });
-
-      const headRow = el('div', {
-        style: 'display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap;',
-      });
-      headRow.appendChild(el('h3', { style: 'margin: 0;' }, title));
-      const when = course.dateISO
-        ? formatDate(course.dateISO) + (course.time ? ` · ${course.time}` : '')
-        : tr('scorerSignupSoon');
-      headRow.appendChild(el('span', { style: 'font-weight: 600; color: var(--kscw-blue);' }, when));
-      body.appendChild(headRow);
-
-      const metaRow = el('div', {
-        style: 'display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap;',
-      });
-      metaRow.appendChild(el('span', {
-        class: 'chip',
-        style: 'background: var(--kscw-gold); color: var(--text-on-gold);',
-      }, tr(MODE_KEY[course.mode])));
-      body.appendChild(metaRow);
-
-      if ((course.mode === 'in_person' || course.mode === 'both')) {
-        if (course.location) body.appendChild(el('p', { class: 'scorer-location' }, course.location));
-        if (course.hostNote) body.appendChild(el('p', { class: 'scorer-host' }, course.hostNote));
+      // One bad row must cost one card, not the section: a throw here used to
+      // abort the whole render, and the section — shipped hidden — was never
+      // un-hidden (audit 2026-09-28, F-11).
+      try {
+        renderCard(course, locale);
+      } catch (err) {
+        console.error('[scorer-courses] skipped a course that failed to render', err);
       }
-
-      // Evaluated per render (not per load) so a page left open across the
-      // deadline locks on the next language switch or re-render rather than
-      // keeping a stale open button.
-      const closed = isRegistrationClosed(course);
-
-      // Deadline still ahead — say when it falls, so the date is visible before
-      // it bites rather than only as an "it's over" note afterwards.
-      if (course.registrationCloses && !closed) {
-        body.appendChild(el('p', { class: 'scorer-deadline' },
-          tr('scorerSignupUntil', { date: formatDateTime(course.registrationCloses) })));
-      }
-
-      if (closed) {
-        // Sits where the sign-up button was, so the card reads as "this is shut"
-        // rather than leaving the calendar button as the apparent call to action.
-        // The card's own state only — OpnForm holds the matching closes_at and is
-        // what actually turns a late submission away.
-        const note = el('p', { class: 'scorer-closed' });
-        note.appendChild(icon('lock'));
-        note.appendChild(el('span', {}, tr('scorerSignupClosed')));
-        body.appendChild(note);
-      }
-
-      const actions = el('div', { class: 'scorer-actions' });
-
-      if (slug && !closed) {
-        const cta = el('a', {
-          class: 'btn btn-primary',
-          href: signupUrl,
-          target: '_blank',
-          rel: 'noopener noreferrer',
-        });
-        labelBtn(cta, 'user-plus', tr('scorerSignupCta'));
-        actions.appendChild(cta);
-      }
-
-      if (course.dateISO) {
-        const calBtn = el('a', {
-          class: 'btn btn-outline',
-          href: gcalUrl(course, title, signupUrl),
-          target: '_blank',
-          rel: 'noopener noreferrer',
-        });
-        labelBtn(calBtn, 'calendar-plus', tr('scorerSignupCalendar'));
-        actions.appendChild(calBtn);
-      }
-
-      if (actions.children.length) body.appendChild(actions);
-
-      if (!closed && !slug && course.dateISO) {
-        // Date is set but no sign-up form yet — say so without re-claiming
-        // the date is TBD. When the date itself is null the header span
-        // already shows the full "date to be announced" message.
-        body.appendChild(el('p', {
-          style: 'color: var(--text-muted); font-style: italic; margin: 0;',
-        }, tr('scorerSignupOpensSoon')));
-      }
-
-      // Always-available info materials (course handout + e-learning
-      // registration guide), hosted under /docs/. Secondary to the
-      // sign-up CTA, so styled as outline links.
-      // Doc labels read from the live engine at render time so they swap with
-      // the language toggle.
-      const docHandout = tr('scorerCoursesHandout');
-      const docElearning = tr('scorerCoursesElearningReg');
-      if (docHandout || docElearning) {
-        const docs = el('div', {
-          style: 'display: flex; flex-wrap: wrap; gap: var(--space-sm);',
-        });
-        const docLink = (href: string, label: string, iconName: string) => {
-          const a = el('a', {
-            class: 'btn btn-outline',
-            href,
-            target: '_blank',
-            rel: 'noopener noreferrer',
-          });
-          labelBtn(a, iconName, label);
-          return a;
-        };
-        if (docHandout) {
-          docs.appendChild(docLink('/docs/schreiberwesen.pdf', docHandout, 'file-text'));
-        }
-        if (docElearning) {
-          docs.appendChild(docLink('/docs/schreiberwesen-elearning-registration.pdf', docElearning, 'clipboard-list'));
-        }
-        body.appendChild(docs);
-      }
-
-      card.appendChild(body);
-      container.appendChild(card);
     }
 
     const lucide = (window as unknown as { lucide?: { createIcons: () => void } }).lucide;
     if (lucide) lucide.createIcons();
+  };
+
+  const renderCard = (course: ScorerCourse, locale: 'de' | 'en') => {
+    const slug = localeSlug(course, locale);
+    const title = locale === 'en' ? course.titleEn : course.titleDe;
+    const signupUrl = slug ? `https://forms.kscw.ch/forms/${slug}` : '';
+
+    const card = el('div', { class: 'card' });
+    const body = el('div', {
+      class: 'card-body',
+      style: 'display: flex; flex-direction: column; gap: var(--space-md);',
+    });
+
+    const headRow = el('div', {
+      style: 'display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap;',
+    });
+    headRow.appendChild(el('h3', { style: 'margin: 0;' }, title));
+    const when = course.dateISO
+      ? formatDate(course.dateISO) + (course.time ? ` · ${course.time}` : '')
+      : tr('scorerSignupSoon');
+    headRow.appendChild(el('span', { style: 'font-weight: 600; color: var(--kscw-blue);' }, when));
+    body.appendChild(headRow);
+
+    const metaRow = el('div', {
+      style: 'display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap;',
+    });
+    metaRow.appendChild(el('span', {
+      class: 'chip',
+      style: 'background: var(--kscw-gold); color: var(--text-on-gold);',
+    }, tr(MODE_KEY[course.mode])));
+    body.appendChild(metaRow);
+
+    if ((course.mode === 'in_person' || course.mode === 'both')) {
+      if (course.location) body.appendChild(el('p', { class: 'scorer-location' }, course.location));
+      if (course.hostNote) body.appendChild(el('p', { class: 'scorer-host' }, course.hostNote));
+    }
+
+    // Evaluated per render (not per load) so a page left open across the
+    // deadline locks on the next language switch or re-render rather than
+    // keeping a stale open button.
+    const closed = isRegistrationClosed(course);
+
+    // Deadline still ahead — say when it falls, so the date is visible before
+    // it bites rather than only as an "it's over" note afterwards.
+    if (course.registrationCloses && !closed) {
+      body.appendChild(el('p', { class: 'scorer-deadline' },
+        tr('scorerSignupUntil', { date: formatDateTime(course.registrationCloses) })));
+    }
+
+    if (closed) {
+      // Sits where the sign-up button was, so the card reads as "this is shut"
+      // rather than leaving the calendar button as the apparent call to action.
+      // The card's own state only — OpnForm holds the matching closes_at and is
+      // what actually turns a late submission away.
+      const note = el('p', { class: 'scorer-closed' });
+      note.appendChild(icon('lock'));
+      note.appendChild(el('span', {}, tr('scorerSignupClosed')));
+      body.appendChild(note);
+    }
+
+    const actions = el('div', { class: 'scorer-actions' });
+
+    if (slug && !closed) {
+      const cta = el('a', {
+        class: 'btn btn-primary',
+        href: signupUrl,
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      });
+      labelBtn(cta, 'user-plus', tr('scorerSignupCta'));
+      actions.appendChild(cta);
+    }
+
+    const calHref = course.dateISO ? gcalUrl(course, title, signupUrl) : '';
+    if (calHref) {
+      const calBtn = el('a', {
+        class: 'btn btn-outline',
+        href: calHref,
+        target: '_blank',
+        rel: 'noopener noreferrer',
+      });
+      labelBtn(calBtn, 'calendar-plus', tr('scorerSignupCalendar'));
+      actions.appendChild(calBtn);
+    }
+
+    if (actions.children.length) body.appendChild(actions);
+
+    if (!closed && !slug && course.dateISO) {
+      // Date is set but no sign-up form yet — say so without re-claiming
+      // the date is TBD. When the date itself is null the header span
+      // already shows the full "date to be announced" message.
+      body.appendChild(el('p', {
+        style: 'color: var(--text-muted); font-style: italic; margin: 0;',
+      }, tr('scorerSignupOpensSoon')));
+    }
+
+    // Always-available info materials (course handout + e-learning
+    // registration guide), hosted under /docs/. Secondary to the
+    // sign-up CTA, so styled as outline links.
+    // Doc labels read from the live engine at render time so they swap with
+    // the language toggle.
+    const docHandout = tr('scorerCoursesHandout');
+    const docElearning = tr('scorerCoursesElearningReg');
+    if (docHandout || docElearning) {
+      const docs = el('div', {
+        style: 'display: flex; flex-wrap: wrap; gap: var(--space-sm);',
+      });
+      const docLink = (href: string, label: string, iconName: string) => {
+        const a = el('a', {
+          class: 'btn btn-outline',
+          href,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+        });
+        labelBtn(a, iconName, label);
+        return a;
+      };
+      if (docHandout) {
+        docs.appendChild(docLink('/docs/schreiberwesen.pdf', docHandout, 'file-text'));
+      }
+      if (docElearning) {
+        docs.appendChild(docLink('/docs/schreiberwesen-elearning-registration.pdf', docElearning, 'clipboard-list'));
+      }
+      body.appendChild(docs);
+    }
+
+    card.appendChild(body);
+    container.appendChild(card);
   };
 
   // Cache the fetched courses so a language switch re-renders from memory
@@ -297,7 +294,11 @@ if (container) {
   Promise.all([fetchCourses(), settled]).then(([upcoming]) => {
     if (!upcoming.length) return;
     cachedCourses = upcoming;
-    render(upcoming);
-    if (section) section.hidden = false;
-  });
+    try {
+      render(upcoming);
+    } finally {
+      // Un-hide whatever did render, even if the render threw part-way.
+      if (section && container.children.length) section.hidden = false;
+    }
+  }).catch((err) => console.error('[scorer-courses] render failed', err));
 }

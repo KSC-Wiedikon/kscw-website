@@ -5,8 +5,8 @@
 (function () {
   'use strict';
 
-  var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
   var TURNSTILE_SITE_KEY = '0x4AAAAAACoYmx3xiDfRbmv9';
 
   var form = document.getElementById('newsletter-form');
@@ -83,6 +83,19 @@
     submitBtn.textContent = loading ? (i18n.t('contactSending') || '...') : i18n.t('newsletterSubscribe');
   }
 
+  // Outcome of a ?verify= / ?unsubscribe= link. Only a 2xx is success: these
+  // used to parse the body and report success for ANY status, so a mangled or
+  // already-used unsubscribe link (404) told the reader "abgemeldet" while they
+  // stayed subscribed — a consent problem (audit 2026-09-28, F-30). A 4xx means
+  // the link itself is bad; a 5xx is ours, so the reader is asked to retry.
+  function tokenOutcome(successKey) {
+    return function (r) {
+      if (r.ok) return showFeedback('success', i18n.t(successKey));
+      showFeedback('error', i18n.t(r.status >= 400 && r.status < 500 ? 'newsletterLinkInvalid' : 'newsletterError'));
+    };
+  }
+  function tokenFailed() { showFeedback('error', i18n.t('newsletterError')); }
+
   // Handle ?verify= and ?unsubscribe= URL params
   var params = new URLSearchParams(window.location.search);
   var verifyToken = params.get('verify');
@@ -94,9 +107,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: verifyToken }),
     })
-      .then(function (r) { return r.json(); })
-      .then(function () { showFeedback('success', i18n.t('newsletterVerified')); })
-      .catch(function () { showFeedback('error', i18n.t('newsletterError')); });
+      .then(tokenOutcome('newsletterVerified'), tokenFailed);
     window.history.replaceState({}, '', window.location.pathname);
   }
 
@@ -106,9 +117,7 @@
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: unsubToken }),
     })
-      .then(function (r) { return r.json(); })
-      .then(function () { showFeedback('success', i18n.t('newsletterUnsubscribed')); })
-      .catch(function () { showFeedback('error', i18n.t('newsletterError')); });
+      .then(tokenOutcome('newsletterUnsubscribed'), tokenFailed);
     window.history.replaceState({}, '', window.location.pathname);
   }
 
@@ -148,22 +157,25 @@
           return d;
         });
       })
-      .then(function (data) {
-        if (data.already_subscribed) {
-          showFeedback('info', i18n.t('newsletterAlreadySubscribed'));
-        } else {
-          showFeedback('success', i18n.t('newsletterSuccess'));
-          form.reset();
-          form.querySelectorAll('input[name="nl-category"]').forEach(function (cb) { cb.checked = true; });
-        }
-        if (window.turnstile && turnstileWidgetId !== null) {
-          window.turnstile.reset(turnstileWidgetId);
-        }
+      .then(function () {
+        // The server answers every accepted request the same way (audit 2026-09-28,
+        // F-59): an `already_subscribed` flag told anyone with a Turnstile solve
+        // whether an address is a confirmed subscriber. So there is one outcome
+        // here — "check your inbox" — and a verified subscriber just gets no mail.
+        showFeedback('success', i18n.t('newsletterSuccess'));
+        form.reset();
+        form.querySelectorAll('input[name="nl-category"]').forEach(function (cb) { cb.checked = true; });
       })
       .catch(function (err) {
         showFeedback('error', err.message || i18n.t('newsletterError'));
       })
       .finally(function () {
+        // Single-use token: resetting only on success left a spent token in the
+        // widget after any failure, so every retry was rejected (audit
+        // 2026-09-28, F-31). Same fix as contact-form.js / feedback-form.js.
+        if (window.turnstile && turnstileWidgetId !== null) {
+          try { window.turnstile.reset(turnstileWidgetId); } catch (_) { /* noop */ }
+        }
         setLoading(false);
       });
   });

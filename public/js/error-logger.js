@@ -10,9 +10,10 @@
 ;(function () {
   'use strict'
 
-  var API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  // BaseLayout injects the backend before this file loads (audit 2026-09-28, F-41).
+  var API_URL = window.__KSCW_DIRECTUS || (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'https://directus-dev.kscw.ch'
-    : 'https://directus.kscw.ch'
+    : 'https://directus.kscw.ch')
 
   var ENDPOINT = API_URL + '/kscw/client-error'
   var sent = 0

@@ -1,4 +1,5 @@
 import { fetchAllItems, strictBuildData } from '../directus'
+import { zurichToday } from '../zurichTime'
 
 // Build-time data for the basketball youth page (/basketball/teams/nachwuchs).
 // Coaches come from the `teams.coach` M2M (→ members); training day/time/hall
@@ -368,7 +369,7 @@ export async function getYouthBasketball(): Promise<YouthBasketball> {
       return [...byName].filter(([n]) => codes.includes(codeOf.get(n)!)).map(([, i]) => i)
     }
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = zurichToday()
     for (const s of slots) {
       if (!isCurrentOrUpcoming(s, today)) continue
       const validUntil = s.indefinite ? '' : (s.valid_until ?? '').slice(0, 10)

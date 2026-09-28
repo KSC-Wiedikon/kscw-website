@@ -13,8 +13,8 @@
 (function () {
   'use strict';
 
-  var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
 
   var form = document.getElementById('docstatus-form');
   var feedback = document.getElementById('docs-feedback');
@@ -76,7 +76,12 @@
   function uploadSingleFile(file) {
     // Same private-folder upload endpoint as the registration form — the file
     // is born inside the private registration folder, never anon-readable.
-    return fetch(DIRECTUS_URL + '/kscw/registration/upload?filename=' + encodeURIComponent(file.name || 'document'), {
+    // doc-status hands back a signed upload ticket (ref+email is this page's
+    // proof), which lifts the upload out of the small unticketed budget and past
+    // the ticket requirement once the backend enforces it (audit 2026-09-28, F-09).
+    var ticket = current && current.uploadTicket;
+    return fetch(DIRECTUS_URL + '/kscw/registration/upload?filename=' + encodeURIComponent(file.name || 'document')
+      + (ticket ? '&ticket=' + encodeURIComponent(ticket) : ''), {
       method: 'POST',
       headers: { 'Content-Type': file.type || 'application/octet-stream' },
       body: file,
@@ -240,7 +245,10 @@
             ? 'Für diese Anmeldung sind keine Dokumente erforderlich.'
             : 'No documents are required for this registration.');
         }
-        current = { id: data.id, reference: data.reference_number, email: email, required: data.required, docs: data.docs };
+        current = {
+          id: data.id, reference: data.reference_number, email: email, required: data.required, docs: data.docs,
+          uploadTicket: typeof data.upload_ticket === 'string' ? data.upload_ticket : null,
+        };
         renderSlots();
       })
       .catch(function (err) {
@@ -264,6 +272,12 @@
     var qEmail = params.get('email');
     if (qRef) document.getElementById('docs-ref').value = qRef;
     if (qEmail) document.getElementById('docs-email').value = qEmail;
+    // The values now live in the form, so drop them from the address bar. Left
+    // there, the reference + email pair rode along in every Sentry event and
+    // breadcrumb, the history and any shared screenshot (audit 2026-09-28, F-29).
+    if ((qRef || qEmail) && window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
     if (qRef && qEmail) check();
   } catch (_) { /* noop */ }
 })();

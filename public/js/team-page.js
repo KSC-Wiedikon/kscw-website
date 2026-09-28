@@ -12,10 +12,17 @@
   var CFG = window.TEAM_CONFIG;
   if (!CFG || (!CFG.short && !CFG.directusId)) return;
 
-  var DIRECTUS_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch';
+  var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
   var TEAM = CFG.short || '';
   var TEAM_DIRECTUS_ID = CFG.directusId;
+
+  /** Today's date in Zurich as YYYY-MM-DD — the ES5 twin of zurichToday() in
+   *  src/lib/zurichTime.ts. Never `toISOString().slice(0, 10)`: that is the UTC
+   *  day, which is still yesterday until 01:00/02:00 Zurich time. */
+  function zurichToday() {
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });
+  }
   var IS_WOMEN = false; // set after team data loads
 
   /**
@@ -447,7 +454,7 @@
 
   function loadPendingGames() {
     if (!TEAM_DIRECTUS_ID) return Promise.resolve([]);
-    var today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });
+    var today = zurichToday();
     var y = parseInt(today.slice(0, 4), 10);
     var startYear = parseInt(today.slice(5, 7), 10) >= 6 ? y : y - 1;
     var season = startYear + '/' + String((startYear + 1) % 100).padStart(2, '0');
@@ -566,9 +573,16 @@
         var sponsors = raw.sponsors || [];
 
         // Map raw game objects to the format buildGameRow expects
+        // A `scheduled` game carries a 0:0 placeholder until the sync writes the
+        // result, so a score is only built for a played game — or a provisional
+        // one (hall scoreboard, result not synced yet). Same rule as the
+        // homepage. Without it every upcoming fixture opened a modal with a
+        // "0 : 0" final score (audit 2026-09-28, F-12).
         function mapGame(g) {
-          var score = (g.home_score != null && g.away_score != null)
-            ? g.home_score + ':' + g.away_score : (g.score || null);
+          var hasScore = g.status !== 'scheduled' || !!g.provisional;
+          var score = !hasScore ? null
+            : (g.home_score != null && g.away_score != null)
+              ? g.home_score + ':' + g.away_score : (g.score || null);
           var isHome = g.isHome != null ? g.isHome : g.type === 'home';
           var gameId = g.game_id || g.id;
           return {
@@ -1002,13 +1016,35 @@
   }
 
   // ── Render Trainings ──────────────────────────────────────────────
+  // ⚠ Emits the SAME markup as src/components/TeamTrainings.astro — a
+  // Monday-first table with `weekdayLong<n>` day cells and the hall addresses
+  // listed once underneath. It used to build Sunday-first `.training-item` rows
+  // with short day names, so the handover from the build render was a visible
+  // jump (audit 2026-09-28, F-50). Change one, change the other.
+  var WEEKDAY_BY_LABEL = { Mo: 0, Di: 1, Mi: 2, Do: 3, Fr: 4, Sa: 5, So: 6, Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 };
+
+  function trainingWeekday(t) {
+    if (t.date) {
+      // Weekday of the calendar DATE, read as UTC so neither the browser's zone
+      // nor a zone-less "…T00:00:00" timestamp can shift it a day; getUTCDay()
+      // counts from Sunday, this codebase from Monday (teamDetail.ts).
+      var d = new Date(String(t.date).slice(0, 10) + 'T00:00:00Z');
+      if (!isNaN(d.getTime())) return (d.getUTCDay() + 6) % 7;
+    }
+    var byLabel = WEEKDAY_BY_LABEL[String(t.day || '').slice(0, 3)];
+    if (byLabel === undefined) byLabel = WEEKDAY_BY_LABEL[String(t.day || '').slice(0, 2)];
+    return byLabel === undefined ? -1 : byLabel;
+  }
+
   function renderTrainings(trainings) {
     var el = document.getElementById('training-list');
     if (!el) return;
     if (!trainings.length) { hideSection('training'); return; }
 
-    // Filter out cancelled and past trainings
-    var today = new Date().toISOString().slice(0, 10);
+    // Filter out cancelled and past trainings. "Today" is the Zurich day, not
+    // the UTC one: between midnight and 02:00 the UTC date is still yesterday
+    // (audit 2026-09-28, F-53).
+    var today = zurichToday();
     trainings = trainings.filter(function (t) {
       if (t.cancelled) return false;
       // Filter by valid_from/valid_until if present (hall_slots)
@@ -1018,55 +1054,81 @@
       if (t.date && t.date.slice(0, 10) < today) return false;
       return true;
     });
-    if (!trainings.length) { hideSection('training'); return; }
 
-    // Deduplicate into weekly summary (group by day + time + hall)
-    var dayNames = { de: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'], en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] };
-    var dayOrder = { So: 0, Mo: 1, Di: 2, Mi: 3, Do: 4, Fr: 5, Sa: 6, Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    // Deduplicate into the weekly pattern (weekday + time + hall), exactly as
+    // weeklyPattern() does at build time.
     var seen = {};
     var weekly = [];
     for (var i = 0; i < trainings.length; i++) {
       var t = trainings[i];
-      var dayLabel = t.day || '';
-      if (!dayLabel && t.date) {
-        var lang = (i18n.getLang && i18n.getLang()) || 'de';
-        var names = dayNames[lang] || dayNames.de;
-        var dateObj = new Date(t.date);
-        dayLabel = names[dateObj.getUTCDay()];
-      }
-      var startTime = (t.start_time || '').slice(0, 5);
-      var endTime = (t.end_time || '').slice(0, 5);
-      var hallName = t.hall_name || '';
-      var key = dayLabel + '|' + startTime + '|' + endTime + '|' + hallName;
-      if (!seen[key]) {
-        seen[key] = true;
-        weekly.push({ day: dayLabel, start: startTime, end: endTime, hall: hallName, address: t.hall_address || '' });
-      }
+      var weekday = trainingWeekday(t);
+      if (weekday < 0 || !t.start_time) continue;
+      var slot = {
+        weekday: weekday,
+        start: String(t.start_time || '').slice(0, 5),
+        end: String(t.end_time || '').slice(0, 5),
+        hall: String(t.hall_name || ''),
+        address: String(t.hall_address || '')
+      };
+      var key = slot.weekday + '|' + slot.start + '|' + slot.end + '|' + slot.hall;
+      if (!seen[key]) { seen[key] = true; weekly.push(slot); }
     }
-    // Sort by day of week
-    weekly.sort(function (a, b) { return (dayOrder[a.day] || 0) - (dayOrder[b.day] || 0); });
+    if (!weekly.length) { hideSection('training'); return; }
+    weekly.sort(function (a, b) { return a.weekday - b.weekday || a.start.localeCompare(b.start); });
 
-    var frag = document.createDocumentFragment();
+    var wrap = document.createElement('div');
+    wrap.className = 'training-pattern';
+    var table = document.createElement('table');
+    table.className = 'training-table';
+    var tbody = document.createElement('tbody');
+    var halls = [];
+    var hallSeen = {};
     for (var j = 0; j < weekly.length; j++) {
       var w = weekly[j];
-      var row = document.createElement('div');
-      row.className = 'training-item';
+      var tr = document.createElement('tr');
 
-      var dayEl = document.createElement('span');
-      dayEl.className = 'training-day';
-      dayEl.textContent = w.day + ' ' + w.start + '–' + w.end;
-      row.appendChild(dayEl);
+      var dayKey = 'weekdayLong' + w.weekday;
+      var dayTd = document.createElement('td');
+      dayTd.className = 'training-day';
+      dayTd.setAttribute('data-i18n', dayKey);
+      dayTd.textContent = i18n.t(dayKey);
+      tr.appendChild(dayTd);
 
-      var hallEl = document.createElement('span');
-      hallEl.className = 'training-hall';
-      hallEl.textContent = w.hall + (w.address ? ' · ' + w.address : '');
-      row.appendChild(hallEl);
+      var timeTd = document.createElement('td');
+      timeTd.className = 'training-time';
+      timeTd.textContent = w.end ? w.start + '–' + w.end : w.start;
+      tr.appendChild(timeTd);
 
-      frag.appendChild(row);
+      var hallTd = document.createElement('td');
+      hallTd.className = 'training-hall';
+      hallTd.textContent = w.hall;
+      tr.appendChild(hallTd);
+
+      tbody.appendChild(tr);
+      if (w.hall && !hallSeen[w.hall]) { hallSeen[w.hall] = true; halls.push(w); }
+    }
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+
+    if (halls.length) {
+      var p = document.createElement('p');
+      p.className = 'training-halls';
+      for (var h = 0; h < halls.length; h++) {
+        if (h > 0) p.appendChild(document.createElement('br'));
+        var strong = document.createElement('strong');
+        strong.textContent = halls[h].hall;
+        p.appendChild(strong);
+        if (halls[h].address) {
+          var addr = document.createElement('span');
+          addr.textContent = ' — ' + halls[h].address + ', Zürich';
+          p.appendChild(addr);
+        }
+      }
+      wrap.appendChild(p);
     }
 
     el.textContent = '';
-    el.appendChild(frag);
+    el.appendChild(wrap);
   }
 
   // ── Game table helpers (matches homepage format) ────────────────────
@@ -1103,7 +1165,8 @@
       score: g.score || null,
       homeScore: homeScore,
       awayScore: awayScore,
-      status: g.score ? 'completed' : 'scheduled',
+      // The row's real status, not one guessed from the score string (F-12).
+      status: g.status || (g.score ? 'completed' : 'scheduled'),
       league: g.league || (teamData && teamData.league) || '',
       season: g.season || (teamData && teamData.season) || '',
       id: g.game_id || '',

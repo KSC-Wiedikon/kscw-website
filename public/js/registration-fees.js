@@ -87,12 +87,22 @@
   // Swiss Basketball publishes the next sheet, this table is what moves.
   var BB_LICENCE = { senior: 150, U20: 115, U18: 90, U16: 80, U14: 55, U12: 40 };
 
-  // The season a date belongs to, named by its first calendar year (2026 =
-  // 2026/27): categories shift on 1 August. Mirror of birth-years.js /
-  // src/lib/birthYears.ts — UTC so the page and CI never disagree.
+  // The season an applicant is registering for, named by its first calendar
+  // year (2026 = 2026/27). Rolls over on 1 JULY — Swiss Basketball's
+  // administrative season (2026-27 opened 23.07.2026, the price sheet above is
+  // dated 22.07), and the same cut-over registration-form.js uses for the
+  // season label on the licence PDF and for the minor/Freibrief age check.
+  //
+  // It used to flip on 1 August, mirroring birth-years.js. For the whole of July
+  // the form then printed "2026/2027" and charged 2026/27 prices while pricing
+  // the applicant on their 2025/26 age band — a player moving up a band was
+  // quoted the cheaper one (audit 2026-09-28, F-56). birth-years.js /
+  // src/lib/birthYears.ts deliberately keep 1 August: they label the club's
+  // TEAM categories on the public pages, which change when training starts,
+  // not when the federation opens registrations. UTC so the page and CI agree.
   function seasonStartYear(now) {
     var d = now || new Date();
-    return d.getUTCMonth() >= 7 ? d.getUTCFullYear() : d.getUTCFullYear() - 1;
+    return d.getUTCMonth() >= 6 ? d.getUTCFullYear() : d.getUTCFullYear() - 1;
   }
 
   // Basketball age band for a birthdate in a season. birthYears.ts (basketball

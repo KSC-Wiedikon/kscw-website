@@ -4,6 +4,7 @@ import Footer from '../components/Footer.astro';
 import '../styles/global.css';
 import { assetVersion, versionedAsset } from '../lib/assetVersion';
 import type { Locale } from '../lib/i18n';
+import bakedSiteText from '../generated/site-text.json';
 
 interface Props {
   /** German default rendered into <title> (the SSR/no-JS language). */
@@ -47,6 +48,26 @@ const canonical = new URL(canonicalPath, Astro.site).href;
 const ogImageUrl = new URL(ogImage, Astro.site).href;
 
 /**
+ * The Directus this build read from, handed to the browser so the client-side
+ * refresh talks to the SAME backend (audit 2026-09-28, F-41). Every runtime
+ * script used to pick its backend from the hostname alone — localhost → dev,
+ * everything else → prod — so a preview deploy built against directus-dev still
+ * sent its forms and reads to prod. Only the two known origins are accepted; an
+ * unset or unexpected value keeps today's default (prod).
+ */
+const KNOWN_DIRECTUS = ['https://directus.kscw.ch', 'https://directus-dev.kscw.ch'];
+const envDirectus = String(import.meta.env.DIRECTUS_URL || '').replace(/\/+$/, '');
+const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'https://directus.kscw.ch';
+
+/**
+ * Keys whose German text this build took from a Seitentexte override rather than
+ * from de.json. public/js/i18n.js re-renders them when the override has since
+ * been deleted, so the shipped wording comes back without a rebuild (audit
+ * 2026-09-28, F-46). Keys only — the values are already in the HTML.
+ */
+const bakedOverrideKeys = Object.keys((bakedSiteText as { de?: Record<string, string> }).de ?? {});
+
+/**
  * Open Graph is rendered from the BUILD-TIME German values and deliberately gets no
  * `data-i18n` hook. Every scraper that matters (WhatsApp, Facebook, Slack, iMessage)
  * reads the raw HTML without executing JavaScript, so a client-swapped tag would be
@@ -76,8 +97,23 @@ const ogImageUrl = new URL(ogImage, Astro.site).href;
 
       ⚠ This sits ABOVE the pre-paint script because that script now uses it to
       start the dictionary request. Do not move it back down. */}
-  <script is:inline define:vars={{ i18nVersions: { de: assetVersion('js/i18n/de.json'), en: assetVersion('js/i18n/en.json') } }}>
+  <script is:inline define:vars={{ i18nVersions: { de: assetVersion('js/i18n/de.json'), en: assetVersion('js/i18n/en.json') }, bakedOverrideKeys }}>
     window.__I18N_V = i18nVersions;
+    window.__I18N_BAKED = bakedOverrideKeys;
+  </script>
+  {/* Backend selection for every runtime script (audit 2026-09-28, F-41). The live
+      hosts are pinned to prod and localhost to dev whatever the build said, so a
+      misconfigured env var can never point kscw.ch at the dev database; anything
+      else (a Pages preview) follows the build. Scripts read window.__KSCW_DIRECTUS
+      and keep their old hostname rule only as a fallback. Must stay ABOVE every
+      script that talks to Directus — error-logger.js included. */}
+  <script is:inline define:vars={{ buildDirectus }}>
+    (function () {
+      var h = location.hostname;
+      window.__KSCW_DIRECTUS = (h === 'kscw.ch' || h === 'www.kscw.ch') ? 'https://directus.kscw.ch'
+        : (h === 'localhost' || h === '127.0.0.1') ? 'https://directus-dev.kscw.ch'
+        : buildDirectus;
+    })();
   </script>
   <script is:inline>
     // Pre-paint: apply saved theme + language before first paint.
@@ -183,9 +219,58 @@ const ogImageUrl = new URL(ogImage, Astro.site).href;
     (function () {
       function initSentry() {
         if (typeof Sentry === 'undefined') return;
+        // Query strings and fragments carry personal data on this site: the
+        // registration-documents link has ?ref=…&email=…, the scorer upload link
+        // a ticket and licence number, newsletter links their tokens. Sentry
+        // captures the page URL on every event and every fetch/navigation as a
+        // breadcrumb, so strip them all before anything leaves the browser
+        // (audit 2026-09-28, F-29). The path is what identifies the page.
+        function stripQuery(u) {
+          return typeof u === 'string' ? u.replace(/[?#].*$/, '') : u;
+        }
+        // Free text (console breadcrumbs, error messages) can quote a full URL
+        // too — "upload failed: https://…/upload?ticket=…". Cut the query off
+        // every URL inside the string.
+        function stripQueryInText(s) {
+          return typeof s === 'string' ? s.replace(/(https?:\/\/[^\s?#"'<>]*)[?#][^\s"'<>]*/g, '$1') : s;
+        }
+        function scrubEvent(event) {
+          var req = event.request;
+          if (req) {
+            if (req.url) req.url = stripQuery(req.url);
+            delete req.query_string;
+            delete req.cookies;
+            if (req.headers && req.headers.Referer) req.headers.Referer = stripQuery(req.headers.Referer);
+          }
+          // An array on events; an object with `values` in some SDK shapes.
+          var crumbs = Array.isArray(event.breadcrumbs) ? event.breadcrumbs
+            : (event.breadcrumbs && event.breadcrumbs.values);
+          if (Array.isArray(crumbs)) crumbs.forEach(scrubBreadcrumb);
+          if (event.message) event.message = stripQueryInText(event.message);
+          var exs = event.exception && event.exception.values;
+          if (Array.isArray(exs)) exs.forEach(function (x) { if (x && x.value) x.value = stripQueryInText(x.value); });
+          return event;
+        }
+        function scrubBreadcrumb(crumb) {
+          if (crumb && crumb.message) crumb.message = stripQueryInText(crumb.message);
+          var d = crumb && crumb.data;
+          if (d) {
+            if (d.url) d.url = stripQuery(d.url);
+            if (d.from) d.from = stripQuery(d.from);
+            if (d.to) d.to = stripQuery(d.to);
+          }
+          return crumb;
+        }
+        var host = location.hostname;
         Sentry.init({
           dsn: 'https://511f2d9c956d41f53d9bbe7033e54850@o4511121927766016.ingest.de.sentry.io/4511156195098704',
-          environment: (location.hostname === 'kscw-website.pages.dev' || location.hostname === 'localhost') ? 'development' : 'production',
+          // Only the live hosts are 'production'. Pages previews used to fall
+          // through to it, so a dev-branch regression looked like a live incident
+          // (audit 2026-09-28, F-41).
+          environment: (host === 'kscw.ch' || host === 'www.kscw.ch') ? 'production'
+            : (host === 'localhost' || host === '127.0.0.1') ? 'development'
+            : 'preview',
+          beforeBreadcrumb: scrubBreadcrumb,
           tracesSampleRate: 0,
           allowUrls: [location.origin],
           ignoreErrors: [
@@ -205,6 +290,7 @@ const ogImageUrl = new URL(ogImage, Astro.site).href;
           // no frame in any .js file on CriOS is the browser's, not ours.
           // error-logger.js still reports these to Directus.
           beforeSend: function (event) {
+            event = scrubEvent(event);
             if (!/CriOS/.test(navigator.userAgent)) return event;
             var ex = event.exception && event.exception.values && event.exception.values[0];
             var frames = ex && ex.stacktrace && ex.stacktrace.frames;

@@ -54,7 +54,7 @@ const locale = 'de';
         <div class="card">
           <div class="card-body" style="display: flex; flex-direction: column; gap: var(--space-md);">
             <div style="display: flex; align-items: center; gap: var(--space-sm);">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
               <h3 style="margin: 0;" data-i18n="scorerCoursesMatchblatt">{t(locale, 'scorerCoursesMatchblatt')}</h3>
             </div>
             <p style="color: var(--text-secondary); flex: 1;" data-i18n="scorerCoursesMatchblattDesc">{t(locale, 'scorerCoursesMatchblattDesc')}</p>
@@ -114,7 +114,7 @@ const locale = 'de';
         <div class="card">
           <div class="card-body" style="display: flex; flex-direction: column; gap: var(--space-md);">
             <div style="display: flex; align-items: center; gap: var(--space-sm);">
-              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/></svg>
               <h3 style="margin: 0;" data-i18n="scorerCoursesPdf">{t(locale, 'scorerCoursesPdf')}</h3>
             </div>
             <p style="color: var(--text-secondary); flex: 1;" data-i18n="scorerCoursesPdfDesc">{t(locale, 'scorerCoursesPdfDesc')}</p>
@@ -181,7 +181,7 @@ const locale = 'de';
         <p style="font-size: 1.125rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: var(--space-lg);" data-i18n="scorerCoursesSwissVolley">
           {t(locale, 'scorerCoursesSwissVolley')}
         </p>
-        <a href="https://www.volleyball.ch/de/ausbildung/schiedsrichter-innen/schreiber-in-werden" target="_blank" rel="noopener noreferrer" class="btn btn-gold" style="font-size: 1.125rem; padding: var(--space-md) var(--space-xl);">
+        <a href="https://www.volleyball.ch/de/ausbildung/schiedsrichter-innen/schreiber-in-werden" target="_blank" rel="noopener noreferrer" class="btn btn-gold btn-cta">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
           <span data-i18n="scorerCoursesSwissVolleyLink">{t(locale, 'scorerCoursesSwissVolleyLink')}</span>
         </a>
@@ -210,21 +210,27 @@ const locale = 'de';
 </PageLayout>
 
 <style is:global>
+  /* Mail link as a small page card: gold icon (brand), the address in body
+     text — gold as TYPE is unreadable on the light theme's white card. */
   .contact-email-card {
     display: inline-flex;
     align-items: center;
     gap: var(--space-md);
+    min-height: 44px;
     padding: var(--space-md) var(--space-lg);
-    background: var(--surface-alt);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    color: var(--kscw-gold);
-    font-size: 1.125rem;
-    font-weight: 500;
+    background: var(--page-card-bg);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+    color: var(--text-primary);
+    font-size: var(--text-base);
+    font-weight: 600;
     text-decoration: none;
-    transition: border-color 0.2s;
+    overflow-wrap: anywhere;
+    transition: box-shadow 0.2s, border-color 0.2s;
   }
   .contact-email-card:hover {
     border-color: var(--kscw-gold);
+    box-shadow: var(--shadow-card-lg);
   }
 </style>

@@ -73,31 +73,38 @@ const routes = [
     text-decoration: none;
     color: inherit;
     display: block;
-    transition: transform 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   }
 
+  /* svrz link-card hover: lift 1px onto the larger card shadow. */
   .notfound-card:hover,
   .notfound-card:focus-visible {
-    transform: translateY(-2px);
-    border-color: var(--kscw-gold);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-card-lg);
+    border-color: var(--border);
   }
 
-  .notfound-card i {
-    width: 28px;
-    height: 28px;
-    color: var(--kscw-gold);
-    margin-bottom: var(--space-sm);
+  /* Gold as an icon colour measured 1.5:1 on the white light-theme card;
+     --accent-text resolves per theme (brand blue / light blue). */
+  .notfound-card i,
+  .notfound-card svg {
+    width: 20px;
+    height: 20px;
+    color: var(--accent-text);
     display: block;
   }
 
   .notfound-card h3 {
-    margin-bottom: var(--space-xs);
-    font-size: 1.125rem;
+    margin: var(--space-md) 0 var(--space-xs);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   .notfound-card p {
     color: var(--text-secondary);
-    font-size: 0.9375rem;
+    font-size: var(--text-sm);
+    line-height: 1.5;
     margin: 0;
   }
 

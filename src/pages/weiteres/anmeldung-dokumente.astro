@@ -20,7 +20,7 @@ const locale = 'de';
     <div class="container" style="max-width: 640px;">
       <p style="color: var(--text-secondary); margin-bottom: var(--space-lg);" data-i18n="regDocsIntro">{t(locale, 'regDocsIntro')}</p>
 
-      <form id="docstatus-form">
+      <form id="docstatus-form" class="docs-form-card">
         <div class="form-group">
           <label for="docs-ref"><span data-i18n="regDocsRef">{t(locale, 'regDocsRef')}</span> *</label>
           <input type="text" id="docs-ref" name="reference" class="form-input" placeholder="REG-2026-1234" required autocomplete="off">
@@ -44,9 +44,18 @@ const locale = 'de';
   .form-group {
     margin-bottom: var(--space-md);
   }
+  /* The lookup form on one page card (svrz: white on stone, navy step in dark). */
+  .docs-form-card {
+    background: var(--page-card-bg);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-lg);
+  }
   .form-group label {
     display: block;
-    font-weight: 600;
+    font-size: var(--text-sm);
+    font-weight: 500;
     margin-bottom: var(--space-xs);
   }
   /* Inputs deliberately carry NO local rule — `.form-input` in global.css owns

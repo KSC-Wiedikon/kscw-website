@@ -126,7 +126,8 @@ const GROUPS = [
     gap: var(--space-md);
     margin-bottom: var(--space-lg);
     padding-bottom: var(--space-sm);
-    border-bottom: 2px solid var(--border);
+    /* svrz section head: a firm rule in the text colour. */
+    border-bottom: 1.5px solid color-mix(in srgb, var(--text-primary) 85%, transparent);
   }
   .youth-section-title .chip {
     font-size: var(--text-sm);
@@ -138,6 +139,7 @@ const GROUPS = [
   .youth-section-title h2 {
     font-size: var(--text-xl);
     font-weight: 700;
+    letter-spacing: -0.02em;
     margin: 0;
   }
   .youth-grid {

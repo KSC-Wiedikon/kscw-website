@@ -24,7 +24,7 @@ const locale = 'de';
 
         <div class="card">
           <div class="card-body" style="text-align: center;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: var(--space-md);"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: var(--space-md);"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <h3 style="margin-bottom: var(--space-sm);" data-i18n="membershipTeamSpirit">{t(locale, 'membershipTeamSpirit')}</h3>
             <p style="color: var(--text-secondary);" data-i18n="membershipTeamSpiritText">{t(locale, 'membershipTeamSpiritText')}</p>
           </div>
@@ -40,7 +40,7 @@ const locale = 'de';
 
         <div class="card">
           <div class="card-body" style="text-align: center;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: var(--space-md);"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--accent-text)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: var(--space-md);"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
             <h3 style="margin-bottom: var(--space-sm);" data-i18n="membershipCommunity">{t(locale, 'membershipCommunity')}</h3>
             <p style="color: var(--text-secondary);" data-i18n="membershipCommunityText">{t(locale, 'membershipCommunityText')}</p>
           </div>
@@ -67,48 +67,48 @@ const locale = 'de';
           <span data-i18n="membershipFeesVolleyball">{t(locale, 'membershipFeesVolleyball')}</span>
         </h3>
         <div class="table-wrap">
-        <table style="width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm);">
+        <table class="fee-table">
           <thead>
-            <tr style="background: var(--kscw-blue); color: white;">
-              <th style="font-weight: 600;" data-i18n="membershipCategory">{t(locale, 'membershipCategory')}</th>
-              <th style="font-weight: 600;" data-i18n="membershipFee">{t(locale, 'membershipFee')}</th>
+            <tr>
+              <th data-i18n="membershipCategory">{t(locale, 'membershipCategory')}</th>
+              <th data-i18n="membershipFee">{t(locale, 'membershipFee')}</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td>
                 <strong data-i18n="membershipCategoryTournamentKWI">{t(locale, 'membershipCategoryTournamentKWI')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryTournamentKWIDesc">{t(locale, 'membershipCategoryTournamentKWIDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryTournamentKWIDesc">{t(locale, 'membershipCategoryTournamentKWIDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 110</td>
+              <td class="fee-amount">CHF 110</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td>
                 <strong data-i18n="membershipCategoryTournament">{t(locale, 'membershipCategoryTournament')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryTournamentDesc">{t(locale, 'membershipCategoryTournamentDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryTournamentDesc">{t(locale, 'membershipCategoryTournamentDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 210</td>
+              <td class="fee-amount">CHF 210</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td>
                 <strong data-i18n="membershipCategoryHighSchool">{t(locale, 'membershipCategoryHighSchool')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryHighSchoolDesc">{t(locale, 'membershipCategoryHighSchoolDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryHighSchoolDesc">{t(locale, 'membershipCategoryHighSchoolDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 310</td>
+              <td class="fee-amount">CHF 310</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td>
                 <strong data-i18n="membershipCategoryStudent">{t(locale, 'membershipCategoryStudent')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryStudentDesc">{t(locale, 'membershipCategoryStudentDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryStudentDesc">{t(locale, 'membershipCategoryStudentDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 380</td>
+              <td class="fee-amount">CHF 380</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td>
                 <strong data-i18n="membershipCategoryWorking">{t(locale, 'membershipCategoryWorking')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryWorkingDesc">{t(locale, 'membershipCategoryWorkingDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryWorkingDesc">{t(locale, 'membershipCategoryWorkingDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 440</td>
+              <td class="fee-amount">CHF 440</td>
             </tr>
             <!-- Passivmitglied is club-wide, not a volleyball category — it is listed in
                  BOTH sport tables so a reader never has to look in the other sport to
@@ -116,9 +116,9 @@ const locale = 'de';
             <tr>
               <td>
                 <strong data-i18n="membershipCategoryPassive">{t(locale, 'membershipCategoryPassive')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryPassiveDesc">{t(locale, 'membershipCategoryPassiveDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryPassiveDesc">{t(locale, 'membershipCategoryPassiveDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 40</td>
+              <td class="fee-amount">CHF 40</td>
             </tr>
           </tbody>
         </table>
@@ -137,41 +137,41 @@ const locale = 'de';
         <!-- Swiss Volley Licence Fees -->
         <h3 style="margin-bottom: var(--space-md);" data-i18n="membershipLicenceTitle">{t(locale, 'membershipLicenceTitle')}</h3>
         <div class="table-wrap">
-        <table style="width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm);">
+        <table class="fee-table">
           <thead>
-            <tr style="background: var(--kscw-blue); color: white;">
-              <th style="font-weight: 600;" data-i18n="membershipCategory">{t(locale, 'membershipCategory')}</th>
-              <th style="font-weight: 600;" data-i18n="membershipFee">{t(locale, 'membershipFee')}</th>
+            <tr>
+              <th data-i18n="membershipCategory">{t(locale, 'membershipCategory')}</th>
+              <th data-i18n="membershipFee">{t(locale, 'membershipFee')}</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td data-i18n="membershipLicenceNLL">{t(locale, 'membershipLicenceNLL')}</td>
-              <td style="font-weight: 600;">CHF 250</td>
+              <td class="fee-amount fee-amount--plain">CHF 250</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td data-i18n="membershipLicenceRLL">{t(locale, 'membershipLicenceRLL')}</td>
-              <td style="font-weight: 600;">CHF 110</td>
+              <td class="fee-amount fee-amount--plain">CHF 110</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td data-i18n="membershipLicenceJLL">{t(locale, 'membershipLicenceJLL')}</td>
-              <td style="font-weight: 600;">CHF 60</td>
+              <td class="fee-amount fee-amount--plain">CHF 60</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td data-i18n="membershipLicenceU16">{t(locale, 'membershipLicenceU16')}</td>
-              <td style="font-weight: 600;">CHF 30</td>
+              <td class="fee-amount fee-amount--plain">CHF 30</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td data-i18n="membershipLicenceU13">{t(locale, 'membershipLicenceU13')}</td>
-              <td style="font-weight: 600;">CHF 15</td>
+              <td class="fee-amount fee-amount--plain">CHF 15</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td data-i18n="membershipLicenceDoppelR">{t(locale, 'membershipLicenceDoppelR')}</td>
-              <td style="font-weight: 600;">CHF 110</td>
+              <td class="fee-amount fee-amount--plain">CHF 110</td>
             </tr>
             <tr>
               <td data-i18n="membershipLicenceDoppelN">{t(locale, 'membershipLicenceDoppelN')}</td>
-              <td style="font-weight: 600;">CHF 250</td>
+              <td class="fee-amount fee-amount--plain">CHF 250</td>
             </tr>
           </tbody>
         </table>
@@ -182,66 +182,66 @@ const locale = 'de';
         <div class="fee-block fee-bb">
         <!-- Basketball Fees -->
         <h3 style="margin-bottom: var(--space-md);">
-          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 256 256" fill="#F97316" style="display: inline; vertical-align: middle; margin-right: 8px;"><path d="M63.6,46.39a103.48,103.48,0,0,1,52-21.65,4,4,0,0,1,4.45,4V120H95.7A103.77,103.77,0,0,0,63.38,52.44,4,4,0,0,1,63.6,46.39ZM46,64.07a103.51,103.51,0,0,0-21.29,51.46,4,4,0,0,0,4,4.47H79.63A87.86,87.86,0,0,0,51.89,63.59,4,4,0,0,0,46,64.07ZM192.4,46.39a103.48,103.48,0,0,0-52-21.65,4,4,0,0,0-4.45,4V120h24.3a103.77,103.77,0,0,1,32.32-67.56A4,4,0,0,0,192.4,46.39Zm38.86,69.14A103.51,103.51,0,0,0,210,64.07a4,4,0,0,0-5.86-.48A87.86,87.86,0,0,0,176.37,120h50.91A4,4,0,0,0,231.26,115.53ZM24.74,140.47A103.51,103.51,0,0,0,46,191.93a4,4,0,0,0,5.86.48A87.86,87.86,0,0,0,79.63,136H28.72A4,4,0,0,0,24.74,140.47ZM210,191.93a103.51,103.51,0,0,0,21.29-51.46,4,4,0,0,0-4-4.47H176.37a87.86,87.86,0,0,0,27.74,56.41A4,4,0,0,0,210,191.93ZM63.6,209.61a103.48,103.48,0,0,0,52,21.65,4,4,0,0,0,4.45-4V136H95.7a103.77,103.77,0,0,1-32.32,67.56A4,4,0,0,0,63.6,209.61ZM160.3,136H136v91.28a4,4,0,0,0,4.45,4,103.48,103.48,0,0,0,52-21.65,4,4,0,0,0,.22-6.05A103.77,103.77,0,0,1,160.3,136Z"/></svg>
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 256 256" fill="var(--bb-orange)" style="display: inline; vertical-align: middle; margin-right: 8px;"><path d="M63.6,46.39a103.48,103.48,0,0,1,52-21.65,4,4,0,0,1,4.45,4V120H95.7A103.77,103.77,0,0,0,63.38,52.44,4,4,0,0,1,63.6,46.39ZM46,64.07a103.51,103.51,0,0,0-21.29,51.46,4,4,0,0,0,4,4.47H79.63A87.86,87.86,0,0,0,51.89,63.59,4,4,0,0,0,46,64.07ZM192.4,46.39a103.48,103.48,0,0,0-52-21.65,4,4,0,0,0-4.45,4V120h24.3a103.77,103.77,0,0,1,32.32-67.56A4,4,0,0,0,192.4,46.39Zm38.86,69.14A103.51,103.51,0,0,0,210,64.07a4,4,0,0,0-5.86-.48A87.86,87.86,0,0,0,176.37,120h50.91A4,4,0,0,0,231.26,115.53ZM24.74,140.47A103.51,103.51,0,0,0,46,191.93a4,4,0,0,0,5.86.48A87.86,87.86,0,0,0,79.63,136H28.72A4,4,0,0,0,24.74,140.47ZM210,191.93a103.51,103.51,0,0,0,21.29-51.46,4,4,0,0,0-4-4.47H176.37a87.86,87.86,0,0,0,27.74,56.41A4,4,0,0,0,210,191.93ZM63.6,209.61a103.48,103.48,0,0,0,52,21.65,4,4,0,0,0,4.45-4V136H95.7a103.77,103.77,0,0,1-32.32,67.56A4,4,0,0,0,63.6,209.61ZM160.3,136H136v91.28a4,4,0,0,0,4.45,4,103.48,103.48,0,0,0,52-21.65,4,4,0,0,0,.22-6.05A103.77,103.77,0,0,1,160.3,136Z"/></svg>
           <span data-i18n="membershipFeesBasketball">{t(locale, 'membershipFeesBasketball')}</span>
         </h3>
         <div class="table-wrap">
-        <table style="width: 100%; border-collapse: collapse; background: var(--surface); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm);">
+        <table class="fee-table">
           <thead>
-            <tr style="background: var(--kscw-blue); color: white;">
-              <th style="font-weight: 600;" data-i18n="membershipCategory">{t(locale, 'membershipCategory')}</th>
-              <th style="font-weight: 600;" data-i18n="membershipFee">{t(locale, 'membershipFee')}</th>
+            <tr>
+              <th data-i18n="membershipCategory">{t(locale, 'membershipCategory')}</th>
+              <th data-i18n="membershipFee">{t(locale, 'membershipFee')}</th>
             </tr>
           </thead>
           <tbody>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td>
                 <strong data-i18n="membershipCategoryBBActive1L">{t(locale, 'membershipCategoryBBActive1L')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryBBActive1LDesc">{t(locale, 'membershipCategoryBBActive1LDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryBBActive1LDesc">{t(locale, 'membershipCategoryBBActive1LDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 570</td>
+              <td class="fee-amount">CHF 570</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td>
                 <strong data-i18n="membershipCategoryBBStudent1L">{t(locale, 'membershipCategoryBBStudent1L')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryBBStudent1LDesc">{t(locale, 'membershipCategoryBBStudent1LDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryBBStudent1LDesc">{t(locale, 'membershipCategoryBBStudent1LDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 470</td>
+              <td class="fee-amount">CHF 470</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td>
                 <strong data-i18n="membershipCategoryBBActive">{t(locale, 'membershipCategoryBBActive')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryBBActiveDesc">{t(locale, 'membershipCategoryBBActiveDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryBBActiveDesc">{t(locale, 'membershipCategoryBBActiveDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 520</td>
+              <td class="fee-amount">CHF 520</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td>
                 <strong data-i18n="membershipCategoryBBStudent">{t(locale, 'membershipCategoryBBStudent')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryBBStudentDesc">{t(locale, 'membershipCategoryBBStudentDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryBBStudentDesc">{t(locale, 'membershipCategoryBBStudentDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 420</td>
+              <td class="fee-amount">CHF 420</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td>
                 <strong data-i18n="membershipCategoryBBYouth">{t(locale, 'membershipCategoryBBYouth')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryBBYouthDesc">{t(locale, 'membershipCategoryBBYouthDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryBBYouthDesc">{t(locale, 'membershipCategoryBBYouthDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 320</td>
+              <td class="fee-amount">CHF 320</td>
             </tr>
-            <tr style="border-bottom: 1px solid var(--border);">
+            <tr>
               <td>
                 <strong data-i18n="membershipCategoryBBMinis">{t(locale, 'membershipCategoryBBMinis')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryBBMinisDesc">{t(locale, 'membershipCategoryBBMinisDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryBBMinisDesc">{t(locale, 'membershipCategoryBBMinisDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 220</td>
+              <td class="fee-amount">CHF 220</td>
             </tr>
             <tr>
               <td>
                 <strong data-i18n="membershipCategoryPassive">{t(locale, 'membershipCategoryPassive')}</strong><br>
-                <span style="color: var(--text-secondary);" data-i18n="membershipCategoryPassiveDesc">{t(locale, 'membershipCategoryPassiveDesc')}</span>
+                <span class="fee-desc" data-i18n="membershipCategoryPassiveDesc">{t(locale, 'membershipCategoryPassiveDesc')}</span>
               </td>
-              <td style="font-weight: 700; color: var(--accent-text);">CHF 40</td>
+              <td class="fee-amount">CHF 40</td>
             </tr>
           </tbody>
         </table>
@@ -279,9 +279,9 @@ const locale = 'de';
              stack on mobile — a numbered column of three cards wasted the width. -->
         <div class="reg-steps">
 
-          <div class="card" style="border-left: 4px solid var(--kscw-gold);">
+          <div class="card step-card step-card--gold">
             <div class="card-body" style="display: flex; align-items: flex-start; gap: var(--space-md);">
-              <div style="min-width: 48px; height: 48px; background: var(--kscw-gold); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem;">1</div>
+              <div class="step-num step-num--gold">1</div>
               <div>
                 <h3 style="margin-bottom: var(--space-xs);" data-i18n="membershipStep1">{t(locale, 'membershipStep1')}</h3>
                 <p style="color: var(--text-secondary);" data-i18n="membershipStep1Text">{t(locale, 'membershipStep1Text')}</p>
@@ -289,9 +289,9 @@ const locale = 'de';
             </div>
           </div>
 
-          <div class="card" style="border-left: 4px solid var(--kscw-blue);">
+          <div class="card step-card step-card--blue">
             <div class="card-body" style="display: flex; align-items: flex-start; gap: var(--space-md);">
-              <div style="min-width: 48px; height: 48px; background: var(--kscw-blue); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem;">2</div>
+              <div class="step-num step-num--blue">2</div>
               <div>
                 <h3 style="margin-bottom: var(--space-xs);" data-i18n="membershipStep2">{t(locale, 'membershipStep2')}</h3>
                 <p style="color: var(--text-secondary);" data-i18n="membershipStep2Text">{t(locale, 'membershipStep2Text')}</p>
@@ -299,9 +299,9 @@ const locale = 'de';
             </div>
           </div>
 
-          <div class="card" style="border-left: 4px solid var(--kscw-gold);">
+          <div class="card step-card step-card--gold">
             <div class="card-body" style="display: flex; align-items: flex-start; gap: var(--space-md);">
-              <div style="min-width: 48px; height: 48px; background: var(--kscw-gold); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.25rem;">3</div>
+              <div class="step-num step-num--gold">3</div>
               <div>
                 <h3 style="margin-bottom: var(--space-xs);" data-i18n="membershipStep3">{t(locale, 'membershipStep3')}</h3>
                 <p style="color: var(--text-secondary);" data-i18n="membershipStep3Text">{t(locale, 'membershipStep3Text')}</p>
@@ -317,10 +317,10 @@ const locale = 'de';
             <span data-i18n="membershipCoachNote">{t(locale, 'membershipCoachNote')}</span>
           </p>
           <div style="display: flex; flex-wrap: wrap; gap: var(--space-md); justify-content: center;">
-            <a href="/weiteres/anmeldung?type=volleyball" class="btn btn-gold" style="font-size: 1rem; padding: var(--space-md) var(--space-xl);">
+            <a href="/weiteres/anmeldung?type=volleyball" class="btn btn-gold btn-cta">
               <span data-i18n="membershipRegisterVB">{t(locale, 'membershipRegisterVB')}</span>
             </a>
-            <a href="/weiteres/anmeldung?type=basketball" class="btn" style="font-size: 1rem; padding: var(--space-md) var(--space-xl); background: var(--kscw-blue); color: white;">
+            <a href="/weiteres/anmeldung?type=basketball" class="btn btn-primary btn-cta">
               <span data-i18n="membershipRegisterBB">{t(locale, 'membershipRegisterBB')}</span>
             </a>
           </div>
@@ -333,7 +333,7 @@ const locale = 'de';
           <div class="reg-alt-item">
             <h3 style="margin-bottom: var(--space-sm);" data-i18n="membershipGuestTitle">{t(locale, 'membershipGuestTitle')}</h3>
             <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto var(--space-md);" data-i18n="membershipGuestText">{t(locale, 'membershipGuestText')}</p>
-            <a href="/weiteres/anmeldung" class="btn btn-outline" style="font-size: 1rem; padding: var(--space-md) var(--space-xl);">
+            <a href="/weiteres/anmeldung" class="btn btn-outline btn-cta">
               <span data-i18n="membershipRegisterGuest">{t(locale, 'membershipRegisterGuest')}</span>
             </a>
           </div>
@@ -342,7 +342,7 @@ const locale = 'de';
           <div class="reg-alt-item">
             <h3 style="margin-bottom: var(--space-sm);" data-i18n="membershipPassiveTitle">{t(locale, 'membershipPassiveTitle')}</h3>
             <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto var(--space-md);" data-i18n="membershipPassiveText">{t(locale, 'membershipPassiveText')}</p>
-            <a href="/weiteres/anmeldung?type=passive" class="btn btn-outline" style="font-size: 1rem; padding: var(--space-md) var(--space-xl);">
+            <a href="/weiteres/anmeldung?type=passive" class="btn btn-outline btn-cta">
               <span data-i18n="membershipRegisterPassive">{t(locale, 'membershipRegisterPassive')}</span>
             </a>
           </div>
@@ -395,12 +395,46 @@ const locale = 'de';
   .fee-block > h3:first-child {
     margin-top: 0;
   }
-  /* Global `th` sets a muted colour, which wins over the white inherited from the blue
-     header row and left the headers unreadable. Headers may wrap ("Davon Lizenz" /
-     "Of which licence") so they never dictate the column width. */
+  /* Fee tables as svrz data cards: card surface, hairline, soft shadow, a tinted
+     micro-label head (was a solid brand-blue header row). Headers may wrap
+     ("Davon Lizenz" / "Of which licence") so they never dictate the column width. */
+  .fee-block .table-wrap {
+    background: var(--page-card-bg);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
+  }
+  .fee-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
   .fee-block th {
-    color: #fff;
+    background: var(--bg-muted);
+    color: var(--text-muted);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
     white-space: normal;
+  }
+  .fee-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .fee-table tr:hover td {
+    background: transparent;
+  }
+  .fee-amount {
+    font-weight: 700;
+    color: var(--accent-text);
+    font-variant-numeric: tabular-nums;
+  }
+  .fee-amount--plain {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  .fee-desc {
+    color: var(--text-secondary);
   }
   .fee-block th,
   .fee-block td {
@@ -473,6 +507,23 @@ const locale = 'de';
   .reg-steps .card {
     height: 100%;
   }
+  /* Steps: a 3px brand rail on the leading edge, numbered disc in the same hue. */
+  .step-card--gold { border-left: 3px solid var(--kscw-gold); }
+  .step-card--blue { border-left: 3px solid var(--kscw-blue); }
+  .step-num {
+    min-width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.125rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .step-num--gold { background: var(--kscw-gold); color: var(--text-on-gold); }
+  .step-num--blue { background: var(--kscw-blue); color: var(--text-on-blue); }
+
   .reg-alt {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));

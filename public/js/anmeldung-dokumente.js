@@ -53,14 +53,9 @@
   function showFeedback(kind, msg) {
     feedback.style.display = 'block';
     feedback.textContent = msg;
-    feedback.style.padding = '12px 16px';
-    feedback.style.borderRadius = '8px';
-    // Tinted-background + token-colour pair, matching .badge-success/.badge-danger
-    // in global.css. The previous hardcoded #fef2f2/#f0fdf4 boxes were light-theme
-    // literals painted onto a dark-by-default page.
-    feedback.style.background = kind === 'error' ? 'rgba(220, 38, 38, 0.1)' : 'rgba(5, 150, 105, 0.1)';
-    feedback.style.color = kind === 'error' ? 'var(--danger)' : 'var(--success)';
-    feedback.style.border = '1px solid ' + (kind === 'error' ? 'rgba(220, 38, 38, 0.3)' : 'rgba(5, 150, 105, 0.3)');
+    // The .notice tones in pages.css — theme-aware tokens (--notice-*), so the box
+    // follows the site's light/dark class instead of inline literals.
+    feedback.className = 'notice ' + (kind === 'error' ? 'notice--error' : 'notice--success');
   }
   function hideFeedback() { feedback.style.display = 'none'; }
 
@@ -108,24 +103,21 @@
     }
 
     var head = document.createElement('p');
-    head.style.fontWeight = '600';
-    head.style.marginBottom = '12px';
+    head.className = 'docs-slots-head';
     head.textContent = de ? 'Folgende Dokumente fehlen noch:' : 'The following documents are still missing:';
     slotsBox.appendChild(head);
 
     allKeys.forEach(function (key) {
       if (current.required.indexOf(key) === -1) return;
       var row = document.createElement('div');
-      row.style.marginBottom = '16px';
+      row.className = 'docs-slot';
       var label = document.createElement('label');
-      label.style.display = 'block';
-      label.style.fontWeight = '600';
-      label.style.marginBottom = '4px';
+      label.className = 'docs-slot-label';
       label.textContent = LABELS[key] + (current.docs[key] ? ' ✓' : ' *');
       row.appendChild(label);
       if (current.docs[key]) {
         var ok = document.createElement('small');
-        ok.style.color = 'var(--success)';
+        ok.className = 'status-text--success';
         ok.textContent = de ? 'Bereits vorhanden' : 'Already on file';
         row.appendChild(ok);
       } else {
@@ -139,8 +131,7 @@
           dl.href = DIRECTUS_URL + '/kscw/registration/doc-template/' + key
             + '?reference=' + encodeURIComponent(current.reference)
             + '&email=' + encodeURIComponent(current.email);
-          dl.className = 'btn btn-gold btn-sm';
-          dl.style.marginBottom = '8px';
+          dl.className = 'btn btn-gold btn-sm docs-slot-dl';
           // The response is Content-Disposition: attachment, so a success never
           // navigates. _blank is for the failure case: without it a 404 or 500
           // would replace this page with raw JSON and discard a hand-typed

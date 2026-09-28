@@ -1116,7 +1116,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
         });
         // Native <option> inherits the select's background, so the dark dropdown needs
         // an explicit solid colour or it renders white.
-        inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:#1c1c1e;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+        inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:var(--bg-white);border:1px solid var(--border-strong);border-radius:var(--radius-md);color:var(--text-primary);';
         return inp;
       }
       if (f.type === 'multi_select' && Array.isArray(f.options) && f.options.length) {
@@ -1136,7 +1136,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
           op.selected = picked.indexOf(o) > -1;
           inp.appendChild(op);
         });
-        inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:#1c1c1e;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+        inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:var(--bg-white);border:1px solid var(--border-strong);border-radius:var(--radius-md);color:var(--text-primary);';
         return inp;
       }
       inp = document.createElement('input');
@@ -1144,7 +1144,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
       // A date answer arrives as an ISO timestamp; <input type=date> needs Y-M-D or it
       // silently renders empty — which reads as "they left it blank".
       inp.value = (inp.type === 'date' && curStr) ? curStr.substring(0, 10) : curStr;
-      inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+      inp.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:var(--bg-white);border:1px solid var(--border-strong);border-radius:var(--radius-md);color:var(--text-primary);';
       return inp;
     }
 
@@ -3475,11 +3475,11 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
           var thumb = document.createElement('img');
           thumb.src = DIRECTUS_URL + '/assets/' + sp.logo + '?width=80&quality=80';
           thumb.alt = sp.name;
-          thumb.style.cssText = 'width:40px;height:40px;object-fit:contain;border-radius:var(--radius-sm);background:rgba(255,255,255,0.08);flex-shrink:0;';
+          thumb.style.cssText = 'width:40px;height:40px;object-fit:contain;border-radius:var(--radius-sm);background:var(--bg-muted);flex-shrink:0;';
           info.appendChild(thumb);
         } else {
           var placeholder = document.createElement('div');
-          placeholder.style.cssText = 'width:40px;height:40px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.06);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;';
+          placeholder.style.cssText = 'width:40px;height:40px;border-radius:var(--radius-sm);background:var(--bg-muted);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:10px;';
           placeholder.textContent = '—';
           info.appendChild(placeholder);
         }
@@ -3810,10 +3810,10 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
       var colour = kind === 'error' ? '#dc2626' : '#16a34a';
       var el = document.createElement('div');
       el.style.cssText = 'pointer-events:auto;cursor:pointer;max-width:380px;'
-        + 'padding:0.65rem 0.9rem;border-radius:var(--radius-sm);'
-        + 'background:var(--bg-elevated,#1c1c1e);border:1px solid var(--border);'
+        + 'padding:0.65rem 0.9rem;border-radius:var(--radius-lg);'
+        + 'background:var(--bg-white);border:1px solid var(--hairline);'
         + 'border-left:3px solid ' + colour + ';color:var(--text-primary);'
-        + 'font-size:var(--text-sm);box-shadow:0 8px 24px rgba(0,0,0,0.45);'
+        + 'font-size:var(--text-sm);box-shadow:var(--shadow-card-lg);'
         + 'opacity:0;transform:translateY(6px);transition:opacity .18s ease,transform .18s ease;';
       // textContent, never markup: the message carries an address typed into a public form.
       el.textContent = message;
@@ -4584,7 +4584,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
         table.style.cssText = 'width:100%;border-collapse:collapse;font-size:var(--text-sm);';
         var COLSPAN = 10; // select, arrow, last, first, address, present, examPassed, sheet, sv, actions
         var cellCss = 'padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);';
-        var headCss = 'text-align:left;padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.04);font-weight:600;white-space:nowrap;';
+        var headCss = 'text-align:left;padding:0.5rem 0.6rem;border-bottom:1px solid var(--border);background:var(--bg-muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);white-space:nowrap;';
 
         var thead = document.createElement('thead');
         var thRow = document.createElement('tr');
@@ -4884,7 +4884,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
           var formSv = String(pickVal(d, svrzIds) || '').trim();
           svInp.value = state.sv_license || formSv;
           svInp.placeholder = t('scSvLicense');
-          svInp.style.cssText = 'width:110px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+          svInp.style.cssText = 'width:110px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:var(--bg-white);border:1px solid var(--border-strong);border-radius:var(--radius-md);color:var(--text-primary);';
           svInp.addEventListener('change', function() {
             saveScorerField(rowMeta, 'sv_license', svInp.value.trim(), statusEl);
             paintSvSource();
@@ -4990,7 +4990,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
           // ── collapsed detail row: every remaining form answer + KSCW notes ──
           var detailTd = document.createElement('td');
           detailTd.colSpan = COLSPAN;
-          detailTd.style.cssText = 'padding:0.5rem 0.9rem 0.85rem 2.1rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.02);';
+          detailTd.style.cssText = 'padding:0.5rem 0.9rem 0.85rem 2.1rem;border-bottom:1px solid var(--border);background:var(--bg-muted);';
           var dl = document.createElement('div');
           dl.style.cssText = 'display:flex;flex-direction:column;gap:0.3rem;margin-bottom:0.6rem;';
           // Read-only facts about the signup itself — not answers, so not editable.
@@ -5087,7 +5087,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
           var examInp = document.createElement('input');
           examInp.type = 'date';
           examInp.value = (state.exam_date || '').substring(0, 10);
-          examInp.style.cssText = 'padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+          examInp.style.cssText = 'padding:0.25rem 0.4rem;font-size:var(--text-sm);background:var(--bg-white);border:1px solid var(--border-strong);border-radius:var(--radius-md);color:var(--text-primary);';
           examInp.addEventListener('change', function() {
             saveScorerField(rowMeta, 'exam_date', examInp.value || null, statusEl);
           });
@@ -5102,7 +5102,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
           noteInp.type = 'text';
           noteInp.value = state.notes;
           noteInp.placeholder = t('scNotes');
-          noteInp.style.cssText = 'flex:1;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);';
+          noteInp.style.cssText = 'flex:1;max-width:420px;padding:0.25rem 0.4rem;font-size:var(--text-sm);background:var(--bg-white);border:1px solid var(--border-strong);border-radius:var(--radius-md);color:var(--text-primary);';
           noteInp.addEventListener('change', function() {
             saveScorerField(rowMeta, 'notes', noteInp.value, statusEl);
           });
@@ -5211,8 +5211,8 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
       if (cfg.sources.length > 1) {
         slugSel = document.createElement('select');
         slugSel.style.cssText = 'flex:1;min-width:200px;max-width:420px;padding:0.25rem 0.4rem;'
-          + 'font-size:var(--text-sm);background:#1c1c1e;border:1px solid var(--border);'
-          + 'border-radius:var(--radius-sm);color:var(--text-primary);';
+          + 'font-size:var(--text-sm);background:var(--bg-white);border:1px solid var(--border-strong);'
+          + 'border-radius:var(--radius-md);color:var(--text-primary);';
         cfg.sources.forEach(function(src) {
           var op = document.createElement('option');
           op.value = src.slug;
@@ -5413,7 +5413,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
         formHtml += fieldInput('name', t('sponsorName'), item ? item.name : '', true);
         formHtml += fieldFile('logo', t('sponsorLogo'));
         if (item && item.logo) {
-          formHtml += '<div class="admin-field"><img src="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.logo + '?width=200&quality=80') + '" style="max-height:80px;border-radius:var(--radius-md);background:rgba(255,255,255,0.08);padding:4px;"></div>';
+          formHtml += '<div class="admin-field"><img src="' + escapeAttr(DIRECTUS_URL + '/assets/' + item.logo + '?width=200&quality=80') + '" style="max-height:80px;border-radius:var(--radius-md);background:var(--bg-muted);border:1px solid var(--hairline);padding:4px;"></div>';
         }
         formHtml += fieldInput('website_url', t('sponsorWebsite'), item ? (item.website_url || '') : '');
         formHtml += fieldNumber('sort_order', t('sponsorSortOrder'), item ? item.sort_order : '');
@@ -5710,8 +5710,8 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
           noteInp.rows = 4;
           noteInp.placeholder = o.noteField.placeholder || '';
           noteInp.style.cssText = 'width:100%;padding:0.5rem;font:inherit;font-size:var(--text-sm);'
-            + 'background:rgba(255,255,255,0.04);border:1px solid var(--border);'
-            + 'border-radius:var(--radius-sm);color:var(--text-primary);resize:vertical;';
+            + 'background:var(--bg-white);border:1px solid var(--border-strong);'
+            + 'border-radius:var(--radius-md);color:var(--text-primary);resize:vertical;';
           noteLbl.setAttribute('for', 'admin-confirm-note');
           noteInp.id = 'admin-confirm-note';
           noteWrap.appendChild(noteLbl);
@@ -5903,11 +5903,11 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
         headLabels.forEach(function(label) {
           var th = document.createElement('th');
           th.textContent = label;
-          th.style.cssText = 'text-align:left;padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.04);font-weight:600;white-space:nowrap;';
+          th.style.cssText = 'text-align:left;padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);background:var(--bg-muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);white-space:nowrap;';
           thRow.appendChild(th);
         });
         var thAct = document.createElement('th');
-        thAct.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.04);';
+        thAct.style.cssText = 'padding:0.5rem 0.75rem;border-bottom:1px solid var(--border);background:var(--bg-muted);';
         thRow.appendChild(thAct);
         thead.appendChild(thRow);
         table.appendChild(thead);
@@ -6494,9 +6494,9 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
       // (CSS computes the "visible" axis to auto) — an absolutely-positioned menu is cut
       // off for every row near the bottom of the table, which is most of them.
       menu.style.cssText = 'position:fixed;z-index:calc(var(--z-modal) + 1);'
-        + 'min-width:230px;text-align:left;background:var(--bg-elevated,#1c1c1e);'
-        + 'border:1px solid var(--border);border-radius:var(--radius-sm);'
-        + 'box-shadow:0 8px 24px rgba(0,0,0,0.45);padding:0.25rem 0;';
+        + 'min-width:230px;text-align:left;background:var(--bg-white);'
+        + 'border:1px solid var(--border);border-radius:var(--radius-md);'
+        + 'box-shadow:var(--shadow-xl);padding:0.25rem 0;';
       menu.addEventListener('click', function(e) { e.stopPropagation(); });
 
       if (state.exam_file_corrected) {
@@ -6516,7 +6516,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
         b.textContent = label;
         b.style.cssText = 'display:block;width:100%;text-align:left;padding:0.45rem 0.7rem;'
           + 'background:none;border:none;color:var(--text-primary);font-size:var(--text-sm);cursor:pointer;';
-        b.addEventListener('mouseenter', function() { b.style.background = 'rgba(255,255,255,0.06)'; });
+        b.addEventListener('mouseenter', function() { b.style.background = 'var(--bg-muted)'; });
         b.addEventListener('mouseleave', function() { b.style.background = 'none'; });
         b.addEventListener('click', function() { closeSheetMenu(); fn(); });
         menu.appendChild(b);
@@ -6999,14 +6999,19 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
   /* ── Admin Layout ─────────────────────────────────────────── */
   body { margin: 0; }
 
+  /* Page ground per theme, as the public site: navy (--bg-white) in dark, stone
+     (--bg-light) in light — so --page-card-bg cards sit one step up in both. */
   .admin-shell {
     min-height: 100vh;
-    background: var(--bg-light);
+    background: var(--bg-white);
   }
+  .light .admin-shell { background: var(--bg-light); }
 
   .admin-header {
-    background: var(--bg-white);
-    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg-white) 92%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--hairline);
     padding: 0 var(--space-lg);
   }
   .admin-header-inner {
@@ -7028,7 +7033,8 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     gap: var(--space-sm);
     text-decoration: none;
     font-weight: 700;
-    font-size: var(--text-lg);
+    font-size: var(--text-base);
+    letter-spacing: -0.01em;
     color: var(--text-primary);
   }
 
@@ -7039,35 +7045,40 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     z-index: 20;
     max-width: 960px;
     margin: 0 auto;
-    background: var(--bg-light);
-    border-bottom: 1px solid var(--border);
+    background: var(--bg-white);
+    border-bottom: 1px solid var(--hairline);
     display: flex;
     flex-wrap: nowrap;
-    gap: var(--space-xs);
-    padding: var(--space-md) var(--space-lg) 0;
+    gap: 2px;
+    padding: var(--space-sm) var(--space-lg);
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none; /* Firefox */
   }
+  .light .admin-tabs { background: var(--bg-light); }
   .admin-tabs::-webkit-scrollbar { display: none; } /* WebKit */
   .admin-tab {
     flex: 0 0 auto;
     white-space: nowrap;
-    padding: var(--space-sm) var(--space-lg);
+    min-height: 36px;
+    padding: 0 0.875rem;
     background: none;
     border: none;
-    border-bottom: 2px solid transparent;
+    border-radius: var(--radius-md);
     font-family: 'Inter', sans-serif;
-    font-size: var(--text-sm);
-    font-weight: 600;
+    font-size: 0.8125rem;
+    font-weight: 500;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: color 0.2s, border-color 0.2s;
+    transition: color 0.15s, background-color 0.15s;
   }
-  .admin-tab:hover { color: var(--text-primary); }
+  .admin-tab:hover { color: var(--text-primary); background: var(--bg-muted); }
   .admin-tab.active {
-    color: var(--accent-text);
-    border-bottom-color: var(--kscw-blue);
+    color: var(--selected-fg);
+    background: var(--selected-bg);
+  }
+  @media (pointer: coarse) {
+    .admin-tab { min-height: 44px; }
   }
 
   /* ── Content ──────────────────────────────────────────────── */
@@ -7090,15 +7101,16 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     justify-content: space-between;
     gap: var(--space-md);
     padding: var(--space-md) var(--space-lg);
-    background: var(--bg-white);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    background: var(--page-card-bg);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
     transition: box-shadow 0.2s;
   }
-  .admin-list-item:hover { box-shadow: var(--shadow-md); }
+  .admin-list-item:hover { box-shadow: var(--shadow-card-lg); }
   .admin-list-info { flex: 1; min-width: 0; }
   .admin-list-title {
-    font-size: var(--text-base);
+    font-size: var(--text-sm);
     font-weight: 600;
     color: var(--text-primary);
     margin: 0 0 var(--space-xs) 0;
@@ -7122,14 +7134,20 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     display: inline-block;
     padding: 2px 8px;
     border-radius: var(--radius-full);
-    font-size: var(--text-xs);
+    border: 1px solid var(--border);
+    font-size: 11px;
     font-weight: 600;
-    background: var(--bg-light);
+    line-height: 1.4;
+    background: var(--bg-muted);
     color: var(--text-secondary);
   }
-  .admin-badge-green { background: rgba(34,197,94,0.15); color: #16a34a; }
-  .admin-badge-gray { background: var(--bg-light); color: var(--text-muted); }
-  .admin-badge-danger { background: rgba(239,68,68,0.15); color: #dc2626; }
+  /* Tinted pills: the dark default reads the 400 step on the navy ground, the
+     light theme the 700 step on white — the same hue, legible in both. */
+  .admin-badge-green { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.3); color: #4ade80; }
+  .admin-badge-gray { background: var(--bg-muted); color: var(--text-muted); }
+  .admin-badge-danger { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.3); color: #f87171; }
+  .light .admin-badge-green { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
+  .light .admin-badge-danger { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
 
   /* ── Buttons ──────────────────────────────────────────────── */
   .admin-btn {
@@ -7137,18 +7155,25 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     align-items: center;
     justify-content: center;
     gap: var(--space-xs);
-    padding: var(--space-sm) var(--space-md);
+    min-height: 36px;
+    padding: var(--space-xs) var(--space-md);
     font-family: 'Inter', sans-serif;
     font-size: var(--text-sm);
     font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--bg-white);
     color: var(--text-primary);
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
-  .admin-btn:hover { background: var(--bg-light); }
+  .admin-btn:hover { background: var(--bg-muted); }
+  .admin-btn:focus-visible {
+    outline: 2px solid var(--kscw-blue);
+    outline-offset: 2px;
+  }
   .admin-btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .admin-btn-primary {
     background: var(--kscw-blue);
@@ -7157,7 +7182,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
   }
   .admin-btn-primary:hover { background: var(--kscw-blue-dark); }
   .admin-btn-ghost { border: none; background: none; }
-  .admin-btn-ghost:hover { background: var(--bg-light); }
+  .admin-btn-ghost:hover { background: var(--bg-muted); }
   /* Language switch: a two-letter label, so give it a real touch target. */
   .admin-lang-btn {
     font-weight: 700;
@@ -7165,10 +7190,13 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     min-width: 44px;
     min-height: 44px;
   }
-  .admin-btn-sm { padding: 4px 10px; font-size: var(--text-xs); }
-  .admin-btn-sm.active { background: var(--kscw-blue); color: #fff; border-color: var(--kscw-blue); }
-  .admin-btn-danger { color: #dc2626; border-color: #fecaca; }
-  .admin-btn-danger:hover { background: #fef2f2; }
+  .admin-btn-sm { min-height: 32px; padding: 4px 10px; font-size: var(--text-xs); border-radius: var(--radius-sm); }
+  /* A pressed preset/filter is a selection, not an action: inverted neutral. */
+  .admin-btn-sm.active { background: var(--selected-bg); color: var(--selected-fg); border-color: var(--selected-bg); }
+  .admin-btn-danger { color: #f87171; border-color: rgba(239,68,68,0.35); }
+  .admin-btn-danger:hover { background: rgba(239,68,68,0.1); }
+  .light .admin-btn-danger { color: #dc2626; border-color: #fecaca; }
+  .light .admin-btn-danger:hover { background: #fef2f2; }
 
   /* ── FAB ───────────────────────────────────────────────────── */
   .admin-fab {
@@ -7181,10 +7209,10 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     background: var(--kscw-blue);
     color: #fff;
     font-size: 28px;
-    font-weight: 300;
+    font-weight: 400;
     border: none;
     cursor: pointer;
-    box-shadow: var(--shadow-lg);
+    box-shadow: var(--shadow-card-lg);
     transition: transform 0.15s, background 0.15s;
     z-index: var(--z-sticky);
   }
@@ -7194,9 +7222,9 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
   .admin-field-toggle {
     margin: var(--space-md) 0;
     padding: var(--space-md) var(--space-lg);
-    background: var(--bg-light);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    background: var(--bg-muted);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-lg);
     transition: border-color 0.2s, background 0.2s;
   }
   .admin-field-toggle:hover { border-color: var(--kscw-blue-light); }
@@ -7217,7 +7245,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     width: 44px;
     height: 24px;
     border-radius: 12px;
-    background: var(--surface-3, #333);
+    background: var(--border-strong);
     transition: background 0.2s;
     position: relative;
   }
@@ -7229,6 +7257,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     height: 20px;
     border-radius: 50%;
     background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s;
   }
   .admin-toggle input:checked + .admin-toggle-track {
@@ -7249,6 +7278,8 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
   }
 
   /* ── Login ─────────────────────────────────────────────────── */
+  /* Calm svrz_rc auth screen: the page ground with one faint brand wash, a solid
+     card on it. Dark is the default theme, .light repeats the wash quieter. */
   .admin-login {
     min-height: 100vh;
     display: flex;
@@ -7256,59 +7287,28 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     justify-content: center;
     padding: var(--space-lg);
     background:
-      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(74, 85, 162, 0.35) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(255, 200, 50, 0.1) 0%, transparent 50%),
-      radial-gradient(ellipse 50% 40% at 10% 60%, rgba(74, 85, 162, 0.15) 0%, transparent 50%),
-      var(--bg-darker, #0c1021);
+      radial-gradient(ellipse 80% 55% at 50% 0%, rgba(74, 85, 162, 0.22) 0%, transparent 60%),
+      var(--bg-white);
     position: relative;
     overflow: hidden;
   }
-  /* Subtle grid pattern */
-  .admin-login::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 48px 48px;
-    pointer-events: none;
-  }
   .light .admin-login {
     background:
-      radial-gradient(ellipse 80% 60% at 50% 0%, rgba(74, 85, 162, 0.12) 0%, transparent 60%),
-      radial-gradient(ellipse 60% 50% at 80% 100%, rgba(255, 200, 50, 0.06) 0%, transparent 50%),
-      #f0f2f8;
-  }
-  .light .admin-login::before {
-    background-image:
-      linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+      radial-gradient(ellipse 80% 55% at 50% 0%, rgba(74, 85, 162, 0.08) 0%, transparent 60%),
+      var(--bg-light);
   }
 
   .admin-login-card {
     position: relative;
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(24px) saturate(140%);
-    -webkit-backdrop-filter: blur(24px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 1.25rem;
+    /* Card one step UP from the ground in dark, white on stone in light. */
+    background: var(--page-card-bg);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-3xl, 1.5rem);
     padding: 2.5rem 2rem 2rem;
     width: 100%;
     max-width: 380px;
     text-align: center;
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.3),
-      0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-  }
-  .light .admin-login-card {
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(74, 85, 162, 0.12);
-    box-shadow:
-      0 8px 32px rgba(74, 85, 162, 0.08),
-      0 1px 0 rgba(255, 255, 255, 0.8) inset;
+    box-shadow: var(--shadow-card-lg);
   }
 
   .admin-login-logo {
@@ -7322,31 +7322,30 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
   .admin-login-icon {
     width: 52px;
     height: 52px;
-    background: linear-gradient(135deg, var(--kscw-blue), var(--kscw-blue-light));
+    background: var(--kscw-blue);
     border-radius: 14px;
     margin: 0 auto var(--space-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 16px rgba(74, 85, 162, 0.35);
+    box-shadow: 0 1px 2px rgba(74, 85, 162, 0.2);
   }
 
   .admin-login-card h1 {
-    font-size: 1.35rem;
-    font-weight: 800;
+    font-size: 1.375rem;
+    font-weight: 700;
     letter-spacing: -0.02em;
-    color: #fff;
-    margin: 0 0 0.125rem;
-  }
-  .light .admin-login-card h1 {
+    text-transform: none;
     color: var(--text-primary);
+    margin: 0 0 0.125rem;
   }
 
   .admin-login-subtitle {
-    font-size: var(--text-xs);
+    font-size: 11px;
+    font-weight: 600;
     color: var(--text-muted);
     margin-bottom: var(--space-sm);
-    letter-spacing: 0.04em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
   }
 
@@ -7354,37 +7353,30 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     font-size: var(--text-xs);
     color: var(--text-muted);
     margin-bottom: var(--space-xl);
-    opacity: 0.7;
   }
 
   .admin-login-btn {
     width: 100%;
-    padding: 0.75rem;
+    min-height: 44px;
+    padding: 0.625rem 0.75rem;
     font-size: var(--text-sm);
-    font-weight: 700;
+    font-weight: 600;
     font-family: 'Inter', sans-serif;
     color: #fff;
-    background: linear-gradient(135deg, var(--kscw-blue) 0%, var(--kscw-blue-dark) 100%);
+    background: var(--kscw-blue);
     border: none;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 12px rgba(74, 85, 162, 0.35);
-    letter-spacing: 0.02em;
+    transition: background-color 0.15s ease;
+    box-shadow: 0 1px 2px rgba(74, 85, 162, 0.2);
     margin-top: var(--space-xs);
   }
   .admin-login-btn:hover {
-    box-shadow: 0 4px 20px rgba(74, 85, 162, 0.5);
-    transform: translateY(-1px);
-  }
-  .admin-login-btn:active {
-    transform: translateY(0);
-    box-shadow: 0 2px 8px rgba(74, 85, 162, 0.3);
+    background: var(--kscw-blue-dark);
   }
   .admin-login-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
-    transform: none;
     box-shadow: none;
   }
 
@@ -7404,16 +7396,24 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
   .admin-forgot-link:hover {
     color: var(--kscw-gold);
   }
+  /* Gold is type-safe on the navy ground only; on white it is 1.6:1. */
+  .light .admin-forgot-link:hover { color: var(--accent-text); }
 
   /* ── Success message ───────────────────────────────────────── */
   .admin-success {
-    color: #22c55e !important;
-    background: rgba(34, 197, 94, 0.08);
-    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: #4ade80 !important;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
     border-radius: var(--radius-md);
     padding: 0.625rem 0.75rem;
     font-size: var(--text-xs);
+    font-weight: 500;
     margin-bottom: var(--space-sm);
+  }
+  .light .admin-success {
+    color: #047857 !important;
+    background: #ecfdf5;
+    border-color: #a7f3d0;
   }
 
   /* ── Password toggle ─────────────────────────────────────── */
@@ -7442,50 +7442,20 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
   .admin-pw-toggle:hover {
     color: var(--kscw-gold);
   }
+  .light .admin-pw-toggle:hover { color: var(--accent-text); }
 
-  /* ── Login field overrides (glass card) ───────────────────── */
+  /* ── Login field overrides ─────────────────────────────────── */
+  /* The login card is a plain card now, so its fields use the standard field
+     recipe below; only the dense micro-label stays. */
   .admin-login-card .admin-field {
     margin-bottom: var(--space-md);
   }
   .admin-login-card .admin-field label {
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 0.6875rem;
+    color: var(--text-muted);
+    font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-  }
-  .admin-login-card .admin-field input {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #fff;
-    border-radius: var(--radius-lg);
-    padding: 0.75rem 0.875rem;
-    font-size: var(--text-sm);
-    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
-  }
-  .admin-login-card .admin-field input::placeholder {
-    color: rgba(255, 255, 255, 0.2);
-  }
-  .admin-login-card .admin-field input:focus {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: var(--kscw-blue-light);
-    box-shadow: 0 0 0 3px rgba(74, 85, 162, 0.2), 0 0 16px rgba(74, 85, 162, 0.1);
-  }
-  .light .admin-login-card .admin-field label {
-    color: var(--text-secondary);
-  }
-  .light .admin-login-card .admin-field input {
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(74, 85, 162, 0.15);
-    color: var(--text-primary);
-  }
-  .light .admin-login-card .admin-field input::placeholder {
-    color: var(--text-muted);
-  }
-  .light .admin-login-card .admin-field input:focus {
-    background: #fff;
-    border-color: var(--kscw-blue);
-    box-shadow: 0 0 0 3px rgba(74, 85, 162, 0.1);
   }
 
   /* ── Form Fields ───────────────────────────────────────────── */
@@ -7495,9 +7465,9 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
   }
   .admin-field label {
     display: block;
-    font-size: var(--text-sm);
-    font-weight: 600;
-    color: var(--text-primary);
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--text-secondary);
     margin-bottom: var(--space-xs);
   }
   .admin-field input[type="text"],
@@ -7509,22 +7479,35 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
   .admin-field select,
   .admin-field textarea {
     width: 100%;
+    min-height: 44px;
     padding: 0.625rem 0.875rem;
     font-size: var(--text-sm);
     font-family: 'Inter', sans-serif;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-md);
     background: var(--bg-white);
     color: var(--text-primary);
     box-sizing: border-box;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
+  .admin-field input::placeholder,
+  .admin-field textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 0.8;
+  }
+  /* Native option lists: pin them to the theme surface so the dark default
+     never opens a white dropdown (same rule as .form-select option). */
+  #admin-app select option,
+  .admin-field select option {
+    background: var(--bg-white);
+    color: var(--text-primary);
+  }
   .admin-field input:focus,
   .admin-field select:focus,
   .admin-field textarea:focus {
     outline: none;
     border-color: var(--kscw-blue);
-    box-shadow: 0 0 0 3px rgba(74, 85, 162, 0.15);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--kscw-blue) 50%, transparent);
   }
   .admin-field input[type="file"] {
     font-size: var(--text-sm);
@@ -7547,6 +7530,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     align-items: center;
     gap: var(--space-sm);
     font-weight: 400;
+    color: var(--text-primary);
     cursor: pointer;
   }
   .admin-field-check input[type="checkbox"] {
@@ -7557,36 +7541,61 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
 
   .admin-summary-bar {
     padding: 12px 16px;
-    background: var(--card-bg, #1a1a2e);
-    border: 1px solid var(--border-color, #2a2a4a);
-    border-radius: 8px;
+    background: var(--bg-muted);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-lg);
     margin-bottom: 12px;
-    font-size: 0.95rem;
+    font-size: var(--text-sm);
+    color: var(--text-primary);
   }
-  .admin-table {
+  /* ── Tables (svrz_rc: micro-label head on a muted band, hairline rows) ── */
+  .admin-table,
+  .admin-grant-grid {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.85rem;
+    font-size: var(--text-sm);
   }
   .admin-table th,
-  .admin-table td {
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--border-color, #2a2a4a);
+  .admin-table td,
+  .admin-grant-grid th,
+  .admin-grant-grid td {
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--hairline);
     text-align: left;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
   }
-  .admin-table th {
+  .admin-table th,
+  .admin-grant-grid th {
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-secondary, #888);
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    background: var(--bg-muted);
+    border-bottom-color: var(--border);
+    white-space: nowrap;
   }
-  .admin-table tr:hover {
-    background: rgba(255, 255, 255, 0.03);
+  .admin-grant-grid td:not(:first-child),
+  .admin-grant-grid th:not(:first-child) { text-align: center; }
+  .admin-grant-grid td small {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+  .admin-grant-grid input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--kscw-blue);
+  }
+  .admin-table tr:hover > td,
+  .admin-grant-grid tr:hover > td {
+    background: var(--bg-muted);
   }
   .admin-btn-icon {
     background: none;
     border: none;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     font-size: 1.1rem;
     padding: 2px 4px;
@@ -7594,25 +7603,32 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
   }
   .admin-btn-icon:hover {
     opacity: 1;
+    background: var(--bg-muted);
   }
 
   .admin-error {
     padding: var(--space-sm) var(--space-md);
     margin-bottom: var(--space-md);
     background: rgba(239, 68, 68, 0.1);
-    color: #dc2626;
+    color: #fca5a5;
     border: 1px solid rgba(239, 68, 68, 0.3);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
+    font-weight: 500;
+  }
+  .light .admin-error {
+    background: #fef2f2;
+    color: #b91c1c;
+    border-color: #fecaca;
   }
 
   /* ── Modal ─────────────────────────────────────────────────── */
   .admin-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
-    -webkit-backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -7620,13 +7636,14 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     padding: var(--space-xl);
     overflow-y: auto;
   }
+  .light .admin-modal-overlay { background: rgba(28, 25, 23, 0.6); }
   .admin-modal-content {
-    background: var(--bg-white);
-    border: 1px solid var(--border);
+    background: var(--page-card-bg);
+    border: 1px solid var(--hairline);
     border-radius: var(--radius-xl);
     width: 100%;
     max-width: 640px;
-    box-shadow: var(--shadow-xl);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     display: flex;
     flex-direction: column;
     max-height: calc(100dvh - var(--space-xl) * 2);
@@ -7641,8 +7658,10 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     flex-shrink: 0;
   }
   .admin-modal-header h2 {
-    font-size: var(--text-lg);
+    font-size: 1.125rem;
     font-weight: 700;
+    letter-spacing: -0.01em;
+    text-transform: none;
     color: var(--text-primary);
     margin: 0;
   }
@@ -7654,8 +7673,11 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     cursor: pointer;
     padding: 4px;
     line-height: 1;
+    border-radius: var(--radius-md);
+    min-width: 36px;
+    min-height: 36px;
   }
-  .admin-modal-close:hover { color: var(--text-primary); }
+  .admin-modal-close:hover { color: var(--text-primary); background: var(--bg-muted); }
   .admin-modal-body {
     padding: var(--space-xl);
     overflow-y: auto;
@@ -7670,7 +7692,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     margin: var(--space-lg) calc(var(--space-xl) * -1) calc(var(--space-xl) * -1);
     position: sticky;
     bottom: calc(var(--space-xl) * -1);
-    background: var(--bg-white);
+    background: var(--page-card-bg);
     border-radius: 0 0 var(--radius-xl) var(--radius-xl);
   }
 
@@ -7693,12 +7715,12 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
 
   /* ── Quill Overrides ───────────────────────────────────────── */
   .ql-toolbar.ql-snow {
-    border-color: var(--border) !important;
+    border-color: var(--border-strong) !important;
     border-radius: var(--radius-md) var(--radius-md) 0 0;
-    background: var(--bg-light);
+    background: var(--bg-muted);
   }
   .ql-container.ql-snow {
-    border-color: var(--border) !important;
+    border-color: var(--border-strong) !important;
     border-radius: 0 0 var(--radius-md) var(--radius-md);
     font-family: 'Inter', sans-serif;
     font-size: var(--text-sm);
@@ -7715,7 +7737,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
      rounded box around just the contenteditable, mismatching the container. */
   .ql-container.ql-snow:focus-within {
     border-color: var(--kscw-blue) !important;
-    box-shadow: 0 0 0 3px rgba(74, 85, 162, 0.15);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--kscw-blue) 50%, transparent);
   }
   .admin-field:has(.ql-container.ql-snow:focus-within) .ql-toolbar.ql-snow {
     border-color: var(--kscw-blue) !important;
@@ -7744,6 +7766,8 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
   .ql-snow .ql-picker-options {
     background: var(--bg-white) !important;
     border-color: var(--border) !important;
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xl) !important;
   }
 
   /* ── Multi-select tags & dropdowns ──────────────────────── */
@@ -7784,7 +7808,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--bg-white);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-xl);
     max-height: 200px;
     overflow-y: auto;
   }
@@ -7798,7 +7822,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     color: var(--text-primary);
   }
   .admin-dropdown-item:hover {
-    background: var(--bg-light);
+    background: var(--bg-muted);
   }
   .admin-dropdown-item input[type="checkbox"] {
     accent-color: var(--kscw-blue);
@@ -7813,7 +7837,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     color: var(--text-primary);
   }
   .admin-dropdown-option:hover {
-    background: var(--bg-light);
+    background: var(--bg-muted);
   }
   .admin-dropdown-email {
     font-size: var(--text-xs);
@@ -7836,8 +7860,9 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
      keep it and the three that only gained a scroll box look exactly as before.
      Below 820px every box gets a frame — see the media query. */
   .admin-scroll-x.admin-scroll-framed {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-xl);
+    background: var(--page-card-bg);
   }
 
   /* ── Scorer registrations: sheet in, verdict out ──────────── */
@@ -7940,7 +7965,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     /* A clipped table needs the frame to read as scrollable rather than cut off,
        so on a phone every scroll box gets one — except the registrations table,
        which is not a table down here at all. */
-    .admin-scroll-x { border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .admin-scroll-x { border: 1px solid var(--hairline); border-radius: var(--radius-xl); }
     .admin-scroll-x.admin-reg-wrap { border: none; border-radius: 0; overflow-x: visible; }
 
     /* ── Scorer registrations: table → cards ──────────────────
@@ -7959,9 +7984,10 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
       display: grid;
       grid-template-columns: 1fr auto;
       align-items: center;
-      background: var(--bg-white);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
+      background: var(--page-card-bg);
+      border: 1px solid var(--hairline);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-card);
       margin-bottom: var(--space-sm);
       padding: var(--space-xs) 0;
     }
@@ -7980,10 +8006,10 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
       content: attr(data-label);
       flex: 1 1 auto;
       color: var(--text-muted);
-      font-size: var(--text-xs);
+      font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
     }
     /* Surname is the card's heading and the arrow sits beside it, so those two
        share row 1; everything else auto-flows underneath in DOM order. */
@@ -8010,10 +8036,10 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
       padding-top: 0 !important;
       padding-bottom: var(--space-xs) !important;
     }
-    .admin-reg-table tr.reg-row > td.reg-c-cell { border-top: 1px solid var(--border) !important; }
+    .admin-reg-table tr.reg-row > td.reg-c-cell { border-top: 1px solid var(--hairline) !important; }
     .admin-reg-table tr.reg-row > td.reg-c-act {
       justify-content: flex-end;
-      border-top: 1px solid var(--border) !important;
+      border-top: 1px solid var(--hairline) !important;
     }
     .admin-reg-table tr.reg-row input[type="checkbox"] { width: 24px !important; height: 24px !important; }
     .admin-reg-table tr.reg-row > td.reg-c-cell button { min-width: 44px; min-height: 40px; }
@@ -8029,9 +8055,9 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     .admin-reg-table tr.reg-detail-row > td {
       display: block;
       margin: calc(var(--space-sm) * -1) 0 var(--space-sm);
-      border: 1px solid var(--border);
+      border: 1px solid var(--hairline);
       border-top: none;
-      border-radius: 0 0 var(--radius-md) var(--radius-md);
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
       padding: var(--space-sm) var(--space-md) !important;
     }
     /* The per-answer editors are built with an inline `font-size:var(--text-sm)`,

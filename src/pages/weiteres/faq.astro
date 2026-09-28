@@ -98,10 +98,13 @@ const jsonLd = {
     flex-direction: column;
     gap: var(--space-sm);
   }
+  /* Each question is a small page card (white on stone / navy step in dark). */
   .faq-item {
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-white);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-xl);
+    background: var(--page-card-bg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
   }
   .faq-item summary {
     cursor: pointer;
@@ -114,7 +117,9 @@ const jsonLd = {
     font-weight: 600;
     color: var(--text-primary);
     list-style: none;
+    transition: background 0.15s ease;
   }
+  .faq-item summary:hover { background: var(--bg-muted); }
   .faq-item summary::-webkit-details-marker { display: none; }
   .faq-item summary::before {
     content: '+';

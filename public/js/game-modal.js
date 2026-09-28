@@ -24,8 +24,8 @@
       chip.style.color = '#fff';
       chip.textContent = game.teamShort || game.teamName || '';
     } else {
-      chip.style.background = '#e2e8f0';
-      chip.style.color = '#475569';
+      chip.style.background = 'var(--border)';
+      chip.style.color = 'var(--text-secondary)';
       chip.textContent = game.teamShort || game.teamName || '';
     }
     return chip;

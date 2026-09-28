@@ -139,28 +139,18 @@ if (container) {
     const signupUrl = slug ? `https://forms.kscw.ch/forms/${slug}` : '';
 
     const card = el('div', { class: 'card' });
-    const body = el('div', {
-      class: 'card-body',
-      style: 'display: flex; flex-direction: column; gap: var(--space-md);',
-    });
+    const body = el('div', { class: 'card-body scorer-card-body' });
 
-    const headRow = el('div', {
-      style: 'display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-md); flex-wrap: wrap;',
-    });
-    headRow.appendChild(el('h3', { style: 'margin: 0;' }, title));
+    const headRow = el('div', { class: 'scorer-head' });
+    headRow.appendChild(el('h3', { class: 'scorer-title' }, title));
     const when = course.dateISO
       ? formatDate(course.dateISO) + (course.time ? ` · ${course.time}` : '')
       : tr('scorerSignupSoon');
-    headRow.appendChild(el('span', { style: 'font-weight: 600; color: var(--kscw-blue);' }, when));
+    headRow.appendChild(el('span', { class: 'scorer-when' }, when));
     body.appendChild(headRow);
 
-    const metaRow = el('div', {
-      style: 'display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap;',
-    });
-    metaRow.appendChild(el('span', {
-      class: 'chip',
-      style: 'background: var(--kscw-gold); color: var(--text-on-gold);',
-    }, tr(MODE_KEY[course.mode])));
+    const metaRow = el('div', { class: 'scorer-meta' });
+    metaRow.appendChild(el('span', { class: 'chip scorer-mode-chip' }, tr(MODE_KEY[course.mode])));
     body.appendChild(metaRow);
 
     if ((course.mode === 'in_person' || course.mode === 'both')) {
@@ -222,9 +212,7 @@ if (container) {
       // Date is set but no sign-up form yet — say so without re-claiming
       // the date is TBD. When the date itself is null the header span
       // already shows the full "date to be announced" message.
-      body.appendChild(el('p', {
-        style: 'color: var(--text-muted); font-style: italic; margin: 0;',
-      }, tr('scorerSignupOpensSoon')));
+      body.appendChild(el('p', { class: 'scorer-soon' }, tr('scorerSignupOpensSoon')));
     }
 
     // Always-available info materials (course handout + e-learning
@@ -235,9 +223,7 @@ if (container) {
     const docHandout = tr('scorerCoursesHandout');
     const docElearning = tr('scorerCoursesElearningReg');
     if (docHandout || docElearning) {
-      const docs = el('div', {
-        style: 'display: flex; flex-wrap: wrap; gap: var(--space-sm);',
-      });
+      const docs = el('div', { class: 'scorer-docs' });
       const docLink = (href: string, label: string, iconName: string) => {
         const a = el('a', {
           class: 'btn btn-outline',

@@ -1,0 +1,1196 @@
+/* ═══════════════════════════════════════════════════════════════
+   components.css — buttons, cards, chips, badges, section headers,
+   news cards + modal, team cards, sponsors, board, forms base, stats,
+   scroll animations (incl. the reduced-motion block), sport buttons,
+   Instagram, CTA, and the P1–P4 effect packs.
+   ⚠ The P1–P4 packs and .sport-btn must stay BELOW the reduced-motion
+   block: the cascade between them is order-dependent.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Eligible Jahrgänge on a youth team's card or page ─────── */
+/* Rendered by src/components/BirthYears.astro at build time AND by
+   public/js/birth-years.js in the browser (the categories shift on 1 August and no
+   rebuild is triggered by a date). It lives here rather than in that component
+   because the volleyball youth heroes are built entirely in JS, on pages that never
+   import it — a component `is:global` block ships only with the pages that do.
+   Layout only: colour is left to inherit, since the same line sits on a light card
+   surface and on the blue team hero. Each context sets its own. */
+.birth-years {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+/* Tabular figures keep the year pairs from jittering between cards. */
+.birth-years-value { font-variant-numeric: tabular-nums; }
+/* Under the league line on a youth team's hero: one step down in size so it reads
+   as a detail about it. */
+.team-hero-years {
+  font-size: var(--text-base);
+  margin-top: var(--space-xs);
+}
+
+/* ── Buttons ───────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: 0.625rem 1.25rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  line-height: 1.25;
+  /* Sentence case (svrz_rc): labels render as authored. */
+  text-transform: none;
+  letter-spacing: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);   /* 0.5rem = rounded-lg */
+  transition: background-color var(--transition-fast), border-color var(--transition-fast),
+    color var(--transition-fast), box-shadow var(--transition-fast), transform var(--transition-fast);
+  min-height: 44px;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+.btn:active {
+  transform: scale(0.99);
+}
+/* 2px ring in the readable brand tint (--accent-text: brand blue in light, its
+   light tint on the dark theme, where the fill blue is only 2.65:1). */
+.btn:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+}
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn > * {
+  pointer-events: none;
+}
+/* .btn-blue is the name /weiteres/schreiberkurse, its /pruefung sub-page and
+   /volleyball/reglemente have always used for the blue button. It was never
+   defined here, so those buttons silently fell back to bare .btn — no
+   background, no colour. Aliased onto .btn-primary rather than renamed at the
+   call sites, so both names keep working. */
+.btn-primary,
+.btn-blue {
+  background: var(--kscw-blue);
+  color: var(--text-on-blue);
+}
+.btn-primary:hover,
+.btn-blue:hover {
+  background: var(--kscw-blue-dark);
+}
+.btn-gold {
+  background: var(--kscw-gold);
+  color: var(--text-on-gold);
+}
+.btn-gold:hover {
+  background: var(--kscw-gold-dark);
+}
+/* Secondary button: a white (card-surface) control with a hairline border, as
+   svrz_rc's outline button. Colour is the text colour, not currentColor, so it
+   reads the same wherever it sits; callers that tint it (youth waitlist/open
+   buttons) set `color` themselves. */
+.btn-outline {
+  border: 1px solid var(--border-strong);
+  background: var(--bg-white);
+  color: var(--text-primary);
+}
+.btn-outline:hover {
+  background: var(--bg-muted);
+  border-color: var(--border-strong);
+}
+/* On a brand-blue surface (hero / CTA) — stays white-on-blue in both themes. */
+.btn-outline-white {
+  border: 1px solid rgba(255,255,255,0.6);
+  color: white;
+}
+.btn-outline-white:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: white;
+}
+.btn-sm {
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  min-height: 36px;
+}
+@media (pointer: coarse) {
+  .btn-sm { min-height: 44px; }
+}
+
+/* ── Cards ─────────────────────────────────────────────────── */
+/* svrz_rc page card: white card on the stone page, hairline border + soft
+   two-layer shadow, rounded-2xl. The surface colour per theme is set in
+   foundation.css (`:root .card` / `.light .card`), which outranks this rule. */
+.card {
+  background: var(--bg-white);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+/* Only cards that ARE a link lift on hover — a static content card stays put. */
+a.card:hover,
+.card.news-card:hover,
+.card.event-card--clickable:hover {
+  box-shadow: var(--shadow-card-lg);
+  transform: translateY(-1px);
+}
+.card-accent {
+  border-top: 3px solid var(--card-accent, var(--kscw-blue));
+}
+.card-body {
+  padding: 1.25rem;
+}
+@media (min-width: 640px) {
+  .card-body { padding: var(--space-lg); }
+}
+.card-img {
+  width: 100%;
+  aspect-ratio: 16/10;
+  object-fit: cover;
+  background: var(--bg-light);
+}
+.card-img-placeholder {
+  width: 100%;
+  aspect-ratio: 16/10;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--bg-light) 0%, var(--border) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+/* The placeholder doubles as an image frame when a news item has a picture, but it
+   is a flex container with no rule for a child <img> — so the image kept its
+   intrinsic ratio, overflowed the 16/10 box and was clipped from the top, slicing
+   the headline off the club's own recruiting poster. `.card-img` next door has had
+   `object-fit: cover` all along; this gives the placeholder variant the same. */
+.card-img-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Team Chips ────────────────────────────────────────────── */
+/* Team code chip (svrz RowChip): a small 4px-radius tag in the team's own colours
+   (set inline from src/data/team-colors — data colour, never restyled here). The
+   codes are authored in caps ("H1", "DU18"), so the uppercase only normalises. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2em 0.55em;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-xs);
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+}
+.chip-sm {
+  font-size: 0.6875rem;
+  padding: 0.1em 0.4em;
+}
+
+/* ── Badges ────────────────────────────────────────────────── */
+/* Status pill (svrz recipe): 11px / 600, fully rounded, tinted fill. The neutral
+   fill per theme lives in foundation.css (`:root .badge` / `.light .badge`). */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2em 0.65em;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  border-radius: var(--radius-full);
+  background: var(--bg-light);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.badge-blue { background: rgba(74, 85, 162, 0.1); color: var(--accent-text); }
+/* Basketball news badge. news-modal.js and the news lists have always asked for
+   `.badge-orange`, which was never defined, so the basketball pill fell back to
+   the neutral one. Sport orange (--bb-orange) as a tint; the text is a darker
+   step in light and a lighter one in dark so it clears AA on either card. */
+.badge-orange { background: rgba(234, 88, 12, 0.12); color: #9a3412; }
+:root:not(.light) .badge-orange { background: rgba(234, 88, 12, 0.2); color: #fdba74; }
+/* Ochre darkened from #92710a, which reached only 4.24:1 on the light theme —
+   .light .badge repaints this badge's background to the neutral stone --bg-light (#f5f5f4), so the
+   text lands on grey rather than on the gold tint set here. Kept in step with
+   .light .game-cup-icon below, which deliberately uses the same value. */
+.badge-gold { background: rgba(255, 200, 50, 0.15); color: #836408; }
+/* "Team voll" on a team card. Solid gold, not a tint like its neighbours: this is
+   the one badge that changes what a reader can do next, and it is the same pill the
+   hero (.hero-team-full) and the Nachwuchs cards wear. */
+.badge-team-full { background: var(--kscw-gold); color: var(--text-on-gold); }
+.badge-success { background: rgba(5, 150, 105, 0.1); color: var(--success); }
+.badge-danger { background: rgba(220, 38, 38, 0.1); color: var(--danger); }
+
+/* ── Section Headers ───────────────────────────────────────── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-xl);
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+/* Sentence-case h2, 1.5rem / 700, tight tracking (svrz page title). */
+.section-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+/* Micro-eyebrow above a section title: 11px / 600 caps, muted. The source string
+   stays sentence case; CSS uppercases it. */
+.section-eyebrow {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-xs);
+}
+/* The gold rule stays (brand), quieter: 32×3 instead of 48×4. */
+.section-header .gold-bar {
+  width: 32px;
+  height: 3px;
+  background: var(--kscw-gold);
+  border-radius: 2px;
+  margin-top: var(--space-sm);
+}
+.section-dark .section-header h2 {
+  color: var(--text-on-dark);
+}
+
+/* ── News Cards ────────────────────────────────────────────── */
+.news-card {
+  cursor: pointer;
+}
+.news-card .card-body h3 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  line-height: 1.3;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  margin-bottom: var(--space-sm);
+  transition: color var(--transition-fast);
+}
+.news-card:hover .card-body h3 {
+  color: var(--accent-text);
+}
+.news-date {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.news-excerpt {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: var(--space-sm);
+  line-height: 1.65;
+}
+/* ── News Modal ───────────────────────────────────────────── */
+.news-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* svrz backdrop: warm stone-900 @60 + blur in light, black @70 in dark. */
+  background: rgba(0,0,0,0.7);
+  padding: var(--space-md);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.light .news-modal-overlay {
+  background: rgba(28, 25, 23, 0.6);
+}
+/* Dark: the raised card step (--bg-light) so the dialog separates from the navy
+   page — the same surface as the game and calendar modals; light is the white
+   card surface. */
+.news-modal {
+  max-height: 90vh;
+  width: 100%;
+  max-width: 600px;
+  overflow-y: auto;
+  background: var(--bg-light);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+  border: 1px solid var(--hairline);
+}
+.light .news-modal {
+  background: var(--bg-white);
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+}
+.nm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border);
+}
+.nm-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.nm-author {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.nm-title {
+  font-size: clamp(1.25rem, 3vw, 1.5rem);
+  font-weight: 700;
+  line-height: 1.25;
+  padding: var(--space-lg) var(--space-lg) 0;
+  text-transform: none;
+  letter-spacing: -0.02em;
+}
+.nm-image {
+  padding: var(--space-md) var(--space-lg);
+}
+.nm-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: var(--radius-md);
+}
+.nm-body {
+  padding: 0 var(--space-lg) var(--space-lg);
+  font-size: var(--text-sm);
+  line-height: 1.75;
+  color: var(--text-secondary);
+  text-align: justify;
+  text-wrap: pretty;
+  hyphens: auto;
+}
+/* Respect Quill per-paragraph alignment overrides from the admin editor. */
+.nm-body .ql-align-center { text-align: center; }
+.nm-body .ql-align-right { text-align: right; }
+.nm-body .ql-align-justify { text-align: justify; }
+.nm-body h2,
+.nm-body h3 {
+  color: var(--text-primary);
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-sm);
+  font-size: var(--text-base);
+  text-transform: none;
+  letter-spacing: 0;
+  text-align: left;
+}
+.nm-body p {
+  margin-bottom: var(--space-md);
+}
+.nm-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-md);
+  margin: var(--space-md) 0;
+}
+.nm-body a {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.nm-body a:hover {
+  text-decoration: none;
+}
+.nm-body blockquote {
+  border-left: 3px solid var(--kscw-gold);
+  padding-left: var(--space-md);
+  margin: var(--space-md) 0;
+  font-style: italic;
+  color: var(--text-muted);
+}
+.nm-body ul,
+.nm-body ol {
+  padding-left: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+.nm-body li {
+  margin-bottom: var(--space-xs);
+}
+/* ── News Modal — Share Bar ──────────────────────────────── */
+.nm-share {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--border);
+}
+.nm-share-label {
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-right: var(--space-xs);
+}
+/* --bg-card was never defined, so these fell back to transparent; the muted
+   surface is what svrz uses for an icon tool button. */
+.nm-share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-decoration: none;
+  padding: 0;
+  font: inherit;
+}
+@media (pointer: coarse) {
+  .nm-share-btn { width: 44px; height: 44px; }
+}
+.nm-share-btn svg {
+  width: 16px;
+  height: 16px;
+}
+.nm-share-btn:hover {
+  color: #fff;
+  border-color: transparent;
+}
+.nm-share-whatsapp:hover { background: #25D366; }
+.nm-share-facebook:hover { background: #1877F2; }
+.nm-share-x:hover { background: #000; }
+.nm-share-email:hover { background: var(--kscw-blue); }
+.nm-share-copy:hover { background: var(--kscw-gold); color: #1a1a2e; }
+.nm-share-copy.copied { background: #22c55e; color: #fff; border-color: transparent; }
+
+/* ── Team Cards (sport overview) ───────────────────────────── */
+.team-card {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+.team-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-lg);
+}
+.team-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+.team-card-header h3 {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  text-transform: none;
+  min-width: 0;
+}
+.team-card-meta {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+/* Exclude the language-toggle spans: this layout rule's specificity (0,1,1)
+   otherwise beats the global `[data-lang-only] { display:none }` (0,1,0) and
+   forces BOTH the DE and EN training text to show at once. */
+.team-card-meta span:not([data-lang-only]) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* Team card with photo — background style */
+.team-card--photo {
+  position: relative;
+  overflow: hidden;
+  min-height: 220px;
+}
+.team-card--photo .team-card-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+.team-card--photo .team-card-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 25%;
+  display: block;
+  transition: transform var(--transition-slow);
+}
+.team-card--photo:hover .team-card-bg img {
+  transform: scale(1.02);
+}
+.team-card--photo .team-card-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.1) 100%);
+}
+.team-card--photo .card-body {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+  color: white;
+}
+.team-card--photo .card-body h3 {
+  color: white;
+}
+.team-card--photo .team-card-meta {
+  color: rgba(255,255,255,0.75);
+}
+.team-card--photo .card-body p[style] {
+  color: var(--kscw-gold) !important;
+}
+
+/* ── Sponsor Carousel ──────────────────────────────────────── */
+.sponsor-track {
+  display: flex;
+  gap: var(--space-2xl);
+  animation: scroll-sponsors 120s linear infinite;
+  width: max-content;
+}
+.sponsor-track:hover {
+  animation-play-state: paused;
+}
+.sponsor-item {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 70px;
+  background: var(--bg-white);
+  border-radius: var(--radius-lg);
+  padding: var(--space-sm);
+  border: 1px solid var(--hairline);
+}
+.sponsor-item span {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+@keyframes scroll-sponsors {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.sponsor-overflow {
+  overflow: hidden;
+  position: relative;
+}
+.sponsor-overflow::before,
+.sponsor-overflow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 60px;
+  z-index: 1;
+  pointer-events: none;
+}
+.sponsor-overflow::before {
+  left: 0;
+  background: linear-gradient(to right, var(--bg-light), transparent);
+}
+.sponsor-overflow::after {
+  right: 0;
+  background: linear-gradient(to left, var(--bg-light), transparent);
+}
+
+/* ── Sponsor Grid (tiers) ──────────────────────────────────── */
+.sponsor-tier {
+  margin-bottom: var(--space-2xl);
+}
+.sponsor-tier-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: var(--space-md);
+}
+.sponsor-tier-label.gold { color: #b8860b; }
+.sponsor-tier-label.silver { color: #6b7280; }
+.sponsor-tier-label.bronze { color: #92400e; }
+.sponsor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-md);
+}
+.sponsor-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  background: var(--bg-white);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-md);
+  transition: box-shadow var(--transition-base);
+}
+.sponsor-card:hover {
+  box-shadow: var(--shadow-card-lg);
+}
+
+/* ── Board Member Cards ────────────────────────────────────── */
+.board-card {
+  text-align: center;
+}
+.board-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radius-full);
+  background: var(--kscw-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-md);
+  color: white;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-2xl);
+}
+.board-card h3 {
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  margin-bottom: var(--space-xs);
+}
+.board-role {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* ── Contact Form ──────────────────────────────────────────── */
+.form-group {
+  margin-bottom: var(--space-lg);
+}
+/* Field label (svrz FormField): sentence case, 13px / 500, secondary text. */
+.form-label {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-transform: none;
+  letter-spacing: 0;
+  margin-bottom: 0.375rem;
+  color: var(--text-secondary);
+}
+/* Controls: 44px, rounded-lg, 1px control border, card surface. The per-theme
+   surface + border colour are repeated in foundation.css (`:root .form-*`), which
+   outranks these. 16px text stays so iOS does not zoom on focus. */
+.form-input,
+.form-textarea,
+.form-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font-size: var(--text-base);
+  line-height: 1.4;
+  color: var(--text-primary);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  background: var(--bg-white);
+}
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+.form-select option {
+  padding: 0.5rem 0.75rem;
+  /* Native option lists take the select's own colours in some engines only;
+     pin them to the theme so a dark-theme dropdown is not white-on-white. */
+  background: var(--bg-white);
+  color: var(--text-primary);
+}
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--kscw-blue);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--kscw-blue) 50%, transparent);
+}
+.form-input:disabled,
+.form-textarea:disabled,
+.form-select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.form-textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+/* ── Stats Counter ─────────────────────────────────────────── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-lg);
+}
+@media (min-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(4, 1fr); }
+}
+.stat-item {
+  text-align: center;
+  padding: var(--space-lg);
+}
+.stat-number {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-5xl);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--kscw-gold);
+  line-height: 1;
+}
+.stat-label {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-on-dark);
+  margin-top: var(--space-sm);
+  opacity: 0.8;
+}
+
+/* ── Scroll Animations ─────────────────────────────────────── */
+/* Calm svrz reveal: an 8px rise over 300ms. */
+.fade-in {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 300ms ease-out, transform 300ms ease-out;
+}
+.fade-in.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.fade-in-delay-1 { transition-delay: 60ms; }
+.fade-in-delay-2 { transition-delay: 120ms; }
+.fade-in-delay-3 { transition-delay: 180ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .sponsor-track {
+    animation: none;
+  }
+  .hero::before {
+    animation: none;
+  }
+  .fade-in.fade-in--blur {
+    filter: none;
+  }
+  .scroll-progress-bar {
+    transition: none;
+  }
+  .stat-number.counting {
+    text-shadow: none;
+    transform: none;
+  }
+  .card-glow-grid > .card::after {
+    display: none;
+  }
+  .tilt-3d {
+    transition: none;
+  }
+  .tracing-beam-dot {
+    animation: none;
+  }
+  .fade-in-delay-1,
+  .fade-in-delay-2,
+  .fade-in-delay-3 {
+    transition-delay: 0ms;
+  }
+}
+
+/* ── Angled Section Divider ────────────────────────────────── */
+.angle-top {
+  position: relative;
+}
+.angle-top::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: inherit;
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+
+/* ── Sport Buttons (Hero) ──────────────────────────────────── */
+/* Flat sport fills (svrz: no gradients, no glow). The two sport hues stay; the
+   volleyball button keeps its gold icon as the one accent. */
+.sport-btn {
+  --sport-shadow: 0 1px 2px rgba(0,0,0,0.18), 0 6px 16px -6px rgba(0,0,0,0.35);
+  min-width: 200px;
+  min-height: 48px;
+  padding: 0.75rem 1.5rem 0.75rem 1.25rem;
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: 0;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: var(--radius-lg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow: var(--sport-shadow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+.sport-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 12px 24px -8px rgba(0,0,0,0.4);
+}
+.sport-btn:active {
+  transform: scale(0.99);
+}
+.sport-btn-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  transition: transform var(--transition-base);
+}
+.sport-btn:hover .sport-btn-icon {
+  transform: rotate(-8deg);
+}
+
+/* Volleyball: deep KSCW volleyball blue, gold icon */
+.sport-btn--vb {
+  background: #1F4795;
+  color: #ffffff;
+}
+.sport-btn--vb:hover { background: #17387A; }
+.sport-btn--vb .sport-btn-icon { color: #FFE14D; }
+
+/* Basketball: the ball orange, one step deep enough for white text (AA) */
+.sport-btn--bb {
+  background: #c2410c;
+  color: #ffffff;
+}
+.sport-btn--bb:hover { background: #9a3412; }
+.sport-btn--bb .sport-btn-icon { color: #FFF1E0; }
+
+/* ── Instagram Feed ────────────────────────────────────────── */
+.instagram-embed-wrapper {
+  max-width: 480px;
+  margin: 0 auto;
+}
+.ig-feed-iframe {
+  width: 100%;
+  max-width: 480px;
+  height: 560px;
+  border: none;
+  border-radius: var(--radius-2xl);
+  display: block;
+  margin: 0 auto;
+}
+@media (max-width: 520px) {
+  .ig-feed-iframe {
+    height: 480px;
+  }
+}
+/* Click-to-load gate shown in place of the iframe until the visitor asks for it.
+   Sized close to the embed so consenting does not jolt the page. */
+.ig-consent {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-lg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-2xl);
+  background: var(--bg-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  text-align: center;
+}
+.ig-consent-text {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 40ch;
+}
+.ig-consent-link {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+}
+.ig-consent-link:hover { color: var(--kscw-gold); }
+.light .ig-consent-link:hover { color: #836408; }
+
+/* ── CTA Section ───────────────────────────────────────────── */
+/* Flat brand-blue band (svrz: no gradient); the rotated gold panel stays as a
+   faint brand mark. */
+.cta-section {
+  background: var(--kscw-blue);
+  color: var(--text-on-blue);
+  padding: var(--space-3xl) 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.cta-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -10%;
+  width: 60%;
+  height: 200%;
+  background: var(--kscw-gold);
+  transform: rotate(12deg);
+  opacity: 0.06;
+  pointer-events: none;
+}
+.cta-section h2 {
+  font-size: var(--text-3xl);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-md);
+  position: relative;
+}
+.cta-section p {
+  font-size: var(--text-lg);
+  opacity: 0.85;
+  margin-bottom: var(--space-xl);
+  position: relative;
+}
+.cta-trial-trainings {
+  position: relative;
+  margin: calc(var(--space-md) * -1) auto var(--space-xl);
+  max-width: 560px;
+  padding: var(--space-md) var(--space-lg);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-xl);
+  text-align: left;
+}
+.cta-trial-heading {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 var(--space-sm);
+  opacity: 0.8;
+}
+.cta-trial-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.cta-trial-list li {
+  font-size: var(--text-base);
+  line-height: 1.4;
+}
+.cta-trial-notes {
+  opacity: 0.7;
+  font-style: italic;
+}
+/* The body of a full team's CTA — it carries the whole message, since a full
+   team's section has no button under it. */
+.cta-section .cta-not-recruiting {
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0.95;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* P1 — Hero (calm, svrz_rc)                                   */
+/* ─────────────────────────────────────────────────────────── */
+/* The aurora glows, the drifting gold panel, the shimmering H1 and the pulsing
+   sport-button glow are gone: the hero surface, its gold panel and its H1 are
+   defined once, in chrome.css. Nothing here re-paints them. */
+
+/* ─────────────────────────────────────────────────────────── */
+/* P2 — Scroll progress, blur-fade variant, counter polish     */
+/* ─────────────────────────────────────────────────────────── */
+
+/* Scroll progress bar — fixed to top of viewport on every page. A thin brand
+   line; no glow. */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 1000;
+  pointer-events: none;
+  background: transparent;
+}
+.scroll-progress-bar {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, var(--kscw-blue), var(--kscw-gold));
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 80ms linear;
+}
+
+/* Blur-fade variant of the .fade-in reveal — kept, but a 2px blur, not 8px. */
+.fade-in.fade-in--blur {
+  filter: blur(2px);
+  transition:
+    opacity 300ms ease-out,
+    transform 300ms ease-out,
+    filter 300ms ease-out;
+}
+.fade-in.fade-in--blur.visible {
+  filter: blur(0);
+}
+
+/* Stat counter: the number counts up (stat-counters.ts toggles .counting); no
+   glow and no scale pulse while it does. */
+.stat-number {
+  display: inline-block;
+}
+.stat-number.counting {
+  text-shadow: none;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* P3 — Card-glow grid + 3D tilt (retired on content cards)     */
+/* ─────────────────────────────────────────────────────────── */
+
+/* The cursor spotlight (card-glow.ts sets --mouse-x / --mouse-y on cards inside a
+   .card-glow-grid) no longer paints anything: content cards stay calm. The island
+   and the grid class are left in place so pages need no change; the overlay is
+   simply not drawn. */
+.card-glow-grid > .card::after {
+  content: none;
+}
+
+/* 3D tilt — card-tilt.ts writes an inline transform on `.tilt-3d` elements. No
+   content card opts in any more (TeamCard dropped it); the rule stays for any
+   future non-content use. */
+.tilt-3d {
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow var(--transition-base);
+}
+.tilt-3d:hover {
+  box-shadow: var(--shadow-card-lg);
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* P4 — Tracing beam + sparkles canvas                          */
+/* ─────────────────────────────────────────────────────────── */
+
+/* Tracing beam — a thin scroll-progress rule down the left of a wrapper, shown
+   only on wide screens. Flat: no glow, no pulsing dot. */
+.tracing-beam-wrapper {
+  position: relative;
+}
+.tracing-beam {
+  position: absolute;
+  top: 0;
+  left: 18px;
+  bottom: 0;
+  width: 2px;
+  display: none;
+  pointer-events: none;
+  z-index: 5;
+}
+@media (min-width: 1280px) {
+  .tracing-beam {
+    display: block;
+  }
+}
+.tracing-beam::before {
+  /* Track (hairline over the whole wrapper) */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 2px;
+}
+.tracing-beam::after {
+  /* Filled portion driven by --beam-progress (0..1) */
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: calc(var(--beam-progress, 0) * 100%);
+  background: var(--kscw-blue);
+  border-radius: 2px;
+}
+.tracing-beam-dot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--kscw-gold);
+  box-shadow: 0 0 0 3px var(--bg-white);
+}
+
+/* Sparkles canvas — sits inside .page-header behind h1/p (which are z-index:1).
+   Toned down to a faint texture rather than a light show. */
+.sparkles-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
+}
+
+/* Reduced motion, part two. It sits at the END on purpose: the hover lifts it
+   cancels (cards, sport buttons, team photos) are declared after the main
+   reduced-motion block above, and an earlier rule of equal or lower specificity
+   would lose to them. */
+@media (prefers-reduced-motion: reduce) {
+  a.card:hover,
+  .card.news-card:hover,
+  .card.event-card--clickable:hover,
+  .team-card:hover,
+  .sport-btn:hover,
+  .sport-btn:active,
+  .btn:active,
+  .sport-btn:hover .sport-btn-icon,
+  .team-card--photo:hover .team-card-bg img {
+    transform: none;
+  }
+  .card,
+  .btn,
+  .sport-btn,
+  .sport-btn-icon,
+  .team-card--photo .team-card-bg img {
+    transition: none;
+  }
+}

@@ -1,0 +1,625 @@
+/* ═══════════════════════════════════════════════════════════════
+   foundation.css — fonts, design tokens (base / dark-default / .light),
+   theme overrides, reset, layout, utility classes and focus states.
+   Imported first by global.css; see the import-order note there.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════
+   KSC Wiedikon — Website Design System
+   Athletic Precision: bold, energetic, block-based
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Inter, self-hosted ────────────────────────────────────────
+   Was two cross-origin round trips to fonts.googleapis.com +
+   fonts.gstatic.com (a CSS file, then the font it names), which is why every
+   cold load painted in the system sans and then re-laid-out the whole page. The
+   German visitor saw that too — it was the one staged repaint that was not
+   about language at all.
+
+   ONE variable file per subset, the build WITH the optical-size axis (wght
+   100-900 + opsz 14-32), so the body can pin "opsz" 32 — Inter Display at every
+   size, the same cut svrz_rc uses. `latin` is 73 KB and always needed;
+   `latin-ext` is 133 KB and fetched only if a glyph in its range actually
+   appears — roster names like Čačić or Włodarczyk are why it is here at all.
+   Both are preloaded-or-not by BaseLayout, which preloads only `latin`.
+
+   Update procedure: copy
+   node_modules/@fontsource-variable/inter/files/inter-latin{,-ext}-opsz-normal.woff2
+   (from any checkout that has @fontsource-variable/inter, e.g. svrz_rc) over
+   public/fonts/inter-latin{,-ext}.woff2 — keep the filenames, the preload and
+   fonts-self-hosted.spec.ts key on them — and keep the unicode-range values
+   below in step with that package's opsz.css. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin.woff2') format('woff2-variations'), url('/fonts/inter-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/inter-latin-ext.woff2') format('woff2-variations'), url('/fonts/inter-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Metric-matched stand-in, used for the one swap that is left.
+   `font-display: swap` still means the first paint can happen in a fallback, so
+   the fallback is adjusted to Inter's metrics — otherwise the text reflows when
+   the real font arrives, which is the shift this whole change is about. The
+   numbers are the standard Inter-over-Arial overrides. */
+@font-face {
+  font-family: 'Inter Fallback';
+  /* Three names, one set of metrics: Helvetica and Liberation Sans are both
+     metric-compatible with Arial, so the overrides below hold for all three. Arial
+     alone made this face fail outright on Linux (no Arial installed), which dropped
+     the text to an unadjusted sans-serif — exactly the reflow it exists to prevent. */
+  src: local('Arial'), local('Helvetica'), local('Liberation Sans');
+  size-adjust: 107.12%;
+  ascent-override: 90.2%;
+  descent-override: 22.48%;
+  line-gap-override: 0%;
+}
+
+/* ── Design Tokens ─────────────────────────────────────────── */
+:root {
+  color-scheme: dark light;
+
+  /* Brand */
+  --kscw-blue: #4A55A2;
+  --kscw-blue-dark: #3a4382;
+  --kscw-blue-light: #6b74b8;
+  --kscw-gold: #FFC832;
+  --kscw-gold-dark: #e6b42d;
+  --kscw-gold-light: #ffd966;
+
+  /* Surfaces — light neutrals are warm stone (svrz_rc), brand hues unchanged.
+     These base values are what the .light block below repeats; the dark-default
+     :root after this one overrides them. Keep the three blocks in step. */
+  --bg-white: #ffffff;       /* cards */
+  --bg-light: #f5f5f4;       /* stone-100 — page + section-alt */
+  --bg-muted: #fafaf9;       /* stone-50 — tinted inner panels, table head, row hover */
+  --bg-dark: #1a1f36;
+  --bg-darker: #12162a;
+
+  /* Text */
+  --text-primary: #1c1917;   /* stone-900 */
+  --text-secondary: #57534e; /* stone-600 */
+  --text-muted: #736b66;     /* stone-500, one step darker: 4.8:1 on the stone-100 page, 5.2:1 on white */
+  --text-on-dark: #e2e8f0;
+  --text-on-blue: #ffffff;
+  --text-on-gold: #1a1f36;
+
+  /* Sport Accents */
+  --vb-blue: #1e40af;
+  --vb-rose: #be123c;
+  --bb-orange: #ea580c;
+  --bb-purple: #7e22ce;
+
+  /* Functional */
+  --success: #059669;
+  --danger: #dc2626;
+  --border: #e7e5e4;         /* stone-200 */
+  --border-strong: #d6d3d1;  /* stone-300 — control borders (inputs, selects) */
+  --border-dark: #334155;
+  /* Card hairline: the border at 70%, so white cards on the stone page read as
+     lifted by their shadow rather than outlined. */
+  --hairline: rgba(231, 229, 228, 0.7);
+  /* Selected / active state (nav, segmented controls, pills): an INVERTED
+     neutral, never the brand blue — blue stays for links and primary actions. */
+  --selected-bg: #0f172a;
+  --selected-fg: #ffffff;
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+  --space-3xl: 4rem;
+  --space-4xl: 6rem;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1rem;        /* page / content cards (svrz rounded-2xl) */
+  --radius-3xl: 1.5rem;      /* hero + auth cards */
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+  /* Card elevation: a tight contact shadow plus a soft, low drop — warm-tinted
+     (stone-900) so it sits on the stone page instead of greying it. */
+  --shadow-card: 0 1px 2px -1px rgb(28 25 23 / 0.06), 0 6px 20px -8px rgb(28 25 23 / 0.12);
+  --shadow-card-lg: 0 2px 4px -2px rgb(28 25 23 / 0.08), 0 16px 40px -12px rgb(28 25 23 / 0.16);
+
+  /* Typography */
+  --font-display: 'Inter', 'Inter Fallback', sans-serif;
+  --font-body: 'Inter', 'Inter Fallback', sans-serif;
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.25rem;
+  --text-2xl: clamp(1.25rem, 2vw, 1.5rem);
+  --text-3xl: clamp(1.5rem, 3vw, 1.875rem);
+  --text-4xl: clamp(1.875rem, 4vw, 2.25rem);
+  --text-5xl: clamp(2.25rem, 5vw, 3rem);
+  --text-hero: clamp(2.5rem, 6vw, 4rem);
+  /* Inter character variants, as in svrz_rc: cv02 open 4, cv03 open 6,
+     cv04 open 9, cv11 single-storey a. */
+  --font-features: "cv02", "cv03", "cv04", "cv11";
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-base: 250ms ease;
+  --transition-slow: 400ms ease;
+
+  /* Z-Index Scale */
+  --z-base: 1;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+}
+
+/* ── Dark Mode (default) ───────────────────────────────────── */
+:root {
+  --bg-white: #0f1729;
+  --bg-light: #1a2234;
+  --bg-muted: #141d30;
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  /* Was #64748b — the SAME value as the light theme used, which on this near-black
+     ground measured 3.3–3.8:1 and carried fixture times, news dates, table headers
+     and roster positions: the practical information members and opponents come for.
+     #78889f was 5.0:1 on the page but only 4.4:1 on the --bg-light cards the
+     restyle puts most content on (roster positions, form hints, doc versions).
+     #8090a7 is 4.9:1 on a card, 5.5:1 on the page, and still reads as muted
+     next to --text-secondary. */
+  --text-muted: #8090a7;
+  --border: #2d3a52;
+  /* The brand blue is a FILL colour. As type on this ground it measures 2.65:1, so
+     every `color:` use of it goes through this token instead, which the .light block
+     resolves straight back to --kscw-blue. 7.4:1 here. */
+  --accent-text: #9aa3da;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -2px rgba(0,0,0,0.2);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -4px rgba(0,0,0,0.2);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.4), 0 8px 10px -6px rgba(0,0,0,0.2);
+  /* svrz_rc foundation tokens — dark twins. The dark neutrals above do not move. */
+  --shadow-card: 0 1px 2px -1px rgba(0,0,0,.4), 0 6px 20px -8px rgba(0,0,0,.55);
+  --shadow-card-lg: 0 2px 4px -2px rgba(0,0,0,.45), 0 16px 40px -12px rgba(0,0,0,.6);
+  --hairline: rgba(45, 58, 82, 0.7);   /* --border at 70% */
+  --border-strong: #3a4a66;            /* control borders (inputs, selects) */
+  --selected-bg: #e2e8f0;
+  --selected-fg: #0f1729;
+}
+.light {
+  /* Warm stone neutrals (svrz_rc). Brand, sport and status hues are untouched. */
+  --bg-white: #ffffff;       /* cards */
+  --bg-light: #f5f5f4;       /* stone-100 — page + section-alt */
+  --bg-muted: #fafaf9;       /* stone-50 */
+  --text-primary: #1c1917;   /* stone-900 */
+  --text-secondary: #57534e; /* stone-600 */
+  /* stone-500 taken one step darker (#78716c is only 4.4:1 on the stone-100 page):
+     4.8:1 on the page, 5.2:1 on a white card. */
+  --text-muted: #736b66;
+  --border: #e7e5e4;         /* stone-200 */
+  --border-strong: #d6d3d1;  /* stone-300 — control borders */
+  --hairline: rgba(231, 229, 228, 0.7);
+  --selected-bg: #0f172a;
+  --selected-fg: #ffffff;
+  --shadow-card: 0 1px 2px -1px rgb(28 25 23 / 0.06), 0 6px 20px -8px rgb(28 25 23 / 0.12);
+  --shadow-card-lg: 0 2px 4px -2px rgb(28 25 23 / 0.08), 0 16px 40px -12px rgb(28 25 23 / 0.16);
+  --accent-text: var(--kscw-blue);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.05);
+}
+
+/* Theme overrides for specific components.
+   `:root .x` outranks the component's own `.x` rule (0,2,0 over 0,1,0) in BOTH
+   themes, and `.light .x` then re-overrides it for light. So every value here is a
+   token: the dark-default :root and .light resolve it per theme. A component
+   restyle that seems to "do nothing" is usually being beaten by a rule in here. */
+:root .site-header {
+  /* Dark keeps its old rgba(15,23,41,.95) — that IS --bg-white at 95%. */
+  background: color-mix(in srgb, var(--bg-white) 95%, transparent);
+  border-bottom-color: var(--hairline);
+}
+.light .site-header {
+  background: color-mix(in srgb, var(--bg-white) 92%, transparent);
+}
+:root .nav-link:hover {
+  background: var(--bg-muted);
+}
+/* Current section: the inverted neutral (svrz nav), not a brand tint. */
+:root .nav-link.active {
+  background: var(--selected-bg);
+  color: var(--selected-fg);
+}
+:root .nav-dropdown {
+  background: var(--bg-light);
+  border-color: var(--border);
+}
+.light .nav-dropdown {
+  background: var(--bg-white);
+}
+:root .dropdown-link:hover {
+  background: var(--bg-muted);
+}
+:root .mobile-nav {
+  background: var(--bg-white);
+}
+.light .mobile-nav {
+  background: var(--bg-white);
+}
+:root .card {
+  background: var(--bg-light);
+  border-color: var(--hairline);
+}
+.light .card {
+  background: var(--bg-white);
+  border-color: var(--hairline);
+}
+:root .card-img-placeholder {
+  background: linear-gradient(135deg, var(--bg-light) 0%, var(--border) 100%);
+}
+.light .card-img-placeholder {
+  background: linear-gradient(135deg, var(--bg-muted) 0%, var(--border) 100%);
+}
+:root tr:hover td {
+  background: var(--bg-muted);
+}
+:root .game-table tr:hover td {
+  background: var(--bg-muted);
+}
+:root .badge {
+  background: rgba(255,255,255,0.08);
+}
+.light .badge {
+  background: var(--bg-light);
+}
+/* The dark theme darkened these badges' backgrounds but left the text at the
+   light-theme colours — mid-blue #4A55A2 and ochre #836408 — which land at
+   ~2:1 against the dark card and fail WCAG AA. Same rule .game-cup-icon already
+   follows in reverse: bright on dark, ochre only under .light.
+   The :not(.light) is load-bearing. Plain `:root .badge-gold` outranks the base
+   `.badge-gold` (0,2,0 over 0,1,0) in BOTH themes, which would put bright gold
+   on the light theme's white card — the washout .game-cup-icon guards against. */
+:root:not(.light) .badge-blue {
+  background: rgba(74, 85, 162, 0.2);
+  /* A tint of --kscw-blue rather than --kscw-blue-light (#6b74b8), which only
+     reaches 3.1:1 on this badge's own translucent background. --accent-text is
+     that tint (#9aa3da) in the dark theme. */
+  color: var(--accent-text);
+}
+:root:not(.light) .badge-gold {
+  background: rgba(255, 200, 50, 0.2);
+  color: var(--kscw-gold);
+}
+/* "Team full" is a solid gold badge with navy text. `:root .badge` / `.light .badge`
+   (0,2,0) repaint every badge's ground, which left this one navy-on-navy (1.3:1)
+   in dark. Pin the gold in both themes. */
+:root .badge-team-full {
+  background: var(--kscw-gold);
+  color: var(--text-on-gold);
+}
+:root .form-input,
+:root .form-textarea,
+:root .form-select {
+  background: var(--bg-light);
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+.light .form-input,
+.light .form-textarea,
+.light .form-select {
+  background: var(--bg-white);
+  border-color: var(--border-strong);
+}
+:root .roster-card {
+  border-color: var(--hairline);
+}
+:root .roster-avatar {
+  background: var(--border);
+}
+.light .roster-avatar {
+  background: var(--bg-light);
+}
+:root .sponsor-item {
+  background: var(--bg-light);
+  border-color: var(--hairline);
+}
+.light .sponsor-item {
+  background: var(--bg-white);
+  border-color: var(--hairline);
+}
+:root .sponsor-card {
+  background: var(--bg-light);
+  border-color: var(--hairline);
+}
+.light .sponsor-card {
+  background: var(--bg-white);
+  border-color: var(--hairline);
+}
+/* The carousel fades into the surface it sits on: the card colour in dark, the
+   stone page / section band in light. */
+:root .sponsor-overflow::before {
+  background: linear-gradient(to right, var(--bg-light), transparent);
+}
+:root .sponsor-overflow::after {
+  background: linear-gradient(to left, var(--bg-light), transparent);
+}
+.light .sponsor-overflow::before {
+  background: linear-gradient(to right, var(--bg-light), transparent);
+}
+.light .sponsor-overflow::after {
+  background: linear-gradient(to left, var(--bg-light), transparent);
+}
+
+/* Team-page sponsors tab — each sponsor in its own equal square box.
+   Logos sit inside on a white field (sponsor logos assume light bg); teams
+   without a logo fall back to the KSC Wiedikon shield. */
+.sponsors-page-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-lg);
+}
+@media (max-width: 1024px) {
+  .sponsors-page-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 640px) {
+  .sponsors-page-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.sponsors-page-grid .sponsor-page-card {
+  aspect-ratio: 1 / 1;
+  background: #ffffff;       /* logo backplate: white in both themes */
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  text-align: center;
+  text-decoration: none;
+  color: #1c1917;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+/* svrz link-card hover: lift 1px onto the larger card shadow. */
+a.sponsor-page-card:hover {
+  box-shadow: var(--shadow-card-lg);
+  transform: translateY(-1px);
+}
+.sponsors-page-grid .sponsor-logo {
+  max-width: 100%;
+  max-height: 70%;
+  object-fit: contain;
+}
+.sponsors-page-grid .sponsor-logo--fallback {
+  max-height: 60%;
+  opacity: 0.9;
+}
+.sponsors-page-grid .sponsor-name {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: #1c1917;
+  line-height: 1.2;
+}
+
+/* Contact form — note shown when the chosen team isn't recruiting. */
+.team-recruiting-note {
+  margin-top: var(--space-sm);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  color: var(--text-muted, #94a3b8);
+}
+:root .nav-logo span {
+  color: var(--text-primary);
+}
+.light .nav-logo span {
+  color: var(--accent-text);
+}
+:root .hamburger-icon span {
+  background: var(--text-primary);
+}
+.light .hamburger-icon span {
+  background: var(--text-primary);
+}
+
+/* ── Theme Toggle ──────────────────────────────────────────── */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 44px;
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.theme-toggle:hover {
+  background: rgba(255,255,255,0.15);
+  color: var(--text-primary);
+}
+.light .theme-toggle {
+  background: rgba(0,0,0,0.04);
+}
+.light .theme-toggle:hover {
+  background: rgba(0,0,0,0.08);
+}
+
+/* ── Prevent Samsung Internet / Chrome forced dark mode ────── */
+:root, body, .hero, .site-header, .site-footer,
+.card, .contact-form, .contact-info-card,
+.section, .section-alt, .section-dark, .cta-section,
+.page-header, .team-hero, .mobile-nav {
+  -webkit-color-adjust: exact;
+  color-adjust: exact;
+  forced-color-adjust: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: dark; }
+}
+
+/* ── Reset ─────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background: var(--bg-white);
+  /* Inter Display at every size (svrz_rc): the opsz axis pinned at 32 rather than
+     left to font-optical-sizing, which would hand small text the Text cut. */
+  font-variation-settings: "opsz" 32;
+  font-optical-sizing: none;
+  font-feature-settings: var(--font-features);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background var(--transition-base), color var(--transition-base);
+  overflow-x: hidden;
+}
+/* Light theme: white cards on a warm stone page. Dark keeps its page on --bg-white
+   (the darkest navy) with cards one step up on --bg-light. */
+.light body { background: var(--bg-light); }
+body.nav-open { overflow: hidden; }
+img, svg { display: block; max-width: 100%; height: auto; }
+p svg, h3 svg, span svg { display: inline; height: auto; }
+a { color: inherit; text-decoration: none; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: none; background: none; }
+ul, ol { list-style: none; }
+/* Sentence case: headings render as authored. Uppercase is kept only for the
+   11px micro-labels (eyebrows, table heads), which set it themselves. */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+h1, h2 { letter-spacing: -0.02em; }
+
+/* ── Layout ────────────────────────────────────────────────── */
+.container {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 var(--space-lg);
+}
+
+/* Prose measure. `.container` is centred but 1440px wide, so a bare `max-width` on a
+   child pins it to the LEFT edge and reads as broken on a wide desktop — that is what
+   these two exist to prevent. `.measure` caps line length for readability; pair it with
+   `.measure-center` to actually centre the block. Tiles and grids want neither: let them
+   have the full container. */
+.measure {
+  max-width: 70ch;
+}
+.measure-center {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.section {
+  padding: var(--space-3xl) 0;
+}
+.section-alt {
+  padding: var(--space-3xl) 0;
+  background: var(--bg-light);
+}
+.section-dark {
+  padding: var(--space-3xl) 0;
+  background: var(--bg-dark);
+  color: var(--text-on-dark);
+}
+
+.grid { display: grid; gap: var(--space-lg); }
+.grid-2 { grid-template-columns: 1fr; }
+.grid-3 { grid-template-columns: 1fr; }
+.grid-4 { grid-template-columns: 1fr; }
+
+@media (min-width: 640px) {
+  .grid-2 { grid-template-columns: repeat(2, 1fr); }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 768px) {
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1024px) {
+  .grid-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.flex-wrap { flex-wrap: wrap; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.justify-center { justify-content: center; }
+.gap-sm { gap: var(--space-sm); }
+.gap-md { gap: var(--space-md); }
+.gap-lg { gap: var(--space-lg); }
+.gap-xl { gap: var(--space-xl); }
+.text-center { text-align: center; }
+
+/* ── Utility ───────────────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+.text-gold { color: var(--kscw-gold); }
+.text-blue { color: var(--accent-text); }
+.text-muted { color: var(--text-muted); }
+.text-sm { font-size: var(--text-sm); }
+.font-display { font-family: var(--font-display); }
+.font-bold { font-weight: 700; }
+.mt-sm { margin-top: var(--space-sm); }
+.mt-md { margin-top: var(--space-md); }
+.mt-lg { margin-top: var(--space-lg); }
+.mt-xl { margin-top: var(--space-xl); }
+.mb-md { margin-bottom: var(--space-md); }
+.mb-lg { margin-bottom: var(--space-lg); }
+.w-full { width: 100%; }
+
+/* ── Focus States ──────────────────────────────────────────── */
+:focus-visible {
+  outline: 3px solid var(--kscw-blue);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--kscw-blue);
+  outline-offset: 2px;
+}
+

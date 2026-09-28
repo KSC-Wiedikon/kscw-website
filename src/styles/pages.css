@@ -1,0 +1,431 @@
+/* ═══════════════════════════════════════════════════════════════
+   pages.css — page-specific blocks (registration links / ReadVolley /
+   scorer courses, newsletter), per-language content blocks, and print.
+   Imported last: the print block must stay after everything it hides.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Page-card surface ─────────────────────────────────────────
+   The surface every page-local card (value, hall, doc, contact, feedback
+   and form panels) sits on — the same pair foundation.css gives `.card`:
+   white on the stone page in light, one navy step up from the page in dark.
+   Page <style> blocks read these instead of hardcoding #fff, which is what
+   left white cards (with dark-theme text) glaring in the dark theme. */
+:root {
+  --page-card-bg: var(--bg-light);
+  --page-inner-bg: var(--bg-muted);   /* tinted inner block — no card in a card */
+}
+.light {
+  --page-card-bg: var(--bg-white);
+  --page-inner-bg: var(--bg-muted);
+}
+
+/* Page call-to-action button: one step up from the default .btn (the pages
+   used to inflate it inline with font-size/padding), still on the height scale. */
+.btn.btn-cta {
+  min-height: 48px;
+  font-size: var(--text-base);
+  padding: 0.75rem 1.75rem;
+}
+
+/* Icon tile beside a card's text (partner, values, docs): a brand-TINTED
+   rounded square, not a solid disc with a white glyph — white on gold was
+   ~1.5:1. Gold as a glyph colour needs the ochre on light grounds. */
+.icon-tile {
+  flex-shrink: 0;
+  min-width: 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.icon-tile--blue { background: rgba(74, 85, 162, 0.14); color: var(--accent-text); }
+.icon-tile--gold { background: rgba(255, 200, 50, 0.16); color: var(--kscw-gold); }
+.light .icon-tile--gold { color: #836408; }
+
+/* ── Notices (form feedback, upload status, warnings) ──────────
+   The svrz alert recipe: tinted fill, tinted border, tone-700 text in light
+   and tone-300 on a deep tint in dark. The dark values are the DEFAULT
+   (`:root`), the light ones the `.light` override — this site's theme is a
+   class, so `prefers-color-scheme` must never pick these. Status hues only;
+   brand colours are not used for state. */
+:root {
+  --notice-error-bg: rgba(69, 10, 10, 0.45);
+  --notice-error-border: rgba(127, 29, 29, 0.7);
+  --notice-error-fg: #fca5a5;
+  --notice-success-bg: rgba(2, 44, 34, 0.5);
+  --notice-success-border: rgba(6, 78, 59, 0.75);
+  --notice-success-fg: #6ee7b7;
+  --notice-warning-bg: rgba(69, 26, 3, 0.45);
+  --notice-warning-border: rgba(120, 53, 15, 0.7);
+  --notice-warning-fg: #fcd34d;
+  --notice-info-bg: rgba(8, 47, 73, 0.5);
+  --notice-info-border: rgba(12, 74, 110, 0.75);
+  --notice-info-fg: #7dd3fc;
+}
+.light {
+  --notice-error-bg: #fef2f2;
+  --notice-error-border: #fecaca;
+  --notice-error-fg: #b91c1c;
+  --notice-success-bg: #ecfdf5;
+  --notice-success-border: #a7f3d0;
+  --notice-success-fg: #047857;
+  --notice-warning-bg: #fffbeb;
+  --notice-warning-border: #fde68a;
+  --notice-warning-fg: #92400e;
+  --notice-info-bg: #f0f9ff;
+  --notice-info-border: #bae6fd;
+  --notice-info-fg: #0369a1;
+}
+.notice {
+  display: block;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1.5;
+}
+.notice--error   { background: var(--notice-error-bg);   border-color: var(--notice-error-border);   color: var(--notice-error-fg); }
+.notice--success { background: var(--notice-success-bg); border-color: var(--notice-success-border); color: var(--notice-success-fg); }
+.notice--warning { background: var(--notice-warning-bg); border-color: var(--notice-warning-border); color: var(--notice-warning-fg); }
+.notice--info    { background: var(--notice-info-bg);    border-color: var(--notice-info-border);    color: var(--notice-info-fg); }
+/* /weiteres/anmeldung-dokumente — the missing-document slots are built at
+   runtime by anmeldung-dokumente.js, so their rules live here (global), not
+   in the page's scoped <style>. The slot list sits on one page card. */
+#docs-slots {
+  background: var(--page-card-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-lg);
+}
+.docs-slots-head {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+}
+.docs-slot {
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--border);
+}
+.docs-slot:last-of-type {
+  border-bottom: none;
+}
+.docs-slot-label {
+  display: block;
+  font-weight: 500;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+.btn.docs-slot-dl {
+  margin-bottom: var(--space-sm);
+}
+
+/* Inline status text (no box) — upload rows, field hints. */
+.status-text--error   { color: var(--notice-error-fg); }
+.status-text--success { color: var(--notice-success-fg); }
+.status-text--warning { color: var(--notice-warning-fg); }
+
+/* ReadVolley embed */
+.reg-iframe-wrapper {
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-card);
+  background: var(--page-card-bg);
+}
+/* Inside an accordion panel (reglemente) the embed is an inner block, not a
+   second card: no shadow, one radius step down. */
+.accordion-item .reg-iframe-wrapper {
+  border-radius: var(--radius-lg);
+  box-shadow: none;
+}
+.reg-iframe-wrapper iframe {
+  width: 100%;
+  height: 75vh;
+  border: none;
+  display: block;
+}
+/* Scorer-course cards (built by src/islands/scorer-courses.ts). The layout
+   used to be inline style strings in the island; these carry it now. */
+.scorer-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+.scorer-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-md);
+  flex-wrap: wrap;
+}
+.scorer-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+/* Date + time: the brand as TYPE goes through --accent-text (the raw brand blue
+   is 2.65:1 on the dark card). */
+.scorer-when {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--accent-text);
+  font-variant-numeric: tabular-nums;
+}
+.scorer-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+/* Course mode as a status pill (svrz: 11px/600, sentence case). */
+.chip.scorer-mode-chip {
+  background: var(--kscw-gold);
+  color: var(--text-on-gold);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  padding: 0.25em 0.75em;
+}
+.scorer-soon {
+  color: var(--text-muted);
+  font-style: italic;
+  margin: 0;
+}
+.scorer-docs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border);
+}
+/* Scorer-course action buttons (sign-up + add to calendar) */
+.scorer-actions {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.scorer-location {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+.scorer-host {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-style: italic;
+  margin: calc(var(--space-xs) * -1) 0 0;
+}
+/* Sign-up deadline still ahead — shown alongside the course info. */
+.scorer-deadline {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin: 0;
+}
+/* Sign-up deadline passed — replaces the sign-up button on the card. Reads as
+   a stated fact, not an error: muted, not red. */
+.scorer-closed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin: 0;
+}
+/* Mobile: long sign-up/calendar/doc labels must wrap inside the card
+   instead of overflowing (.btn is white-space: nowrap by default). */
+@media (max-width: 768px) {
+  [data-scorer-courses] .btn {
+    width: 100%;
+    white-space: normal;
+    text-align: center;
+  }
+}
+@media (max-width: 768px) {
+  .accordion-header {
+    padding: var(--space-md) var(--space-lg);
+    font-size: var(--text-base);
+  }
+  .accordion-body {
+    padding: 0 var(--space-lg) var(--space-md);
+  }
+  .reg-link {
+    padding: var(--space-sm) var(--space-md);
+  }
+  .reg-iframe-wrapper iframe {
+    height: 60vh;
+  }
+}
+
+/* ── Newsletter Section ────────────────────────────────────── */
+/* The sign-up sits on one page card (svrz: white on stone, navy step in dark). */
+.newsletter-section {
+  text-align: center;
+  background: var(--page-card-bg);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-xl);
+}
+@media (max-width: 640px) {
+  .newsletter-section { padding: var(--space-lg); }
+}
+.newsletter-section h2 {
+  font-size: var(--text-2xl);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-sm);
+}
+.newsletter-section p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-lg);
+}
+.newsletter-section form {
+  text-align: left;
+}
+.nl-categories {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+/* Newsletter feedback (newsletter-form.js sets form-feedback--success|error).
+   Pages with their own scoped .form-feedback (kontakt) still win on specificity. */
+.form-feedback {
+  margin-top: var(--space-md);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  text-align: left;
+}
+.form-feedback--success { background: var(--notice-success-bg); border-color: var(--notice-success-border); color: var(--notice-success-fg); }
+.form-feedback--error   { background: var(--notice-error-bg);   border-color: var(--notice-error-border);   color: var(--notice-error-fg); }
+.nl-cat-option {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  user-select: none;
+}
+.nl-cat-option input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 4px;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  background: transparent;
+}
+.nl-cat-option input[type="checkbox"]:checked {
+  background: var(--kscw-blue);
+  border-color: var(--kscw-blue);
+}
+.nl-cat-option input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 6px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* ── Per-language content blocks ─────────────────────────────
+   For hard-coded bilingual content that can't be a single i18n key
+   (e.g. the changelog prose). Render BOTH language blocks and show the
+   one matching <html lang>, which the i18n engine / pre-paint script set.
+   German is the default, so EN blocks start hidden. */
+[data-lang-only="en"] { display: none; }
+html[lang="en"] [data-lang-only="en"] { display: revert; }
+html[lang="en"] [data-lang-only="de"] { display: none; }
+
+/* ── Print ─────────────────────────────────────────────────────
+   Dark is this site's DEFAULT theme (the `:root` block above; `.light` is the
+   opt-in override), and printers do not paint backgrounds. Without this block a
+   page printed exactly as it looked on screen minus the ground: headings computed
+   to rgb(255,255,255) and body text to roughly 1.14:1 — a coach printing hall
+   addresses for a noticeboard got a near-blank sheet.
+
+   So the first job here is to force the LIGHT token set regardless of the visitor's
+   theme; hiding chrome is secondary. Overriding the tokens rather than the
+   components means every rule that already reads `var(--text-primary)` follows
+   along, including the ones on pages this file has never heard of. */
+@media print {
+  :root,
+  :root.light {
+    --bg-white: #ffffff;
+    --bg-light: #ffffff;
+    --bg-muted: #ffffff;
+    --text-primary: #000000;
+    --text-secondary: #1f2937;
+    --text-muted: #374151;
+    --border: #9ca3af;
+    --shadow-sm: none;
+    --shadow-md: none;
+    --shadow-lg: none;
+    --shadow-xl: none;
+  }
+
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  /* Navigation, the reading-progress bar and decorative canvases carry no
+     information on paper, and the sparkles canvas prints as a grey block. */
+  .site-header,
+  .scroll-progress,
+  .site-footer,
+  footer,
+  .sparkles-canvas,
+  .cta-section,
+  .search-overlay,
+  .nav-hamburger,
+  [data-lucide] {
+    display: none !important;
+  }
+
+  /* Hardcoded-for-dark literals that no token reaches. */
+  .roster-number.is-libero,
+  .roster-table .rt-num.is-libero { color: #000000; }
+  .roster-number.is-captain,
+  .roster-table .rt-num.is-captain { color: #7a5c07; }
+
+  a { text-decoration: underline; }
+  /* A printed page cannot be clicked, so an external link's destination has to be
+     legible. Internal links are left alone — the path alone tells a reader nothing
+     and the noise would swamp the fixture tables this is mostly used for. */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    word-break: break-all;
+  }
+
+  .card,
+  .legal-card,
+  .roster-card,
+  table { break-inside: avoid; }
+
+  h1, h2, h3 { break-after: avoid; }
+
+  main { padding-top: 0 !important; }
+}
+

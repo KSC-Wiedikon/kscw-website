@@ -1144,7 +1144,7 @@
   function createChip(teamShort) {
     var chip = document.createElement('span');
     chip.className = 'chip';
-    chip.style.background = '#6b7280'; chip.style.color = '#fff'; chip.textContent = teamShort;
+    chip.style.background = '#78716c'; chip.style.color = '#fff'; chip.textContent = teamShort;
     return chip;
   }
 

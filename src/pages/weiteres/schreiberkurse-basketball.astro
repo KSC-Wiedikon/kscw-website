@@ -155,7 +155,7 @@ const PROBASKET_OFFICIALS_URL = 'https://www.probasket.ch/offiziellenwesen';
         ))}
       </ol>
       <div style="text-align: center; margin-top: var(--space-xl);">
-        <a href={ELEARNING_URL} target="_blank" rel="noopener noreferrer" class="btn btn-gold" style="font-size: 1.125rem; padding: var(--space-md) var(--space-xl);">
+        <a href={ELEARNING_URL} target="_blank" rel="noopener noreferrer" class="btn btn-gold btn-cta">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
           <span data-i18n="bbScorerElearningCta">{t(locale, 'bbScorerElearningCta')}</span>
         </a>
@@ -235,7 +235,7 @@ const PROBASKET_OFFICIALS_URL = 'https://www.probasket.ch/offiziellenwesen';
         <p style="font-size: 1.125rem; line-height: 1.8; color: var(--text-secondary); margin-bottom: var(--space-lg);" data-i18n="bbScorerProBasket">
           {t(locale, 'bbScorerProBasket')}
         </p>
-        <a href={PROBASKET_OFFICIALS_URL} target="_blank" rel="noopener noreferrer" class="btn btn-gold" style="font-size: 1.125rem; padding: var(--space-md) var(--space-xl);">
+        <a href={PROBASKET_OFFICIALS_URL} target="_blank" rel="noopener noreferrer" class="btn btn-gold btn-cta">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 8px;"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
           <span data-i18n="bbScorerProBasketLink">{t(locale, 'bbScorerProBasketLink')}</span>
         </a>
@@ -263,6 +263,9 @@ const PROBASKET_OFFICIALS_URL = 'https://www.probasket.ch/offiziellenwesen';
   }
   .level-head h3 {
     margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   /* Numbered path to the licence. The counter is drawn from step-num, not from
@@ -289,13 +292,15 @@ const PROBASKET_OFFICIALS_URL = 'https://www.probasket.ch/offiziellenwesen';
     height: 2.25rem;
     border-radius: var(--radius-full);
     background: var(--kscw-blue);
-    color: #fff;
+    color: var(--text-on-blue);
     font-family: var(--font-display);
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
   }
   .step-title {
     margin: 0 0 var(--space-xs);
     font-size: var(--text-base);
+    font-weight: 600;
   }
   .step-desc {
     margin: 0;
@@ -316,6 +321,9 @@ const PROBASKET_OFFICIALS_URL = 'https://www.probasket.ch/offiziellenwesen';
   }
   .doc-group-head h3 {
     margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
   .doc-list {
     list-style: none;
@@ -329,15 +337,17 @@ const PROBASKET_OFFICIALS_URL = 'https://www.probasket.ch/offiziellenwesen';
     display: flex;
     align-items: flex-start;
     gap: var(--space-sm);
+    min-height: 44px;
     padding: var(--space-sm);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-md);
     text-decoration: none;
     color: inherit;
     transition: background 0.15s ease;
   }
+  /* Row hover = the muted neutral (svrz), inside the card. */
   .doc-link:hover,
   .doc-link:focus-visible {
-    background: var(--bg-light);
+    background: var(--bg-muted);
   }
   .doc-icon {
     width: 18px;
@@ -353,8 +363,9 @@ const PROBASKET_OFFICIALS_URL = 'https://www.probasket.ch/offiziellenwesen';
     min-width: 0;
   }
   .doc-title {
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.4;
+    color: var(--text-primary);
   }
   .doc-link:hover .doc-title {
     color: var(--accent-text);
@@ -367,6 +378,7 @@ const PROBASKET_OFFICIALS_URL = 'https://www.probasket.ch/offiziellenwesen';
   }
   .doc-stand {
     font-size: var(--text-xs);
-    color: var(--text-secondary);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
   }
 </style>

@@ -66,14 +66,16 @@ const spanTo = groupSpanTo(code, Object.keys(data))
        (light grey) rendered on a white card = unreadable. --bg-light is
        defined for both themes and matches the site's .card surface. */
     background: var(--bg-light);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    /* svrz page card: hairline + soft card shadow, rounded-2xl. A static card —
+       it is not a link — so it no longer lifts on hover. */
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
     padding: var(--space-lg);
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
   }
-  .youth-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    transform: translateY(-2px);
+  /* Light theme: white card on the stone page, as every other .card. */
+  :global(.light) .youth-card {
+    background: var(--bg-white);
   }
   .youth-card-header {
     display: flex;
@@ -92,8 +94,8 @@ const spanTo = groupSpanTo(code, Object.keys(data))
   .youth-card-header .chip {
     font-size: var(--text-xs);
     font-weight: 700;
-    padding: 0.2rem 0.6rem;
-    border-radius: 999px;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.25rem;
     white-space: nowrap;
   }
   /* The <h3> is rendered by YouthTitle.astro and carries ITS scope, not this

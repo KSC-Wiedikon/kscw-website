@@ -57,7 +57,7 @@ try {
   </section>
 
   <!-- Become a Sponsor -->
-  <section class="section" style="background: var(--bg-muted, #f9fafb);">
+  <section class="section">
     <div class="container">
       <div class="become-sponsor">
         <h2 data-i18n="sponsorsBecome">{t(locale, 'sponsorsBecome')}</h2>
@@ -90,7 +90,7 @@ try {
             <span data-i18n="sponsorsBenefitVIP">{t(locale, 'sponsorsBenefitVIP')}</span>
           </div>
         </div>
-        <a href="/club/kontakt" class="btn btn-gold" style="font-size: var(--text-base);" data-i18n="sponsorsCTAButton">{t(locale, 'sponsorsCTAButton')}</a>
+        <a href="/club/kontakt" class="btn btn-gold btn-cta" data-i18n="sponsorsCTAButton">{t(locale, 'sponsorsCTAButton')}</a>
       </div>
     </div>
   </section>
@@ -111,9 +111,10 @@ try {
     .sponsors-grid { grid-template-columns: 1fr; }
   }
   .sponsor-card {
-    background: var(--card-bg, #ffffff);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    background: var(--page-card-bg);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
     padding: var(--space-xl) var(--space-lg);
     display: flex;
     flex-direction: column;
@@ -124,9 +125,10 @@ try {
     transition: box-shadow 0.2s ease, transform 0.2s ease;
     overflow: hidden;
   }
-  .sponsor-card:hover {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-    transform: translateY(-2px);
+  /* Lift only when the card is a link. */
+  .sponsor-card:has(a):hover {
+    box-shadow: var(--shadow-card-lg);
+    transform: translateY(-1px);
   }
   .sponsor-card a {
     display: flex;
@@ -156,10 +158,12 @@ try {
   .sponsors-error {
     color: var(--text-primary);
   }
+  /* Brand panel, flat (no gradient) and hero-rounded (svrz rounded-3xl). */
   .become-sponsor {
-    background: linear-gradient(135deg, var(--kscw-blue, #4A55A2) 0%, #3b4590 100%);
-    color: #ffffff;
-    border-radius: var(--radius-lg);
+    background: var(--kscw-blue);
+    color: var(--text-on-blue);
+    border-radius: var(--radius-3xl);
+    box-shadow: var(--shadow-card-lg);
     padding: var(--space-3xl);
     text-align: center;
   }
@@ -167,8 +171,10 @@ try {
     .become-sponsor { padding: var(--space-xl) var(--space-lg); }
   }
   .become-sponsor h2 {
-    font-size: var(--text-2xl);
-    font-weight: 800;
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-on-blue);
     margin-bottom: var(--space-lg);
   }
   .benefits-list {

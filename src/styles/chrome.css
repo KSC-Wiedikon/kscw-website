@@ -1,0 +1,1141 @@
+/* ═══════════════════════════════════════════════════════════════
+   chrome.css — site header / navigation, footer, hero, team hero,
+   team photo, lightbox, language toggle, admin link, coarse-pointer
+   touch floors, page header and site search.
+
+   svrz_rc restyle (2026-09-28): translucent header on a hairline, sentence-case
+   nav in 14px/500 with an inverted-neutral active state, calm dropdowns, a
+   quieter home hero inset as a rounded card, flat sport buttons. Brand blue and
+   gold stay. Every colour is a token so the dark-default :root and .light both
+   resolve it; foundation.css holds `:root .x` / `.light .x` overrides for the
+   header, nav and dropdown — those must stay in step with what is set here.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Header / Navigation ──────────────────────────────────── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: color-mix(in srgb, var(--bg-white) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--hairline);
+  transition: box-shadow var(--transition-base);
+}
+.site-header.scrolled {
+  box-shadow: var(--shadow-card);
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.nav-logo img {
+  height: 40px;
+  width: auto;
+}
+.nav-logo .logo-light { display: none; }
+.light .nav-logo .logo-dark { display: none; }
+.light .nav-logo .logo-light { display: block; }
+.nav-logo span {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  color: var(--accent-text);
+  letter-spacing: -0.01em;
+}
+/* Hide brand text when nav is visible but space is tight */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .nav-logo span { display: none; }
+}
+
+/* Desktop nav */
+.nav-menu {
+  display: none;
+  align-items: center;
+  gap: 2px;
+}
+.nav-item {
+  position: relative;
+}
+button.nav-link {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 0.875rem;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  border-radius: 0.75rem;
+  transition: color var(--transition-fast), background var(--transition-fast);
+  min-height: 44px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .nav-link { min-height: 36px; }
+}
+.nav-link:hover {
+  color: var(--text-primary);
+  background: var(--bg-muted);
+}
+/* Current section: the inverted neutral (svrz nav), never a brand tint. */
+.nav-link.active {
+  color: var(--selected-fg);
+  background: var(--selected-bg);
+}
+/* The Wiedisync login is a `.nav-link.btn.btn-gold` — foundation's
+   `:root .nav-link:hover` (0,3,0) would otherwise repaint its hover neutral. */
+:root .nav-link.btn-gold,
+:root .nav-link.btn-gold:hover {
+  color: var(--text-on-gold);
+}
+:root .nav-link.btn-gold {
+  background: var(--kscw-gold);
+  margin-left: var(--space-sm);
+  padding: 0 0.875rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+:root .nav-link.btn-gold:hover {
+  background: var(--kscw-gold-dark);
+  box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  :root .nav-link.btn-gold { min-height: 36px; }
+}
+.nav-link .chevron {
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+  transition: transform var(--transition-fast);
+}
+.nav-item:hover .chevron,
+.nav-item:focus-within .chevron,
+.nav-item.open .chevron {
+  transform: rotate(180deg);
+}
+
+/* Dropdown */
+.nav-dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 232px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  z-index: var(--z-dropdown);
+}
+.nav-item:hover .nav-dropdown,
+.nav-item:focus-within .nav-dropdown,
+.nav-item.open .nav-dropdown {
+  display: block;
+}
+/* Escape collapses the dropdown even while focus stays on the trigger. */
+.nav-item.nav-dropdown-collapsed:focus-within .nav-dropdown {
+  display: none;
+}
+.dropdown-link {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-secondary);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), color var(--transition-fast);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+@media (hover: hover) and (pointer: fine) {
+  .dropdown-link { min-height: 36px; }
+}
+.dropdown-link:hover {
+  background: var(--bg-muted);
+  color: var(--text-primary);
+}
+.dropdown-link.active {
+  background: var(--bg-muted);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+.dropdown-divider {
+  height: 1px;
+  background: var(--hairline);
+  margin: 6px 0.25rem;
+}
+.dropdown-label {
+  padding: 0.25rem 0.75rem;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+/* Dropdown Accordion Groups */
+.dropdown-group {
+  border-top: 1px solid var(--hairline);
+}
+/* A divider directly above the first group already draws that rule. */
+.dropdown-divider + .dropdown-group {
+  border-top: none;
+}
+.dropdown-group:last-child {
+  border-bottom: 1px solid var(--hairline);
+}
+.dropdown-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 36px;
+  padding: 0.375rem 0.75rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+.dropdown-group-toggle:hover {
+  color: var(--text-primary);
+  background: var(--bg-muted);
+}
+.dropdown-group-toggle[aria-expanded="true"] {
+  color: var(--text-primary);
+}
+.dropdown-group-chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+}
+.dropdown-group-toggle[aria-expanded="true"] .dropdown-group-chevron {
+  transform: rotate(180deg);
+}
+.dropdown-group-items {
+  display: none;
+  padding-bottom: var(--space-xs);
+}
+.dropdown-group-toggle[aria-expanded="true"] + .dropdown-group-items {
+  display: block;
+}
+
+/* Hamburger */
+.nav-hamburger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 0.75rem;
+  transition: background var(--transition-fast);
+}
+.nav-hamburger:hover,
+.nav-open .nav-hamburger {
+  background: var(--bg-muted);
+}
+.hamburger-icon {
+  width: 22px;
+  height: 22px;
+  position: relative;
+}
+.hamburger-icon span {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: var(--text-primary);
+  border-radius: 2px;
+  position: absolute;
+  left: 0;
+  transition: transform var(--transition-base), opacity var(--transition-fast);
+}
+.hamburger-icon span:nth-child(1) { top: 4px; }
+.hamburger-icon span:nth-child(2) { top: 10px; }
+.hamburger-icon span:nth-child(3) { top: 16px; }
+.nav-open .hamburger-icon span:nth-child(1) { top: 10px; transform: rotate(45deg); }
+.nav-open .hamburger-icon span:nth-child(2) { opacity: 0; }
+.nav-open .hamburger-icon span:nth-child(3) { top: 10px; transform: rotate(-45deg); }
+
+/* Mobile nav overlay */
+.mobile-nav {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: calc(100vh - 65px);
+  max-height: calc(100dvh - 65px);
+  background: var(--bg-white);
+  border-top: 1px solid var(--hairline);
+  z-index: var(--z-overlay);
+  overflow-y: auto;
+  padding: var(--space-sm) var(--space-md) var(--space-lg);
+  box-shadow: var(--shadow-card-lg);
+}
+.nav-open .mobile-nav {
+  display: block;
+}
+.mobile-nav-item {
+  border-bottom: 1px solid var(--hairline);
+}
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-sm) var(--space-sm);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  border-radius: 0.75rem;
+  min-height: 48px;
+  transition: background var(--transition-fast);
+}
+.mobile-nav-link:hover {
+  background: var(--bg-muted);
+}
+.mobile-subnav {
+  display: none;
+  padding-bottom: var(--space-sm);
+}
+.mobile-nav-item.open .mobile-subnav {
+  display: block;
+}
+.mobile-nav-item.open .mobile-chevron {
+  transform: rotate(180deg);
+}
+.mobile-chevron {
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  transition: transform var(--transition-base);
+}
+.mobile-sublink {
+  display: block;
+  padding: var(--space-sm) var(--space-md);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border-radius: 0.75rem;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.mobile-sublink:hover {
+  color: var(--text-primary);
+  background: var(--bg-muted);
+}
+/* Current page: the same inverted neutral as the desktop nav. */
+.mobile-sublink.active {
+  color: var(--selected-fg);
+  background: var(--selected-bg);
+  font-weight: 600;
+}
+.mobile-sub-label {
+  padding: var(--space-xs) var(--space-md);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin-top: var(--space-sm);
+}
+
+@media (min-width: 1024px) {
+  .nav-menu { display: flex; }
+  .nav-hamburger { display: none; }
+  .mobile-nav { display: none !important; }
+}
+
+/* ── Footer ────────────────────────────────────────────────── */
+/* The footer is the one navy surface in BOTH themes, so its text colours are
+   local to it instead of the theme's --text-muted (which is stone-500 in light
+   mode and would drop to ~3.2:1 on this ground). */
+.site-footer {
+  --footer-text: #e2e8f0;
+  --footer-muted: #a3adbf;    /* 7.4:1 on --bg-dark */
+  --footer-rule: rgba(255, 255, 255, 0.08);
+  background: var(--bg-dark);
+  color: var(--footer-text);
+  border-top: 3px solid var(--kscw-gold);
+}
+.footer-inner {
+  padding: var(--space-3xl) 0 var(--space-xl);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2xl);
+}
+/* Five blocks (brand + four link lists). The old 2fr 1fr 1fr 1fr grid had four
+   tracks, so "Verbände" wrapped onto a row of its own under the brand column. */
+@media (min-width: 768px) {
+  .footer-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .footer-grid {
+    grid-template-columns: 1.6fr repeat(4, 1fr);
+  }
+}
+.footer-brand p {
+  color: var(--footer-muted);
+  margin-top: var(--space-sm);
+  font-size: var(--text-sm);
+  max-width: 300px;
+}
+.footer-heading {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--kscw-gold);
+  margin-bottom: var(--space-sm);
+}
+.footer-links a {
+  /* Was `display: block` with only --space-xs of padding, i.e. ~30px tall with 18
+     links stacked 4px apart. The pair that matters most is Datenschutz / Impressum,
+     where a mis-tap lands on the neighbouring legal page. */
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-xs) 0;
+  color: var(--footer-muted);
+  font-size: var(--text-sm);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: color var(--transition-fast), text-decoration-color var(--transition-fast);
+}
+.footer-links a:hover {
+  color: var(--footer-text);
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+}
+.footer-contact-info {
+  margin-top: var(--space-md);
+  font-size: var(--text-sm);
+  color: var(--footer-muted);
+  line-height: 1.6;
+}
+.footer-contact-info strong {
+  color: var(--footer-text);
+}
+.footer-contact-info a {
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.2);
+  text-underline-offset: 3px;
+}
+.footer-contact-info a:hover {
+  color: var(--footer-text);
+}
+.footer-social {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+}
+.footer-social a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 0.75rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--footer-rule);
+  color: var(--footer-text);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.footer-social a svg {
+  width: 18px;
+  height: 18px;
+}
+.footer-social a:hover {
+  background: var(--kscw-gold);
+  border-color: var(--kscw-gold);
+  color: var(--text-on-gold);
+}
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-lg);
+  flex-wrap: wrap;
+  border-top: 1px solid var(--footer-rule);
+  padding: var(--space-lg) 0;
+  text-align: center;
+  color: var(--footer-muted);
+  font-size: var(--text-xs);
+}
+.footer-bottom a {
+  color: var(--kscw-gold);
+}
+.footer-bottom a:hover {
+  text-decoration: underline;
+}
+/* The theme toggle is defined in foundation.css against the page theme; in the
+   footer it always sits on navy, so it takes the footer's own colours. */
+:root .site-footer .theme-toggle {
+  min-height: 36px;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--footer-rule);
+  color: var(--footer-muted);
+  font-size: var(--text-xs);
+  font-weight: 500;
+}
+:root .site-footer .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--footer-text);
+}
+@media (hover: none), (pointer: coarse) {
+  :root .site-footer .theme-toggle { min-height: 44px; }
+}
+
+/* ── Hero ──────────────────────────────────────────────────── */
+/* svrz_rc calm: the brand-blue panel stays, inset on the page as a rounded card,
+   with a faint static gold panel. components.css still carries the older "P1 hero
+   animation pack" (aurora glows, gold drift, H1 shimmer) and the gradient sport
+   buttons; the `:root`-prefixed rules below outrank those (0,2,x over 0,1,x), so
+   the calm version holds whichever order the files load in. */
+.hero,
+:root .hero {
+  position: relative;
+  background: var(--kscw-blue);
+  color: var(--text-on-blue);
+  overflow: hidden;
+  padding: var(--space-2xl) 0;
+  width: calc(100% - 2 * var(--space-md));
+  max-width: calc(1440px - 2 * var(--space-lg));
+  margin: var(--space-md) auto 0;
+  border-radius: var(--radius-3xl);
+  box-shadow: var(--shadow-card-lg);
+}
+@media (min-width: 768px) {
+  .hero,
+  :root .hero {
+    width: calc(100% - 2 * var(--space-lg));
+    margin-top: var(--space-lg);
+    padding: var(--space-3xl) 0;
+  }
+}
+.hero::before,
+:root .hero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 70%;
+  height: 200%;
+  background: var(--kscw-gold);
+  transform: rotate(-12deg);
+  opacity: 0.06;
+  animation: none;
+  will-change: auto;
+  pointer-events: none;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--kscw-gold);
+}
+.hero-content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.hero-logo {
+  width: 104px;
+  height: auto;
+  margin: 0 auto var(--space-lg);
+}
+.hero h1,
+:root .hero h1 {
+  font-size: var(--text-hero);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-md);
+  background: none;
+  color: var(--text-on-blue);
+  -webkit-text-fill-color: currentColor;
+  text-shadow: none;
+  filter: none;
+  animation: none;
+}
+.hero-subtitle {
+  font-size: var(--text-lg);
+  line-height: 1.5;
+  opacity: 0.88;
+  font-weight: 400;
+  margin-bottom: var(--space-xl);
+}
+.hero-buttons {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+/* The join CTA sits below the two sport buttons rather than beside them: those pick
+   a sport, this one starts a conversation, and giving three equal-weight buttons the
+   same row is how a page ends up with no primary action at all. Gold on the blue hero
+   is the strongest contrast pair the brand palette has. */
+.hero-cta {
+  margin-top: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.hero-cta .btn-gold {
+  box-shadow: var(--shadow-sm);
+}
+.hero-cta-note {
+  font-size: var(--text-sm);
+  opacity: 0.85;
+  margin: 0;
+  max-width: 42ch;
+}
+
+/* Sport buttons: flat sport fills, no gradients, sheens, pulse or icon spin.
+   Orange is taken one step deeper than --bb-orange (#ea580c, 3.6:1 under white
+   text) to #c2410c, 5.2:1; the volleyball blue is --vb-blue, 8.7:1. */
+:root .sport-btn {
+  min-width: 188px;
+  min-height: 48px;
+  padding: 0.625rem 1.5rem 0.625rem 1.25rem;
+  font-size: var(--text-base);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: var(--radius-lg);
+  gap: 0.625rem;
+  text-shadow: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  animation: none;
+  transform: none;
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+}
+:root .sport-btn::before {
+  content: none;
+}
+:root .sport-btn:hover {
+  transform: none;
+  animation: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  border-color: rgba(255, 255, 255, 0.32);
+}
+:root .sport-btn-icon {
+  width: 22px;
+  height: 22px;
+  filter: none;
+  transition: none;
+}
+:root .sport-btn:hover .sport-btn-icon {
+  transform: none;
+}
+:root .sport-btn--vb {
+  background: var(--vb-blue);
+  color: #ffffff;
+}
+:root .sport-btn--vb:hover {
+  background: color-mix(in srgb, var(--vb-blue) 85%, #000);
+}
+:root .sport-btn--bb {
+  background: #c2410c;
+  color: #ffffff;
+}
+:root .sport-btn--bb:hover {
+  background: #9a3412;
+}
+
+/* Scroll progress: one quiet brand line, no gradient or glow. The bar itself is
+   defined in components.css; the island is src/islands/scroll-progress.ts. */
+:root .scroll-progress-bar {
+  background: var(--kscw-blue);
+  box-shadow: none;
+}
+.light .scroll-progress-bar {
+  background: var(--kscw-blue);
+}
+:root:not(.light) .scroll-progress-bar {
+  background: var(--accent-text);
+}
+
+/* ── Team Hero (smaller, with accent color) ────────────────── */
+.team-hero {
+  position: relative;
+  background: var(--team-color, var(--kscw-blue));
+  color: white;
+  padding: var(--space-xl) 0 var(--space-lg);
+  overflow: hidden;
+}
+.team-hero::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 40%;
+  height: 100%;
+  background: rgba(255,255,255,0.05);
+  transform: skewX(-12deg) translateX(20%);
+  pointer-events: none;
+}
+.team-hero .container {
+  position: relative;
+  z-index: 1;
+}
+.team-hero h1 {
+  font-size: var(--text-4xl);
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-xs);
+}
+/* Title + recruiting badge row: badge sits to the right of the title on
+   desktop and wraps to right below it on mobile (flex-wrap). */
+.team-hero-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm) var(--space-md);
+  margin-bottom: var(--space-xs);
+}
+.team-hero-title-row h1 {
+  margin-bottom: 0;
+}
+.hero-looking-for {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: var(--text-sm);
+  line-height: 1.3;
+  font-weight: 500;
+  padding: 0.375rem 0.875rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}
+/* "Team voll" — the gold badge a full team wears next to its name. Same shape and
+   colour as the Nachwuchs cards' badge (YouthMeta.astro), so one club-wide signal
+   means one thing. Rendered at build time by TeamHero.astro and again from live
+   Directus by public/js/team-page.js; the two must stay identical or the swap
+   becomes a visible jump. */
+.hero-team-full {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: var(--kscw-gold);
+  color: var(--text-on-gold);
+}
+.team-league {
+  font-size: var(--text-base);
+  opacity: 0.88;
+  font-weight: 400;
+}
+/* ── Team Photo (individual team pages) ───────────────────── */
+.team-photo-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: var(--bg-muted);
+  border-bottom: 1px solid var(--hairline);
+  overflow: hidden;
+}
+.team-photo {
+  width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+  display: block;
+  cursor: zoom-in;
+}
+img.roster-avatar {
+  object-fit: cover;
+  cursor: zoom-in;
+}
+img.roster-avatar[src*="kscw_weiss"] {
+  object-fit: contain;
+  padding: 8px;
+  cursor: default;
+}
+
+/* ── Image Lightbox ───────────────────────────────────────── */
+.image-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(28, 25, 23, 0.85);
+  padding: var(--space-lg);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: zoom-out;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+:root:not(.light) .image-lightbox-overlay {
+  background: rgba(0, 0, 0, 0.85);
+}
+.image-lightbox-overlay.visible {
+  opacity: 1;
+}
+.image-lightbox-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: default;
+}
+.image-lightbox-content img {
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+}
+.image-lightbox-caption {
+  margin-top: var(--space-sm);
+  color: #e2e8f0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  text-align: center;
+}
+.image-lightbox-close {
+  position: absolute;
+  top: -2.75rem;
+  right: -0.25rem;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: var(--radius-full);
+  color: #e2e8f0;
+  font-size: 1.5rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.8;
+  transition: opacity 0.15s, background 0.15s;
+}
+.image-lightbox-close:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ── Language Toggle ───────────────────────────────────────── */
+/* Two small pills; the active language takes the inverted neutral, the same
+   "selected" signal as the nav. */
+.lang-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 0.5rem;
+}
+.lang-btn, .lang-btn-mobile {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+  min-width: 32px;
+  height: 28px;
+  padding: 0 0.5rem;
+  border-radius: var(--radius-full);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.lang-btn:hover, .lang-btn-mobile:hover {
+  color: var(--text-primary);
+  background: var(--bg-muted);
+}
+.lang-btn.active, .lang-btn-mobile.active,
+.light .lang-btn.active, .light .lang-btn-mobile.active {
+  font-weight: 600;
+  color: var(--selected-fg);
+  background: var(--selected-bg);
+}
+.lang-sep { display: none; }
+.mobile-lang-toggle {
+  justify-content: center;
+  gap: var(--space-xs);
+  margin-left: 0;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: 0.25rem;
+}
+
+/* ── Admin lock link (next to language toggle) ─────────────── */
+.admin-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-left: 0.25rem;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+.admin-link:hover,
+.admin-link:focus-visible {
+  color: var(--text-primary);
+  background-color: var(--bg-muted);
+}
+.admin-link--mobile {
+  margin-left: 0.5rem;
+}
+
+/* ── Touch-target floors (≥44px) on coarse pointers ────────────
+   Keep the compact desktop visuals, but give icon-only / tiny text
+   buttons a 44px hit area on touch devices (a11y: UI-WEB-4 / UI-WEB-5). */
+@media (hover: none), (pointer: coarse) {
+  .lang-btn,
+  .lang-btn-mobile,
+  .admin-link,
+  .search-btn {
+    min-width: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .mobile-search-btn {
+    min-height: 44px;
+  }
+}
+
+/* ── Page-specific ─────────────────────────────────────────── */
+.page-header {
+  background: var(--kscw-blue);
+  color: var(--text-on-blue);
+  padding: var(--space-xl) 0 var(--space-lg);
+  position: relative;
+  overflow: hidden;
+  overflow-x: clip;
+}
+@media (min-width: 768px) {
+  .page-header { padding: var(--space-2xl) 0 var(--space-xl); }
+}
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -10%;
+  width: 50%;
+  height: 100%;
+  background: rgba(255,255,255,0.04);
+  transform: skewX(-12deg);
+  pointer-events: none;
+}
+.page-header h1 {
+  font-size: var(--text-4xl);
+  letter-spacing: -0.02em;
+  position: relative;
+  z-index: 1;
+}
+.page-header p {
+  font-size: var(--text-base);
+  line-height: 1.5;
+  max-width: 68ch;
+  opacity: 0.88;
+  position: relative;
+  z-index: 1;
+  margin-top: var(--space-sm);
+}
+@media (min-width: 768px) {
+  .page-header p { font-size: var(--text-lg); }
+}
+
+/* ── Site search ─────────────────────────────────────────────── */
+.search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-left: 0.25rem;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+.search-btn:hover { color: var(--text-primary); background: var(--bg-muted); }
+
+.mobile-search-btn {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  margin: 0.5rem 0 0.25rem;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: border-color var(--transition-fast);
+}
+.mobile-search-btn:hover { border-color: var(--text-muted); }
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 12vh 1rem 1rem;
+  background: rgba(28, 25, 23, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+:root:not(.light) .search-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+.search-overlay.open { display: flex; }
+
+/* Dark: one step up from the page (--bg-light), like the nav dropdown; light: a
+   white panel. Was `var(--bg-card, var(--bg-elevated, #fff))` — neither token
+   exists, so the dark theme got a white panel with light text on it. */
+.search-panel {
+  width: 100%;
+  max-width: 560px;
+  background: var(--bg-light);
+  color: var(--text-primary);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+}
+.light .search-panel {
+  background: var(--bg-white);
+}
+:root:not(.light) .search-panel {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+}
+.search-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.search-input {
+  flex: 1;
+  min-height: 36px;
+  border: none;
+  background: none;
+  outline: none;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+}
+.search-input::placeholder {
+  color: var(--text-muted);
+}
+.search-close {
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.search-close:hover { color: var(--text-primary); background: var(--bg-muted); }
+
+.search-results {
+  overflow-y: auto;
+  padding: 6px;
+}
+.search-result {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+.search-result:hover,
+.search-result.active { background: var(--bg-muted); }
+.search-result-title { font-size: var(--text-sm); font-weight: 600; }
+.search-result-section {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  flex: none;
+}
+.search-empty {
+  padding: 1.25rem 0.875rem;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+@media (max-width: 900px) {
+  .search-btn { display: none; }
+  .mobile-search-btn { display: flex; }
+}

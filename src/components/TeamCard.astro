@@ -46,9 +46,12 @@ const badgeText = getBadgeText(team.league, team.chipLabel);
 const trainingTextDe = formatTrainings(team.trainings, 'de');
 const trainingTextEn = formatTrainings(team.trainings, 'en');
 
+// No `tilt-3d` any more: content cards stay calm (svrz_rc restyle, 2026-09-28).
+// The card still lifts 1px on hover via `.team-card:hover`; card-tilt.ts stays
+// loaded and simply finds nothing to tilt here.
 const cardClass = hasPhoto
-  ? 'card team-card team-card--photo tilt-3d'
-  : 'card team-card card-accent tilt-3d';
+  ? 'card team-card team-card--photo'
+  : 'card team-card card-accent';
 
 const cardStyle = hasPhoto ? undefined : `--card-accent: ${team.chipBg};`;
 // Was an inline de/en ternary, which meant the dictionary's own teamPhotoAlt — the

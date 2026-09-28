@@ -1,0 +1,2356 @@
+/* ═══════════════════════════════════════════════════════════════
+   data.css — tables, tabs, sport filter, game table + game modal,
+   roster, accordion, training schedule, calendar, scoreboard, live.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Data surfaces (svrz_rc) ──────────────────────────────────
+   Local tokens for this file. A "surface" is the card colour per theme: dark
+   cards sit one step UP from the page on --bg-light, light cards are white on
+   the stone page. Segmented controls (tabs, sport filter, view toggles) draw a
+   translucent track + raised thumb so they read on the page AND inside a card
+   in both themes. */
+:root {
+  --data-surface: var(--bg-light);
+  --data-track: rgb(255 255 255 / 0.06);
+  --data-thumb: rgb(255 255 255 / 0.12);
+  --data-thumb-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+  --data-row-hover: rgb(255 255 255 / 0.04);
+}
+.light {
+  --data-surface: var(--bg-white);
+  --data-track: rgb(28 25 23 / 0.07);
+  --data-thumb: var(--bg-white);
+  --data-thumb-shadow: 0 1px 2px rgb(28 25 23 / 0.08), 0 0 0 1px rgb(28 25 23 / 0.04);
+  --data-row-hover: var(--bg-muted);
+}
+
+/* ── Tables ────────────────────────────────────────────────── */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+/* Table head = the 11px micro-label role: uppercase is CSS-only, the strings
+   stay sentence case. No background here — pages that paint their own header
+   row (mitgliedschaft) must keep it; the tinted head is opted into per table
+   below. */
+th {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tr:hover td {
+  background: var(--data-row-hover);
+}
+/* Team-page rankings: a card holding a tinted-head table. */
+#rankings-table .table-wrap {
+  background: var(--data-surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+}
+#rankings-table th {
+  background: var(--bg-muted);
+}
+#rankings-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.table-rank {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.table-team {
+  font-weight: 600;
+}
+.table-highlight td {
+  background: rgba(255, 200, 50, 0.12);
+  font-weight: 600;
+  color: var(--kscw-gold);
+}
+.light .table-highlight td {
+  background: rgba(74, 85, 162, 0.08);
+  color: var(--accent-text);
+}
+
+/* ── Tabs ──────────────────────────────────────────────────── */
+/* Segmented control (svrz_rc): a track holding sentence-case items, the active
+   one raised on a thumb. `.tab-btn.active` / `.tab-panel.active` are toggled by
+   team-page.js — names unchanged. */
+.tab-bar {
+  display: flex;
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  background: var(--data-track);
+  border-radius: 0.75rem;
+  margin-bottom: var(--space-xl);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar {
+  display: none;
+}
+.tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.875rem;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  border-radius: 0.5rem;
+  transition: color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+  white-space: nowrap;
+  min-height: 36px;
+}
+.tab-btn:hover {
+  color: var(--text-primary);
+}
+.tab-btn.active {
+  color: var(--text-primary);
+  background: var(--data-thumb);
+  box-shadow: var(--data-thumb-shadow);
+}
+.tab-panel {
+  display: none;
+}
+.tab-panel.active {
+  display: block;
+}
+
+/* ── Sport Filter Tabs ─────────────────────────────────────── */
+/* Same segmented control. Also used by scoreboard.js (Total / per game) and
+   news/index.astro; `.active` is toggled by their scripts. */
+.sport-tabs,
+.scoreboard-toggle {
+  display: flex;
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 4px;
+  background: var(--data-track);
+  border-radius: 0.75rem;
+  margin-bottom: var(--space-md);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.sport-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0 0.875rem;
+  border-radius: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.sport-tab:hover {
+  color: var(--text-primary);
+}
+.sport-tab.active {
+  background: var(--data-thumb);
+  color: var(--text-primary);
+  box-shadow: var(--data-thumb-shadow);
+}
+/* Touch: the 44px floor the rest of the design system keeps on coarse pointers. */
+@media (pointer: coarse) {
+  .tab-btn, .sport-tab { min-height: 44px; }
+}
+
+/* ── Games Grid (side-by-side on desktop) ─────────────────── */
+.games-grid {
+  display: grid;
+  gap: var(--space-xl);
+}
+@media (min-width: 1024px) {
+  .games-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ── Game Table ────────────────────────────────────────────── */
+/* Rendered as CSS grid (not native table) so the chip can sit on a
+   second row beneath the rest of the data.
+   svrz_rc row anatomy on top: the list sits on a card, each row carries a 2px
+   tone rail (home = brand blue, away = orange, derby = gold, livestream = red),
+   a bold tabular date with the time muted beside it, and a team pair with the
+   home side in 600 and the away side secondary. Hover is a rounded surface. */
+.game-table {
+  width: 100%;
+  border-collapse: collapse;
+  display: block;
+  background: var(--data-surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  padding: 0.25rem 0.375rem;
+}
+.game-table thead { display: none; }
+.game-table tbody { display: block; }
+.game-table tr {
+  display: grid;
+  grid-template-columns: auto auto auto auto 1fr auto auto;
+  grid-template-rows: auto auto;
+  column-gap: var(--space-sm);
+  row-gap: 4px;
+  padding: 0.625rem 0.5rem 0.625rem 1rem;
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  align-items: center;
+  /* The tone rail: a 2px bar inset from the row's rounded edge (svrz_rc draws
+     it as its own element; a background layer keeps the DOM unchanged). */
+  background-image: linear-gradient(var(--row-stream-tone, var(--row-tone, transparent)) 0 0);
+  background-repeat: no-repeat;
+  background-size: 2px calc(100% - 1.25rem);
+  background-position: 0.375rem center;
+  transition: background-color var(--transition-fast);
+}
+.game-table tbody tr:last-child { border-bottom: none; }
+.game-table tr:has(.game-badge.home) { --row-tone: var(--kscw-blue); }
+.game-table tr:has(.game-badge.away) { --row-tone: var(--bb-orange); }
+.game-table tr:has(.game-badge.derby) { --row-tone: var(--kscw-gold); }
+.game-table td {
+  padding: 0;
+  vertical-align: middle;
+  border: none;
+}
+.gt-icon    { grid-column: 1; grid-row: 1; }
+.gt-date    { grid-column: 2; grid-row: 1; }
+.gt-time    { grid-column: 3; grid-row: 1; }
+.gt-loc     { grid-column: 4; grid-row: 1; }
+.gt-matchup { grid-column: 5; grid-row: 1; }
+.gt-rec     { grid-column: 6; grid-row: 1; display: flex; gap: 4px; }
+.gt-score   { grid-column: 7; grid-row: 1; }
+.gt-team    { grid-column: 2 / 5; grid-row: 2; padding-top: 2px; }
+/* The hover paints the row, not its cells: cells are laid out with gaps, and
+   per-cell backgrounds (foundation's `:root .game-table tr:hover td`) rendered
+   as a broken strip. Same specificity, later file — this wins. */
+.game-table tr:hover { background-color: var(--data-row-hover); }
+:root .game-table tr:hover td { background: transparent; }
+.game-table tr.fade-in { opacity: 0; transform: translateY(6px); transition: opacity 300ms ease, transform 300ms ease, background var(--transition-fast); }
+.game-table tr.fade-in.visible { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .game-table tr.fade-in { opacity: 1; transform: none; transition: none; }
+}
+.gt-icon { width: 28px; text-align: center; }
+.gt-date {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+.gt-time {
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.gt-team { white-space: normal; }
+.gt-team .chip { white-space: normal; text-align: center; line-height: 1.15; }
+.gt-loc { white-space: nowrap; }
+.gt-matchup {
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+.gt-matchup .gt-home-team { font-weight: 600; }
+.gt-matchup .gt-away-team { font-weight: 400; color: var(--text-secondary); }
+.gt-matchup .gt-vs { color: var(--text-muted); font-weight: 400; }
+.gt-score { text-align: right; white-space: nowrap; width: 4rem; }
+/* Upcoming tables have no scores: don't reserve their width, so a video pill
+   sits at the right edge instead of 4rem in. */
+.game-table:not(:has(.game-score)) .gt-score { width: 0; }
+/* Video recording link(s) — a labelled pill in its own cell at the right end of
+   the row (public/js/game-modal.js addVideoIcons). */
+.gt-video {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  vertical-align: middle;
+  padding: 3px 10px;
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: background var(--transition-fast);
+}
+.gt-video:hover, .gt-video:focus-visible { background: rgba(74, 85, 162, 0.12); }
+/* Livestream: an upcoming game carrying a website video link (livestreams.js). */
+.gt-video--stream { color: #dc2626; }
+.gt-video--stream:hover, .gt-video--stream:focus-visible { background: rgba(220, 38, 38, 0.12); }
+:root:not(.light) .gt-video--stream { color: #f87171; }
+.gt-video--stream .live-dot { animation: live-pulse 1.4s ease-in-out infinite; }
+/* On the row, not its cells: team pages lay cells out with gaps, and per-cell
+   backgrounds rendered as a broken strip. The red rail takes over the row's
+   tone rail through --row-stream-tone. */
+tr.gt-row-stream { background-color: rgba(220, 38, 38, 0.06); --row-stream-tone: #dc2626; }
+:root:not(.light) tr.gt-row-stream { background-color: rgba(248, 113, 113, 0.08); }
+tr.gt-row-stream > td { background: transparent; }
+
+/* Homepage livestreams section */
+.stream-grid {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+}
+.stream-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding: 1.25rem;
+  background: var(--data-surface);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid #dc2626;
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  min-width: 0;
+}
+.stream-card--today { box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.35), var(--shadow-card-lg); }
+.stream-card-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); flex-wrap: wrap; }
+.stream-badge { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: #dc2626; text-transform: uppercase; }
+:root:not(.light) .stream-badge { color: #f87171; }
+.stream-card--today .stream-badge .live-dot { animation: live-pulse 1.4s ease-in-out infinite; }
+.stream-when { font-size: var(--text-sm); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.stream-match { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stream-team { font-weight: 400; color: var(--text-secondary); overflow-wrap: anywhere; }
+.stream-team.is-kscw { font-weight: 600; color: var(--text-primary); }
+.stream-vs { font-size: var(--text-xs); color: var(--text-muted); }
+.stream-meta { font-size: var(--text-sm); color: var(--text-muted); }
+.stream-actions { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: auto; padding-top: var(--space-sm); }
+.stream-watch { background: #dc2626; background-image: none; color: #fff; border-color: #dc2626; box-shadow: none; min-height: 44px; display: inline-flex; align-items: center; }
+.stream-watch:hover, .stream-watch:focus-visible { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+.stream-actions .btn-outline { min-height: 44px; display: inline-flex; align-items: center; }
+@media (prefers-reduced-motion: reduce) {
+  .gt-video--stream .live-dot, .stream-card--today .stream-badge .live-dot { animation: none !important; }
+}
+.game-sport-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.game-sport-icon svg { display: block; width: 18px; height: 18px; }
+/* Cup fixtures (Züri Cup, Mobiliar Volley Cup …) get a trophy after the date */
+.game-cup-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 6px;
+  color: var(--kscw-gold);
+  flex-shrink: 0;
+}
+.game-cup-icon svg { display: block; width: 14px; height: 14px; }
+/* Bright gold washes out on the light theme's white — take the same darker
+   ochre the light theme already uses for .badge-gold text. Must stay above the
+   .badge-cup rule below, which is equally specific and has to win there. */
+.light .game-cup-icon { color: #836408; }
+/* Every row is its own grid, so an inline trophy would push the time/badge/
+   matchup of cup rows out of line with the rest of the table. Tables that
+   contain a cup game reserve the slot on all their date cells instead
+   (`has-cup` is set by the renderers) and the trophy sits inside it. */
+.game-table.has-cup .gt-date { position: relative; padding-right: 22px; }
+.game-table.has-cup .gt-date .game-cup-icon {
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 0;
+}
+/* Inside the game-modal league badge the trophy leads the text and takes the
+   badge's own colour. */
+.badge-cup .game-cup-icon { margin-left: 0; margin-right: 4px; color: inherit; }
+.game-score {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-lg);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  color: var(--accent-text);
+  white-space: nowrap;
+}
+.game-score.win { color: var(--success); }
+.game-score.loss { color: var(--danger); }
+.game-score.tie { color: var(--kscw-gold); }
+/* Hall-scoreboard score of a game the official sync has not reached yet
+   (public/js/pending-results.js) — replaced once the game is `completed`. */
+.game-score.provisional { font-style: italic; opacity: 0.75; cursor: help; }
+.game-badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.game-badge.home { color: var(--accent-text); }
+.game-badge.away { color: var(--bb-orange); }
+/* Club-internal game — both sides are KSCW (homepage merges the two rows). */
+.game-badge.derby { color: var(--kscw-gold); }
+.light .game-badge.derby { color: #a16207; }
+.gt-team-chips { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.game-empty {
+  text-align: center;
+  padding: var(--space-lg);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* Mobile: hide less important columns */
+@media (max-width: 639px) {
+  .gt-icon, .gt-loc { display: none; }
+  .gt-matchup { font-size: var(--text-sm); }
+  .game-table td { padding: var(--space-xs) var(--space-xs); }
+}
+
+/* Mobile: restructure each game row as
+     [DATE]            [TIME]
+     [HOME    vs    AWAY]
+     [HOMESCORE  :  AWAYSCORE]   ← scores centered under their team
+   Chip is hidden; matchup and score are 3-col grids so each team and
+   its score share a column and visually align. */
+@media (max-width: 639px) {
+  .game-table thead { display: none; }
+  .game-table,
+  .game-table tbody,
+  .game-table tr { display: block; }
+  .game-table tr {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: var(--space-sm);
+    row-gap: var(--space-xs);
+    padding: 0.625rem 0.5rem 0.625rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .game-table tbody tr:last-child { border-bottom: none; }
+  .game-table td { border: none; padding: 0; }
+  .gt-icon, .gt-loc, .gt-team { display: none; }
+  .gt-date { grid-column: 1; grid-row: 1; align-self: center; }
+  .gt-time { grid-column: 2; grid-row: 1; align-self: center; }
+  /* Shares the top line with the time, pushed to the right edge. */
+  .gt-rec { grid-column: 2; grid-row: 1; justify-self: end; align-self: center; }
+  .gt-matchup {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    max-width: none;
+    width: 100%;
+    overflow: visible;
+    white-space: normal;
+    text-overflow: clip;
+  }
+  .gt-matchup-inner {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    column-gap: var(--space-sm);
+    align-items: center;
+  }
+  .gt-matchup .gt-home-team,
+  .gt-matchup .gt-away-team {
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    min-width: 0;
+    line-height: 1.25;
+  }
+  .gt-matchup .gt-vs {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+  }
+  .gt-score {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    width: auto;
+    text-align: center;
+  }
+  .gt-score .game-score {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    column-gap: var(--space-sm);
+    align-items: baseline;
+  }
+  .gt-score .gt-home-score { text-align: center; }
+  .gt-score .gt-away-score { text-align: center; }
+  .gt-score .gt-score-sep { color: var(--text-muted); }
+}
+.game-table tr { cursor: pointer; }
+
+/* ── Game Detail Modal ─────────────────────────────────────── */
+.game-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: var(--space-md);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+/* Light backdrop is warm stone-900, not black (svrz_rc). */
+.light .game-modal-overlay { background: rgba(28, 25, 23, 0.6); }
+.game-modal {
+  max-height: 90vh;
+  width: 100%;
+  max-width: 480px;
+  overflow-y: auto;
+  background: var(--data-surface);
+  border-radius: 1rem;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+  border: 1px solid var(--hairline);
+}
+.light .game-modal {
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+.gm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--border);
+}
+.gm-header .chip { margin-right: var(--space-sm); }
+.gm-close {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted);
+  padding: var(--space-xs);
+  min-width: 36px; min-height: 36px;
+  border-radius: var(--radius-md);
+  display: flex; align-items: center; justify-content: center;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.gm-close:hover { background: var(--data-track); color: var(--text-primary); }
+@media (pointer: coarse) {
+  .gm-close { min-width: 44px; min-height: 44px; }
+}
+.gm-score-section {
+  padding: var(--space-lg);
+  text-align: center;
+}
+.gm-teams-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+}
+.gm-team-name {
+  flex: 1;
+  font-size: var(--text-base);
+  line-height: 1.3;
+  color: var(--text-secondary);
+}
+.gm-team-name.home-side { text-align: right; }
+.gm-team-name.kscw { font-weight: 600; color: var(--text-primary); }
+.gm-score-center {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.gm-score-center .colon { color: var(--text-muted); margin: 0 0.15em; }
+.gm-vs { color: var(--text-muted); font-weight: 400; font-size: var(--text-base); }
+/* Sets table */
+.gm-sets {
+  margin-top: var(--space-md);
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  text-align: center;
+  table-layout: fixed;
+}
+.gm-sets th:first-child,
+.gm-sets td:first-child {
+  width: 5rem;
+  text-align: left;
+}
+.gm-sets {
+  table-layout: fixed;
+}
+.gm-sets th,
+.gm-sets td {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.gm-sets th:first-child,
+.gm-sets td:first-child {
+  text-align: left;
+}
+.gm-sets th:not(:first-child),
+.gm-sets td:not(:first-child) {
+  width: 3rem;
+}
+.gm-sets th {
+  padding: 0.375rem var(--space-sm);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  background: var(--bg-muted);
+  border-bottom: none;
+}
+.gm-sets td {
+  padding: 0.375rem var(--space-sm);
+  font-weight: 700;
+  border-bottom: none;
+  border-top: 1px solid var(--border);
+}
+.gm-sets .set-won { color: var(--success); }
+.gm-sets .set-lost { color: var(--danger); }
+/* Info rows */
+.gm-section {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--border);
+}
+.gm-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  margin-bottom: var(--space-sm);
+}
+.gm-row {
+  display: flex;
+  gap: var(--space-sm);
+  font-size: var(--text-sm);
+  padding: var(--space-xs) 0;
+}
+.gm-label {
+  width: 6.5rem;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.gm-value { color: var(--text-primary); min-width: 0; overflow-wrap: anywhere; }
+.gm-link {
+  color: var(--accent-text);
+  text-decoration: none;
+}
+.gm-link:hover { text-decoration: underline; }
+
+/* ── Roster ────────────────────────────────────────────────── */
+/* Grid / list switch: a small segmented control, pushed to the right. */
+.roster-view-toggle {
+  display: flex;
+  gap: 2px;
+  width: fit-content;
+  margin-left: auto;
+  padding: 4px;
+  background: var(--data-track);
+  border-radius: 0.75rem;
+  margin-bottom: var(--space-md);
+}
+.roster-view-btn {
+  background: transparent;
+  border: none;
+  border-radius: 0.5rem;
+  min-width: 36px;
+  min-height: 32px;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition-fast), color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.roster-view-btn:hover {
+  color: var(--text-primary);
+}
+.roster-view-btn.active {
+  background: var(--data-thumb);
+  color: var(--text-primary);
+  box-shadow: var(--data-thumb-shadow);
+}
+@media (pointer: coarse) {
+  .roster-view-btn { min-width: 44px; min-height: 40px; }
+}
+.roster-view-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.roster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+.roster-grid.roster-list {
+  grid-template-columns: 1fr;
+  gap: var(--space-xs);
+}
+.roster-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  padding-right: calc(var(--space-md) + 44px);
+  background: var(--data-surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+.roster-number {
+  position: absolute;
+  top: var(--space-xs);
+  right: var(--space-sm);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+.roster-number.is-captain { color: #FFC832; }
+.roster-number.is-libero  { color: #ffffff; }
+/* Both literals above are picked for the dark default. In the light theme the
+   libero's white sat on a white card — two D1 players had no visible shirt number
+   at all — and the captain's #FFC832 measured 1.55:1. #836408 is the ochre this
+   file already uses wherever gold has to sit on a light ground. */
+.light .roster-number.is-captain { color: #836408; }
+.light .roster-number.is-libero  { color: var(--text-primary); }
+.roster-list .roster-card {
+  padding: var(--space-sm) var(--space-md);
+}
+.roster-list .roster-card .roster-name,
+.roster-list .roster-card .roster-position {
+  display: inline;
+}
+.roster-list .roster-card > div:last-of-type {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+}
+.roster-list .roster-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: 11px;
+}
+.roster-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: var(--bg-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.roster-name {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.roster-position {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.roster-card.captain-card {
+  border-left: 3px solid #FFC832;
+  background: linear-gradient(90deg, rgba(255, 200, 50, 0.06) 0%, transparent 40%) var(--data-surface);
+  position: relative;
+}
+.captain-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  background: #FFC832;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--bg-dark, #0f1729);
+  box-shadow: 0 1px 4px rgba(255, 200, 50, 0.3);
+}
+
+/* ── Roster Table (list view) ────────────────────────────── */
+.roster-list-wrap {
+  width: 100%;
+}
+/* The list view is a card; its width still hugs the columns (width: auto). */
+.roster-table {
+  width: auto;
+  max-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--data-surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.roster-table th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.625rem clamp(var(--space-sm), 3vw, var(--space-2xl));
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-muted);
+}
+.roster-table td {
+  padding: var(--space-xs) clamp(var(--space-sm), 3vw, var(--space-2xl));
+  font-size: var(--text-sm);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.roster-table tbody tr:last-child td { border-bottom: none; }
+.roster-table th:first-child,
+.roster-table td:first-child { padding-left: 0.75rem; }
+.roster-table th:last-child,
+.roster-table td:last-child  { padding-right: 0.75rem; }
+/* Photo column hugs the avatar */
+.roster-table .rt-photo { padding-left: 0; padding-right: 0; }
+.roster-table tbody tr:hover {
+  background: var(--data-row-hover);
+}
+.roster-table .rt-num {
+  width: 56px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.roster-table .rt-num.is-captain { color: #FFC832; }
+.roster-table .rt-num.is-libero  { color: #ffffff; }
+/* Same fix as .roster-number above — this is the table view of the same data. */
+.light .roster-table .rt-num.is-captain { color: #836408; }
+.light .roster-table .rt-num.is-libero  { color: var(--text-primary); }
+.roster-table .rt-photo {
+  width: 56px;
+  padding-right: 0;
+}
+.roster-table .rt-photo .roster-avatar {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+.roster-table .rt-name {
+  font-weight: 600;
+}
+.roster-table .rt-pos {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+.roster-table .rt-yob {
+  width: 72px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.roster-table tr.captain-row {
+  background: linear-gradient(90deg, rgba(255, 200, 50, 0.06) 0%, transparent 50%);
+  box-shadow: inset 3px 0 0 #FFC832;
+}
+.captain-badge-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: #FFC832;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--bg-dark, #0f1729);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+@media (max-width: 540px) {
+  .roster-table .rt-pos {
+    display: none;
+  }
+}
+
+/* ── Accordion ─────────────────────────────────────────────── */
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  max-width: 900px;
+}
+.accordion-item {
+  background: var(--data-surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 44px;
+  padding: 1.125rem 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  letter-spacing: -0.01em;
+  font-weight: 600;
+  font-family: var(--font-display);
+  transition: background var(--transition-fast);
+}
+.accordion-header:hover {
+  background: var(--data-row-hover);
+}
+.accordion-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+.accordion-header-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--accent-text);
+}
+.accordion-chevron {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  transition: transform var(--transition-base);
+  color: var(--text-muted);
+}
+.accordion-item.open .accordion-chevron {
+  transform: rotate(180deg);
+}
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height var(--transition-slow);
+}
+.accordion-item.open .accordion-content {
+  max-height: 2000px;
+}
+.accordion-body {
+  padding: 0 1.5rem 1.5rem;
+}
+.accordion-desc {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-lg);
+}
+.reg-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.reg-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-height: 44px;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  text-decoration: none;
+  background: var(--bg-muted);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  border: 1px solid var(--hairline);
+}
+.reg-link:hover {
+  background: var(--data-track);
+  border-color: var(--kscw-blue);
+}
+.reg-link-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--accent-text);
+}
+.reg-link-text {
+  flex: 1;
+}
+.reg-link-title {
+  font-weight: 500;
+  font-size: var(--text-sm);
+}
+.reg-link-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-top: 0.125rem;
+}
+.reg-link-arrow {
+  width: 16px;
+  height: 16px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+/* ── Training Schedule ─────────────────────────────────────── */
+.training-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--border);
+}
+.training-day {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  min-width: 100px;
+  color: var(--accent-text);
+}
+.training-time {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.training-hall {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+/* ── Calendar Grid ────────────────────────────────────────── */
+.cal-loading {
+  text-align: center;
+  padding: var(--space-3xl) 0;
+  font-size: var(--text-lg);
+  color: var(--text-muted);
+}
+
+/* Header: prev / title / next */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+.cal-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.625rem;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+.cal-nav-btn:hover {
+  background: var(--data-track);
+  color: var(--text-primary);
+}
+.cal-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.cal-month-label {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.cal-today-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  background: var(--data-surface);
+  border: 1px solid var(--border-strong);
+  cursor: pointer;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: background 0.15s, color 0.15s;
+}
+.cal-today-btn:hover {
+  background: var(--data-track);
+  color: var(--text-primary);
+}
+
+/* Day-of-week headers */
+/* The weekday strip + day grid read as one bordered card: the strip is its
+   tinted head (rounded top), the grid its body (rounded bottom). The outer
+   right/bottom edges come from the grid border, so the last column / last week
+   drop their own cell borders (the grid always holds whole weeks). */
+.cal-dow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+.cal-dow-cell {
+  padding: 0.5rem 0;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+/* Day grid */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  background: var(--data-surface);
+  grid-auto-rows: 1fr;
+  overflow: hidden;
+}
+.cal-cell {
+  position: relative;
+  min-height: 3rem;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  padding: 0.25rem;
+  background: var(--data-surface);
+  min-width: 0;
+  overflow: hidden;
+}
+.cal-cell:nth-child(7n) { border-right: none; }
+.cal-cell:nth-last-child(-n + 7) { border-bottom: none; }
+@media (min-width: 640px) {
+  .cal-cell { min-height: 5rem; padding: 0.375rem; }
+}
+@media (min-width: 1024px) {
+  .cal-cell { min-height: 6.5rem; padding: 0.5rem; }
+}
+.cal-cell--outside {
+  background: var(--bg-muted);
+}
+.light .cal-cell--outside {
+  background: var(--bg-light);
+}
+.cal-cell--today {
+  box-shadow: inset 0 0 0 2px var(--kscw-gold);
+}
+
+/* Day number */
+.cal-day-num {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  margin-bottom: 0.125rem;
+}
+@media (min-width: 640px) {
+  .cal-day-num { font-size: var(--text-sm); margin-bottom: 0.25rem; }
+}
+.cal-cell--outside .cal-day-num {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+.cal-day-num--today {
+  font-weight: 700;
+  color: var(--kscw-gold);
+}
+/* Bright gold on white is 1.5:1 — the ochre this file uses for gold on light. */
+.light .cal-day-num--today { color: #836408; }
+
+/* Game entry chips */
+.cal-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  overflow: hidden;
+}
+.cal-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 0.0625rem 0.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  line-height: 1.4;
+  transition: opacity 0.15s;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+@media (min-width: 640px) {
+  .cal-entry { font-size: var(--text-xs); padding: 0.125rem 0.375rem; }
+}
+.cal-entry:hover { opacity: 0.8; }
+
+.cal-entry--home {
+  background: rgba(74, 85, 162, 0.15);
+  color: var(--accent-text);
+}
+.light .cal-entry--home {
+  background: rgba(74, 85, 162, 0.12);
+  color: #3b4590;
+}
+.cal-entry--away {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+.light .cal-entry--away {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+
+.cal-entry-time {
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.cal-entry-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: none;
+}
+@media (min-width: 640px) {
+  .cal-entry-title { display: inline; }
+}
+
+/* Overflow "+N" button */
+.cal-overflow {
+  background: var(--bg-light);
+  border: none;
+  cursor: pointer;
+  padding: 0.0625rem 0.375rem;
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--text-muted);
+  transition: background 0.15s;
+}
+@media (min-width: 640px) {
+  .cal-overflow { font-size: var(--text-xs); }
+}
+.cal-overflow:hover {
+  background: var(--border);
+}
+
+/* Tooltip */
+.cal-tooltip {
+  position: absolute;
+  z-index: var(--z-toast, 50);
+  background: var(--data-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-xl);
+  max-width: 320px;
+  min-width: 220px;
+}
+.cal-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
+}
+.cal-tooltip-sport {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+}
+.cal-tooltip-sport--vb {
+  background: rgba(74, 85, 162, 0.15);
+  color: var(--accent-text);
+}
+.cal-tooltip-sport--bb {
+  background: rgba(245, 158, 11, 0.15);
+  color: #d97706;
+}
+.cal-tooltip-type {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+}
+.cal-tooltip-type--home {
+  background: rgba(74, 85, 162, 0.1);
+  color: var(--accent-text);
+}
+.cal-tooltip-type--away {
+  background: rgba(245, 158, 11, 0.1);
+  color: #d97706;
+}
+.cal-tooltip-teams {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  margin-bottom: var(--space-xs);
+}
+.cal-tooltip-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xs);
+}
+.cal-tooltip-score {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.cal-tooltip-hall {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.cal-tooltip-desc {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-top: 0.375rem;
+  padding-top: 0.375rem;
+  border-top: 1px solid var(--border);
+  line-height: 1.4;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.cal-tooltip-desc p {
+  margin: 0 0 0.25em;
+}
+
+.cal-tooltip-desc p:last-child {
+  margin-bottom: 0;
+}
+
+/* Day overflow modal */
+.cal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 40);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+.light .cal-modal-overlay { background: rgba(28, 25, 23, 0.6); }
+.cal-modal {
+  position: relative;
+  background: var(--data-surface);
+  border: 1px solid var(--hairline);
+  border-radius: 1rem;
+  padding: var(--space-xl);
+  max-width: 480px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+}
+.light .cal-modal { box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); }
+.cal-modal-close {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  min-height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--text-muted);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+.cal-modal-close:hover { color: var(--text-primary); background: var(--data-track); }
+@media (pointer: coarse) {
+  .cal-modal-close { min-width: 44px; min-height: 44px; }
+}
+.cal-modal-title {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: var(--space-md);
+  padding-right: 2.5rem;
+}
+.cal-modal-row {
+  padding: var(--space-sm) 0;
+  border-top: 1px solid var(--border);
+}
+.cal-modal-row:first-of-type { border-top: none; }
+.cal-modal-row-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: 0.25rem;
+}
+.cal-modal-time {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+.cal-modal-teams {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.cal-modal-hall {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 0.125rem;
+}
+
+.cal-modal-desc {
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  margin-top: 0.375rem;
+  padding-top: 0.375rem;
+  border-top: 1px solid var(--border);
+  line-height: 1.4;
+}
+
+.cal-modal-desc p {
+  margin: 0 0 0.25em;
+}
+
+.cal-modal-desc p:last-child {
+  margin-bottom: 0;
+}
+
+.cal-modal-signup-count {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+.cal-modal-signup-count[data-state="loading"]::before {
+  content: "…";
+  opacity: 0.6;
+}
+.cal-modal-signup {
+  display: inline-block;
+  margin-top: 0.5rem;
+}
+
+/* ── Calendar Toolbar ── */
+
+.cal-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+.cal-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+.cal-filter-wrap {
+  position: relative;
+}
+/* Outline filter buttons; a filter that is narrowing the view takes the
+   inverted "selected" neutral (svrz_rc — selection is never the brand blue). */
+.cal-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: var(--data-surface);
+  border: 1px solid var(--border-strong);
+  color: var(--text-secondary);
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  min-height: 36px;
+}
+.cal-filter-btn:hover {
+  background: var(--data-track);
+  color: var(--text-primary);
+}
+.cal-filter-btn:focus-visible {
+  outline: 2px solid var(--kscw-blue);
+  outline-offset: 2px;
+}
+.cal-filter-btn.active {
+  background: var(--selected-bg);
+  border-color: var(--selected-bg);
+  color: var(--selected-fg);
+}
+.cal-filter-btn.open {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--kscw-blue) 50%, transparent);
+}
+@media (pointer: coarse) {
+  .cal-filter-btn { min-height: 44px; }
+}
+.cal-filter-arrow {
+  font-size: 0.6em;
+  opacity: 0.5;
+  transition: transform 0.15s;
+}
+.cal-filter-btn.open .cal-filter-arrow {
+  transform: rotate(180deg);
+}
+.cal-filter-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: var(--z-modal, 40);
+  min-width: 200px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--data-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xl);
+  padding: var(--space-xs);
+}
+.cal-filter-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0.5rem 0.5rem 0.25rem;
+  margin-top: 0.125rem;
+}
+.cal-filter-group-label:first-child {
+  margin-top: 0;
+}
+.cal-filter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 36px;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  transition: background 0.1s;
+  user-select: none;
+}
+.cal-filter-option:hover {
+  background: var(--data-track);
+}
+.cal-filter-option input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 4px;
+  margin: 0;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  background: transparent;
+}
+.cal-filter-option input[type="checkbox"]:checked {
+  background: var(--kscw-blue);
+  border-color: var(--kscw-blue);
+}
+.cal-filter-option input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 6px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.cal-filter-option input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--kscw-blue);
+  outline-offset: 2px;
+}
+.cal-filter-reset {
+  color: var(--text-muted) !important;
+  border-style: dashed !important;
+}
+.cal-filter-reset:hover {
+  color: var(--accent-text) !important;
+  border-color: var(--kscw-blue) !important;
+  border-style: solid !important;
+}
+
+/* Sport dot on calendar entries */
+.cal-sport-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+.cal-sport-dot--vb { background: var(--kscw-blue); }
+.cal-sport-dot--bb { background: #d97706; }
+
+/* Sport ball SVG icon in chip */
+.cal-sport-ball {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+/* H/A mini badge in chip */
+.cal-entry-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  line-height: 1;
+}
+.cal-entry-badge--home {
+  background: rgba(74, 85, 162, 0.2);
+  color: var(--accent-text);
+}
+.cal-entry-badge--away {
+  background: rgba(217, 119, 6, 0.2);
+  color: #d97706;
+}
+/* Dark theme (the default; was keyed on a [data-theme] attribute the site
+   never sets, so it never applied). */
+:root:not(.light) .cal-entry-badge--home {
+  background: rgba(74, 85, 162, 0.35);
+  color: #a5b4fc;
+}
+:root:not(.light) .cal-entry-badge--away {
+  background: rgba(217, 119, 6, 0.35);
+  color: #fbbf24;
+}
+
+/* Subscribe button */
+.cal-subscribe-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 36px;
+  background: var(--kscw-blue);
+  color: #fff;
+  border: none;
+  padding: 0 0.875rem;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cal-subscribe-btn:hover { background: var(--kscw-blue-dark); }
+@media (pointer: coarse) {
+  .cal-subscribe-btn { min-height: 44px; }
+}
+.cal-subscribe-btn svg { flex-shrink: 0; }
+
+/* Subscribe modal */
+.cal-sub-section {
+  margin-bottom: var(--space-md);
+}
+.cal-sub-section-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-xs);
+}
+.cal-sub-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-sm);
+}
+.cal-sub-check {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+.cal-sub-check input[type="checkbox"] {
+  accent-color: var(--kscw-blue);
+  margin: 0;
+}
+.cal-sub-teams {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  max-height: 200px;
+  overflow-y: auto;
+  padding: var(--space-xs) 0;
+}
+.cal-sub-actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+}
+.cal-sub-actions .btn {
+  flex: 1;
+}
+
+/* Detail modal (game/event click) */
+.cal-detail-team {
+  display: inline-block;
+  padding: 0.15em 0.5em;
+  border-radius: var(--radius-full, 999px);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.cal-detail-score {
+  font-size: 2rem;
+  font-weight: 700;
+  text-align: center;
+  margin: var(--space-sm) 0;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.cal-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  margin-top: var(--space-md);
+}
+.cal-detail-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+.cal-detail-icon {
+  flex-shrink: 0;
+  width: 1.25em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* Hand-built Lucide glyphs (see detailIcon() in calendar-grid.ts). They inherit
+   the row's colour, so they follow the theme without a dark-mode override. */
+.cal-detail-glyph {
+  width: 17px;
+  height: 17px;
+  display: block;
+  opacity: 0.75;
+}
+.cal-detail-link {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.cal-detail-link:hover {
+  opacity: 0.8;
+}
+
+@media (max-width: 640px) {
+  .cal-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .cal-subscribe-btn {
+    align-self: stretch;
+    justify-content: center;
+  }
+  .cal-filter-dropdown {
+    left: 0;
+    right: 0;
+    min-width: unset;
+  }
+}
+
+/* ── Events ── */
+
+.event-card {
+  border-left: 3px solid #22c55e;
+}
+
+.event-card--clickable {
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.event-card--clickable:hover {
+  box-shadow: var(--shadow-card-lg);
+}
+
+.event-card .card-body {
+  padding: var(--space-md);
+}
+
+.event-expand-icon {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  transition: transform 0.25s ease;
+}
+
+.event-card--open .event-expand-icon {
+  transform: rotate(180deg);
+}
+
+.event-description {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, padding 0.3s ease;
+  padding: 0 var(--space-md);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  border-top: 1px solid transparent;
+  line-height: 1.5;
+}
+
+.event-card--open .event-description {
+  max-height: 500px;
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+  border-top-color: var(--border);
+}
+
+.event-description p {
+  margin: 0 0 0.5em;
+}
+
+.event-description p:last-child {
+  margin-bottom: 0;
+}
+
+.event-location {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.badge-green {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+
+.cal-entry--event {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+  border-left: 2px solid #22c55e;
+}
+
+.cal-entry--event:hover {
+  background: rgba(34, 197, 94, 0.25);
+}
+
+.cal-modal-row--event {
+  border-left: 3px solid #22c55e;
+}
+
+.cal-tooltip-sport--event {
+  background: rgba(34, 197, 94, 0.15);
+  color: #16a34a;
+}
+/* Dark: #16a34a on the navy card is ~4:1 — the lighter green reads at AA. */
+:root:not(.light) .badge-green,
+:root:not(.light) .cal-entry--event,
+:root:not(.light) .cal-tooltip-sport--event {
+  color: #4ade80;
+}
+
+/* ── Hall closures ("Halle geschlossen") ──────────────────── */
+/* Closures no longer render as in-cell chips — they paint the whole day red
+   (see ".cal-cell--closed" below). The padlock icon is still used by the
+   toolbar show/hide toggle and the modal headers. */
+.cal-closure-icon {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+@media (min-width: 640px) {
+  .cal-closure-icon { width: 12px; height: 12px; }
+}
+
+.cal-modal-row--closure {
+  border-left: 3px solid var(--text-muted);
+}
+
+.cal-tooltip-sport--closure {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+.light .cal-tooltip-sport--closure {
+  background: rgba(120, 113, 108, 0.15);
+  color: var(--text-secondary);
+}
+
+/* Toolbar show/hide toggle */
+.cal-closure-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.cal-closure-toggle .cal-closure-icon {
+  width: 14px;
+  height: 14px;
+}
+.cal-closure-toggle.is-off {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+/* ── Full-day closure ("Halle geschlossen") ───────────────── */
+/* A closure paints the whole day red with the reason centered; affected halls
+   read underneath. Games/events (if any) still render as chips above this. */
+.cal-cell--closed {
+  display: flex;
+  flex-direction: column;
+  background: rgba(220, 38, 38, 0.16);
+}
+.light .cal-cell--closed {
+  background: rgba(220, 38, 38, 0.09);
+}
+.cal-closed-block {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 100%;
+  min-height: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: center;
+  padding: 0.125rem;
+  overflow: hidden;
+}
+.cal-closed-block:hover { opacity: 0.8; }
+.cal-closed-line { max-width: 100%; min-width: 0; }
+.cal-closed-reason {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #f87171;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.light .cal-closed-reason { color: #b91c1c; }
+.cal-closed-halls {
+  font-size: 9px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: #fca5a5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.light .cal-closed-halls { color: #dc2626; }
+@media (min-width: 640px) {
+  .cal-closed-reason { font-size: var(--text-xs); }
+  .cal-closed-halls { font-size: 10px; }
+}
+
+/* ── Scoreboard ──────────────────────────────────────────── */
+.scoreboard-grid {
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1024px) {
+  .scoreboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.scoreboard-card {
+  padding: var(--space-lg);
+}
+
+.scoreboard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.scoreboard-sport-title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.scoreboard-season {
+  margin-bottom: var(--space-sm);
+}
+
+.scoreboard-empty {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.scoreboard-table-wrap {
+  overflow-x: auto;
+}
+
+.scoreboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+/* --surface-alt / --text were never defined, so this head had no tint and the
+   cells fell back to inherited colours; both now resolve to real tokens. */
+.scoreboard-table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 0.5rem var(--space-sm);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-muted);
+}
+
+.scoreboard-metric-row {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.scoreboard-metric-row:hover {
+  background: var(--data-row-hover);
+}
+.scoreboard-metric-row td {
+  padding: 0.5rem var(--space-sm);
+  border-bottom: 1px solid var(--border);
+}
+
+.sb-col-metric {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.sb-col-total {
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.sb-col-most {
+  text-align: left;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+.sb-col-most .chip {
+  font-size: 0.7rem;
+}
+@media (max-width: 639px) {
+  /* Mobile: restructure each metric row as
+       [METRIC label spanning full width]
+       [SCHNITT value]  [MEISTE chip(s)]
+     so the team chip has the full half-row width instead of being squeezed. */
+  .scoreboard-table thead { display: none; }
+  .scoreboard-table,
+  .scoreboard-table tbody,
+  .scoreboard-table tr { display: block; }
+  .scoreboard-table .scoreboard-metric-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    column-gap: var(--space-md);
+    row-gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-sm);
+    border-bottom: 1px solid var(--border);
+  }
+  .scoreboard-table .scoreboard-metric-row td { border: none; padding: 0; }
+  .scoreboard-table .scoreboard-metric-row .sb-col-metric {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .scoreboard-table .scoreboard-metric-row .sb-col-total {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+    align-self: center;
+  }
+  .scoreboard-table .scoreboard-metric-row .sb-col-most {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-xs);
+  }
+  .sb-col-most .chip {
+    white-space: normal;
+    line-height: 1.2;
+    text-align: left;
+    max-width: 100%;
+  }
+  .scoreboard-expand-cell { display: block; }
+}
+
+.sb-expand-icon {
+  display: inline;
+  font-size: 0.7rem;
+}
+
+.scoreboard-expand-cell {
+  background: var(--bg-muted);
+  padding: var(--space-xs) var(--space-sm);
+}
+
+.scoreboard-sub-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  background: var(--data-surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.scoreboard-sub-table thead th {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--bg-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.scoreboard-sub-table td {
+  text-align: center;
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+.scoreboard-sub-table tbody tr:last-child td { border-bottom: none; }
+
+.scoreboard-sub-table td:nth-child(2) {
+  text-align: left;
+}
+
+/* ── Live scoreboard (/live + site-wide "live now" pill) ───────────────
+   Port of wiedisync's /live. Rendered by public/js/live.js and live-now.js. */
+.live-wrap { max-width: 42rem; }
+.live-toolbar {
+  display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center;
+  gap: var(--space-sm); margin-bottom: var(--space-md);
+}
+.live-chip, .live-pill {
+  display: inline-flex; align-items: center; gap: var(--space-sm);
+  min-height: 28px;
+  padding: 0.25rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius-full);
+  background: var(--data-surface); font-size: var(--text-xs); font-weight: 600;
+}
+/* The class sets display, which would otherwise beat the `hidden` attribute
+   (#live-sport ships hidden and rendered as an empty ring). */
+.live-chip[hidden], .live-pill[hidden] { display: none; }
+.live-chip { color: var(--text-secondary); }
+.live-pill { color: var(--text-primary); }
+.live-dot { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #ef4444; flex: none; }
+.live-pill[data-tone="live"] .live-dot { animation: live-pulse 1.4s ease-in-out infinite; }
+.live-pill[data-tone="final"] .live-dot { background: var(--kscw-blue); }
+.live-pill[data-tone="idle"] .live-dot { background: var(--text-muted); }
+.live-pill[data-tone="pending"] .live-dot { background: #f59e0b; animation: live-pulse 1.4s ease-in-out infinite; }
+@keyframes live-pulse { 50% { opacity: 0.35; } }
+
+.live-board-card, .live-final, .live-empty {
+  background: var(--data-surface); border: 1px solid var(--hairline);
+  border-radius: var(--radius-2xl); box-shadow: var(--shadow-card);
+}
+.live-board-card { padding: var(--space-md); }
+.live-grid { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--space-sm); }
+.live-col { min-width: 0; }
+.live-col--b { text-align: right; }
+.live-team-top { display: flex; align-items: center; gap: var(--space-sm); }
+.live-col--b .live-team-top { flex-direction: row-reverse; }
+.live-team-chip {
+  display: inline-flex; min-width: 0; align-items: center;
+  padding: 0.25rem 0.5rem; border-radius: var(--radius-md);
+  font-size: var(--text-base); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+.live-team-chip--sm { font-size: var(--text-sm); padding: 0.125rem 0.5rem; }
+.live-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-block { display: block; }
+.live-team-name { margin-top: 0.125rem; font-size: var(--text-xs); line-height: 1.3; color: var(--text-muted); }
+.live-score {
+  margin-top: 0.25rem; font-size: clamp(3.25rem, 14vw, 4.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1;
+  font-variant-numeric: tabular-nums; transform-origin: left center;
+}
+.live-col--b .live-score { transform-origin: right center; }
+.live-bump { animation: live-bump 450ms ease-out; }
+@keyframes live-bump { 30% { transform: scale(1.12); } }
+.live-col-meta { margin-top: var(--space-sm); font-size: 0.6875rem; color: var(--text-muted); }
+.live-serve-dot {
+  width: 0.625rem; height: 0.625rem; border-radius: 50%; flex: none;
+  background: var(--kscw-gold); box-shadow: 0 0 0 2px rgba(255, 200, 50, 0.4);
+  animation: live-pulse 1.4s ease-in-out infinite;
+}
+.live-mid { padding: 0 0.25rem; text-align: center; }
+.live-mid-label {
+  font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-muted);
+}
+.live-mid-value { font-size: clamp(1.5rem, 6vw, 2.25rem); font-weight: 700; font-variant-numeric: tabular-nums; }
+.live-sep { margin: 0 0.25rem; color: var(--text-muted); opacity: 0.6; }
+.live-set-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.375rem; margin-bottom: var(--space-md); }
+.live-set-chip {
+  padding: 0.125rem 0.5rem; border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--bg-muted); font-size: var(--text-xs); font-weight: 600;
+  font-variant-numeric: tabular-nums; color: var(--text-muted);
+}
+.live-set-chip .live-sep { margin: 0 0.125rem; }
+.live-win { color: var(--text-primary); }
+.live-possession { display: flex; height: 1.5rem; align-items: center; justify-content: center; margin-top: 0.25rem; font-size: 1.125rem; }
+.live-bonus-row { display: flex; min-height: 1rem; margin-top: 0.25rem; }
+.live-col--b .live-bonus-row { justify-content: flex-end; }
+.live-bonus {
+  padding: 0.125rem 0.375rem; border-radius: var(--radius-sm);
+  background: rgba(245, 158, 11, 0.15); color: #b45309;
+  font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+}
+:root:not(.light) .live-bonus { color: #fbbf24; }
+
+.live-final { margin-bottom: var(--space-sm); padding: var(--space-md); text-align: center; }
+.live-final-line {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-sm);
+  margin-top: var(--space-sm); font-weight: 700; font-size: var(--text-lg);
+}
+.live-final-score { margin-top: 0.25rem; font-size: clamp(1.5rem, 5vw, 1.875rem); font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+.live-empty { padding: var(--space-2xl) var(--space-lg); text-align: center; border-color: var(--border); border-style: dashed; box-shadow: none; }
+.live-empty-title { font-weight: 600; }
+.live-empty-hint { max-width: 24rem; margin: 0.25rem auto 0; font-size: var(--text-sm); color: var(--text-muted); }
+
+.live-meta {
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-sm);
+  min-height: 1.5rem; margin-top: var(--space-sm); font-size: var(--text-xs); color: var(--text-muted);
+}
+.live-meta #live-updated { margin-left: auto; }
+.live-event {
+  padding: 0.25rem 0.5rem; border-radius: var(--radius-md);
+  background: rgba(255, 200, 50, 0.15); color: var(--text-primary); font-weight: 500;
+}
+.live-scope { margin-top: var(--space-md); font-size: var(--text-xs); color: var(--text-muted); }
+
+.live-recent { margin-top: var(--space-xl); }
+.live-recent h2 { font-size: var(--text-base); letter-spacing: -0.01em; margin-bottom: var(--space-sm); }
+.live-recent-scroll { overflow-x: auto; border: 1px solid var(--hairline); border-radius: var(--radius-2xl); background: var(--data-surface); box-shadow: var(--shadow-card); }
+.live-recent-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.live-recent-table th, .live-recent-table td { padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--border); text-align: left; white-space: normal; }
+.live-recent-table th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); background: var(--bg-muted); }
+.live-recent-table tbody tr:last-child td { border-bottom: none; }
+.live-recent-table .live-num { text-align: right; font-variant-numeric: tabular-nums; }
+.live-recent-table td.live-num { font-weight: 600; }
+.live-recent-table td.live-muted { font-weight: 400; font-size: var(--text-xs); color: var(--text-muted); }
+.live-recent-match { font-weight: 500; overflow-wrap: anywhere; }
+@media (max-width: 639px) { .live-hide-sm { display: none; } }
+@media (min-width: 640px) {
+  .live-board-card { padding: var(--space-lg); }
+  .live-grid { gap: var(--space-md); }
+  .live-team-chip { font-size: var(--text-lg); }
+}
+
+/* Site-wide pill → /live. Fixed so its arrival never shifts the page. */
+.live-now-pill {
+  position: fixed; left: 1rem; bottom: 1rem; z-index: var(--z-sticky);
+  display: flex; align-items: center; gap: 0.625rem;
+  max-width: calc(100vw - 2rem); min-height: 2.75rem; padding: 0.5rem 0.875rem;
+  border: 1px solid rgba(239, 68, 68, 0.35); border-radius: var(--radius-full);
+  background: var(--data-surface); color: var(--text-primary); box-shadow: var(--shadow-card-lg);
+  font-size: var(--text-sm); transition: transform var(--transition-fast);
+}
+.live-now-pill:hover { transform: translateY(-1px); }
+@media (prefers-reduced-motion: reduce) {
+  .live-now-pill:hover { transform: none; }
+}
+.live-now-badge { display: inline-flex; align-items: center; gap: 0.375rem; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: #dc2626; text-transform: uppercase; }
+:root:not(.light) .live-now-badge { color: #f87171; }
+.live-now-badge .live-dot { animation: live-pulse 1.4s ease-in-out infinite; }
+.live-now-headline { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; }
+.live-now-cta { flex: none; font-size: var(--text-xs); color: var(--text-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot, .live-serve-dot, .live-bump, .live-now-badge .live-dot,
+  .live-pill[data-tone] .live-dot { animation: none !important; }
+}

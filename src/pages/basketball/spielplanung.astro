@@ -39,7 +39,7 @@ const locale = 'de';
         {t(locale, 'schedulingHallsText')}
       </p>
       <div style="max-width: 400px;">
-        <div class="card" style="border-top: 4px solid var(--kscw-gold);">
+        <div class="card" style="border-top: 3px solid var(--kscw-gold);">
           <div class="card-body">
             <div style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md);">
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--kscw-gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>
@@ -64,17 +64,28 @@ const locale = 'de';
     display: inline-flex;
     align-items: center;
     gap: var(--space-md);
+    min-height: 44px;
     padding: var(--space-md) var(--space-lg);
-    background: var(--surface-alt);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    /* --surface-alt was never defined (transparent). Card surface per theme:
+       dark cards sit on --bg-light, light cards are white on the stone page. */
+    background: var(--bg-light);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
     color: var(--kscw-gold);
-    font-size: 1.125rem;
+    font-size: 1rem;
     font-weight: 500;
+    overflow-wrap: anywhere;
     text-decoration: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
   .contact-email-card:hover {
     border-color: var(--kscw-gold);
+    box-shadow: var(--shadow-card-lg);
+  }
+  /* Bright gold on white is 1.5:1 — the ochre the site uses for gold on light. */
+  .light .contact-email-card {
+    background: var(--bg-white);
+    color: #836408;
   }
 </style>

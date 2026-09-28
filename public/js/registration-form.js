@@ -1464,7 +1464,8 @@
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.textContent = locale === 'de' ? 'Erneut versuchen' : 'Try again';
-    btn.style.cssText = 'margin-top: 0.5rem; padding: 0.4rem 0.9rem; cursor: pointer;';
+    btn.className = 'btn btn-outline btn-sm';
+    btn.style.cssText = 'margin-top: 0.5rem;';
     btn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -1596,7 +1597,7 @@
     var iconWrap = document.createElement('div');
     iconWrap.className = 'success-modal-icon';
     iconWrap.innerHTML =
-      '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>';
+      '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>';
 
     var msgEl = document.createElement('p');
     msgEl.className = 'success-modal-msg';
@@ -2166,7 +2167,7 @@
       input.value = '';
       delete docUploads[key];
       st.textContent = '✗ ' + e.message;
-      st.style.color = '#b91c1c';
+      st.style.color = 'var(--notice-error-fg)';
       return;
     }
     st.textContent = locale === 'de' ? 'Wird hochgeladen…' : 'Uploading…';
@@ -2176,7 +2177,7 @@
       .then(function (fid) {
         entry.fileId = fid;
         st.textContent = locale === 'de' ? '✓ Hochgeladen' : '✓ Uploaded';
-        st.style.color = '#15803d';
+        st.style.color = 'var(--notice-success-fg)';
       })
       .catch(function (err) {
         entry.error = err;
@@ -2187,7 +2188,7 @@
         st.textContent = locale === 'de'
           ? '✗ Upload fehlgeschlagen — bitte Datei erneut auswählen.'
           : '✗ Upload failed — please pick the file again.';
-        st.style.color = '#b91c1c';
+        st.style.color = 'var(--notice-error-fg)';
         logBlock('doc eager-upload failed (' + key + '): ' + (err && err.message ? err.message : 'unknown'));
       });
     docUploads[key] = entry;

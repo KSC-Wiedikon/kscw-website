@@ -170,7 +170,7 @@ const bakedOverrideKeys = Object.keys((bakedSiteText as { de?: Record<string, st
        both build links from admin-authored Directus values, and a guard that
        loads after them is no guard at all. ~4 KB, no dependencies.
        Build-time callers import src/lib/safeHref.ts instead. -->
-  <!-- Inter is self-hosted (public/fonts, @font-face in global.css). It used to be
+  <!-- Inter is self-hosted (public/fonts, @font-face in src/styles/foundation.css). It used to be
        a Google Fonts <link>, i.e. two cross-origin round trips — a stylesheet, then
        the font it names — so every cold load painted in system sans and re-laid-out
        the page afterwards. Preloading only the `latin` subset: `latin-ext` is
@@ -188,7 +188,7 @@ const bakedOverrideKeys = Object.keys((bakedSiteText as { de?: Record<string, st
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
   {/* Dark is the default theme (:root), .light is the opt-in override — so the
-      unqualified value is the dark one, matching --bg-white in global.css. */}
+      unqualified value is the dark one, matching --bg-white in src/styles/foundation.css. */}
   <meta name="theme-color" content="#0f1729">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <link rel="alternate" type="application/rss+xml" title="KSC Wiedikon News" href="/feed.xml">

@@ -106,10 +106,17 @@ const locale = 'de';
     line-height: 1.8;
     color: var(--text-secondary);
   }
+  /* Prose sections separated by hairlines (svrz reading layout): headings in
+     body text colour, sentence case, the brand kept for links. */
+  .legal-card + .legal-card {
+    padding-top: var(--space-xl);
+    border-top: 1px solid var(--border);
+  }
   .legal-card h2 {
     font-size: var(--text-lg);
-    font-weight: 700;
-    color: var(--accent-text, #4A55A2);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
     margin-bottom: var(--space-sm);
   }
   .legal-card p {
@@ -117,10 +124,13 @@ const locale = 'de';
     line-height: 1.7;
     color: var(--text-secondary);
   }
-  .legal-card a {
-    color: var(--accent-text, #4A55A2);
+  .legal-card a:not(.btn) {
+    color: var(--accent-text);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, currentColor 35%, transparent);
+    text-underline-offset: 2px;
   }
-  .legal-card a:hover {
+  .legal-card a:not(.btn):hover {
     text-decoration: underline;
   }
   .legal-updated {

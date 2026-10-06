@@ -40,7 +40,16 @@
   // Surface client-side submit blocks (validation / expired captcha) into the
   // error log via the console.error capture in error-logger.js, so silent
   // "it didn't work" reports become diagnosable. Prefixed for easy filtering.
+  //
+  // A repeat of the previous reason is not logged again: applicants hammer the
+  // button (17 identical "bb ID front missing" in 20 s on 23.09.2026), and
+  // error-logger.js stops at 20 reports per page. The count still reaches the
+  // log through the leave-without-submitting report below (`funnel.attempts`).
+  var funnel = { startedAt: Date.now(), attempts: 0, lastBlock: '', reported: false };
+
   function logBlock(reason) {
+    if (reason === funnel.lastBlock) return;
+    funnel.lastBlock = reason;
     try { console.error('[registration] ' + reason); } catch (_) { /* noop */ }
   }
 
@@ -1703,10 +1712,152 @@
     return '+' + String(dial || '').replace(/\D/g, '') + national;
   }
 
+  // ── Browser-side refusals ─────────────────────────────────
+  // The browser checks every `required` field BEFORE the submit event fires, so
+  // a refusal there never reaches the handler below: nothing is logged, and the
+  // applicant's only hint is a small native bubble at the field — or no hint at
+  // all when the field sits in a hidden section ("an invalid form control is not
+  // focusable", see updateAhvRequired). On 06.10.2026 a parent uploaded their
+  // child's documents, reloaded, uploaded them again and never got a submit
+  // through, with an empty log, and reported that the form "doesn't work".
+  //
+  // `invalid` does not bubble, so listen in the capture phase. The browser fires
+  // it on every failing control of one attempt in a row, then focuses the
+  // first; collect them and report once per attempt.
+  var invalidBatch = [];
+  var VALIDITY_FLAGS = ['valueMissing', 'typeMismatch', 'patternMismatch', 'tooShort', 'tooLong',
+    'rangeUnderflow', 'rangeOverflow', 'stepMismatch', 'badInput', 'customError'];
+
+  function isShown(el) {
+    return !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  }
+
+  function validityReason(el) {
+    var v = el.validity || {};
+    for (var i = 0; i < VALIDITY_FLAGS.length; i++) if (v[VALIDITY_FLAGS[i]]) return VALIDITY_FLAGS[i];
+    return 'invalid';
+  }
+
+  function cleanLabel(node, max) {
+    var txt = node ? node.textContent.replace(/\*/g, '').replace(/\s+/g, ' ').trim() : '';
+    return txt.length > max ? txt.slice(0, max - 1).trim() + '…' : txt;
+  }
+
+  // The label the applicant sees, in the current language: a radio group is
+  // named by its group heading (not by the option card it sits in), a file input
+  // by its group plus its own "Front side" / "Back side" label.
+  function fieldLabel(el) {
+    var group = el.closest('.form-group');
+    var groupLabel = group ? cleanLabel(group.querySelector(':scope > label'), 60) : '';
+    if (el.type === 'radio') return groupLabel || el.name;
+    var own = el.id ? form.querySelector('label[for="' + el.id + '"]') : null;
+    var ownLabel = cleanLabel(own || el.closest('label'), 60);
+    if (el.type === 'file' && groupLabel && ownLabel && groupLabel !== ownLabel) return groupLabel + ': ' + ownLabel;
+    return ownLabel || groupLabel || el.name || el.id;
+  }
+
+  form.addEventListener('invalid', function (ev) {
+    if (!invalidBatch.length) setTimeout(reportInvalid, 0);
+    invalidBatch.push(ev.target);
+  }, true);
+
+  function reportInvalid() {
+    var els = invalidBatch;
+    invalidBatch = [];
+    if (!els.length) return;
+    funnel.attempts++;
+    var parts = [];
+    var labels = [];
+    var seenRadio = {};
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.type === 'radio') { if (seenRadio[el.name]) continue; seenRadio[el.name] = true; }
+      parts.push((el.id || el.name || el.type) + ' (' + validityReason(el) + (isShown(el) ? '' : ', hidden') + ')');
+      var label = fieldLabel(el);
+      if (label && labels.indexOf(label) === -1) labels.push(label);
+    }
+    logBlock('blocked by browser check: ' + parts.join(', '));
+    // The browser's bubble already points at the first field; five names say
+    // the rest without turning an untouched form into a wall of text.
+    var named = labels.slice(0, 5).join(' · ') + (labels.length > 5 ? ' · …' : '');
+    showFeedback('error', i18n.t('registrationValidationFields', { fields: named }));
+    // A hidden control gets no native bubble and no focus — bring the nearest
+    // visible part of the form into view so the message is not the only sign.
+    if (!isShown(els[0])) {
+      var anchor = els[0].parentElement;
+      while (anchor && anchor !== form && !isShown(anchor)) anchor = anchor.parentElement;
+      if (anchor && anchor.scrollIntoView) anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  // ── Leaving without submitting ────────────────────────────
+  // What none of the reports above can say is whether the applicant ever
+  // pressed the button. Once they have uploaded a document or tried to submit,
+  // leaving the page (reload, navigation, closed tab) without a successful
+  // registration is worth one warn-level entry with the state they left in.
+  // Sent directly rather than through error-logger.js: that logger has a
+  // 20-per-page budget the refusals above may already have spent, and it can
+  // only say `error`. Field ids and counts only — never a value.
+  window.addEventListener('pagehide', function () {
+    if (funnel.reported) return;
+    var uploaded = 0;
+    var failed = 0;
+    for (var k in docUploads) {
+      if (!docUploads[k]) continue;
+      if (docUploads[k].fileId) uploaded++;
+      else if (docUploads[k].error) failed++;
+    }
+    if (!uploaded && !failed && !funnel.attempts) return;
+    funnel.reported = true;
+
+    var stillInvalid = [];
+    var controls = form.querySelectorAll('input, select, textarea');
+    var seenRadio = {};
+    for (var i = 0; i < controls.length; i++) {
+      var c = controls[i];
+      // `validity`, not checkValidity(): the latter fires `invalid` and would
+      // log a refusal the applicant never saw.
+      if (!c.willValidate || !c.validity || c.validity.valid) continue;
+      if (c.type === 'radio') { if (seenRadio[c.name]) continue; seenRadio[c.name] = true; }
+      stillInvalid.push((c.id || c.name) + (isShown(c) ? '' : ' (hidden)'));
+    }
+    var captcha = '';
+    try { captcha = (window.turnstile && turnstileWidgetId !== null) ? (window.turnstile.getResponse(turnstileWidgetId) || '') : ''; } catch (_) { /* noop */ }
+    var type = (form.querySelector('input[name="membership_type"]:checked') || {}).value || 'none';
+    var minutes = Math.round((Date.now() - funnel.startedAt) / 60000);
+
+    var msg = '[registration] left without submitting after ' + minutes + ' min'
+      + ' — type: ' + type
+      + ', submit attempts: ' + funnel.attempts
+      + ', last refusal: ' + (funnel.lastBlock || 'none')
+      + ', documents uploaded: ' + uploaded + (failed ? ' (' + failed + ' failed)' : '')
+      + ', still invalid: ' + (stillInvalid.join(', ') || 'none')
+      + ', captcha token: ' + (captcha ? 'yes' : 'no')
+      + (isAlreadyMember ? ', blocked as already a member' : '');
+    var body = JSON.stringify({
+      project: 'kscw-website',
+      source: 'frontend',
+      level: 'warn',
+      event: 'registration_abandoned',
+      type: 'RegistrationAbandoned',
+      error: msg,
+      page: window.location.pathname,
+      userAgent: navigator.userAgent,
+    });
+    var url = DIRECTUS_URL + '/kscw/client-error';
+    try {
+      // Same Blob-with-JSON-type as error-logger.js: a bare string beacon goes
+      // out as text/plain and the collector's JSON parser drops it.
+      if (navigator.sendBeacon && navigator.sendBeacon(url, new Blob([body], { type: 'application/json' }))) return;
+      fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body, keepalive: true }).catch(function () {});
+    } catch (_) { /* never throw while the page unloads */ }
+  });
+
   // ── Form submission ───────────────────────────────────────
   form.addEventListener('submit', function (ev) {
     ev.preventDefault();
     hideFeedback();
+    funnel.attempts++;
 
     // The button is disabled while the already-member block stands, but a form
     // can still be submitted by pressing Enter in a text field — so the guard
@@ -2064,6 +2215,11 @@
         form.reset();
         // Reset custom UI
         docUploads = {};
+        // A parent registering a sibling starts over on the same page; only that
+        // new attempt can still end in a leave-without-submitting report.
+        funnel.startedAt = Date.now();
+        funnel.attempts = 0;
+        funnel.lastBlock = '';
         var stEls = form.querySelectorAll('.doc-upload-status');
         for (var si = 0; si < stEls.length; si++) stEls[si].textContent = '';
         natCodes = [];

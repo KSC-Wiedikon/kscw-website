@@ -139,7 +139,7 @@ describe('F-23 — editing an event keeps what it holds', () => {
 
   it('offers every type, and never drops an unknown stored one', () => {
     const opts = api.eventTypeOptions(null);
-    for (const v of ['verein', 'social', 'meeting', 'tournament', 'trainingsweekend', 'friendly', 'other']) {
+    for (const v of ['club', 'social', 'meeting', 'tournament', 'training_weekend', 'friendly', 'other']) {
       expect(opts).toContain(v);
     }
     expect(api.eventTypeOptions('camp')).toContain('camp');

@@ -2,6 +2,14 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.31.0] — 2026-10-16
+
+### Neues Erscheinungsbild und Anmeldung mit den neuen Feldnamen
+- **Neues Erscheinungsbild**: ruhigere Schrift, hellere Neutraltöne und weichere Karten; Überschriften in Satzschreibweise. Vereinsfarben und der dunkle Standardmodus bleiben.
+- **Anmeldung**: Hielt der Browser die Anmeldung wegen eines fehlenden Felds an, sah man oft keinen Hinweis – bei einem ausgeblendeten Feld gar keinen. Das Formular nennt jetzt das betroffene Feld und scrollt dorthin. Der Hinweis zur AHV-Nummer sagt, wo sie steht (Krankenkassenkarte, 756…).
+- **Anmeldung und Vereinsverwaltung**: Anmeldungen werden mit den neuen Feldnamen der Mitgliederdatenbank gespeichert. In der Vereinsverwaltung zeigte der Anmeldungen-Tab danach leere Namen; er liest und speichert jetzt wieder alle Angaben. «Dokumente nachreichen» listet einen fehlenden Freibrief wieder auf.
+- **Anlässe**: Die Anlass-Typen heissen in der Datenbank jetzt englisch (club, training_weekend). Website und Vereinsverwaltung lesen und schreiben die neuen Werte; angezeigt wird weiterhin «Verein» bzw. «Trainingsweekend».
+
 ## [1.30.0] — 2026-09-28
 
 ### Sicherheits- und Fehlerbereinigung nach einem Audit

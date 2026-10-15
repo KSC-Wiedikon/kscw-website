@@ -19,6 +19,143 @@
   var bbFields = document.getElementById('bb-fields');
   var locale = document.documentElement.lang || 'de';
 
+  // ── Registration API vocabulary (wiedisync migration 413) ─────────────────
+  // The form keeps its German option values (the fee table, the PDF pre-fill and
+  // the visible UI read them); the request body speaks the English column names
+  // and value slugs of `registrations`. Translation happens here, once, at
+  // payload-build time. Mirror of wiedisync
+  // directus/extensions/kscw-endpoints/src/registration-values.js (normalizeRole,
+  // officialSlug, normalizeBbSituation, normalizeRecentLicence, normalizeSex) —
+  // a value missing here reaches the server as null, so change both together.
+  // Defined above the `if (!form) return` so tests/unit can load it without a DOM.
+  var ROLE_SLUGS = {
+    'Spieler*in': 'player',
+    'Trainer*in': 'coach',
+    'Guest': 'guest',
+    'Teamverantwortliche*r': 'team_responsible',
+    'Andere': 'other',
+  };
+  var SEX_SLUGS = { 'männlich': 'm', 'weiblich': 'f' };
+  var SITUATION_SLUGS = { neu: 'new', rueckkehr: 'returning', transfer_ch: 'transfer_ch', transfer_intl: 'transfer_intl' };
+
+  /** Funktion option value → role slug, or null (nothing picked / not a role). */
+  function roleSlug(v) { return ROLE_SLUGS[v] || null; }
+  /** Geschlecht option value → 'm' | 'f' | ''. */
+  function sexSlug(v) { return SEX_SLUGS[v] || ''; }
+  /** bb_situation radio value → 'new' | 'transfer_ch' | 'transfer_intl' | 'returning' | ''. */
+  function situationSlug(v) { return SITUATION_SLUGS[v] || ''; }
+  /** bb_recent_licence radio value → true | false | null (unanswered). */
+  function recentLicenceBool(v) { return v === 'ja' ? true : v === 'nein' ? false : null; }
+
+  /** One licence checkbox/radio value → official slug, or null. */
+  function officialSlug(token, membershipType) {
+    switch (String(token || '').toLowerCase().replace(/\s+/g, '')) {
+      case 'schreiber': case 'vbschreiber': return 'vb_scorer';
+      case 'vbschiedsrichter': return 'vb_referee';
+      case 'bbschiedsrichter': return 'bb_referee';
+      case 'schiedsrichter': return membershipType === 'basketball' ? 'bb_referee' : 'vb_referee';
+      case 'otr1': case 'bbotr1': return 'otr1';
+      case 'otr2': case 'bbotr2': return 'otr2';
+      case 'otn': case 'bbotn': return 'otn';
+      default: return null;
+    }
+  }
+  /** Licence values → 'otr1,bb_referee' (unique, in order), or '' when none. */
+  function officialsList(tokens, membershipType) {
+    var out = [];
+    (tokens || []).forEach(function (t) {
+      var s = officialSlug(t, membershipType);
+      if (s && out.indexOf(s) === -1) out.push(s);
+    });
+    return out.join(',');
+  }
+
+  /**
+   * The JSON body for POST /kscw/registration, from the raw (German-valued) form
+   * state. Pure: the submit handler reads the DOM into `f`, this does the rest.
+   */
+  function buildRegistrationPayload(f) {
+    var type = f.membershipType;
+    var payload = {
+      membership_type: type,
+      first_name: f.vorname,
+      last_name: f.nachname,
+      email: f.email,
+      phone: f.phone,
+      address: f.adresse,
+      postal_code: f.plz,
+      city: f.ort,
+      birthdate: f.geburtsdatum,
+      // Ordered ISO codes, first = primary (the basketball document gate and the
+      // ClubDesk push key off it).
+      nationality_codes: (f.natCodes || []).join(','),
+      federation_of_origin: f.federationOfOrigin || '',
+      sex: sexSlug(f.geschlecht),
+      remarks: f.bemerkungen,
+      turnstile_token: f.turnstileToken,
+      locale: f.locale,
+      iban: f.iban,
+    };
+    var officials = '';
+    var role = null;
+
+    if (type === 'volleyball' || type === 'basketball') {
+      var vb = type === 'volleyball';
+      payload.salutation = f.anrede || '';
+      role = roleSlug(vb ? f.funktionVb : f.funktionBb);
+      payload.team = ((vb ? f.teamsVb : f.teamsBb) || []).join(', ');
+      payload.fee_category = vb ? f.feeVb : f.feeBb;
+      payload.ahv_number = f.ahv;
+      payload.cantonal_school = vb ? f.kantonsschuleVb : f.kantonsschuleBb;
+    }
+
+    if (type === 'volleyball') {
+      officials = officialsList(f.licencesVb, type);
+      if (f.refLevelVb) payload.referee_level = f.refLevelVb;
+    }
+
+    if (type === 'basketball') {
+      // Scorer (radio, single choice) + referee (checkbox, combinable).
+      var bbLic = [];
+      if (f.bbScorer) bbLic.push(f.bbScorer);
+      if (f.bbReferee) bbLic.push('Schiedsrichter');
+      officials = officialsList(bbLic, type);
+      // Licensing situation drives which Swiss Basketball documents are required
+      // (server re-validates using this + nationality + date of birth).
+      var situation = situationSlug(f.bbSituation);
+      payload.bb_situation = situation;
+      // Only meaningful for a Swiss-club transfer; recorded so the club can see
+      // why a Freibrief is absent from an otherwise complete dossier.
+      if (situation === 'transfer_ch') payload.bb_recent_licence = recentLicenceBool(f.bbRecentLicence);
+    }
+
+    if (type === 'passive') {
+      payload.salutation = f.anrede || '';
+      // Fee category: "Passivmitglied" (paying) or "Gratis" (referees/officials).
+      // Fallback covers cached pages that predate the #passive-fee select.
+      payload.fee_category = f.feePassive || 'Passivmitglied';
+      var pLic = (f.licencesPassive || []).slice();
+      if (f.passiveBbScorer) pLic.push(f.passiveBbScorer);
+      // A passive registration has no role — its licence list is not one.
+      officials = officialsList(pLic, type);
+      if (f.refLevelPassive) payload.referee_level = f.refLevelPassive;
+    }
+
+    if (role) payload.role = role;
+    if (officials) payload.officials_requested = officials;
+    return payload;
+  }
+
+  window.KSCW_REG_PAYLOAD = {
+    build: buildRegistrationPayload,
+    roleSlug: roleSlug,
+    sexSlug: sexSlug,
+    situationSlug: situationSlug,
+    recentLicenceBool: recentLicenceBool,
+    officialSlug: officialSlug,
+    officialsList: officialsList,
+  };
+
   if (!form) return;
 
   // Re-read the language when it changes.
@@ -650,8 +787,11 @@
   // transfer / from abroad / returner — plus nationality and whether they are a
   // minor (U18, FIBA minor-transfer rules) decide which documents are required.
   // ID front/back + signed Lizenzantrag are always required and handled elsewhere.
-  // Kept in sync with the backend (wiedisync registration.js bbRequiredDocs()).
-  var BB_SITUATIONS = ['neu', 'transfer_ch', 'transfer_intl', 'rueckkehr'];
+  // Kept in sync with the backend (wiedisync bb-docs.js bbRequiredDocs()): same
+  // situation slugs (the radio values neu / rueckkehr are translated by
+  // situationSlug()), recent-licence answer as true / false / null, and the
+  // registrations column names as document keys.
+  var BB_SITUATIONS = ['new', 'transfer_ch', 'transfer_intl', 'returning'];
 
   // Age at the start of the current season (Sept 1), or null when the date of
   // birth is missing or unparseable. Swiss Basketball states its document rules in
@@ -706,8 +846,10 @@
   }
 
   // Returns { required: [...docKeys], optional: [...docKeys] } beyond the always-on
-  // id_upload_front / id_upload_back / bb_doc_lizenz. docKeys are the short doc
-  // ids used by data-doc / data-doc-upload attributes and the DOC_INPUTS map.
+  // id_upload_front / id_upload_back / bb_doc_lizenz. docKeys are the registrations
+  // column names (as in bbRequiredDocs and DOC_INPUTS), also used by the
+  // data-doc / data-doc-upload attributes of the conditional rows.
+  // `situation` is a slug (situationSlug()), `recentLicence` true | false | null.
   function bbDocSet(situation, natCode, isMinor, dobStr, recentLicence) {
     var required = [];
     var optional = [];
@@ -717,33 +859,37 @@
         // Swiss Basketball waives the release letter in two cases: no licence in
         // the last two seasons (asked on the form — the previous club has nothing
         // to release), and categories U12 and below.
-        if (!FREIBRIEF_WAIVER_ENABLED || (recentLicence !== 'nein' && !isYouthFreibriefExempt(dobStr))) required.push('freibrief');
+        // Only an explicit "no" (false) waives; unanswered (null) keeps it required.
+        if (!FREIBRIEF_WAIVER_ENABLED || (recentLicence !== false && !isYouthFreibriefExempt(dobStr))) required.push('bb_doc_release_letter');
         break;
       case 'transfer_intl':
-      case 'rueckkehr':
-        required.push('selfdecl');
-        if (isMinor) { required.push('natdecl', 'u18parents'); optional.push('schoolcert'); }
+      case 'returning':
+        required.push('bb_doc_selfdecl');
+        if (isMinor) { required.push('bb_doc_natdecl', 'bb_doc_u18parents'); optional.push('bb_doc_schoolcert'); }
         break;
-      case 'neu':
+      case 'new':
       default:
-        if (foreign) required.push('selfdecl');
-        if (foreign && isMinor) required.push('natdecl');
+        if (foreign) required.push('bb_doc_selfdecl');
+        if (foreign && isMinor) required.push('bb_doc_natdecl');
         break;
     }
     return { required: required, optional: optional };
   }
 
+  // The picked situation as an API slug ('new' | 'transfer_ch' | 'transfer_intl'
+  // | 'returning'), or '' when none is picked.
   function currentSituation() {
     var r = form.querySelector('input[name="bb_situation"]:checked');
-    return r ? r.value : '';
+    return r ? situationSlug(r.value) : '';
   }
 
   // Show/hide the conditional download rows + upload slots to match the current
   // situation/nationality/age, and mark shown-required uploads. Runs whenever the
   // situation, nationality, or date of birth changes.
+  // true ('ja') | false ('nein') | null (unanswered).
   function currentRecentLicence() {
     var r = form.querySelector('input[name="bb_recent_licence"]:checked');
-    return r ? r.value : '';
+    return r ? recentLicenceBool(r.value) : null;
   }
 
   function updateBBDocs() {
@@ -980,7 +1126,7 @@
     fetch(DIRECTUS_URL + '/kscw/registration/check-duplicate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vorname: vorname, nachname: nachname, email: email }),
+      body: JSON.stringify({ first_name: vorname, last_name: nachname, email: email }),
     })
       .then(function (r) { return r.ok ? r.json() : { already_member: false }; })
       .then(function (d) {
@@ -1159,7 +1305,7 @@
         el.querySelectorAll('[required]').forEach(function (r) { r.removeAttribute('required'); });
       });
       // Hidden is not cleared: a Schiedsrichter/Schreiber tick made as a player
-      // would otherwise ride into payload.lizenz and the fee table's referee
+      // would otherwise ride into payload.officials_requested and the fee table's referee
       // note for a guest, who is never licensed. Only the licence controls —
       // the BB situation radios drive the document set through change handlers
       // a programmatic uncheck would not re-run, and the guest gate skips them.
@@ -1935,7 +2081,7 @@
       // answer decides whether the Freibrief is required at all.
       var dobVal = val('geburtsdatum');
       var recent = currentRecentLicence();
-      if (FREIBRIEF_WAIVER_ENABLED && situation === 'transfer_ch' && !isYouthFreibriefExempt(dobVal) && !recent) {
+      if (FREIBRIEF_WAIVER_ENABLED && situation === 'transfer_ch' && !isYouthFreibriefExempt(dobVal) && recent === null) {
         logBlock('blocked: bb recent-licence question unanswered');
         return showFeedback('error', locale === 'de'
           ? 'Bitte gib an, ob du in den letzten zwei Saisons eine Swiss-Basketball-Lizenz hattest.'
@@ -1943,22 +2089,22 @@
       }
       var reqDocs = bbDocSet(situation, natCode, isMinorFromDob(dobVal), dobVal, recent).required;
       var DOC_UPLOAD_IDS = {
-        freibrief: 'bb-doc-freibrief-upload',
-        selfdecl: 'bb-doc-selfdecl-upload',
-        natdecl: 'bb-doc-natdecl-upload',
-        u18parents: 'bb-doc-u18parents-upload',
+        bb_doc_release_letter: 'bb-doc-freibrief-upload',
+        bb_doc_selfdecl: 'bb-doc-selfdecl-upload',
+        bb_doc_natdecl: 'bb-doc-natdecl-upload',
+        bb_doc_u18parents: 'bb-doc-u18parents-upload',
       };
       var DOC_MISSING_MSG = {
-        freibrief: locale === 'de'
+        bb_doc_release_letter: locale === 'de'
           ? 'Bei einem Vereinswechsel innerhalb der Schweiz musst du den vom bisherigen Club unterschriebenen Freibrief hochladen.'
           : 'For a transfer from another Swiss club you must upload the release letter (Freibrief) signed by your previous club.',
-        selfdecl: locale === 'de'
+        bb_doc_selfdecl: locale === 'de'
           ? 'Für deine Situation musst du zusätzlich die unterschriebene «Player’s Self Declaration» hochladen.'
           : 'For your situation you must also upload the signed "Player’s Self Declaration".',
-        natdecl: locale === 'de'
+        bb_doc_natdecl: locale === 'de'
           ? 'Für Spieler:innen unter 18 musst du zusätzlich das unterschriebene «Acknowledgment of National Team Restriction» hochladen.'
           : 'For players under 18 you must also upload the signed "Acknowledgment of National Team Restriction".',
-        u18parents: locale === 'de'
+        bb_doc_u18parents: locale === 'de'
           ? 'Für Spieler:innen unter 18 musst du zusätzlich das unterschriebene Einverständnis der Eltern (U18) hochladen.'
           : 'For players under 18 you must also upload the signed parental consent (U18).',
       };
@@ -2061,95 +2207,57 @@
 
     setLoading(true);
 
-    // Build JSON payload
-    var payload = {
-      membership_type: type,
+    // Build JSON payload — read the raw form state, translate to the English
+    // registration API in buildRegistrationPayload() (top of this file).
+    function checkedValues(name) {
+      var out = [];
+      form.querySelectorAll('input[name="' + name + '"]:checked').forEach(function (cb) { out.push(cb.value); });
+      return out;
+    }
+    var bbScorerRadio = form.querySelector('input[name="bb_scorer_licence"]:checked');
+    var bbRefCheck = document.getElementById('bb-ref-check');
+    var passiveBBScorer = form.querySelector('input[name="passive_bb_scorer"]:checked');
+    var bbSituationRadio = form.querySelector('input[name="bb_situation"]:checked');
+    var bbRecentRadio = form.querySelector('input[name="bb_recent_licence"]:checked');
+    var payload = buildRegistrationPayload({
+      membershipType: type,
       vorname: val('vorname'),
       nachname: val('nachname'),
       email: val('email'),
-      telefon_mobil: fullPhone,
+      phone: fullPhone,
       adresse: val('adresse'),
       plz: val('plz'),
       ort: val('ort'),
       geburtsdatum: val('geburtsdatum'),
-      // Display names (human-readable, in the submitter's language) plus the
-      // canonical codes. `nationalitaet_code` stays the PRIMARY code so the
-      // server-side basketball document gate keeps its existing contract.
-      nationalitaet: natHidden ? natHidden.value : '',
-      nationalitaet_code: natCodes[0] || '',
-      nationalitaet_codes: natCodes.join(','),
-      federation_of_origin: fedHidden ? fedHidden.value : '',
+      natCodes: natCodes,
+      federationOfOrigin: fedHidden ? fedHidden.value : '',
       geschlecht: val('geschlecht'),
       bemerkungen: val('bemerkungen'),
-      turnstile_token: turnstileToken,
+      turnstileToken: turnstileToken,
       locale: locale,
-    };
-
-    // IBAN (required) — validated non-empty above, always sent.
-    payload.iban = ibanCompact;
-
-    if (type === 'volleyball') {
-      payload.anrede = anredeHidden ? anredeHidden.value : '';
-      payload.rolle = val('funktion-vb');
-      var vbTeams = [];
-      form.querySelectorAll('input[name="team_vb"]:checked').forEach(function (cb) { vbTeams.push(cb.value); });
-      payload.team = vbTeams.join(', ');
-      payload.beitragskategorie = val('vb-fee');
-      payload.ahv_nummer = ahvCanon;
-      payload.kantonsschule = kantonsschuleValue('vb');
-      var lizenzVbChecked = [];
-      form.querySelectorAll('input[name="lizenz_vb"]:checked').forEach(function (cb) {
-        lizenzVbChecked.push(cb.value);
-      });
-      if (lizenzVbChecked.length) {
-        payload.lizenz = lizenzVbChecked.join(', ');
-      }
-      var refLevel = val('vb-ref-level');
-      if (refLevel) payload.schiedsrichter_stufe = refLevel;
-    }
-
-    if (type === 'basketball') {
-      payload.anrede = anredeHidden ? anredeHidden.value : '';
-      payload.rolle = val('funktion-bb');
-      var bbTeams = [];
-      form.querySelectorAll('input[name="team_bb"]:checked').forEach(function (cb) { bbTeams.push(cb.value); });
-      payload.team = bbTeams.join(', ');
-      payload.beitragskategorie = val('bb-fee');
-      payload.ahv_nummer = ahvCanon;
-      payload.kantonsschule = kantonsschuleValue('bb');
-      // BB licence: scorer (radio, single choice) + referee (checkbox, combinable)
-      var bbLicParts = [];
-      var scorerRadio = form.querySelector('input[name="bb_scorer_licence"]:checked');
-      if (scorerRadio && scorerRadio.value) bbLicParts.push(scorerRadio.value);
-      var refCheck = document.getElementById('bb-ref-check');
-      if (refCheck && refCheck.checked) bbLicParts.push('Schiedsrichter');
-      payload.lizenz = bbLicParts.join(', ') || '';
-      // Licensing situation drives which Swiss Basketball documents are required
-      // (server re-validates using this + nationality + date of birth).
-      payload.bb_situation = currentSituation();
-      // Only meaningful for a Swiss-club transfer; recorded so the club can see
-      // why a Freibrief is absent from an otherwise complete dossier.
-      if (currentSituation() === 'transfer_ch') payload.bb_recent_licence = currentRecentLicence();
-    }
-
-    if (type === 'passive') {
-      payload.anrede = anredeHidden ? anredeHidden.value : '';
-      // Fee category: "Passivmitglied" (paying) or "Gratis" (referees/officials).
-      // Fallback covers cached pages that predate the #passive-fee select.
-      payload.beitragskategorie = val('passive-fee') || 'Passivmitglied';
-      var lizenzPassive = [];
-      form.querySelectorAll('input[name="lizenz_passive"]:checked').forEach(function (cb) {
-        lizenzPassive.push(cb.value);
-      });
-      var passiveBBScorer = form.querySelector('input[name="passive_bb_scorer"]:checked');
-      if (passiveBBScorer && passiveBBScorer.value) lizenzPassive.push(passiveBBScorer.value);
-      if (lizenzPassive.length) {
-        payload.lizenz = lizenzPassive.join(', ');
-        payload.rolle = lizenzPassive.join(', ');
-      }
-      var passiveRefLevel = val('passive-vb-ref-level');
-      if (passiveRefLevel) payload.schiedsrichter_stufe = passiveRefLevel;
-    }
+      // IBAN (required) — validated non-empty above, always sent.
+      iban: ibanCompact,
+      anrede: anredeHidden ? anredeHidden.value : '',
+      ahv: ahvCanon,
+      funktionVb: val('funktion-vb'),
+      teamsVb: checkedValues('team_vb'),
+      feeVb: val('vb-fee'),
+      kantonsschuleVb: type === 'volleyball' ? kantonsschuleValue('vb') : '',
+      licencesVb: checkedValues('lizenz_vb'),
+      refLevelVb: val('vb-ref-level'),
+      funktionBb: val('funktion-bb'),
+      teamsBb: checkedValues('team_bb'),
+      feeBb: val('bb-fee'),
+      kantonsschuleBb: type === 'basketball' ? kantonsschuleValue('bb') : '',
+      bbScorer: bbScorerRadio ? bbScorerRadio.value : '',
+      bbReferee: !!(bbRefCheck && bbRefCheck.checked),
+      bbSituation: bbSituationRadio ? bbSituationRadio.value : '',
+      bbRecentLicence: bbRecentRadio ? bbRecentRadio.value : '',
+      feePassive: val('passive-fee'),
+      licencesPassive: checkedValues('lizenz_passive'),
+      passiveBbScorer: passiveBBScorer ? passiveBBScorer.value : '',
+      refLevelPassive: val('passive-vb-ref-level'),
+    });
 
     // Documents FIRST, registration second: the server refuses a basketball
     // registration whose document ids are missing (docs_required), so wait for
@@ -2290,7 +2398,8 @@
     { id: 'id-front', key: 'id_upload_front' },
     { id: 'id-back', key: 'id_upload_back' },
     { id: 'bb-doc-lizenz-upload', key: 'bb_doc_lizenz' },
-    { id: 'bb-doc-freibrief-upload', key: 'bb_doc_freibrief' },
+    // Input id/name keep "freibrief"; the API key is the 413 column name.
+    { id: 'bb-doc-freibrief-upload', key: 'bb_doc_release_letter' },
     { id: 'bb-doc-selfdecl-upload', key: 'bb_doc_selfdecl' },
     { id: 'bb-doc-natdecl-upload', key: 'bb_doc_natdecl' },
     { id: 'bb-doc-u18parents-upload', key: 'bb_doc_u18parents' },
@@ -2600,10 +2709,10 @@
           // Tick the box matching the applicant's situation (the PDF's transfer
           // checkboxes); default to "new member" when no situation was picked.
           var sitBox = {
-            neu: 'Neues Mitglied Swiss Basketball',
+            new: 'Neues Mitglied Swiss Basketball',
             transfer_ch: 'Klubtransfer',
             transfer_intl: 'Internationaler Transfer',
-            rueckkehr: 'Internationaler Transfer',
+            returning: 'Internationaler Transfer',
           }[d.situation] || 'Neues Mitglied Swiss Basketball';
           try { f.getCheckBox(sitBox).check(); } catch(e) {}
 

@@ -1689,7 +1689,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
             + '?filter[status][_eq]=' + encodeURIComponent(regStatusFilter)
             + '&sort=-submitted_at')
           .then(function(rows) {
-            renderRegistrationsList(rows, regStatusFilter);
+            renderRegistrationsList((rows || []).map(regFromRow), regStatusFilter);
           })
           .catch(function(err) {
             content.textContent = '';
@@ -2042,6 +2042,77 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     }
 
     // ── Registrations List ──────────────────────────────────────
+    // ── wiedisync migration 413: registrations columns are English ──────────
+    // The page below still speaks the old German field names (list, detail,
+    // ClubDesk CSV, PDF prefill), so rows are translated once on load and the
+    // edit is translated back on save. Vocabulary: wiedisync
+    // kscw-endpoints/src/registration-values.js.
+    var REG_SEX_CD = { m: 'männlich', f: 'weiblich' };
+    var REG_ROLE_CD = { player: 'Spieler*in', coach: 'Trainer*in', guest: 'Guest', team_responsible: 'Teamverantwortliche*r', other: 'Andere' };
+    var REG_OFFICIAL_CD = { vb_scorer: 'VB Schreiber', vb_referee: 'VB Schiedsrichter', bb_referee: 'BB Schiedsrichter', otr1: 'OTR 1', otr2: 'OTR 2', otn: 'OTN' };
+    var REG_SITUATION_LEGACY = { 'new': 'neu', returning: 'rueckkehr' };
+    function regOfficialsToText(v, mt) {
+      return String(v || '').split(',').map(function (x) { return x.trim(); }).filter(function (x) { return REG_OFFICIAL_CD[x]; })
+        .map(function (x) {
+          var label = REG_OFFICIAL_CD[x];
+          if (mt === 'volleyball' && x.indexOf('vb_') === 0) return label.slice(3);
+          if (mt === 'basketball' && x === 'bb_referee') return label.slice(3);
+          return label;
+        }).join(', ');
+    }
+    function regOfficialSlug(tok, mt) {
+      var t = String(tok || '').toLowerCase().replace(/\s+/g, '');
+      var direct = ['vb_scorer', 'vb_referee', 'bb_referee', 'otr1', 'otr2', 'otn'];
+      if (direct.indexOf(t) !== -1) return t;
+      if (t === 'schreiber' || t === 'vbschreiber') return 'vb_scorer';
+      if (t === 'vbschiedsrichter') return 'vb_referee';
+      if (t === 'bbschiedsrichter') return 'bb_referee';
+      if (t === 'schiedsrichter') return mt === 'basketball' ? 'bb_referee' : 'vb_referee';
+      if (t === 'otr1' || t === 'bbotr1') return 'otr1';
+      if (t === 'otr2' || t === 'bbotr2') return 'otr2';
+      if (t === 'otn' || t === 'bbotn') return 'otn';
+      return null;
+    }
+    function regFromRow(r) {
+      var o = Object.assign({}, r);
+      o.vorname = r.first_name; o.nachname = r.last_name; o.telefon_mobil = r.phone;
+      o.adresse = r.address; o.plz = r.postal_code; o.ort = r.city; o.geburtsdatum = r.birthdate;
+      o.geschlecht = REG_SEX_CD[r.sex] || r.sex || '';
+      o.ahv_nummer = r.ahv_number; o.beitragskategorie = r.fee_category; o.kantonsschule = r.cantonal_school;
+      o.rolle = REG_ROLE_CD[r.role] || ''; o.bemerkungen = r.remarks;
+      o.lizenz = regOfficialsToText(r.officials_requested, r.membership_type);
+      o.schiedsrichter_stufe = r.referee_level; o.sektion_choice = r.club_section_choice;
+      o.bb_doc_freibrief = r.bb_doc_release_letter;
+      // Nationality is a code list now ('IT,CH'); shown and edited as codes.
+      o.nationalitaet = r.nationality_codes || '';
+      o.nationalitaet_code = String(r.nationality_codes || '').split(',')[0] || '';
+      o.bb_situation = REG_SITUATION_LEGACY[r.bb_situation] || r.bb_situation;
+      o.bb_recent_licence = r.bb_recent_licence === true ? 'ja' : r.bb_recent_licence === false ? 'nein' : null;
+      return o;
+    }
+    // The German-keyed edit form → the English PATCH body.
+    function regToPayload(p, mt) {
+      var g = String(p.geschlecht || '').trim().toLowerCase();
+      var sex = ['m', 'männlich', 'male', 'mann'].indexOf(g) !== -1 ? 'm' : ['f', 'weiblich', 'female', 'frau'].indexOf(g) !== -1 ? 'f' : null;
+      var rl = String(p.rolle || '').trim().toLowerCase();
+      var ROLE_IN = { 'spieler*in': 'player', player: 'player', 'trainer*in': 'coach', coach: 'coach', guest: 'guest', gast: 'guest',
+        'teamverantwortliche*r': 'team_responsible', team_responsible: 'team_responsible', andere: 'other', other: 'other' };
+      var off = [];
+      String(p.lizenz || '').split(',').forEach(function (tok) { var s = regOfficialSlug(tok, mt); if (s && off.indexOf(s) === -1) off.push(s); });
+      var codes = String(p.nationalitaet || '').toUpperCase().replace(/\s+/g, '');
+      var out = {
+        first_name: p.vorname, last_name: p.nachname, email: p.email, phone: p.telefon_mobil,
+        address: p.adresse, postal_code: p.plz, city: p.ort, birthdate: p.geburtsdatum || null,
+        sex: sex, team: p.team, fee_category: p.beitragskategorie, ahv_number: p.ahv_nummer,
+        cantonal_school: p.kantonsschule, role: ROLE_IN[rl] || null,
+        officials_requested: off.length ? off.join(',') : null,
+        referee_level: p.schiedsrichter_stufe, remarks: p.bemerkungen,
+      };
+      if (!codes) out.nationality_codes = null;
+      else if (/^[A-Z]{2}(,[A-Z]{2})*$/.test(codes)) out.nationality_codes = codes;
+      return out;
+    }
+
     function renderRegistrationsList(items, statusFilter) {
       var listContainer = document.getElementById('admin-content');
       if (!listContainer) return;
@@ -2437,7 +2508,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
 
       document.getElementById('modal-form').addEventListener('submit', function(e) {
         e.preventDefault();
-        saveRegistration(item.id);
+        saveRegistration(item.id, item.membership_type);
       });
 
       modal.querySelectorAll('[data-reg-file]').forEach(function(btn) {
@@ -2484,7 +2555,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
       }
     }
 
-    async function saveRegistration(id) {
+    async function saveRegistration(id, membershipType) {
       var saveBtn = document.getElementById('modal-save');
       saveBtn.disabled = true;
       saveBtn.textContent = t('saving');
@@ -2509,6 +2580,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
         schiedsrichter_stufe: document.getElementById('f-reg-refstufe').value.trim(),
         bemerkungen: document.getElementById('f-reg-bemerkungen').value.trim(),
       };
+      payload = regToPayload(payload, membershipType);
 
       try {
         var res = await wadmin('registrations', 'items/registrations/' + id, {
@@ -2574,7 +2646,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     // Mirrors wadmin.js REGISTRATION_FILE_COLUMNS — the columns the file routes accept.
     var REGISTRATION_DOC_COLUMNS = [
       'id_upload_front', 'id_upload_back',
-      'bb_doc_lizenz', 'bb_doc_freibrief', 'bb_doc_selfdecl',
+      'bb_doc_lizenz', 'bb_doc_release_letter', 'bb_doc_selfdecl',
       'bb_doc_natdecl', 'bb_doc_u18parents', 'bb_doc_schoolcert',
     ];
     // A 404 means the file is already gone, which is the state a delete wants.
@@ -2819,7 +2891,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
 
       // Nationality
       try {
-        if (data.nationalitaet === 'Schweiz' || data.nationalitaet === 'Schweizerin, Schweizer') {
+        if (data.nationalitaet === 'Schweiz' || data.nationalitaet === 'Schweizerin, Schweizer' || /(^|,)\s*CH\s*(,|$)/i.test(data.nationalitaet || '')) {
           form.getCheckBox('Schweiz').check();
         } else {
           form.getCheckBox('Andere').check();

@@ -29,7 +29,9 @@
     id_upload_front: de ? 'ID / Pass — Vorderseite' : 'ID / passport — front',
     id_upload_back: de ? 'ID / Pass — Rückseite' : 'ID / passport — back',
     bb_doc_lizenz: de ? 'Lizenzantrag (unterschrieben)' : 'Licence application (signed)',
-    bb_doc_freibrief: de ? 'Freibrief (unterschrieben)' : 'Release letter / Freibrief (signed)',
+    // Column renamed by wiedisync migration 413 (was bb_doc_freibrief); doc-status
+    // lists it under this name in `required` and `docs`.
+    bb_doc_release_letter: de ? 'Freibrief (unterschrieben)' : 'Release letter / Freibrief (signed)',
     bb_doc_selfdecl: "Player's Self Declaration",
     bb_doc_natdecl: 'Acknowledgment of National Team Restriction',
     bb_doc_u18parents: de ? 'Einverständnis der Eltern (U18)' : 'Parental consent (U18)',
@@ -45,7 +47,7 @@
   // 404s, so the page must not invent one.
   var PREFILLABLE = [
     'bb_doc_lizenz', 'bb_doc_selfdecl', 'bb_doc_natdecl',
-    'bb_doc_freibrief', 'bb_doc_u18parents',
+    'bb_doc_release_letter', 'bb_doc_u18parents',
   ];
 
   var current = null; // { id, reference, email, required, docs }

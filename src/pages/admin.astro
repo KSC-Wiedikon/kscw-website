@@ -964,8 +964,14 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
       return (h < 10 ? '0' : '') + h + ':' + (mi < 10 ? '0' : '') + mi;
     }
     // ── Event form ⇄ row (F-23) ──────────────────────────────────
-    // The events.event_type values, as wiedisync's Event type lists them.
-    var EVENT_TYPES = ['verein', 'social', 'meeting', 'tournament', 'trainingsweekend', 'friendly', 'other'];
+    // The events.event_type values, as wiedisync's Event type lists them (English
+    // since wiedisync migration 420). The labels keep the wording admins know.
+    var EVENT_TYPES = ['club', 'social', 'meeting', 'tournament', 'training_weekend', 'friendly', 'other'];
+    var EVENT_TYPE_LABELS = { club: 'Verein', training_weekend: 'Trainingsweekend' };
+    function eventTypeLabel(v) {
+      v = String(v || '');
+      return EVENT_TYPE_LABELS[v] || (v.charAt(0).toUpperCase() + v.slice(1));
+    }
     function eventTypeOptions(current) {
       var opts = EVENT_TYPES.slice();
       if (current && opts.indexOf(current) === -1) opts.push(current); // never lose an unknown value
@@ -1938,7 +1944,9 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
             if (category) {
               var catBadge = document.createElement('span');
               catBadge.className = 'admin-badge';
-              catBadge.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+              catBadge.textContent = currentTab === 'news'
+                ? category.charAt(0).toUpperCase() + category.slice(1)
+                : eventTypeLabel(category);
               meta.appendChild(catBadge);
             }
             if (currentTab === 'news') {
@@ -2082,7 +2090,6 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
       o.rolle = REG_ROLE_CD[r.role] || ''; o.bemerkungen = r.remarks;
       o.lizenz = regOfficialsToText(r.officials_requested, r.membership_type);
       o.schiedsrichter_stufe = r.referee_level; o.sektion_choice = r.club_section_choice;
-      o.bb_doc_freibrief = r.bb_doc_release_letter;
       // Nationality is a code list now ('IT,CH'); shown and edited as codes.
       o.nationalitaet = r.nationality_codes || '';
       o.nationalitaet_code = String(r.nationality_codes || '').split(',')[0] || '';
@@ -2439,8 +2446,8 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
           '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.id_upload_back) + '">View</button></div>' : '') +
         (item.bb_doc_lizenz ? '<div class="admin-field"><label>License application (PDF)</label>' +
           '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_lizenz) + '">View</button></div>' : '') +
-        (item.bb_doc_freibrief ? '<div class="admin-field"><label>Release letter / Freibrief (PDF)</label>' +
-          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_freibrief) + '">View</button></div>' : '') +
+        (item.bb_doc_release_letter ? '<div class="admin-field"><label>Release letter / Freibrief (PDF)</label>' +
+          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_release_letter) + '">View</button></div>' : '') +
         (item.bb_doc_selfdecl ? '<div class="admin-field"><label>Self Declaration (PDF)</label>' +
           '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_selfdecl) + '">View</button></div>' : '') +
         (item.bb_doc_natdecl ? '<div class="admin-field"><label>National Team Decl. (PDF)</label>' +
@@ -2472,7 +2479,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
           }
           var req = ['id_upload_front', 'id_upload_back', 'bb_doc_lizenz'];
           if (SITS.indexOf(sit) === -1) { if (foreign) req.push('bb_doc_selfdecl', 'bb_doc_natdecl'); }
-          else if (sit === 'transfer_ch') { req.push('bb_doc_freibrief'); }
+          else if (sit === 'transfer_ch') { req.push('bb_doc_release_letter'); }
           else if (sit === 'transfer_intl' || sit === 'rueckkehr') { req.push('bb_doc_selfdecl'); if (minor) req.push('bb_doc_natdecl', 'bb_doc_u18parents'); }
           else { if (foreign) req.push('bb_doc_selfdecl'); if (foreign && minor) req.push('bb_doc_natdecl'); }
           var missing = req.filter(function (k) { return !item[k]; });
@@ -5566,7 +5573,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
         // Every event_type the column allows, plus whatever the row already holds: a
         // select that cannot show the stored value silently rewrites it to the first
         // option on save (friendly/trainingsweekend became 'verein' — F-23).
-        formHtml += fieldSelect('event_type', t('type'), eventTypeOptions(item ? item.event_type : null), item ? item.event_type : 'verein');
+        formHtml += fieldSelect('event_type', t('type'), eventTypeOptions(item ? item.event_type : null), item ? item.event_type : 'club', eventTypeLabel);
         // Timed events keep their clock: date + time on the Zurich wall clock, stored
         // back as UTC instants. A date-only field saved every timed event at midnight.
         var evInputs = eventDateInputs(item);
@@ -6984,10 +6991,11 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
         (note ? '<small class="admin-hint">' + escapeHtml(note) + '</small>' : '') +
       '</div>';
     }
-    function fieldSelect(name, label, options, selected) {
+    function fieldSelect(name, label, options, selected, labelOf) {
       var html = '<div class="admin-field"><label for="f-' + name + '">' + escapeHtml(label) + '</label><select name="' + name + '" id="f-' + name + '">';
       options.forEach(function(opt) {
-        html += '<option value="' + escapeAttr(opt) + '"' + (opt === selected ? ' selected' : '') + '>' + escapeHtml(opt.charAt(0).toUpperCase() + opt.slice(1)) + '</option>';
+        var text = labelOf ? labelOf(opt) : opt.charAt(0).toUpperCase() + opt.slice(1);
+        html += '<option value="' + escapeAttr(opt) + '"' + (opt === selected ? ' selected' : '') + '>' + escapeHtml(text) + '</option>';
       });
       html += '</select></div>';
       return html;

@@ -41,6 +41,13 @@ interface CalendarEvent {
   signupUrl?: string
 }
 
+// event_type is English since wiedisync migration 420; keep the badge wording the
+// calendar showed when the values were German.
+const EVENT_CATEGORY_LABELS: Record<string, string> = { club: 'Verein', training_weekend: 'Trainingsweekend' }
+function eventCategoryLabel(cat: string): string {
+  return EVENT_CATEGORY_LABELS[cat] || cat.charAt(0).toUpperCase() + cat.slice(1)
+}
+
 // A single row from the `hall_closures` collection. One closure row exists per
 // (date-range × hall), so a school-holiday week is stored as ~12 rows (one per
 // hall). They are collapsed back into one entry per day/reason at render time.
@@ -674,7 +681,7 @@ if (container) {
     // Category badge
     const hdr = el('div', 'cal-modal-row-header')
     hdr.style.marginBottom = 'var(--space-sm)'
-    const catLabel = ev.category.charAt(0).toUpperCase() + ev.category.slice(1)
+    const catLabel = eventCategoryLabel(ev.category)
     hdr.appendChild(el('span', 'cal-tooltip-sport cal-tooltip-sport--event', catLabel))
     modal.appendChild(hdr)
 
@@ -1286,7 +1293,7 @@ if (container) {
       const row = el('div', 'cal-modal-row cal-modal-row--event')
 
       const rowHdr = el('div', 'cal-modal-row-header')
-      const catLabel = ev.category.charAt(0).toUpperCase() + ev.category.slice(1)
+      const catLabel = eventCategoryLabel(ev.category)
       rowHdr.appendChild(el('span', 'cal-tooltip-sport cal-tooltip-sport--event', catLabel))
       if (ev.time) rowHdr.appendChild(el('span', 'cal-modal-time', ev.time.slice(0, 5)))
       row.appendChild(rowHdr)

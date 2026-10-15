@@ -141,7 +141,7 @@ try {
                   <span class="news-date">{formatDate(ev.date)}</span>
                   <span class="badge badge-green">
                     {ev.category === 'social' ? t(locale, 'eventCategorySocial')
-                      : ev.category === 'verein' ? t(locale, 'eventCategoryClub')
+                      : ['club', 'verein'].includes(ev.category) ? t(locale, 'eventCategoryClub')
                       : ev.category === 'meeting' ? t(locale, 'eventCategoryAssembly')
                       : ev.category === 'tournament' ? t(locale, 'eventCategoryTournament')
                       : t(locale, 'eventCategoryOther')}

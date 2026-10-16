@@ -2444,8 +2444,8 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
           '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.id_upload_front) + '">View</button></div>' : '') +
         (item.id_upload_back ? '<div class="admin-field"><label>ID back</label>' +
           '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.id_upload_back) + '">View</button></div>' : '') +
-        (item.bb_doc_lizenz ? '<div class="admin-field"><label>License application (PDF)</label>' +
-          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_lizenz) + '">View</button></div>' : '') +
+        (item.bb_doc_licence ? '<div class="admin-field"><label>License application (PDF)</label>' +
+          '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_licence) + '">View</button></div>' : '') +
         (item.bb_doc_release_letter ? '<div class="admin-field"><label>Release letter / Freibrief (PDF)</label>' +
           '<button type="button" class="admin-btn admin-btn-sm" data-reg-file="' + escapeAttr(item.bb_doc_release_letter) + '">View</button></div>' : '') +
         (item.bb_doc_selfdecl ? '<div class="admin-field"><label>Self Declaration (PDF)</label>' +
@@ -2477,7 +2477,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
             if (9 < (+mm[2]) || (9 === (+mm[2]) && 1 < (+mm[3]))) age--;
             minor = age < 18;
           }
-          var req = ['id_upload_front', 'id_upload_back', 'bb_doc_lizenz'];
+          var req = ['id_upload_front', 'id_upload_back', 'bb_doc_licence'];
           if (SITS.indexOf(sit) === -1) { if (foreign) req.push('bb_doc_selfdecl', 'bb_doc_natdecl'); }
           else if (sit === 'transfer_ch') { req.push('bb_doc_release_letter'); }
           else if (sit === 'transfer_intl' || sit === 'rueckkehr') { req.push('bb_doc_selfdecl'); if (minor) req.push('bb_doc_natdecl', 'bb_doc_u18parents'); }
@@ -2653,7 +2653,7 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
     // Mirrors wadmin.js REGISTRATION_FILE_COLUMNS — the columns the file routes accept.
     var REGISTRATION_DOC_COLUMNS = [
       'id_upload_front', 'id_upload_back',
-      'bb_doc_lizenz', 'bb_doc_release_letter', 'bb_doc_selfdecl',
+      'bb_doc_licence', 'bb_doc_release_letter', 'bb_doc_selfdecl',
       'bb_doc_natdecl', 'bb_doc_u18parents', 'bb_doc_schoolcert',
     ];
     // A 404 means the file is already gone, which is the state a delete wants.

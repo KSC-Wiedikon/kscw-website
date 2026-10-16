@@ -28,7 +28,8 @@
   var LABELS = {
     id_upload_front: de ? 'ID / Pass — Vorderseite' : 'ID / passport — front',
     id_upload_back: de ? 'ID / Pass — Rückseite' : 'ID / passport — back',
-    bb_doc_lizenz: de ? 'Lizenzantrag (unterschrieben)' : 'Licence application (signed)',
+    // Column renamed by wiedisync migration 422 (the German "lizenz" key is gone).
+    bb_doc_licence: de ? 'Lizenzantrag (unterschrieben)' : 'Licence application (signed)',
     // Column renamed by wiedisync migration 413 (was bb_doc_freibrief); doc-status
     // lists it under this name in `required` and `docs`.
     bb_doc_release_letter: de ? 'Freibrief (unterschrieben)' : 'Release letter / Freibrief (signed)',
@@ -46,7 +47,7 @@
   // endpoint below actually dispatches on: a key listed here but not there just
   // 404s, so the page must not invent one.
   var PREFILLABLE = [
-    'bb_doc_lizenz', 'bb_doc_selfdecl', 'bb_doc_natdecl',
+    'bb_doc_licence', 'bb_doc_selfdecl', 'bb_doc_natdecl',
     'bb_doc_release_letter', 'bb_doc_u18parents',
   ];
 

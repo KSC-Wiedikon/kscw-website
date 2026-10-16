@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.31.1] — 2026-10-16
+
+### Lizenzantrag beim Nachreichen
+- **Dokumente nachreichen**: Fehlte bei einer Basketball-Anmeldung der Lizenzantrag, nannte die Seite zwar fehlende Dokumente, bot den Lizenzantrag aber weder zum Herunterladen noch zum Hochladen an. Er erscheint jetzt wieder. Anmeldeformular und Vereinsverwaltung verwenden für den Lizenzantrag den neuen Feldnamen der Datenbank (`bb_doc_licence`, wiedisync-Migration 422).
+
 ## [1.31.0] — 2026-10-16
 
 ### Neues Erscheinungsbild und Anmeldung mit den neuen Feldnamen

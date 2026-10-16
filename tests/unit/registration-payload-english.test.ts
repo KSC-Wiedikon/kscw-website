@@ -219,4 +219,16 @@ describe('the other request bodies and the document rules', () => {
     expect(DOCS_SRC).toMatch(/PREFILLABLE = \[[^\]]*'bb_doc_release_letter'/);
     expect(DOCS_SRC).not.toMatch(/'bb_doc_freibrief'|bb_doc_freibrief:/);
   });
+
+  // wiedisync migration 422 renamed the column bb_doc_lizenz → bb_doc_licence.
+  // doc-status lists it under the new name in `required`, so a LABELS key still
+  // spelled bb_doc_lizenz dropped the licence slot from the nachreichen page.
+  it('the licence application is keyed bb_doc_licence everywhere (migration 422)', () => {
+    const ADMIN_SRC = readFileSync(resolve(process.cwd(), 'src/pages/admin.astro'), 'utf8');
+    expect(FORM_SRC).toContain("{ id: 'bb-doc-lizenz-upload', key: 'bb_doc_licence' }");
+    expect(DOCS_SRC).toMatch(/bb_doc_licence: de \?/);
+    expect(DOCS_SRC).toMatch(/PREFILLABLE = \[[^\]]*'bb_doc_licence'/);
+    expect(ADMIN_SRC).toContain("var req = ['id_upload_front', 'id_upload_back', 'bb_doc_licence'];");
+    for (const src of [FORM_SRC, DOCS_SRC, ADMIN_SRC, PAGE_SRC]) expect(src).not.toContain('bb_doc_lizenz');
+  });
 });

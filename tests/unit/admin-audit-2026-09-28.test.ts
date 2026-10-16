@@ -428,7 +428,7 @@ describe('F-21 — registration documents never render in the admin origin', () 
     expect(fn.indexOf('deleteRegistrationFile')).toBeLessThan(fn.indexOf("{ method: 'DELETE' }"));
     const cols = snippet('var REGISTRATION_DOC_COLUMNS');
     expect(cols).toBe('var REGISTRATION_DOC_COLUMNS = [');
-    for (const c of ['id_upload_front', 'id_upload_back', 'bb_doc_lizenz', 'bb_doc_release_letter', 'bb_doc_selfdecl',
+    for (const c of ['id_upload_front', 'id_upload_back', 'bb_doc_licence', 'bb_doc_release_letter', 'bb_doc_selfdecl',
       'bb_doc_natdecl', 'bb_doc_u18parents', 'bb_doc_schoolcert']) {
       expect(SRC.slice(SRC.indexOf('var REGISTRATION_DOC_COLUMNS'), SRC.indexOf('];', SRC.indexOf('var REGISTRATION_DOC_COLUMNS')))).toContain(`'${c}'`);
     }

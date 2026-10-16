@@ -846,7 +846,7 @@
   }
 
   // Returns { required: [...docKeys], optional: [...docKeys] } beyond the always-on
-  // id_upload_front / id_upload_back / bb_doc_lizenz. docKeys are the registrations
+  // id_upload_front / id_upload_back / bb_doc_licence. docKeys are the registrations
   // column names (as in bbRequiredDocs and DOC_INPUTS), also used by the
   // data-doc / data-doc-upload attributes of the conditional rows.
   // `situation` is a slug (situationSlug()), `recentLicence` true | false | null.
@@ -2397,8 +2397,8 @@
   var DOC_INPUTS = [
     { id: 'id-front', key: 'id_upload_front' },
     { id: 'id-back', key: 'id_upload_back' },
-    { id: 'bb-doc-lizenz-upload', key: 'bb_doc_lizenz' },
-    // Input id/name keep "freibrief"; the API key is the 413 column name.
+    // Input ids keep "lizenz" / "freibrief"; the API keys are the 422 / 413 column names.
+    { id: 'bb-doc-lizenz-upload', key: 'bb_doc_licence' },
     { id: 'bb-doc-freibrief-upload', key: 'bb_doc_release_letter' },
     { id: 'bb-doc-selfdecl-upload', key: 'bb_doc_selfdecl' },
     { id: 'bb-doc-natdecl-upload', key: 'bb_doc_natdecl' },

@@ -1,0 +1,19 @@
+{
+  "club": [
+    { "address": "kscw@kscw.ch", "labelKey": "contactAddrGeneral" },
+    { "address": "ksc.wiedikon@kscw.ch", "labelKey": "contactAddrClub" },
+    { "address": "finance@mail.kscw.ch", "labelKey": "contactAddrFinance" },
+    { "address": "admin@wiedisync.kscw.ch", "labelKey": "contactAddrWiedisync" }
+  ],
+  "volleyball": [
+    { "address": "contact@volleyball.kscw.ch", "labelKey": "contactAddrGeneral" },
+    { "address": "spielplanung@volleyball.kscw.ch", "labelKey": "contactAddrScheduling" },
+    { "address": "scorer@volleyball.kscw.ch", "labelKey": "contactAddrScorer" }
+  ],
+  "basketball": [
+    { "address": "contact@basketball.kscw.ch", "labelKey": "contactAddrGeneral" },
+    { "address": "spielplanung@basketball.kscw.ch", "labelKey": "contactAddrScheduling" },
+    { "address": "waitlist@basketball.kscw.ch", "labelKey": "contactAddrWaitlist" },
+    { "address": "finance@basketball.kscw.ch", "labelKey": "contactAddrFinanceBasketball" }
+  ]
+}

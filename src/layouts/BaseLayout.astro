@@ -68,6 +68,17 @@ const buildDirectus = KNOWN_DIRECTUS.includes(envDirectus) ? envDirectus : 'http
 const bakedOverrideKeys = Object.keys((bakedSiteText as { de?: Record<string, string> }).de ?? {});
 
 /**
+ * <title> and the meta description come from the page's German props, which are
+ * plain strings — the dictionary pass (`t()`) never sees them, so a Seitentexte
+ * edit of e.g. `indexMetaDescription` reached only the browser's runtime swap and
+ * never the HTML a crawler or link preview reads (20.10.2026). A baked override
+ * for the page's key wins; without one the prop renders exactly as before.
+ */
+const bakedDe = (bakedSiteText as { de?: Record<string, string> }).de ?? {};
+const pageTitle = (titleKey && bakedDe[titleKey]) || title;
+const pageDescription = (descriptionKey && bakedDe[descriptionKey]) || description;
+
+/**
  * Open Graph is rendered from the BUILD-TIME German values and deliberately gets no
  * `data-i18n` hook. Every scraper that matters (WhatsApp, Facebook, Slack, iMessage)
  * reads the raw HTML without executing JavaScript, so a client-swapped tag would be
@@ -82,9 +93,9 @@ const bakedOverrideKeys = Object.keys((bakedSiteText as { de?: Record<string, st
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="dark light">
   <meta name="supported-color-schemes" content="dark light">
-  {description && <meta name="description" content={description}>}
+  {pageDescription && <meta name="description" content={pageDescription}>}
   {descriptionKey && <meta name="i18n-description" content={descriptionKey}>}
-  <title>{title}</title>
+  <title>{pageTitle}</title>
   {titleKey && <meta name="i18n-title" content={titleKey}>}
   {/* Content hashes for the i18n dictionaries. `i18n.js` itself is versioned by
       `versionedAsset`, but its DATA file carried a hand-written `?v=4` that was
@@ -196,15 +207,15 @@ const bakedOverrideKeys = Object.keys((bakedSiteText as { de?: Record<string, st
   <meta property="og:type" content={ogType}>
   <meta property="og:locale" content="de_CH">
   <meta property="og:url" content={canonical}>
-  <meta property="og:title" content={title}>
-  {description && <meta property="og:description" content={description}>}
+  <meta property="og:title" content={pageTitle}>
+  {pageDescription && <meta property="og:description" content={pageDescription}>}
   <meta property="og:image" content={ogImageUrl}>
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="KSC Wiedikon">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content={title}>
-  {description && <meta name="twitter:description" content={description}>}
+  <meta name="twitter:title" content={pageTitle}>
+  {pageDescription && <meta name="twitter:description" content={pageDescription}>}
   <meta name="twitter:image" content={ogImageUrl}>
   <!-- ⚠ `async` matters. This is a cross-origin script in <head>, so loaded
        synchronously it blocks first paint of the whole site on browser.sentry-cdn.com

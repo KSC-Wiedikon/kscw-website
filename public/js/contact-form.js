@@ -352,6 +352,9 @@
         name: (firstName + ' ' + lastName).trim(),
         email: email,
         subject: subject,
+        // Routes a no-team volleyball/basketball enquiry to that sport's contact
+        // (the backend fell back to kontakt@ without it).
+        sport: (subject === 'volleyball' || subject === 'basketball') ? subject : '',
         team_id: teamIdVal,
         message: message,
         locale: (document.documentElement.lang === 'en') ? 'en' : 'de',

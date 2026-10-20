@@ -611,27 +611,6 @@ button.nav-link {
   justify-content: center;
   flex-wrap: wrap;
 }
-/* The join CTA sits below the two sport buttons rather than beside them: those pick
-   a sport, this one starts a conversation, and giving three equal-weight buttons the
-   same row is how a page ends up with no primary action at all. Gold on the blue hero
-   is the strongest contrast pair the brand palette has. */
-.hero-cta {
-  margin-top: var(--space-lg);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-sm);
-}
-.hero-cta .btn-gold {
-  box-shadow: var(--shadow-sm);
-}
-.hero-cta-note {
-  font-size: var(--text-sm);
-  opacity: 0.85;
-  margin: 0;
-  max-width: 42ch;
-}
-
 /* Sport buttons: flat sport fills, no gradients, sheens, pulse or icon spin.
    Orange is taken one step deeper than --bb-orange (#ea580c, 3.6:1 under white
    text) to #c2410c, 5.2:1; the volleyball blue is --vb-blue, 8.7:1. */

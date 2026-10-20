@@ -1,5 +1,5 @@
 [
-  { "name": "Thamayanth Kanagalingam", "email": "contact@volleyball.kscw.ch", "sport": "volleyball", "order": 1 },
-  { "name": "Anja Jimenez", "email": "contact@basketball.kscw.ch", "sport": "basketball", "order": 1 },
-  { "name": "Rachel Moser", "email": "contact@basketball.kscw.ch", "sport": "basketball", "order": 2 }
+  {"name": "Thamayanth Kanagalingam", "sport": "volleyball", "order": 1},
+  {"name": "Anja Jimenez", "sport": "basketball", "order": 1},
+  {"name": "Rachel Moser", "sport": "basketball", "order": 2}
 ]

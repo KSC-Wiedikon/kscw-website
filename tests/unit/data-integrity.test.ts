@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import boardMembers from '../../src/data/board-members.json';
 import contactPersons from '../../src/data/contact-persons.json';
+import contactAddresses from '../../src/data/contact-addresses.json';
+import de from '../../public/js/i18n/de.json';
+import en from '../../public/js/i18n/en.json';
 import { allTeamDefs } from '../../src/data/teams';
 
 describe('board-members.json', () => {
@@ -34,8 +37,9 @@ describe('contact-persons.json', () => {
   it('every entry has required fields', () => {
     for (const person of contactPersons) {
       expect(person.name, `Missing name`).toBeTruthy();
-      expect(person.email, `Missing email for ${person.name}`).toBeTruthy();
-      expect(person.email).toContain('@');
+      // Names only — the page publishes role addresses (contact-addresses.json),
+      // never a person's own address.
+      expect((person as Record<string, unknown>).email, `${person.name} must not carry an email`).toBeUndefined();
       expect(person.sport, `Missing sport for ${person.name}`).toBeTruthy();
       expect(typeof person.order, `Invalid order for ${person.name}`).toBe('number');
     }
@@ -66,6 +70,26 @@ describe('teams.ts', () => {
       const key = `${team.sport}:${team.slug}`;
       expect(seen.has(key), `Duplicate slug "${team.slug}" in ${team.sport}: ${seen.get(key)} and ${team.displayName}`).toBe(false);
       seen.set(key, team.displayName);
+    }
+  });
+});
+
+describe('contact-addresses.json', () => {
+  const sections = ['club', 'volleyball', 'basketball'] as const;
+
+  it('every section lists at least one address', () => {
+    for (const s of sections) expect(contactAddresses[s].length, s).toBeGreaterThan(0);
+  });
+
+  it('publishes only kscw.ch role addresses, each with a DE + EN label', () => {
+    const dicts = { de, en } as Record<string, Record<string, string>>;
+    for (const s of sections) {
+      for (const a of contactAddresses[s]) {
+        expect(a.address, `${s}: ${a.address}`).toMatch(/^[a-z0-9._-]+@([a-z0-9-]+\.)*kscw\.ch$/);
+        for (const lang of ['de', 'en']) {
+          expect(dicts[lang][a.labelKey], `${lang} label ${a.labelKey}`).toBeTruthy();
+        }
+      }
     }
   });
 });

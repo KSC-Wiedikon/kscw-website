@@ -484,7 +484,11 @@ a.sponsor-page-card:hover {
 
 /* ── Reset ─────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+/* overflow-x: clip, not hidden. `hidden` on html AND body makes body a scroll
+   container, and the sticky .site-header then sticks to body and scrolls away
+   with the page. `clip` cuts the overflow without creating one; `hidden` stays
+   as the fallback for browsers without `clip`. */
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; overflow-x: hidden; overflow-x: clip; }
 body {
   font-family: var(--font-body);
   font-size: var(--text-base);
@@ -500,6 +504,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   transition: background var(--transition-base), color var(--transition-base);
   overflow-x: hidden;
+  overflow-x: clip;
 }
 /* Light theme: white cards on a warm stone page. Dark keeps its page on --bg-white
    (the darkest navy) with cards one step up on --bg-light. */

@@ -458,7 +458,7 @@
     var y = parseInt(today.slice(0, 4), 10);
     var startYear = parseInt(today.slice(5, 7), 10) >= 6 ? y : y - 1;
     var season = startYear + '/' + String((startYear + 1) % 100).padStart(2, '0');
-    var fields = 'game_id,date,time,home_team,away_team,type,league,season,hall.id,hall.name,hall.address';
+    var fields = 'id,game_id,date,time,home_team,away_team,type,league,season,hall.id,hall.name,hall.address';
     var filter = encodeURIComponent(JSON.stringify({ _and: [
       { kscw_team: { id: { _eq: TEAM_DIRECTUS_ID } } },
       { status: { _eq: 'scheduled' } },
@@ -479,7 +479,7 @@
             league: g.league, season: g.season, hall: g.hall || null,
             home_score: null, away_score: null, status: 'scheduled'
           };
-          var score = PR && PR.liveScore({ date: g.date, homeTeam: g.home_team, awayTeam: g.away_team, sport: location.pathname.indexOf('/basketball/') === 0 ? 'basketball' : 'volleyball' }, r[1]);
+          var score = PR && PR.liveScore({ ids: [g.id], date: g.date, homeTeam: g.home_team, awayTeam: g.away_team, sport: location.pathname.indexOf('/basketball/') === 0 ? 'basketball' : 'volleyball' }, r[1]);
           if (score) {
             row.home_score = score.home;
             row.away_score = score.away;

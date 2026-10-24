@@ -521,7 +521,9 @@ try {
         if (!window.KSCWPendingResults) return;
         games.forEach(function(g) {
           if (g.status !== 'scheduled') return;
-          var live = KSCWPendingResults.liveScore(g, liveRows);
+          // The board ties a match to its games.id; a merged derby has two.
+          var ids = g.derbyTeams ? g.derbyTeams.map(function(d) { return d.id; }) : [g.id];
+          var live = KSCWPendingResults.liveScore(Object.assign({}, g, { ids: ids }), liveRows);
           if (!live) return;
           g.homeScore = live.home; g.awayScore = live.away;
           g.score = live.home + ':' + live.away;

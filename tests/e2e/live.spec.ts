@@ -111,13 +111,32 @@ test.describe('/live', () => {
 });
 
 test.describe('live-now pill', () => {
+  // The pill skips a row nobody wrote for 20 minutes (a board switched off mid-match),
+  // so its live rows are stamped "just now"; VOLLEY_LIVE's fixed date would read as stale.
+  const fresh = (row: object) => ({ ...row, date_updated: new Date().toISOString() });
+
   test('appears site-wide while a match is live and links to /live', async ({ page }) => {
-    await stubLive(page, VOLLEY_LIVE);
+    await stubLive(page, fresh(VOLLEY_LIVE));
     await gotoWithLang(page, '/club/ueber-uns', 'de');
     const pill = page.locator('.live-now-pill');
     await expect(pill).toBeVisible();
     await expect(pill).toHaveAttribute('href', '/live');
     await expect(pill).toContainText('KSCW H1 12 : 9 KSCW H3');
+  });
+
+  test("a game's own row links to that game's channel", async ({ page }) => {
+    await stubLive(page, fresh({ ...VOLLEY_LIVE, channel: 'game-455', source: 'board:kscw' }));
+    await gotoWithLang(page, '/club/ueber-uns', 'de');
+    await expect(page.locator('.live-now-pill')).toHaveAttribute('href', '/live?channel=game-455');
+  });
+
+  test('stays away when the live row has not changed for 20 minutes', async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, date_updated: new Date(Date.now() - 21 * 60 * 1000).toISOString() });
+    const polled = page.waitForResponse('**/items/live_scores**');
+    await gotoWithLang(page, '/club/ueber-uns', 'de');
+    await polled;
+    await page.evaluate(() => new Promise((r) => setTimeout(r, 100)));
+    await expect(page.locator('.live-now-pill')).toHaveCount(0);
   });
 
   test('stays away when the board shows a finished match', async ({ page }) => {

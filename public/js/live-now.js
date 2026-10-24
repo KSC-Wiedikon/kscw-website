@@ -1,14 +1,19 @@
 /**
  * KSCW "Live now" pill — a small fixed link to /live that appears on every page
- * while the hall scoreboard is running a match. Port of wiedisync's LiveNowBanner.
+ * while a match is published live: the hall scoreboard, or a game scored from a
+ * phone in wiedisync (channel `game-<id>`). Port of wiedisync's LiveNowBanner
+ * (src/modules/live/liveNow.ts — keep the two rules the same).
  *
  *  - Polls every 30 s, not 3 s: "is something live?" changes once or twice an
  *    evening. The 3 s cadence belongs to /live itself, where the score is the content.
  *  - Fixed-position and created only when live, so it never shifts the layout (CLS)
  *    and costs nothing on a normal day.
  *  - 'final' is not live: a finished match left on the board all evening would
- *    otherwise keep advertising itself.
- *  - Wording stays unattached to a fixture — `live_scores` has no `games` link.
+ *    otherwise keep advertising itself. Nor is a row nobody wrote for 20 minutes
+ *    (a board switched off mid-match).
+ *  - A board that knows the fixture writes the match twice: its own row and the
+ *    game's (`source: 'board:<channel>'`). The board's own row is then skipped.
+ *  - The link opens that row's channel. Wording stays unattached to a fixture.
  */
 (function () {
   'use strict';
@@ -19,8 +24,35 @@
   var DIRECTUS_URL = window.__KSCW_DIRECTUS || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'https://directus-dev.kscw.ch' : 'https://directus.kscw.ch');
   var POLL_MS = 30000;
-  var URL_ = DIRECTUS_URL + '/items/live_scores?limit=1&filter[channel][_eq]=kscw'
-    + '&fields=status,team_a_short,team_b_short,points_a,points_b';
+  var STALE_MS = 20 * 60 * 1000;
+  var URL_ = DIRECTUS_URL + '/items/live_scores?limit=20&filter[status][_eq]=live&sort=-date_updated'
+    + '&fields=channel,status,team_a_short,team_b_short,points_a,points_b,date_updated,source';
+
+  function updatedMs(r) {
+    var t = r.date_updated ? new Date(r.date_updated).getTime() : NaN;
+    return isFinite(t) ? t : NaN;
+  }
+
+  /** The one live row to show, or null (same rules as wiedisync's pickLiveNow). */
+  function pick(rows, now) {
+    var live = (rows || []).filter(function (r) {
+      if (!r || r.status !== 'live') return false;
+      var t = updatedMs(r);
+      return !isFinite(t) || now - t <= STALE_MS;
+    });
+    var mirrored = {};
+    live.forEach(function (r) {
+      var src = String(r.source || '');
+      if (src.indexOf('board:') === 0) mirrored[src.slice(6)] = true;
+    });
+    var kept = live.filter(function (r) { return !mirrored[r.channel]; });
+    kept.sort(function (x, y) { return (updatedMs(y) || 0) - (updatedMs(x) || 0); });
+    return kept[0] || null;
+  }
+
+  function hrefFor(channel) {
+    return !channel || channel === 'kscw' ? '/live' : '/live?channel=' + encodeURIComponent(channel);
+  }
 
   var pill = null;
 
@@ -49,6 +81,7 @@
       pill.appendChild(span('live-now-cta', 'liveWatch', 'Ansehen'));
       document.body.appendChild(pill);
     }
+    pill.href = hrefFor(row.channel);
     var headline = ((row.team_a_short || '') + ' ' + (Number(row.points_a) || 0) + ' : '
       + (Number(row.points_b) || 0) + ' ' + (row.team_b_short || '')).trim();
     pill.querySelector('.live-now-headline').textContent = headline;
@@ -63,12 +96,15 @@
     fetch(URL_, { cache: 'no-store' })
       .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
       .then(function (j) {
-        var row = j && j.data && j.data[0];
-        if (row && row.status === 'live') show(row); else hide();
+        var row = pick(j && j.data, Date.now());
+        if (row) show(row); else hide();
       })
       // Best-effort: a network blip or missing permission just means no pill.
       .catch(hide);
   }
+
+  // For the unit test (tests/unit/live-now.test.ts); harmless on the page.
+  window.KSCWLiveNow = { pick: pick, hrefFor: hrefFor };
 
   poll();
   setInterval(poll, POLL_MS);

@@ -2,6 +2,13 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.32.0] — 2026-10-24
+
+### Live-Spielstand von der Anzeigetafel
+- **«Live»-Hinweis**: erscheint jetzt auch bei Spielen, die per Handy live erfasst werden, und öffnet dieses Spiel. Läuft ein Spiel 20 Minuten ohne Änderung, verschwindet der Hinweis.
+- **Provisorische Resultate**: Hat die Anzeigetafel in der Halle eine Partie dem Spiel zugeordnet, stammt das provisorische Resultat genau von dieser Partie, statt über Datum und Teamnamen gesucht zu werden.
+- **Live-Seite eines Spiels**: zeigt unter «Zuletzt auf der Anzeigetafel» das gespeicherte Resultat dieses Spiels.
+
 ## [1.31.1] — 2026-10-16
 
 ### Lizenzantrag beim Nachreichen

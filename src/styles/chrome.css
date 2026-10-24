@@ -43,12 +43,59 @@
 .nav-logo .logo-light { display: none; }
 .light .nav-logo .logo-dark { display: none; }
 .light .nav-logo .logo-light { display: block; }
+/* Brand group: crest + name, then the hosting partner after a hairline. */
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  min-width: 0;
+}
+.nav-host {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding-left: var(--space-md);
+  border-left: 1px solid var(--hairline);
+  color: var(--text-muted);
+  text-decoration: none;
+  opacity: 0.9;
+  transition: opacity var(--transition-fast);
+}
+.nav-host:hover {
+  opacity: 1;
+}
+.nav-host-label {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.nav-host img {
+  display: block;
+  height: 13px;
+  width: auto;
+}
+.nav-host .logo-light { display: none; }
+.light .nav-host .logo-dark { display: none; }
+.light .nav-host .logo-light { display: block; }
+@media (min-width: 1280px) {
+  .nav-host img { height: 15px; }
+}
 .nav-logo span {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: var(--text-lg);
   color: var(--accent-text);
   letter-spacing: -0.01em;
+}
+/* Small phones: crest, name, partner and the menu button share 360px. */
+@media (max-width: 400px) {
+  .nav-brand { gap: var(--space-sm); }
+  .nav-host { padding-left: var(--space-sm); }
+  .nav-logo span { font-size: var(--text-base); white-space: nowrap; }
 }
 /* Hide brand text when nav is visible but space is tight */
 @media (min-width: 1024px) and (max-width: 1279px) {

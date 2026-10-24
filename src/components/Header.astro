@@ -63,11 +63,20 @@ const bbMen = bbBy('men');
   <header class="site-header">
     <div class="container">
       <nav class="nav-inner">
-        <a href={l('/')} class="nav-logo">
-          <img src="/images/kscw_weiss.png" alt="KSC Wiedikon" class="logo-dark">
-          <img src="/images/kscw_blau.png" alt="KSC Wiedikon" class="logo-light">
-          <span>KSC Wiedikon</span>
-        </a>
+        <div class="nav-brand">
+          <a href={l('/')} class="nav-logo">
+            <img src="/images/kscw_weiss.png" alt="KSC Wiedikon" class="logo-dark">
+            <img src="/images/kscw_blau.png" alt="KSC Wiedikon" class="logo-light">
+            <span>KSC Wiedikon</span>
+          </a>
+          <!-- Hosting partner: Infomaniak sponsors the club's server. In the sticky
+               header so it is on every page. -->
+          <a href="https://www.infomaniak.com" class="nav-host" target="_blank" rel="sponsored noopener">
+            <span class="nav-host-label" data-i18n="hostedBy">{t(locale, 'hostedBy')}</span>
+            <img src="/images/sponsors/infomaniak-white.svg" alt="Infomaniak" class="logo-dark" width="244" height="32">
+            <img src="/images/sponsors/infomaniak-blue.svg" alt="Infomaniak" class="logo-light" width="244" height="32">
+          </a>
+        </div>
 
         <!-- Desktop Navigation -->
         <div class="nav-menu">

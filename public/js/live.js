@@ -401,9 +401,13 @@
   }
 
   function loadHistory() {
+    // A game's own channel (`game-<id>`) lists that game's archived match: the board
+    // archives on its own channel, with the game's id when it knew it (wiedisync
+    // migration 425). Any other channel is that board's log.
+    var game = /^game-(\d+)$/.exec(channel);
     var q = '/items/live_history?limit=' + HISTORY_LIMIT + '&sort=-finished_at'
       + '&fields=id,sport,team_a_short,team_a_name,team_b_short,team_b_name,points_a,points_b,sets_won_a,sets_won_b,set_results,finished_at'
-      + '&filter[channel][_eq]=' + encodeURIComponent(channel);
+      + (game ? '&filter[game_id][_eq]=' + game[1] : '&filter[channel][_eq]=' + encodeURIComponent(channel));
     getJSON(q).then(function (rows) {
       els.recentBody.textContent = '';
       rows.forEach(function (r) {

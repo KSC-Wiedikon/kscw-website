@@ -12,9 +12,10 @@
  * moment the sync marks a game `completed` its official score wins and this file
  * no longer touches it.
  *
- * `live_history` (public read, see live.js) has no link to the fixture, so a row is
- * matched to a game by Europe/Zurich date + both team names. (`live_match_logs`
- * carries a `game_id`, but is not readable anonymously on prod.)
+ * A `live_history` row (public read, see live.js) the board could tie to its fixture
+ * carries `game_id` = the game's `games.id` (wiedisync migration 425), with team A =
+ * home. That match wins. Older rows, and matches the board could not tie to a game, are
+ * matched by Europe/Zurich date + both team names, either orientation, as before.
  */
 (function () {
   'use strict';
@@ -58,7 +59,7 @@
   function loadLive(sinceDate) {
     var filter = { finished_at: { _gte: sinceDate } };
     var url = DIRECTUS_URL + '/items/live_history?limit=200&sort=-finished_at'
-      + '&fields=sport,team_a_name,team_a_short,team_b_name,team_b_short,points_a,points_b,sets_won_a,sets_won_b,set_results,finished_at'
+      + '&fields=game_id,sport,team_a_name,team_a_short,team_b_name,team_b_short,points_a,points_b,sets_won_a,sets_won_b,set_results,finished_at'
       + '&filter=' + encodeURIComponent(JSON.stringify(filter));
     return fetch(url)
       .then(function (r) { return r.ok ? r.json() : { data: [] }; })
@@ -66,31 +67,44 @@
       .catch(function () { return []; });
   }
 
+  function oriented(r, game, straight) {
+    var basketball = r.sport === 'basketball' || game.sport === 'basketball';
+    var a = basketball ? num(r.points_a) : num(r.sets_won_a);
+    var b = basketball ? num(r.points_b) : num(r.sets_won_b);
+    var sets = basketball || !Array.isArray(r.set_results) ? [] : r.set_results.map(function (s) {
+      return straight ? { home: num(s && s.a), away: num(s && s.b) } : { home: num(s && s.b), away: num(s && s.a) };
+    });
+    return straight ? { home: a, away: b, sets: sets } : { home: b, away: a, sets: sets };
+  }
+
   /**
    * The board's score for a game, oriented home/away, or null.
-   * `game`: { date: 'YYYY-MM-DD', homeTeam, awayTeam, sport }.
+   * `game`: { date: 'YYYY-MM-DD', homeTeam, awayTeam, sport, ids? } — `ids` = the game's
+   * `games.id`s (a derby merged on the home page has two).
    * Returns { home, away, sets: [{ home, away }] }.
    */
   function liveScore(game, rows) {
-    if (!game || !game.date || !rows || !rows.length) return null;
+    if (!game || !rows || !rows.length) return null;
+    var ids = (game.ids || []).filter(function (x) { return x != null && x !== ''; }).map(String);
+    if (ids.length) {
+      for (var k = 0; k < rows.length; k++) {
+        if (rows[k].game_id != null && ids.indexOf(String(rows[k].game_id)) >= 0) return oriented(rows[k], game, true);
+      }
+    }
+    if (!game.date) return null;
     var day = String(game.date).slice(0, 10);
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       if (!r.finished_at) continue;
+      // A row tied to ANOTHER game is that game's, whatever its names say.
+      if (r.game_id != null && ids.length) continue;
       var fin = zurichDate(r.finished_at);
       // A late game can finish after midnight.
       if (fin !== day && !(fin === nextDay(day) && zurichHour(r.finished_at) < 4)) continue;
       var straight = sameTeam(game.homeTeam, r, 'a') && sameTeam(game.awayTeam, r, 'b');
       var swapped = sameTeam(game.homeTeam, r, 'b') && sameTeam(game.awayTeam, r, 'a');
       if (!straight && !swapped) continue;
-
-      var basketball = r.sport === 'basketball' || game.sport === 'basketball';
-      var a = basketball ? num(r.points_a) : num(r.sets_won_a);
-      var b = basketball ? num(r.points_b) : num(r.sets_won_b);
-      var sets = basketball || !Array.isArray(r.set_results) ? [] : r.set_results.map(function (s) {
-        return straight ? { home: num(s && s.a), away: num(s && s.b) } : { home: num(s && s.b), away: num(s && s.a) };
-      });
-      return straight ? { home: a, away: b, sets: sets } : { home: b, away: a, sets: sets };
+      return oriented(r, game, straight);
     }
     return null;
   }

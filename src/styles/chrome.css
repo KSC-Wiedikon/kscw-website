@@ -75,14 +75,14 @@
 }
 .nav-host img {
   display: block;
-  height: 13px;
+  height: 28px;
   width: auto;
 }
 .nav-host .logo-light { display: none; }
 .light .nav-host .logo-dark { display: none; }
 .light .nav-host .logo-light { display: block; }
 @media (min-width: 1280px) {
-  .nav-host img { height: 15px; }
+  .nav-host img { height: 30px; }
 }
 .nav-logo span {
   font-family: var(--font-display);
@@ -95,6 +95,7 @@
 @media (max-width: 400px) {
   .nav-brand { gap: var(--space-sm); }
   .nav-host { padding-left: var(--space-sm); }
+  .nav-host img { height: 25px; }
   .nav-logo span { font-size: var(--text-base); white-space: nowrap; }
 }
 /* Hide brand text when nav is visible but space is tight */

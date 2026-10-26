@@ -341,17 +341,18 @@ try {
         else setTr(badge, 'homeBadgeAwayShort', 'Ausw.');
         tr.appendChild(makeCell(badge, 'gt-loc'));
 
-        // 6: matchup (split into spans so mobile can align home/away under scores)
+        // 6: matchup (split into spans so mobile can align home/away under scores).
+        // Our side is the bold one, home or away — both in a derby.
         var matchupInner = document.createElement('span');
         matchupInner.className = 'gt-matchup-inner';
         var homeNameEl = document.createElement('span');
-        homeNameEl.className = 'gt-home-team';
+        homeNameEl.className = 'gt-home-team' + (isHome || game.derbyTeams ? ' is-kscw' : '');
         homeNameEl.textContent = game.homeTeam;
         var vsEl = document.createElement('span');
         vsEl.className = 'gt-vs';
         vsEl.textContent = ' vs ';
         var awayNameEl = document.createElement('span');
-        awayNameEl.className = 'gt-away-team';
+        awayNameEl.className = 'gt-away-team' + (!isHome || game.derbyTeams ? ' is-kscw' : '');
         awayNameEl.textContent = game.awayTeam;
         matchupInner.appendChild(homeNameEl);
         matchupInner.appendChild(vsEl);

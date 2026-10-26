@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.33.0] — 2026-10-26
+
+### Infomaniak als Hosting-Partner
+- **Kopfzeile**: Neben dem Vereinsnamen steht jetzt «Hosted by infomaniak – The Ethical Cloud». Infomaniak sponsert den Server des Vereins; der Link führt zu infomaniak.com.
+- **Kopfzeile bleibt oben**: Die Kopfzeile scrollte bisher mit der Seite weg. Sie bleibt jetzt beim Scrollen sichtbar, auf dem Computer und auf dem Handy.
+
 ## [1.32.0] — 2026-10-24
 
 ### Live-Spielstand von der Anzeigetafel

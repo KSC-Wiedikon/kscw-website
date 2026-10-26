@@ -27,7 +27,7 @@ Context for a fresh session resuming work on the KSCW event-signup system.
 
 | Layer | Where | Notes |
 |---|---|---|
-| **Form builder** | OpnForm at `https://forms.kscw.ch` | Self-hosted via Coolify on Hetzner, 7 containers (nginx, opnform-ui, opnform-api, api-worker, api-scheduler, postgres, redis) |
+| **Form builder** | OpnForm at `https://forms.kscw.ch` | Self-hosted as a plain Docker Compose project on the Infomaniak VPS (Switzerland) since 26.10.2026 — `/opt/opnform`, compose file in wiedisync `ops/opnform/`; Coolify was dropped with the move. Reached only through the kscw-club Cloudflare tunnel (`forms.kscw.ch` → `127.0.0.1:8095`). 7 containers (`opnform-nginx`, `opnform-ui`, `opnform-api`, `opnform-api-worker`, `opnform-api-scheduler`, `opnform-postgres`, `opnform-redis`) |
 | **OpnForm UI image** | `ghcr.io/lucanepa/opnform-client:kscw-latest` | Custom fork at `github.com/Lucanepa/OpnForm` branch `kscw-customizations`. Weekly auto-rebase against upstream `OpnForm/OpnForm` |
 | **SMTP** | AWS SES eu-central-1 (Frankfurt) | Reuses Directus' creds. `forms@noreply.kscw.ch` |
 | **Schema** | Directus `events.signup_url` (string, nullable, max 500) | Added prod + dev 2026-05-12 |
@@ -80,7 +80,7 @@ Env vars on Directus container:
 
 ## Directus container quirk
 
-`directus-kscw` and `directus-kscw-dev` are **NOT Coolify-managed** — raw `docker run` with `--env-file`. Adding env vars requires container *recreation* (not just restart). Full recreation command in `docs/infra.md` under "Directus container management (Hetzner)".
+`directus-kscw` and `directus-kscw-dev` are plain Docker on the Infomaniak VPS (never Coolify-managed; Coolify is gone since the move on 26.10.2026) — raw `docker run` with `--env-file`. Adding env vars requires container *recreation* (not just restart). Full recreation command in `docs/infra.md` under "Directus container management (Hetzner)".
 
 ## Brand color/CSS
 
@@ -131,7 +131,7 @@ The on-server copy at `/opt/directus-kscw/extensions/kscw-endpoints/` was alread
 ```bash
 # 1. Check OpnForm reachable and healthy
 curl -sI https://forms.kscw.ch | head -1
-ssh hetzner 'docker ps --format "{{.Names}} | {{.Status}}" | grep -E "opnform|nginx-g57"'
+ssh hetzner 'sudo docker ps --format "{{.Names}} | {{.Status}}" | grep opnform'   # alias `hetzner` points at the Infomaniak VPS since 26.10.2026
 
 # 2. Check Directus proxy
 curl -s "https://directus.kscw.ch/kscw/opnform/forms/contact-form-i6dtvv/count"

@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.33.1] — 2026-10-26
+
+### Server in der Schweiz
+- **Impressum und Datenschutz**: nennen jetzt die Infomaniak Network SA in der Schweiz als Betreiberin des Servers, auf dem die Vereinsdatenbank und die Anmeldeformulare (forms.kscw.ch) laufen. Seit dem 26.10.2026 liegen diese Daten in einem Rechenzentrum im Kanton Genf statt bei Hetzner in Deutschland.
+
 ## [1.33.0] — 2026-10-26
 
 ### Infomaniak als Hosting-Partner

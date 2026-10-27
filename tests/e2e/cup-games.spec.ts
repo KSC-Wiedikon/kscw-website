@@ -21,6 +21,15 @@ const UPCOMING = [
   GAME('vb_3', 'Mobiliar Volley Cup — Runde 1, Spiel 37', '2030-09-20'),
 ];
 
+// The tables also wait for the hall-scoreboard history (pending-results.js).
+// Left to the real Directus, a slow answer under parallel workers kept them on
+// "Laden…" past the 5 s timeout.
+test.beforeEach(async ({ page }) => {
+  await page.route('**/items/live_history**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }),
+  }));
+});
+
 async function stubGames(page: Page) {
   await page.route('**/items/games**', (route) => {
     // The page fetches upcoming (sort=date,time) and completed (sort=-date,-time).

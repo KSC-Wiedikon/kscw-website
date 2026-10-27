@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.33.2] — 2026-10-27
+
+### Unser Team fett
+- **Spielübersicht auf der Startseite**: Der Name des KSC-Wiedikon-Teams steht jetzt fett, egal ob es zu Hause oder auswärts spielt. Bei einem Derby sind beide Teams fett. Bisher war immer das Heimteam fett.
+
 ## [1.33.1] — 2026-10-26
 
 ### Server in der Schweiz

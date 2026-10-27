@@ -288,8 +288,10 @@ tr:hover td {
   white-space: nowrap;
   color: var(--text-primary);
 }
-.gt-matchup .gt-home-team { font-weight: 600; }
+/* Our side reads bold whether it plays home or away (both sides in a derby). */
+.gt-matchup .gt-home-team,
 .gt-matchup .gt-away-team { font-weight: 400; color: var(--text-secondary); }
+.gt-matchup .is-kscw { font-weight: 600; color: var(--text-primary); }
 .gt-matchup .gt-vs { color: var(--text-muted); font-weight: 400; }
 .gt-score { text-align: right; white-space: nowrap; width: 4rem; }
 /* Upcoming tables have no scores: don't reserve their width, so a video pill

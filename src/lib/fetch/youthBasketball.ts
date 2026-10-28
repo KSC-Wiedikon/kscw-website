@@ -1,8 +1,9 @@
-import { fetchAllItems, strictBuildData } from '../directus'
+import { directusFetch, fetchAllItems, strictBuildData } from '../directus'
 import { zurichToday } from '../zurichTime'
 
 // Build-time data for the basketball youth page (/basketball/teams/nachwuchs).
-// Coaches come from the `teams.coach` M2M (→ members); training day/time/hall
+// Coaches come from /kscw/public/team/:id — the same list the team pages show
+// (see publicCoaches); training day/time/hall
 // come from `hall_slots` (→ halls), matched to each age group through the
 // slot's own `teams` M2M (label parsing is only a fallback — see codesForSlot).
 // All of it is public-readable, so no token needed.
@@ -48,6 +49,7 @@ export interface YouthTeamInfo {
 export type YouthBasketball = Record<string, YouthTeamInfo[]>
 
 interface DirectusTeam {
+  id: number | string
   name: string
   coach: Array<{ members_id: { first_name: string; last_name: string } | null } | null> | null
 }
@@ -325,12 +327,35 @@ export function dedupeSlots(slots: YouthSlot[]): YouthSlot[] {
   return [...byKey.values()].sort((a, b) => a.day - b.day || a.start.localeCompare(b.start))
 }
 
+/**
+ * A team's coach names as /kscw/public/team/:id publishes them — adults only,
+ * surname shortened for name-private members. The raw `teams.coach` M2M runs
+ * through the Public `members` read, which only returns members who opted in
+ * to website visibility, so a coach who hadn't was dropped from the card while
+ * the team page listed them (HU14 showed one of its two coaches, 2026-10-28).
+ * Null when the endpoint is unreachable; the caller falls back to the M2M.
+ */
+async function publicCoaches(teamId: number | string): Promise<string[] | null> {
+  try {
+    const raw = await directusFetch<{ coaches?: Array<{ first_name?: string; last_name?: string }> } | null>(
+      `/kscw/public/team/${encodeURIComponent(String(teamId))}`,
+    )
+    if (!raw) return null
+    return (raw.coaches ?? [])
+      .map(c => `${c.first_name ?? ''} ${c.last_name ?? ''}`.trim())
+      .filter(Boolean)
+  } catch (err) {
+    console.warn(`[youthBasketball] coaches of team ${teamId} unavailable — using the M2M:`, err)
+    return null
+  }
+}
+
 export async function getYouthBasketball(): Promise<YouthBasketball> {
   try {
     const [teams, slots, openStatus] = await Promise.all([
       fetchAllItems<DirectusTeam>('teams', {
         filter: { sport: { _eq: 'basketball' }, active: { _eq: true } },
-        fields: ['name', 'coach.members_id.first_name', 'coach.members_id.last_name'],
+        fields: ['id', 'name', 'coach.members_id.first_name', 'coach.members_id.last_name'],
       }),
       fetchAllItems<DirectusSlot>('hall_slots', {
         filter: { sport: { _eq: 'basketball' }, slot_type: { _eq: 'training' } },
@@ -349,10 +374,13 @@ export async function getYouthBasketball(): Promise<YouthBasketball> {
     const byName = new Map<string, YouthTeamInfo>()
     const codeOf = new Map<string, string>()
 
+    const published = new Map(await Promise.all(
+      teams.filter(t => cardCode(t.name)).map(async t => [t.id, await publicCoaches(t.id)] as const),
+    ))
     for (const t of teams) {
       const code = cardCode(t.name)
       if (!code || byName.has(t.name)) continue
-      const coaches = (t.coach ?? [])
+      const coaches = published.get(t.id) ?? (t.coach ?? [])
         .map(c => c?.members_id)
         .filter((m): m is { first_name: string; last_name: string } => !!m)
         .map(m => `${m.first_name} ${m.last_name}`.trim())

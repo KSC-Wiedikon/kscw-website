@@ -131,7 +131,7 @@ The on-server copy at `/opt/directus-kscw/extensions/kscw-endpoints/` was alread
 ```bash
 # 1. Check OpnForm reachable and healthy
 curl -sI https://forms.kscw.ch | head -1
-ssh hetzner 'sudo docker ps --format "{{.Names}} | {{.Status}}" | grep opnform'   # alias `hetzner` points at the Infomaniak VPS since 26.10.2026
+ssh kscw-server 'sudo docker ps --format "{{.Names}} | {{.Status}}" | grep opnform'   # alias `hetzner` points at the Infomaniak VPS since 26.10.2026
 
 # 2. Check Directus proxy
 curl -s "https://directus.kscw.ch/kscw/opnform/forms/contact-form-i6dtvv/count"

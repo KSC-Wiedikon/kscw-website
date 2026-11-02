@@ -449,7 +449,7 @@ try {
         return startYear + '/' + endYY;
       }
 
-      var gameFields = 'id,game_id,date,time,home_team,away_team,home_score,away_score,status,type,league,season,sets_json,kscw_team.id,kscw_team.name,kscw_team.sport,kscw_team.color,hall.id,hall.name,hall.address';
+      var gameFields = 'id,game_id,date,time,home_team,away_team,home_score,away_score,status,type,league,season,sets_json,referees_json,kscw_team.id,kscw_team.name,kscw_team.sport,kscw_team.color,hall.id,hall.name,hall.address';
 
       function mapGame(g) {
         // A `scheduled` game carries a 0:0 placeholder until the sync writes the
@@ -470,8 +470,24 @@ try {
           opponent: g.type === 'home' ? g.away_team : g.home_team,
           score: hasScore ? g.home_score + ':' + g.away_score : null,
           hall: g.hall || null,
+          referees: splitReferees(g.referees_json),
           sport: g.kscw_team ? g.kscw_team.sport : 'volleyball'
         };
+      }
+
+      // The federation referees ({name, id}[], filled by the Swiss Volley sync) in
+      // the {first_name, last_name}[] shape the game modal reads — the same split
+      // the team page gets from /kscw/public/team. The licence id is left out.
+      function splitReferees(raw) {
+        var list = typeof raw === 'string' ? (function() { try { return JSON.parse(raw); } catch (e) { return null; } })() : raw;
+        if (!Array.isArray(list) || !list.length) return null;
+        var out = list.map(function(r) {
+          var parts = String((r && r.name) || '').trim().split(/\s+/).filter(Boolean);
+          if (!parts.length) return null;
+          if (parts.length === 1) return { first_name: '', last_name: parts[0] };
+          return { first_name: parts.slice(0, -1).join(' '), last_name: parts[parts.length - 1] };
+        }).filter(Boolean);
+        return out.length ? out : null;
       }
 
       // A club-internal game (derby) is one fixture stored as two rows — one per

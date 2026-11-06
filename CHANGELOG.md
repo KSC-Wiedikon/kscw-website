@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.33.3] — 2026-11-06
+
+### Heim und Auswärts klar von der Sportart getrennt
+- **Kalender und Spielübersicht**: Heim und Auswärts hatten die gleichen Farben wie Volleyball und Basketball (Blau und Orange), Heim sah also aus wie VB und Auswärts wie BB. Jetzt zeigt die Farbe nur noch die Sportart: Heim ist ausgefüllt, Auswärts nur umrandet.
+
 ## [1.33.2] — 2026-10-27
 
 ### Unser Team fett

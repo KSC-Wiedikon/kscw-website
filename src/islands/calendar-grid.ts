@@ -445,7 +445,8 @@ if (container) {
     btn.className = 'cal-entry'
 
     const isHome = g.type === 'home'
-    const teamColor = g.kscw_team?.color || (isHome ? '#4A55A2' : '#d97706')
+    const sport = getTeamSport(g)
+    const teamColor = g.kscw_team?.color || (sport === 'basketball' ? '#d97706' : '#4A55A2')
     const teamName = g.kscw_team?.name || (isHome ? g.home_team : g.away_team)
 
     // Use team color for chip background
@@ -453,7 +454,6 @@ if (container) {
     btn.style.borderLeft = `3px solid ${teamColor}`
 
     // Sport ball icon
-    const sport = getTeamSport(g)
     btn.appendChild(sportBallIcon(sport))
 
     // Time

@@ -235,8 +235,9 @@ tr:hover td {
   transition: background-color var(--transition-fast);
 }
 .game-table tbody tr:last-child { border-bottom: none; }
-.game-table tr:has(.game-badge.home) { --row-tone: var(--kscw-blue); }
-.game-table tr:has(.game-badge.away) { --row-tone: var(--bb-orange); }
+/* Home/away carry no hue: blue and orange are the sports (see .cal-tooltip-type). */
+.game-table tr:has(.game-badge.home) { --row-tone: var(--text-secondary); }
+.game-table tr:has(.game-badge.away) { --row-tone: var(--border-strong); }
 .game-table tr:has(.game-badge.derby) { --row-tone: var(--kscw-gold); }
 .game-table td {
   padding: 0;
@@ -425,8 +426,8 @@ tr.gt-row-stream > td { background: transparent; }
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
-.game-badge.home { color: var(--accent-text); }
-.game-badge.away { color: var(--bb-orange); }
+.game-badge.home { color: var(--text-primary); }
+.game-badge.away { color: var(--text-muted); }
 /* Club-internal game — both sides are KSCW (homepage merges the two rows). */
 .game-badge.derby { color: var(--kscw-gold); }
 .light .game-badge.derby { color: #a16207; }
@@ -1240,23 +1241,6 @@ tr.gt-row-stream > td { background: transparent; }
 }
 .cal-entry:hover { opacity: 0.8; }
 
-.cal-entry--home {
-  background: rgba(74, 85, 162, 0.15);
-  color: var(--accent-text);
-}
-.light .cal-entry--home {
-  background: rgba(74, 85, 162, 0.12);
-  color: #3b4590;
-}
-.cal-entry--away {
-  background: rgba(245, 158, 11, 0.15);
-  color: #d97706;
-}
-.light .cal-entry--away {
-  background: rgba(245, 158, 11, 0.12);
-  color: #b45309;
-}
-
 .cal-entry-time {
   font-weight: 600;
   flex-shrink: 0;
@@ -1320,21 +1304,28 @@ tr.gt-row-stream > td { background: transparent; }
 }
 .cal-tooltip-sport--bb {
   background: rgba(245, 158, 11, 0.15);
-  color: #d97706;
+  color: #fb923c;
 }
+.light .cal-tooltip-sport--bb { color: #c2410c; }
 .cal-tooltip-type {
   font-size: var(--text-xs);
   font-weight: 600;
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
 }
+/* Home/away are solid vs outlined, not a colour. Every hue next to them already
+   means something: blue and orange the sport, green an event, gold a derby. They
+   used to reuse the sport pair, so "VB" looked like "Home" and "BB" like "Away".
+   The outline is an inset shadow so both pills keep the same size. The fill is
+   muted because full --text-primary outshouted the sport pill beside it; a grey
+   tint would be softer still, but that is what a hall closure looks like. */
 .cal-tooltip-type--home {
-  background: rgba(74, 85, 162, 0.1);
-  color: var(--accent-text);
+  background: color-mix(in srgb, var(--text-primary) 72%, var(--bg-white));
+  color: var(--bg-white);
 }
 .cal-tooltip-type--away {
-  background: rgba(245, 158, 11, 0.1);
-  color: #d97706;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  color: var(--text-secondary);
 }
 .cal-tooltip-teams {
   font-weight: 600;
@@ -1678,22 +1669,12 @@ tr.gt-row-stream > td { background: transparent; }
   line-height: 1;
 }
 .cal-entry-badge--home {
-  background: rgba(74, 85, 162, 0.2);
-  color: var(--accent-text);
+  background: color-mix(in srgb, var(--text-primary) 72%, var(--bg-white));
+  color: var(--bg-white);
 }
 .cal-entry-badge--away {
-  background: rgba(217, 119, 6, 0.2);
-  color: #d97706;
-}
-/* Dark theme (the default; was keyed on a [data-theme] attribute the site
-   never sets, so it never applied). */
-:root:not(.light) .cal-entry-badge--home {
-  background: rgba(74, 85, 162, 0.35);
-  color: #a5b4fc;
-}
-:root:not(.light) .cal-entry-badge--away {
-  background: rgba(217, 119, 6, 0.35);
-  color: #fbbf24;
+  box-shadow: inset 0 0 0 1px var(--text-muted);
+  color: var(--text-secondary);
 }
 
 /* Subscribe button */

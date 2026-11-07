@@ -207,7 +207,7 @@ test.describe('/live', () => {
     await expect(page.locator('#live-root')).not.toContainText('KSCW');
   });
 
-  test('a board without full names shows Home and Away, following the change of ends', async ({ page }) => {
+  test('a board without full names shows the typed names, tagged Home and Away across the change of ends', async ({ page }) => {
     let row: object = { ...VOLLEY_LIVE, team_a_name: '', team_b_name: null, period: 3 };
     await page.route('**/items/live_history**', (route) => route.fulfill({
       status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }),
@@ -216,31 +216,72 @@ test.describe('/live', () => {
       status: 200, contentType: 'application/json', body: JSON.stringify({ data: [row] }),
     }));
     await gotoWithLang(page, '/live', 'de');
-    const chips = page.locator('#live-board .live-team-chip');
-    await expect(chips).toHaveText(['Heim', 'Gast']);
-    await expect(page.locator('#live-root')).not.toContainText('KSCW');
+    await expect(page.locator('#live-board .live-team-chip')).toHaveText(['KSCW H1', 'KSCW H3']);
+    const tags = page.locator('#live-board .live-team-tag');
+    await expect(tags).toHaveText(['Heim', 'Gast']);
     row = { ...VOLLEY_LIVE, team_a_name: '', team_b_name: null, period: 4, ts: '1790181470999' };
-    await expect(chips).toHaveText(['Gast', 'Heim']);
+    await expect(tags).toHaveText(['Gast', 'Heim']);
     await switchLangTo(page, 'en');
-    await expect(chips).toHaveText(['Away', 'Home']);
+    await expect(tags).toHaveText(['Away', 'Home']);
   });
 
-  test("an empty game link points to the hall's scoreboard; the scoreboard itself does not", async ({ page }) => {
+  test('full names need no tag', async ({ page }) => {
+    await stubLive(page, VOLLEY_LIVE);
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-board .live-score')).toHaveText(['12', '9']);
+    await expect(page.locator('#live-board .live-team-tag')).toHaveCount(0);
+  });
+
+  test("the board's own HOME and AWAY get no second tag", async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, team_a_name: '', team_b_name: '', team_a_short: 'HOME', team_b_short: 'WETZIKON' });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-board .live-team-chip')).toHaveText(['HOME', 'WETZIKON']);
+    await expect(page.locator('#live-board .live-team-tag')).toHaveCount(0);
+  });
+
+  test('no typed name either: the chip itself says Home or Away', async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, team_a_name: '', team_b_name: '', team_a_short: '', team_b_short: '' });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-board .live-team-chip')).toHaveText(['Heim', 'Gast']);
+    await expect(page.locator('#live-board .live-team-tag')).toHaveCount(0);
+  });
+
+  test('the fifth set changes the tags at 8', async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, team_a_name: '', team_b_name: '', period: 5, points_a: 8, points_b: 5 });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-board .live-team-tag')).toHaveText(['Gast', 'Heim']);
+  });
+
+  test("an empty game link goes to the hall's scoreboard", async ({ page }) => {
     await stubLive(page, { ...VOLLEY_LIVE, channel: 'game-437', status: 'idle' });
     await gotoWithLang(page, '/live?channel=game-437', 'de');
-    await expect(page.locator('.live-to-board')).toHaveAttribute('href', '/live');
-    await expect(page.locator('.live-to-board')).toHaveText('Zur Anzeigetafel');
-    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await expect(page).toHaveURL(/\/live\/?$/);
+  });
+
+  test('a game link with no row at all goes there too', async ({ page }) => {
+    await stubLive(page, null);
+    await gotoWithLang(page, '/live?channel=game-437', 'de');
+    await expect(page).toHaveURL(/\/live\/?$/);
+  });
+
+  test('the scoreboard, another board, a finished game and a failed read all stay', async ({ page }) => {
     await stubLive(page, { ...VOLLEY_LIVE, status: 'idle' });
     await gotoWithLang(page, '/live', 'de');
     await expect(page.locator('.live-empty')).toBeVisible();
-    await expect(page.locator('.live-to-board')).toHaveCount(0);
-  });
-
-  test('the fifth set changes Home and Away at 8', async ({ page }) => {
-    await stubLive(page, { ...VOLLEY_LIVE, team_a_name: '', team_b_name: '', period: 5, points_a: 8, points_b: 5 });
-    await gotoWithLang(page, '/live', 'de');
-    await expect(page.locator('#live-board .live-team-chip')).toHaveText(['Gast', 'Heim']);
+    await gotoWithLang(page, '/live?channel=other-board', 'de');
+    await expect(page.locator('.live-empty')).toBeVisible();
+    await expect(page).toHaveURL(/channel=other-board/);
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await stubLive(page, { ...VOLLEY_LIVE, channel: 'game-472', game_id: 472, status: 'final', event: 'match-end', sets_won_a: 3 });
+    await gotoWithLang(page, '/live?channel=game-472', 'de');
+    await expect(page.locator('.live-final')).toBeVisible();
+    await expect(page).toHaveURL(/channel=game-472/);
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await page.route('**/items/live_scores**', (route) => route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }));
+    await page.route('**/items/live_history**', (route) => route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }));
+    await gotoWithLang(page, '/live?channel=game-437', 'de');
+    await page.waitForTimeout(800);
+    await expect(page).toHaveURL(/channel=game-437/);
   });
 
   test('a row nobody writes any more is not live, and says since when', async ({ page }) => {

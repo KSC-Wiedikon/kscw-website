@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.37.2] — 2026-11-07
+
+### Eingegebene Namen mit Heim und Gast
+- **Live-Seite**: Hat die Anzeigetafel keine vollen Teamnamen, stehen die eingegebenen Namen da, mit einem kleinen «Heim» oder «Gast» darüber. Ein Spiel-Link ohne laufendes Spiel führt direkt zur Anzeigetafel.
+
 ## [1.37.1] — 2026-11-07
 
 ### Heim und Gast auf der Live-Seite

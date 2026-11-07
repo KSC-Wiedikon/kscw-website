@@ -165,12 +165,44 @@ test.describe('/live up next', () => {
     await expect(page.locator('#live-status')).toHaveAttribute('data-tone', 'live');
   });
 
-  test('a 0:0 row left over from another day is not up next', async ({ page }) => {
-    await stubLive(page, { ...READY, date_updated: '2026-09-23T16:37:51.154Z' });
+  test('set up over 3 hours ago and never started reads as no match', async ({ page }) => {
+    await stubLive(page, { ...READY, date_updated: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString() });
+    await stubGames(page, []);
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('.live-empty')).toBeVisible();
+    await expect(page.locator('#live-status')).toHaveAttribute('data-tone', 'idle');
+    await expect(page.locator('.live-next')).toHaveCount(0);
+  });
+
+  test('a warm-up an hour old is still up next', async ({ page }) => {
+    await stubLive(page, { ...READY, date_updated: new Date(Date.now() - 60 * 60 * 1000).toISOString() });
+    await stubGames(page, []);
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('.live-next')).toBeVisible();
+  });
+
+  test('a board tapped after the game (0:0, sets 0:1, no set behind it) is not live', async ({ page }) => {
+    await stubLive(page, { ...READY, team_a_short: 'HOME', team_a_name: '', team_b_short: 'WETZI D2', team_b_name: '', sets_won_b: 1 });
+    await stubGames(page, []);
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('.live-empty')).toBeVisible();
+    await expect(page.locator('#live-status')).toHaveAttribute('data-tone', 'idle');
+    await expect(page.locator('#live-board .live-score')).toHaveCount(0);
+  });
+
+  test('a game link stuck on a never started row goes to the scoreboard', async ({ page }) => {
+    await stubLive(page, { ...READY, channel: 'game-459', game_id: 459, date_updated: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString() });
+    await stubGames(page, []);
+    await gotoWithLang(page, '/live?channel=game-459', 'de');
+    await expect(page).toHaveURL(/\/live\/?$/);
+  });
+
+  test('the second set at 0:0 is still a match', async ({ page }) => {
+    await stubLive(page, { ...READY, sets_won_a: 1, period: 2, set_results: [{ a: 25, b: 20 }] });
     await stubGames(page, []);
     await gotoWithLang(page, '/live', 'de');
     await expect(page.locator('#live-board .live-score')).toHaveText(['0', '0']);
-    await expect(page.locator('.live-next')).toHaveCount(0);
+    await expect(page.locator('#live-status')).toHaveAttribute('data-tone', 'live');
   });
 });
 
@@ -448,6 +480,17 @@ test.describe('/live', () => {
 });
 
 test.describe('live-now pill', () => {
+  test('stays away from a warm-up: nothing to watch until the first point', async ({ page }) => {
+    await page.route('**/items/live_scores**', (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({ data: [
+        { ...VOLLEY_LIVE, points_a: 0, points_b: 0, set_results: [] },
+      ] }),
+    }));
+    await gotoWithLang(page, '/news', 'de');
+    await page.waitForTimeout(800);
+    await expect(page.locator('.live-now-pill')).toHaveCount(0);
+  });
+
   test("a game row stuck on a stray point does not hide the board's real match", async ({ page }) => {
     await page.route('**/items/live_scores**', (route) => route.fulfill({
       status: 200, contentType: 'application/json', body: JSON.stringify({ data: [

@@ -26,6 +26,7 @@
   var TEAM_FOUL_LIMIT = 5; // FIBA: the 5th team foul puts the OPPONENT in the bonus
   var HISTORY_LIMIT = 8;
   var LIVE_STALE_MS = 20 * 60 * 1000; // wiedisync LIVE_STALE_MS
+  var NEVER_STARTED_MS = 3 * 60 * 60 * 1000; // wiedisync NEVER_STARTED_MS
   var GAME_TTL_MS = 10 * 60 * 1000;
 
   // ?channel=… picks another physical board; restricted to the characters a
@@ -97,7 +98,7 @@
   }
 
   function toMatch(row) {
-    var status = row.status === 'live' || row.status === 'final' ? row.status : 'idle';
+    var status = row.status === 'final' || (row.status === 'live' && !isLeftover(row)) ? row.status : 'idle';
     if (status === 'idle') return { status: status, event: null, seq: num(row.ts), match: null };
     var sets = Array.isArray(row.set_results) ? row.set_results.map(function (r) { return { a: num(r && r.a), b: num(r && r.b) }; }) : [];
     // A finished match has no next serve: the row keeps its last serving_team, but
@@ -149,6 +150,24 @@
   // nothing played yet. The first point (or a timeout) ends it. A row left like that
   // from another day is not "next" any more; a row can sit unchanged through a whole
   // warm-up, so it is the day that counts here, not LIVE_STALE_MS.
+  function writtenAt(row) {
+    return row.date_updated ? new Date(row.date_updated).getTime() : num(row.ts);
+  }
+
+  // A row that says 'live' but is not a match: the board tapped after a game ended (a set count
+  // with no set behind it, 07.11: 0:0, sets 0:1, for nobody), or set up hours ago and never started.
+  // It reads as no match at all, so a match that is over stays over until a new one begins. A
+  // warm-up still counts: it writes nothing for an hour (wiedisync liveNow.ts isLeftoverRow).
+  function isLeftover(row) {
+    if (row.status !== 'live') return false;
+    var played = ['points_a', 'points_b', 'timeouts_a', 'timeouts_b', 'subs_a', 'subs_b', 'fouls_a', 'fouls_b']
+      .some(function (k) { return num(row[k]) > 0; }) || (Array.isArray(row.set_results) && row.set_results.length > 0);
+    if (played) return false;
+    if (num(row.sets_won_a) > 0 || num(row.sets_won_b) > 0) return true;
+    var at = writtenAt(row);
+    return at > 0 && Date.now() - at > NEVER_STARTED_MS;
+  }
+
   function isUpNext(row) {
     if (row.status !== 'live') return false;
     var played = ['points_a', 'points_b', 'sets_won_a', 'sets_won_b', 'timeouts_a', 'timeouts_b', 'subs_a', 'subs_b', 'fouls_a', 'fouls_b']
@@ -161,8 +180,8 @@
   // switched off, no uplink, or a game row the board moved on from: not live any more.
   // Directus only stamps date_updated on an update; a row never updated goes by its ts.
   function staleSince(row) {
-    if (row.status !== 'live' || isUpNext(row)) return null;
-    var at = row.date_updated ? new Date(row.date_updated).getTime() : num(row.ts);
+    if (row.status !== 'live' || isLeftover(row) || isUpNext(row)) return null;
+    var at = writtenAt(row);
     return at > 0 && Date.now() - at > LIVE_STALE_MS ? at : null;
   }
 
@@ -461,20 +480,21 @@
 
   function apply(rows) {
     var row = rows[0];
+    var snap = row ? toMatch(row) : { status: 'idle', event: null, seq: 0, match: null };
     // A game's own link with nothing on it: the match may well be on the hall's scoreboard.
     // replace, so Back does not come straight here again. Only on an answer, never on a failed read.
-    if (/^game-\d+$/.test(channel) && (!row || row.status === 'idle')) {
+    if (/^game-\d+$/.test(channel) && snap.status === 'idle') {
       window.location.replace('/live');
       return;
     }
-    var snap = row ? toMatch(row) : { status: 'idle', event: null, seq: 0, match: null };
     if (row && snap.seq && snap.seq < state.lastSeq) return; // out-of-order frame
     var prevStatus = state.snap && state.snap.status;
     state.lastSeq = snap.seq;
     state.connection = 'open';
     // Only repaint when the board actually changed — every 3 s otherwise rebuilds
     // an identical DOM. The "updated" time still ticks via lastAt below.
-    var key = JSON.stringify(row || null);
+    // (A row turns leftover with time alone, so that is part of the key.)
+    var key = JSON.stringify(row || null) + snap.status;
     state.lastAt = Date.now();
     loadGame(row, snap);
     // Going stale changes nothing in the row, only the time since it was written.

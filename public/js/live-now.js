@@ -26,7 +26,7 @@
   var POLL_MS = 30000;
   var STALE_MS = 20 * 60 * 1000;
   var URL_ = DIRECTUS_URL + '/items/live_scores?limit=20&filter[status][_eq]=live&sort=-date_updated'
-    + '&fields=channel,status,team_a_short,team_b_short,points_a,points_b,date_updated,ts,source';
+    + '&fields=channel,status,team_a_short,team_b_short,points_a,points_b,date_updated,ts,source,set_results';
 
   // Directus only stamps date_updated on an update, so a row created once and never
   // written again goes by its ts. Read as "just now", the board's one stray point kept
@@ -40,6 +40,8 @@
   function pick(rows, now) {
     var live = (rows || []).filter(function (r) {
       if (!r || r.status !== 'live') return false;
+      // Nothing to watch yet: a set-up board or a warm-up, at 0:0 with no finished set.
+      if (!Number(r.points_a) && !Number(r.points_b) && !(Array.isArray(r.set_results) && r.set_results.length)) return false;
       var t = updatedMs(r);
       return !isFinite(t) || now - t <= STALE_MS;
     });

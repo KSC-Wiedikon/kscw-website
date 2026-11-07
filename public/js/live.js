@@ -25,7 +25,7 @@
   var POLL_MS = 3000;
   var TEAM_FOUL_LIMIT = 5; // FIBA: the 5th team foul puts the OPPONENT in the bonus
   var HISTORY_LIMIT = 8;
-  var MIRROR_STALE_MS = 20 * 60 * 1000; // wiedisync LIVE_STALE_MS
+  var LIVE_STALE_MS = 20 * 60 * 1000; // wiedisync LIVE_STALE_MS
   var GAME_TTL_MS = 10 * 60 * 1000;
 
   // ?channel=… picks another physical board; restricted to the characters a
@@ -118,13 +118,22 @@
   // publishes 'live', and setup, warm-up and "warm-up finished" all read the same,
   // nothing played yet. The first point (or a timeout) ends it. A row left like that
   // from another day is not "next" any more; a row can sit unchanged through a whole
-  // warm-up, so it is the day that counts here, not MIRROR_STALE_MS.
+  // warm-up, so it is the day that counts here, not LIVE_STALE_MS.
   function isUpNext(row) {
     if (row.status !== 'live') return false;
     var played = ['points_a', 'points_b', 'sets_won_a', 'sets_won_b', 'timeouts_a', 'timeouts_b', 'subs_a', 'subs_b', 'fouls_a', 'fouls_b']
       .some(function (k) { return num(row[k]) > 0; });
     if (played || (Array.isArray(row.set_results) && row.set_results.length > 0)) return false;
     return !!row.date_updated && zurichDay(new Date(row.date_updated)) === zurichDay(new Date());
+  }
+
+  // When a match left 'live' stopped being written, or null while it still is. Board
+  // switched off, no uplink, or a game row the board moved on from: not live any more.
+  // Directus only stamps date_updated on an update; a row never updated goes by its ts.
+  function staleSince(row) {
+    if (row.status !== 'live' || isUpNext(row)) return null;
+    var at = row.date_updated ? new Date(row.date_updated).getTime() : num(row.ts);
+    return at > 0 && Date.now() - at > LIVE_STALE_MS ? at : null;
   }
 
   function zurichDay(d) {
@@ -360,13 +369,13 @@
     'switch-8': ['liveEventSwitch', 'Seitenwechsel'],
   };
 
-  var state = { snap: null, connection: 'connecting', lastSeq: -1, lastAt: null, key: '' };
+  var state = { snap: null, connection: 'connecting', lastSeq: -1, lastAt: null, key: '', stale: null };
   var fixture = { key: '', at: 0, game: null };
 
   function renderStatus() {
     var tone;
     if (!state.snap || state.connection === 'reconnecting') tone = state.connection === 'reconnecting' ? 'reconnecting' : 'pending';
-    else tone = state.snap.upNext ? 'idle' : state.snap.status;
+    else tone = state.snap.upNext || state.stale ? 'idle' : state.snap.status;
     var s = STATUS[tone];
     els.status.setAttribute('data-tone', tone === 'reconnecting' ? 'pending' : tone);
     setTr(els.statusLabel, s[0], s[1]);
@@ -378,6 +387,8 @@
     if (!snap) return; // keep the server-rendered placeholder until the first read
 
     var m = snap.match;
+    // Turned sideways, a running match fills the screen (data.css; wiedisync LivePage).
+    root.classList.toggle('live-fullscreen', !!m && snap.status === 'live' && !snap.upNext && !state.stale);
     els.board.textContent = '';
     if (m) {
       if (snap.status === 'final') els.board.appendChild(finalSummary(m));
@@ -395,7 +406,13 @@
     if (ev) { setTr(els.event, ev[0], ev[1]); els.event.hidden = false; }
     else { els.event.hidden = true; els.event.removeAttribute('data-i18n'); }
 
-    els.updated.textContent = m && state.lastAt ? tr('liveUpdatedAt', 'Aktualisiert {time}', { time: formatTime(state.lastAt) }) : '';
+    els.updated.textContent = updatedText(m);
+  }
+
+  function updatedText(m) {
+    if (!m) return '';
+    if (state.stale) return tr('liveNoUpdatesSince', 'Keine neuen Daten seit {time}', { time: formatTime(state.stale) });
+    return state.lastAt ? tr('liveUpdatedAt', 'Aktualisiert {time}', { time: formatTime(state.lastAt) }) : '';
   }
 
   /* ── Data ─────────────────────────────────────────────────── */
@@ -423,13 +440,16 @@
     var key = JSON.stringify(row || null);
     state.lastAt = Date.now();
     loadGame(row, snap);
-    if (key !== state.key) {
+    // Going stale changes nothing in the row, only the time since it was written.
+    var stale = (row && staleSince(row)) || null;
+    if (key !== state.key || stale !== state.stale) {
       state.key = key;
       state.snap = snap;
+      state.stale = stale;
       render();
     } else {
       renderStatus();
-      if (snap.match) els.updated.textContent = tr('liveUpdatedAt', 'Aktualisiert {time}', { time: formatTime(state.lastAt) });
+      els.updated.textContent = updatedText(snap.match);
     }
     // A match just ended → it is now in live_history; refresh the list.
     if (snap.status === 'final' && prevStatus && prevStatus !== 'final') loadHistory();
@@ -513,11 +533,12 @@
     function byId(id) { return getJSON('/items/games/' + encodeURIComponent(id) + '?' + fields); }
     if (row.game_id != null) return byId(row.game_id);
 
+    // _nnull: a row never updated has no date, and a descending sort puts it first.
     var mirror = '/items/live_scores?limit=1&sort=-date_updated&fields=game_id,team_a_name,team_b_name,date_updated'
-      + '&filter[source][_eq]=' + encodeURIComponent('board:' + channel);
+      + '&filter[date_updated][_nnull]=true&filter[source][_eq]=' + encodeURIComponent('board:' + channel);
     return getJSON(mirror).then(function (rows) {
       var m = rows[0];
-      var fresh = m && m.game_id != null && Date.now() - new Date(m.date_updated).getTime() <= MIRROR_STALE_MS;
+      var fresh = m && m.game_id != null && Date.now() - new Date(m.date_updated).getTime() <= LIVE_STALE_MS;
       if (fresh && sameTeams(row.team_a_name, row.team_b_name, m.team_a_name, m.team_b_name)) return byId(m.game_id);
 
       var today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });

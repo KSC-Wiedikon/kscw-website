@@ -26,11 +26,14 @@
   var POLL_MS = 30000;
   var STALE_MS = 20 * 60 * 1000;
   var URL_ = DIRECTUS_URL + '/items/live_scores?limit=20&filter[status][_eq]=live&sort=-date_updated'
-    + '&fields=channel,status,team_a_short,team_b_short,points_a,points_b,date_updated,source';
+    + '&fields=channel,status,team_a_short,team_b_short,points_a,points_b,date_updated,ts,source';
 
+  // Directus only stamps date_updated on an update, so a row created once and never
+  // written again goes by its ts. Read as "just now", the board's one stray point kept
+  // a game row live all evening (wiedisync liveNow.ts writtenMs).
   function updatedMs(r) {
-    var t = r.date_updated ? new Date(r.date_updated).getTime() : NaN;
-    return isFinite(t) ? t : NaN;
+    var t = r.date_updated ? new Date(r.date_updated).getTime() : Number(r.ts);
+    return isFinite(t) && t > 0 ? t : NaN;
   }
 
   /** The one live row to show, or null (same rules as wiedisync's pickLiveNow). */

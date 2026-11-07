@@ -102,7 +102,8 @@
     var sets = Array.isArray(row.set_results) ? row.set_results.map(function (r) { return { a: num(r && r.a), b: num(r && r.b) }; }) : [];
     // A finished match has no next serve: the row keeps its last serving_team, but
     // nobody is serving (or in possession) any more.
-    var serving = status === 'live' && (row.serving_team === 'left' || row.serving_team === 'right') ? row.serving_team : null;
+    // Same for a score nobody is writing any more.
+    var serving = status === 'live' && !staleSince(row) && (row.serving_team === 'left' || row.serving_team === 'right') ? row.serving_team : null;
     var m = {
       sport: normaliseSport(row.sport),
       period: num(row.period),
@@ -111,7 +112,24 @@
     };
     m.a = team(row, 'a', '#2563eb', serving === 'left', num(row.fouls_b) >= TEAM_FOUL_LIMIT);
     m.b = team(row, 'b', '#ef4444', serving === 'right', num(row.fouls_a) >= TEAM_FOUL_LIMIT);
+    m.a.isHome = homeIsTeamA(m.sport, m.period, m.a.points, m.b.points);
+    m.b.isHome = !m.a.isHome;
     return { status: status, event: row.event || null, seq: num(row.ts), match: m, upNext: isUpNext(row) };
+  }
+
+  // Whether team A is home, for a board that sent no full names and so no way to tell by name. The
+  // row is always A = left and the teams change ends, so it goes by the set: home starts on the
+  // left, every set changes ends, the fifth again at 8 (wiedisync scoreboard.ts homeIsTeamA).
+  function homeIsTeamA(sport, period, pointsA, pointsB) {
+    if (sport !== 'volleyball') return true;
+    var set = Math.max(period, 1);
+    if (set === 5 && Math.max(pointsA, pointsB) >= 8) return false;
+    return set % 2 === 1;
+  }
+
+  // A team on the page: its full name, or Home / Away. Never the board's short code.
+  function teamLabel(t) {
+    return t.name || (t.isHome ? tr('liveHome', 'Heim') : tr('liveAway', 'Gast'));
   }
 
   // The board has no warm-up state of its own: from the moment the names go up it
@@ -144,7 +162,6 @@
     var name = row['team_' + side + '_name'] || '';
     return {
       name: name,
-      short: row['team_' + side + '_short'] || name,
       color: safeColor(row['team_' + side + '_color'], fallbackColor),
       points: num(row['points_' + side]),
       sets: num(row['sets_won_' + side]),
@@ -173,7 +190,7 @@
     var chip = h('span', cls || 'live-team-chip');
     chip.style.backgroundColor = t.color;
     chip.style.color = readableOn(t.color);
-    chip.appendChild(h('span', 'live-team-chip-name', t.name || t.short || tr('liveTeamFallback', 'Team')));
+    chip.appendChild(h('span', 'live-team-chip-name', teamLabel(t)));
     return chip;
   }
 
@@ -294,7 +311,7 @@
     if (m.serving) {
       arrow.appendChild(h('span', '', m.serving === 'left' ? '◀' : '▶')).setAttribute('aria-hidden', 'true');
       arrow.appendChild(h('span', 'sr-only',
-        tr('livePossessionOf', 'Ballbesitz: {team}', { team: (m.serving === 'left' ? m.a : m.b).name || (m.serving === 'left' ? m.a : m.b).short })));
+        tr('livePossessionOf', 'Ballbesitz: {team}', { team: teamLabel(m.serving === 'left' ? m.a : m.b) })));
     }
     mid.appendChild(arrow);
     grid.appendChild(mid);
@@ -334,7 +351,7 @@
     var game = fixture.game;
     var card = h('div', 'live-next');
     card.appendChild(setTr(h('p', 'live-mid-label'), 'liveUpNext', 'Als Nächstes'));
-    var line = h('p', 'live-next-match', (game && game.home_team || m.a.name) + ' – ' + (game && game.away_team || m.b.name));
+    var line = h('p', 'live-next-match', (game && game.home_team || teamLabel(m.a)) + ' – ' + (game && game.away_team || teamLabel(m.b)));
     var time = game && game.time && game.date === zurichDay(new Date()) ? String(game.time).slice(0, 5) : '';
     if (time) {
       line.appendChild(document.createTextNode(' '));
@@ -348,6 +365,12 @@
     var card = h('div', 'live-empty');
     card.appendChild(setTr(h('p', 'live-empty-title'), 'liveNoMatch', 'Zurzeit kein Live-Spiel'));
     card.appendChild(setTr(h('p', 'live-empty-hint'), 'liveNoMatchHint', 'Diese Seite aktualisiert sich automatisch, sobald die Anzeigetafel ein Spiel startet.'));
+    // A game's own link with nothing on it: the match may well be on the hall's scoreboard.
+    if (channel !== 'kscw') {
+      var toBoard = setTr(h('a', 'live-to-board'), 'liveToBoard', 'Zur Anzeigetafel');
+      toBoard.href = '/live';
+      card.appendChild(toBoard);
+    }
     return card;
   }
 

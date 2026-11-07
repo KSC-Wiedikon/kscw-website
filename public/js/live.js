@@ -114,6 +114,9 @@
     m.b = team(row, 'b', '#ef4444', serving === 'right', num(row.fouls_a) >= TEAM_FOUL_LIMIT);
     m.a.isHome = homeIsTeamA(m.sport, m.period, m.a.points, m.b.points);
     m.b.isHome = !m.a.isHome;
+    var tags = tagsFor(m, row);
+    m.a.tag = tags && !m.a.name && !!m.a.short;
+    m.b.tag = tags && !m.b.name && !!m.b.short;
     return { status: status, event: row.event || null, seq: num(row.ts), match: m, upNext: isUpNext(row) };
   }
 
@@ -127,9 +130,18 @@
     return set % 2 === 1;
   }
 
-  // A team on the page: its full name, or Home / Away. Never the board's short code.
+  // A team on the page: its full name, else what the crew typed, else Home / Away.
   function teamLabel(t) {
-    return t.name || (t.isHome ? tr('liveHome', 'Heim') : tr('liveAway', 'Gast'));
+    return t.name || t.short || (t.isHome ? tr('liveHome', 'Heim') : tr('liveAway', 'Gast'));
+  }
+
+  // The small Home / Away above a team known only by what the crew typed. Not for beach, which
+  // changes ends every 7 points, and not over the board's own default names, which already say it.
+  function tagsFor(m, row) {
+    var defaults = ['HOME', 'AWAY'];
+    var shorts = [row.team_a_short, row.team_b_short].map(function (s) { return String(s || '').toUpperCase(); });
+    if (m.sport === 'beach' || shorts.some(function (s) { return defaults.indexOf(s) !== -1; })) return false;
+    return true;
   }
 
   // The board has no warm-up state of its own: from the moment the names go up it
@@ -162,6 +174,7 @@
     var name = row['team_' + side + '_name'] || '';
     return {
       name: name,
+      short: row['team_' + side + '_short'] || '',
       color: safeColor(row['team_' + side + '_color'], fallbackColor),
       points: num(row['points_' + side]),
       sets: num(row['sets_won_' + side]),
@@ -196,6 +209,7 @@
 
   function teamIdentity(t, sport) {
     var wrap = h('div', 'live-team-identity');
+    if (t.tag) wrap.appendChild(h('p', 'live-team-tag', t.isHome ? tr('liveHome', 'Heim') : tr('liveAway', 'Gast')));
     var top = h('div', 'live-team-top');
     var chip = teamChip(t);
     // Beach publishes the pair in one field ("Müller / Meier") — stack the players.
@@ -365,12 +379,6 @@
     var card = h('div', 'live-empty');
     card.appendChild(setTr(h('p', 'live-empty-title'), 'liveNoMatch', 'Zurzeit kein Live-Spiel'));
     card.appendChild(setTr(h('p', 'live-empty-hint'), 'liveNoMatchHint', 'Diese Seite aktualisiert sich automatisch, sobald die Anzeigetafel ein Spiel startet.'));
-    // A game's own link with nothing on it: the match may well be on the hall's scoreboard.
-    if (channel !== 'kscw') {
-      var toBoard = setTr(h('a', 'live-to-board'), 'liveToBoard', 'Zur Anzeigetafel');
-      toBoard.href = '/live';
-      card.appendChild(toBoard);
-    }
     return card;
   }
 
@@ -453,6 +461,12 @@
 
   function apply(rows) {
     var row = rows[0];
+    // A game's own link with nothing on it: the match may well be on the hall's scoreboard.
+    // replace, so Back does not come straight here again. Only on an answer, never on a failed read.
+    if (/^game-\d+$/.test(channel) && (!row || row.status === 'idle')) {
+      window.location.replace('/live');
+      return;
+    }
     var snap = row ? toMatch(row) : { status: 'idle', event: null, seq: 0, match: null };
     if (row && snap.seq && snap.seq < state.lastSeq) return; // out-of-order frame
     var prevStatus = state.snap && state.snap.status;

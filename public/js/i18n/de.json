@@ -1140,6 +1140,7 @@
   "liveEventMatchEnd": "Spiel beendet",
   "liveEventSwitch": "Seitenwechsel",
   "liveUpdatedAt": "Aktualisiert {time}",
+  "liveNoUpdatesSince": "Keine neuen Daten seit {time}",
   "liveReferees": "Schiedsrichter",
   "liveUpNext": "Als Nächstes",
   "liveScheduledAt": "(geplant: {time})",

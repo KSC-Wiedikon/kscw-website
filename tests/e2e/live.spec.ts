@@ -25,6 +25,20 @@ const HISTORY = [{
   sets_won_a: 0, sets_won_b: 0, set_results: [], finished_at: '2026-09-20T19:45:00Z',
 }];
 
+// `games` holds what /items/games answers; `mirror` is the board's own game row.
+async function stubGames(page: Page, games: object[], mirror: object | null = null) {
+  await page.route('**/items/games**', (route) => {
+    const byId = /\/items\/games\/(\d+)/.exec(route.request().url());
+    const data = byId ? games.find((g) => String((g as { id: number }).id) === byId[1]) : games;
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ data }) });
+  });
+  if (mirror) {
+    await page.route(/\/items\/live_scores\?.*source/, (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({ data: [mirror] }),
+    }));
+  }
+}
+
 async function stubLive(page: Page, row: object | null, history: object[] = []) {
   await page.route('**/items/live_scores**', (route) => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify({ data: row ? [row] : [] }),
@@ -33,6 +47,65 @@ async function stubLive(page: Page, row: object | null, history: object[] = []) 
     status: 200, contentType: 'application/json', body: JSON.stringify({ data: history }),
   }));
 }
+
+const H1_GAME = {
+  id: 472, home_team: 'KSC Wiedikon H1', away_team: 'KSC Wiedikon H3',
+  referees_json: [{ name: 'Erste Pfeiferin', id: 1 }, { name: 'Zweiter Pfeifer', id: 2 }],
+};
+const D1_GAME = {
+  id: 437, home_team: 'KSC Wiedikon D1', away_team: 'VBC Nord D1',
+  referees_json: [{ name: 'Dritte Pfeiferin', id: 3 }],
+};
+
+test.describe('/live referees', () => {
+  test("a game channel shows its game's referees and translates the label", async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, channel: 'game-472', game_id: 472 });
+    await stubGames(page, [H1_GAME]);
+    await gotoWithLang(page, '/live?channel=game-472', 'de');
+
+    const line = page.locator('#live-referees');
+    await expect(line).toHaveText('Schiedsrichter: Erste Pfeiferin · Zweiter Pfeifer');
+    await switchLangTo(page, 'en');
+    await expect(line).toHaveText('Referees: Erste Pfeiferin · Zweiter Pfeifer');
+  });
+
+  test("a board's channel finds today's game by its teams, in either order", async ({ page }) => {
+    await stubLive(page, {
+      ...VOLLEY_LIVE, team_a_name: 'KSC WIEDIKON H3', team_b_name: 'KSC WIEDIKON H1',
+    });
+    await stubGames(page, [D1_GAME, H1_GAME]);
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-referee-names')).toHaveText('Erste Pfeiferin · Zweiter Pfeifer');
+  });
+
+  test("the previous match's row on the board does not lend its referees", async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, team_a_name: 'KSC WIEDIKON D1', team_b_name: 'VBC NORD D1' });
+    await stubGames(page, [D1_GAME, H1_GAME], {
+      game_id: 472, team_a_name: 'KSC WIEDIKON H1', team_b_name: 'KSC WIEDIKON H3',
+      date_updated: new Date().toISOString(),
+    });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-referee-names')).toHaveText('Dritte Pfeiferin');
+  });
+
+  test('two games with the same teams show no line rather than a guess', async ({ page }) => {
+    const seen = page.waitForRequest('**/items/games**');
+    await stubLive(page, VOLLEY_LIVE);
+    await stubGames(page, [H1_GAME, { ...H1_GAME, id: 473 }]);
+    await gotoWithLang(page, '/live', 'de');
+    await seen;
+    await expect(page.locator('#live-board .live-score')).toHaveText(['12', '9']);
+    await expect(page.locator('#live-referees')).toBeHidden();
+  });
+
+  test('referees come from the data, never as markup', async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, channel: 'game-472', game_id: 472 });
+    await stubGames(page, [{ ...H1_GAME, referees_json: [{ name: '<img src=x onerror=alert(1)>', id: 1 }] }]);
+    await gotoWithLang(page, '/live?channel=game-472', 'de');
+    await expect(page.locator('#live-referee-names')).toHaveText('<img src=x onerror=alert(1)>');
+    await expect(page.locator('#live-referee-names img')).toHaveCount(0);
+  });
+});
 
 test.describe('/live', () => {
   test('renders a live volleyball board', async ({ page }) => {

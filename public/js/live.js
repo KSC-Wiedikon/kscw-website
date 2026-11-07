@@ -9,8 +9,9 @@
  * spectators use. Keep the rendering in step with wiedisync's VolleyballBoard /
  * BasketballBoard / FinalSummary so the two pages never disagree about a match.
  *
- * ⚠ The row has no `games` foreign key: the board does not know which fixture it
- * is showing, so nothing here claims "your game is live".
+ * ⚠ A board's own row has no `games` foreign key: the board does not always know
+ * which fixture it is showing, so nothing here claims "your game is live". Only the
+ * referees line looks for the fixture, and it stays away when it cannot be sure.
  */
 (function () {
   'use strict';
@@ -24,6 +25,8 @@
   var POLL_MS = 3000;
   var TEAM_FOUL_LIMIT = 5; // FIBA: the 5th team foul puts the OPPONENT in the bonus
   var HISTORY_LIMIT = 8;
+  var MIRROR_STALE_MS = 20 * 60 * 1000; // wiedisync LIVE_STALE_MS
+  var REFEREES_TTL_MS = 10 * 60 * 1000;
 
   // ?channel=… picks another physical board; restricted to the characters a
   // channel id can contain, since it ends up in a query string.
@@ -37,6 +40,8 @@
     sport: document.getElementById('live-sport'),
     event: document.getElementById('live-event'),
     updated: document.getElementById('live-updated'),
+    referees: document.getElementById('live-referees'),
+    refereeNames: document.getElementById('live-referee-names'),
     recent: document.getElementById('live-recent'),
     recentBody: document.getElementById('live-recent-body'),
   };
@@ -386,6 +391,7 @@
       renderStatus();
       if (snap.match) els.updated.textContent = tr('liveUpdatedAt', 'Aktualisiert {time}', { time: formatTime(state.lastAt) });
     }
+    loadReferees(row, snap);
     // A match just ended → it is now in live_history; refresh the list.
     if (snap.status === 'final' && prevStatus && prevStatus !== 'final') loadHistory();
   }
@@ -424,6 +430,83 @@
       });
       els.recent.hidden = rows.length === 0;
     }, function () { /* best-effort: no history → no section */ });
+  }
+
+  /* ── Referees (mirrors wiedisync useLiveReferees + liveGame) ──── */
+
+  function normaliseTeamName(name) {
+    return String(name == null ? '' : name)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  // Either order: the board's left side is not always the home team.
+  function sameTeams(a1, b1, a2, b2) {
+    var x1 = normaliseTeamName(a1), y1 = normaliseTeamName(b1);
+    var x2 = normaliseTeamName(a2), y2 = normaliseTeamName(b2);
+    if (!x1 || !y1) return false;
+    return (x1 === x2 && y1 === y2) || (x1 === y2 && y1 === x2);
+  }
+
+  function refereeNames(raw) {
+    var list = raw;
+    if (typeof list === 'string') {
+      try { list = JSON.parse(list); } catch (e) { return []; }
+    }
+    if (!Array.isArray(list)) return [];
+    return list
+      .map(function (r) { return r && typeof r === 'object' ? String(r.name == null ? '' : r.name).trim() : ''; })
+      .filter(Boolean);
+  }
+
+  // Which game, in order:
+  //  1. the row's own `game_id` (a `game-<id>` row);
+  //  2. for a board's own channel, the game row that board mirrors right now, but
+  //     only if it holds these two teams: the row of the previous match stays fresh
+  //     for a while after the next one is on the board;
+  //  3. today's one game with these two teams. Null when two match: a guess would
+  //     put the wrong referees on the page.
+  function findGame(row) {
+    var fields = 'fields=home_team,away_team,referees_json';
+    function byId(id) { return getJSON('/items/games/' + encodeURIComponent(id) + '?' + fields); }
+    if (row.game_id != null) return byId(row.game_id);
+
+    var mirror = '/items/live_scores?limit=1&sort=-date_updated&fields=game_id,team_a_name,team_b_name,date_updated'
+      + '&filter[source][_eq]=' + encodeURIComponent('board:' + channel);
+    return getJSON(mirror).then(function (rows) {
+      var m = rows[0];
+      var fresh = m && m.game_id != null && Date.now() - new Date(m.date_updated).getTime() <= MIRROR_STALE_MS;
+      if (fresh && sameTeams(row.team_a_name, row.team_b_name, m.team_a_name, m.team_b_name)) return byId(m.game_id);
+
+      var today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });
+      return getJSON('/items/games?limit=50&' + fields + '&filter[date][_eq]=' + today).then(function (games) {
+        var hits = games.filter(function (g) { return sameTeams(row.team_a_name, row.team_b_name, g.home_team, g.away_team); });
+        return hits.length === 1 ? hits[0] : null;
+      });
+    });
+  }
+
+  var refs = { key: '', at: 0 };
+
+  function showReferees(names) {
+    els.refereeNames.textContent = names.join(' · ');
+    els.referees.hidden = names.length === 0;
+  }
+
+  // Read once per match, not on every point; the re-read picks up a late sync.
+  function loadReferees(row, snap) {
+    var key = snap.match ? [row.game_id, row.team_a_name, row.team_b_name].join('|') : '';
+    if (key === refs.key && (!key || Date.now() - refs.at < REFEREES_TTL_MS)) return;
+    if (key !== refs.key) showReferees([]); // never the previous match's names
+    refs.key = key;
+    refs.at = Date.now();
+    if (!key) return;
+    findGame(row).then(function (game) {
+      if (refs.key === key) showReferees(refereeNames(game && game.referees_json));
+    }, function () { /* best-effort: no game → no line */ });
   }
 
   // Rule 2: await the dictionary before RENDERING, never before FETCHING.

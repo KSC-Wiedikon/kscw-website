@@ -2584,6 +2584,9 @@ tr.gt-row-stream > td { background: transparent; }
 .live-empty-title { font-weight: 600; }
 .live-empty-hint { max-width: 24rem; margin: 0.25rem auto 0; font-size: var(--text-sm); color: var(--text-muted); }
 
+.live-referees { margin-top: var(--space-sm); font-size: var(--text-xs); color: var(--text-muted); }
+.live-referees-label { font-weight: 500; color: var(--text-primary); }
+
 .live-meta {
   display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-sm);
   min-height: 1.5rem; margin-top: var(--space-sm); font-size: var(--text-xs); color: var(--text-muted);

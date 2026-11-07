@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.34.0] — 2026-11-07
+
+### Kalender im Hochformat
+- **Handy und Tablet im Hochformat**: Die Tage waren zu schmal für ihre Spiele, die Zeiten wurden abgeschnitten und volle Tage waren kaum lesbar. Jetzt zeigt das Monatsraster pro Tag bis zu drei Punkte und die Anzahl der weiteren Einträge: Die Farbe zeigt die Sportart, ein hohler Punkt ein Auswärtsspiel. Ein Tipp auf einen Tag listet seine Spiele direkt unter dem Raster, ein Tipp auf ein Spiel öffnet wie bisher die Details. Im Querformat und auf dem Computer bleibt der Kalender, wie er war.
+
 ## [1.33.3] — 2026-11-06
 
 ### Heim und Auswärts klar von der Sportart getrennt

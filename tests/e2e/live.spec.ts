@@ -266,6 +266,25 @@ test.describe('/live', () => {
     await expect(page.locator('.live-recent-detail')).not.toContainText('Spielzeit');
   });
 
+  for (const sport of ['volleyball', 'basketball']) {
+    test(`a long name does not push the ${sport} score down`, async ({ page }) => {
+      await stubLive(page, { ...VOLLEY_LIVE, sport, team_a_name: 'KSC WIEDIKON D2', team_b_name: 'BZO GREIFENSEE LIONS AND FRIENDS HU14' });
+      await page.setViewportSize({ width: 360, height: 760 });
+      await gotoWithLang(page, '/live', 'de');
+      const chips = page.locator('#live-board .live-team-chip');
+      await expect(chips).toHaveCount(2);
+      const [chipA, chipB] = [await chips.nth(0).boundingBox(), await chips.nth(1).boundingBox()];
+      expect(chipB!.height).toBeGreaterThan(chipA!.height);
+      const scores = page.locator('#live-board .live-score');
+      const [a, b] = [await scores.nth(0).boundingBox(), await scores.nth(1).boundingBox()];
+      expect(Math.abs(a!.y - b!.y)).toBeLessThan(1);
+      expect(a!.y).toBeGreaterThanOrEqual(chipB!.y + chipB!.height - 1);
+      const metas = page.locator('#live-board .live-col-meta');
+      const [ma, mb] = [await metas.nth(0).boundingBox(), await metas.nth(1).boundingBox()];
+      expect(Math.abs(ma!.y - mb!.y)).toBeLessThan(1);
+    });
+  }
+
   test('full names need no tag', async ({ page }) => {
     await stubLive(page, VOLLEY_LIVE);
     await gotoWithLang(page, '/live', 'de');

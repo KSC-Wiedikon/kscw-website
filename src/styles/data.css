@@ -2633,6 +2633,20 @@ tr.gt-row-stream > td { background: transparent; }
   .live-team-chip { font-size: var(--text-base); }
 }
 
+/* One grid, shared rows: names, then the points with the set score between them, then the rest.
+   A long team name only makes the name row taller, so the two scores stay level whatever the
+   names are (same layout as wiedisync's VolleyballBoard). Without subgrid it falls back to the
+   plain columns above. */
+@supports (grid-template-rows: subgrid) {
+  .live-grid { grid-template-rows: repeat(4, auto); row-gap: 0; }
+  .live-col { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: subgrid; grid-row: 1 / span 4; align-self: stretch; }
+  .live-col--a { grid-column: 1; }
+  .live-col--b { grid-column: 3; }
+  .live-mid { grid-column: 2; grid-row: 2; }
+  .live-team-identity { align-self: start; }
+  .live-col > .live-score, .live-score-row { align-self: center; }
+}
+
 /* A phone turned sideways shows the board alone, filling the screen (over the header).
    Height-bound so a tablet or a laptop keeps the normal page. Same query as wiedisync's
    LivePage. live.js only sets the class while a match is running. */

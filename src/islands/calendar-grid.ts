@@ -95,6 +95,9 @@ if (container) {
   let downloadLabel = ''
   let subscribeTitle = ''
   let allTeamsLabel = ''
+  let noTeamsLabel = ''
+  let selectAllLabel = ''
+  let deselectAllLabel = ''
   let eventsLabel = 'Events'
   let homeGamesLabel = ''
   let awayGamesLabel = ''
@@ -120,6 +123,9 @@ if (container) {
     downloadLabel = lang === 'de' ? 'Herunterladen' : 'Download'
     subscribeTitle = lang === 'de' ? 'Kalender abonnieren' : 'Subscribe to Calendar'
     allTeamsLabel = lang === 'de' ? 'Alle Teams' : 'All Teams'
+    noTeamsLabel = lang === 'de' ? 'Keine Teams' : 'No teams'
+    selectAllLabel = lang === 'de' ? 'Alle auswählen' : 'Select all'
+    deselectAllLabel = lang === 'de' ? 'Alle abwählen' : 'Deselect all'
     eventsLabel = 'Events'
     homeGamesLabel = lang === 'de' ? 'Heimspiele' : 'Home Games'
     awayGamesLabel = lang === 'de' ? 'Auswärtsspiele' : 'Away Games'
@@ -152,7 +158,7 @@ if (container) {
   // Filter state
   let filterType = new Set(['home', 'away'])
   let filterSport = new Set(['volleyball', 'basketball'])
-  let filterTeams = new Set<string>() // empty = all
+  let filterTeams: Set<string> | null = null // null = every team, empty = none picked
   let showClosures = true // "Halle geschlossen" entries, toggleable in the toolbar
 
   // In portrait a day cell is too narrow for a game chip: about 50px on a phone,
@@ -441,7 +447,7 @@ if (container) {
       if (!filterType.has(g.type)) return false
       const sport = getTeamSport(g)
       if (!filterSport.has(sport)) return false
-      if (filterTeams.size > 0 && g.kscw_team?.id && !filterTeams.has(String(g.kscw_team.id))) return false
+      if (filterTeams && g.kscw_team?.id && !filterTeams.has(String(g.kscw_team.id))) return false
       return true
     })
   }
@@ -864,41 +870,38 @@ if (container) {
     ))
 
     // -- Team filter (dropdown index 2) --
-    const vbTeams = allTeams.filter(t => t.sport === 'volleyball')
-    const bbTeams = allTeams.filter(t => t.sport === 'basketball')
-    const teamOptions = [
-      ...vbTeams.map(t => ({ id: String(t.id), label: t.name, checked: filterTeams.size === 0 || filterTeams.has(String(t.id)) })),
-      ...bbTeams.map(t => ({ id: String(t.id), label: t.name, checked: filterTeams.size === 0 || filterTeams.has(String(t.id)) })),
-    ]
+    // Only the teams of the sports on show: with basketball filtered out, its teams
+    // would only be something to scroll past. They keep their state while hidden.
+    const vbTeams = filterSport.has('volleyball') ? allTeams.filter(t => t.sport === 'volleyball') : []
+    const bbTeams = filterSport.has('basketball') ? allTeams.filter(t => t.sport === 'basketball') : []
+    const isPicked = (id: string) => !filterTeams || filterTeams.has(id)
+    const toOption = (t: DirectusTeam) => ({ id: String(t.id), label: t.name, checked: isPicked(String(t.id)) })
+    const teamOptions = [...vbTeams.map(toOption), ...bbTeams.map(toOption)]
     const teamGroups = [
-      { label: 'Volleyball', startIdx: 0 },
-      { label: 'Basketball', startIdx: vbTeams.length },
+      ...(vbTeams.length ? [{ label: 'Volleyball', startIdx: 0 }] : []),
+      ...(bbTeams.length ? [{ label: 'Basketball', startIdx: vbTeams.length }] : []),
     ]
-    const teamLabel = filterTeams.size === 0
+    const shownIds = teamOptions.map(o => o.id)
+    const pickedCount = shownIds.filter(isPicked).length
+    const teamLabel = pickedCount === shownIds.length
       ? allTeamsLabel
-      : `${filterTeams.size} Team${filterTeams.size > 1 ? 's' : ''}`
+      : pickedCount === 0
+        ? noTeamsLabel
+        : `${pickedCount} Team${pickedCount > 1 ? 's' : ''}`
 
     filters.appendChild(makeDropdown(
       teamLabel,
-      filterTeams.size > 0,
+      pickedCount < shownIds.length,
       teamOptions,
       teamGroups,
       (id, checked) => {
-        if (checked) {
-          filterTeams.add(id)
-        } else {
-          // If empty set (= all), populate with all team IDs first
-          if (filterTeams.size === 0) {
-            for (const t of allTeams) filterTeams.add(String(t.id))
-          }
-          filterTeams.delete(id)
-        }
-        // If all teams selected, reset to empty (= all)
-        if (filterTeams.size >= allTeams.length) {
-          filterTeams.clear()
-        }
+        setTeamsPicked([id], checked)
         applyFilterUpdate(2)
-      }
+      },
+      [
+        { id: 'select-all', label: selectAllLabel, onClick: () => { setTeamsPicked(shownIds, true); applyFilterUpdate(2) } },
+        { id: 'deselect-all', label: deselectAllLabel, onClick: () => { setTeamsPicked(shownIds, false); applyFilterUpdate(2) } },
+      ]
     ))
 
     // -- Closure toggle (standalone button, not a dropdown so it doesn't shift
@@ -916,7 +919,7 @@ if (container) {
     filters.appendChild(closureToggle)
 
     // -- Reset button (only show when filters are active) --
-    const hasActiveFilters = filterType.size < 2 || filterSport.size < 2 || filterTeams.size > 0 || !showClosures
+    const hasActiveFilters = filterType.size < 2 || filterSport.size < 2 || filterTeams !== null || !showClosures
     if (hasActiveFilters) {
       const resetBtn = document.createElement('button')
       resetBtn.type = 'button'
@@ -925,7 +928,7 @@ if (container) {
       resetBtn.addEventListener('click', () => {
         filterType = new Set(['home', 'away'])
         filterSport = new Set(['volleyball', 'basketball'])
-        filterTeams.clear()
+        filterTeams = null
         showClosures = true
         applyFilterUpdate(-1)
       })
@@ -964,13 +967,25 @@ if (container) {
     return toolbar
   }
 
+  // Picks or unpicks these teams and leaves the others alone. Every team picked
+  // goes back to null, so the filter counts as off again.
+  function setTeamsPicked(ids: string[], picked: boolean): void {
+    const next = filterTeams ?? new Set(allTeams.map(t => String(t.id)))
+    for (const id of ids) {
+      if (picked) next.add(id); else next.delete(id)
+    }
+    filterTeams = next.size >= allTeams.length ? null : next
+  }
+
   // -- Generic dropdown builder --
+  // The options scroll in their own list, so `actions` stay in reach above them.
   function makeDropdown(
     label: string,
     isActive: boolean,
     options: { id: string; label: string; checked: boolean }[],
     groups: { label: string; startIdx: number }[],
-    onChange: (id: string, checked: boolean) => void
+    onChange: (id: string, checked: boolean) => void,
+    actions: { id: string; label: string; onClick: () => void }[] = []
   ): HTMLElement {
     const wrap = el('div', 'cal-filter-wrap')
 
@@ -984,11 +999,28 @@ if (container) {
     const dropdown = el('div', 'cal-filter-dropdown')
     dropdown.style.display = 'none'
 
+    if (actions.length > 0) {
+      const actionRow = el('div', 'cal-filter-actions')
+      for (const action of actions) {
+        const actionBtn = document.createElement('button')
+        actionBtn.type = 'button'
+        actionBtn.className = 'cal-filter-action'
+        actionBtn.dataset.optionId = action.id
+        actionBtn.textContent = action.label
+        actionBtn.addEventListener('click', action.onClick)
+        actionRow.appendChild(actionBtn)
+      }
+      dropdown.appendChild(actionRow)
+    }
+
+    const list = el('div', 'cal-filter-list')
+    dropdown.appendChild(list)
+
     let groupIdx = 0
     for (let i = 0; i < options.length; i++) {
       // Insert group label if needed
       if (groups.length > 0 && groupIdx < groups.length && i === groups[groupIdx].startIdx) {
-        dropdown.appendChild(el('div', 'cal-filter-group-label', groups[groupIdx].label))
+        list.appendChild(el('div', 'cal-filter-group-label', groups[groupIdx].label))
         groupIdx++
       }
 
@@ -998,12 +1030,13 @@ if (container) {
       const cb = document.createElement('input')
       cb.type = 'checkbox'
       cb.checked = opt.checked
+      cb.dataset.optionId = opt.id
       cb.addEventListener('change', () => {
         onChange(opt.id, cb.checked)
       })
       lbl.appendChild(cb)
       lbl.appendChild(document.createTextNode(opt.label))
-      dropdown.appendChild(lbl)
+      list.appendChild(lbl)
     }
 
     btn.addEventListener('click', (e) => {
@@ -1023,41 +1056,42 @@ if (container) {
     return wrap
   }
 
-  // Track which dropdown index is open so we can restore after filter update
-  let openDropdownIdx = -1
-
   // -- Lightweight re-render for filter changes (no re-fetch, keeps dropdown open) --
+  // Every tick rebuilds the toolbar, so the open list is a new element each time. It
+  // takes over the old one's scroll position and focus: back at the top after each
+  // tick, picking a few of the 29 teams meant finding your place again every time.
   function applyFilterUpdate(dropdownIdx: number): void {
-    openDropdownIdx = dropdownIdx
+    const oldToolbar = container!.querySelector('.cal-toolbar')
+    const oldWrap = dropdownIdx >= 0 ? oldToolbar?.querySelectorAll('.cal-filter-wrap')[dropdownIdx] : null
+    const listScroll = oldWrap?.querySelector('.cal-filter-list')?.scrollTop ?? 0
+    const focusedId = oldWrap?.querySelector<HTMLElement>('[data-option-id]:focus')?.dataset.optionId
 
     // Rebuild toolbar in place
-    const oldToolbar = container!.querySelector('.cal-toolbar')
     const newToolbar = renderToolbar()
     if (oldToolbar) {
       oldToolbar.replaceWith(newToolbar)
     }
 
     // Restore dropdown that was open
-    if (openDropdownIdx >= 0) {
-      const wraps = newToolbar.querySelectorAll('.cal-filter-wrap')
-      if (wraps[openDropdownIdx]) {
-        const btn = wraps[openDropdownIdx].querySelector('.cal-filter-btn')
-        const dd = wraps[openDropdownIdx].querySelector('.cal-filter-dropdown') as HTMLElement
-        if (btn && dd) {
-          btn.classList.add('open')
-          dd.style.display = 'block'
-        }
-      }
+    const newWrap = dropdownIdx >= 0 ? newToolbar.querySelectorAll('.cal-filter-wrap')[dropdownIdx] : null
+    const dd = newWrap?.querySelector<HTMLElement>('.cal-filter-dropdown')
+    if (dd) {
+      newWrap!.querySelector('.cal-filter-btn')?.classList.add('open')
+      dd.style.display = 'block'
     }
 
     // Rebuild grid in place (everything after toolbar)
-    const toolbar = container!.querySelector('.cal-toolbar')
-    while (toolbar && toolbar.nextSibling) {
-      toolbar.nextSibling.remove()
+    while (newToolbar.nextSibling) {
+      newToolbar.nextSibling.remove()
     }
     buildCalendarGrid()
 
-    openDropdownIdx = -1
+    // Last, because setting scrollTop forces a layout: with the grid still missing,
+    // the page would collapse for that moment and lose its own scroll position.
+    if (dd) {
+      dd.querySelector('.cal-filter-list')!.scrollTop = listScroll
+      if (focusedId) dd.querySelector<HTMLElement>(`[data-option-id="${focusedId}"]`)?.focus({ preventScroll: true })
+    }
   }
 
   // -- Full render (used for month navigation, language switch and initial load) --

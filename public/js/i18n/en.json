@@ -1140,6 +1140,7 @@
   "liveEventMatchEnd": "Match finished",
   "liveEventSwitch": "Teams change sides",
   "liveUpdatedAt": "Updated {time}",
+  "liveNoUpdatesSince": "No updates since {time}",
   "liveReferees": "Referees",
   "liveUpNext": "Up next",
   "liveScheduledAt": "(scheduled: {time})",

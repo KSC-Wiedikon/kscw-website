@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.37.0] — 2026-11-07
+
+### Anzeigetafel im Querformat
+- **Querformat**: Dreht man das Handy während eines Spiels quer, füllt die Anzeigetafel den ganzen Bildschirm.
+- **Alte Spielstände**: Ein Spielstand, den niemand mehr aktualisiert, gilt nicht mehr als live. Ein versehentlicher Punkt auf der Anzeigetafel konnte den «Live»-Hinweis auf diesen alten Stand zeigen lassen, während das echte Spiel lief.
+
 ## [1.36.1] — 2026-11-07
 
 ### Volle Teamnamen auf der Live-Seite

@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.35.0] — 2026-11-07
+
+### Teamfilter im Kalender
+- **Teamfilter**: Er zeigt nur noch die Teams der eingeschalteten Sportarten. Die Liste bleibt nach jedem Häkchen an ihrer Stelle, statt wieder nach oben zu springen. Mit «Alle auswählen» und «Alle abwählen» lassen sich alle Teams auf einmal an- oder abwählen.
+- **Auf dem Handy**: Die Teamliste ist jetzt so breit wie der Inhalt der Seite statt nur so breit wie ihr Knopf, und ihre Zeilen lassen sich leichter antippen.
+
 ## [1.34.0] — 2026-11-07
 
 ### Kalender im Hochformat

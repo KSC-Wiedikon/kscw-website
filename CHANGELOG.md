@@ -4,8 +4,9 @@ All notable changes to the KSC Wiedikon website. This file is the curated, user-
 
 ## [1.36.0] — 2026-11-07
 
-### Schiedsrichter auf der Live-Seite
-- **Live-Seite**: Unter dem Spielstand stehen jetzt die Schiedsrichter des Spiels. Die Zeile erscheint nur, wenn das Spiel eindeutig gefunden wird.
+### Schiedsrichter und nächstes Spiel auf der Live-Seite
+- **Schiedsrichter**: Unter dem Spielstand stehen jetzt die Schiedsrichter des Spiels. Die Zeile erscheint nur, wenn das Spiel eindeutig gefunden wird.
+- **Als Nächstes**: Ist ein Spiel auf der Anzeigetafel eingerichtet, aber noch nicht angepfiffen, steht statt 0:0 und «Live» jetzt «Als Nächstes» mit den beiden Teams und der geplanten Zeit.
 
 ## [1.35.0] — 2026-11-07
 

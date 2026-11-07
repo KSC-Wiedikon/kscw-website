@@ -1141,6 +1141,8 @@
   "liveEventSwitch": "Teams change sides",
   "liveUpdatedAt": "Updated {time}",
   "liveReferees": "Referees",
+  "liveUpNext": "Up next",
+  "liveScheduledAt": "(scheduled: {time})",
   "liveRecentTitle": "Recent on the scoreboard",
   "liveRecentMatch": "Match",
   "liveRecentResult": "Result",

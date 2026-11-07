@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.38.0] — 2026-11-07
+
+### Details zu beendeten Spielen
+- **Live-Seite**: Tippe auf ein beendetes Spiel unter «Zuletzt auf der Anzeigetafel», um Punkte und Dauer jedes Satzes, die Gesamtpunkte und die Spielzeit zu sehen.
+
 ## [1.37.2] — 2026-11-07
 
 ### Eingegebene Namen mit Heim und Gast

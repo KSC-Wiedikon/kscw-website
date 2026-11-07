@@ -502,6 +502,48 @@
     fetchRow().then(apply, fail);
   }
 
+  function toggleDetail(toggle, detail) {
+    detail.hidden = !detail.hidden;
+    toggle.setAttribute('aria-expanded', String(!detail.hidden));
+  }
+
+  function formatDuration(sec) {
+    var mins = Math.round(sec / 60);
+    return mins < 60
+      ? tr('liveDurationMin', '{m} Min.', { m: mins })
+      : tr('liveDurationHourMin', '{h} Std. {m} Min.', { h: Math.floor(mins / 60), m: mins % 60 });
+  }
+
+  // Under a finished match: each set's score and time, then the totals. The match time only when
+  // the board timed every set (wiedisync final.ts totalSetDuration).
+  function recentDetail(results) {
+    var row = document.createElement('tr');
+    row.className = 'live-recent-detail';
+    row.hidden = true;
+    var cell = h('td');
+    cell.colSpan = 4;
+    var grid = h('div', 'live-recent-sets');
+    var totalA = 0, totalB = 0, seconds = 0, timed = true;
+    results.forEach(function (s, i) {
+      var a = num(s && s.a), b = num(s && s.b), dur = s && s.dur;
+      totalA += a; totalB += b;
+      if (typeof dur === 'number' && dur >= 0) seconds += dur; else timed = false;
+      grid.appendChild(h('span', 'live-muted', tr('liveSetN', 'Satz {n}', { n: i + 1 })));
+      var score = h('span', 'live-num');
+      score.appendChild(h('span', a > b ? 'live-win' : '', a));
+      score.appendChild(h('span', 'live-sep', ':'));
+      score.appendChild(h('span', b > a ? 'live-win' : '', b));
+      grid.appendChild(score);
+      grid.appendChild(h('span', 'live-muted live-recent-dur', typeof dur === 'number' && dur >= 0 ? formatDuration(dur) : ''));
+    });
+    grid.appendChild(h('span', 'live-muted live-recent-total', tr('livePoints', 'Punkte')));
+    grid.appendChild(h('span', 'live-num live-recent-total live-win', totalA + ':' + totalB));
+    grid.appendChild(h('span', 'live-muted live-recent-dur live-recent-total', timed ? tr('liveMatchTime', 'Spielzeit {time}', { time: formatDuration(seconds) }) : ''));
+    cell.appendChild(grid);
+    row.appendChild(cell);
+    return row;
+  }
+
   function loadHistory() {
     // A game's own channel (`game-<id>`) lists that game's archived match: the board
     // archives on its own channel, with the game's id when it knew it (wiedisync
@@ -515,14 +557,34 @@
       rows.forEach(function (r) {
         var bySets = normaliseSport(r.sport) !== 'basketball';
         var tr_ = document.createElement('tr');
-        tr_.appendChild(h('td', 'live-recent-match',
-          (r.team_a_name || r.team_a_short || '—') + ' – ' + (r.team_b_name || r.team_b_short || '—')));
+        var title = (r.team_a_name || r.team_a_short || '—') + ' – ' + (r.team_b_name || r.team_b_short || '—');
+        var results = bySets && Array.isArray(r.set_results) ? r.set_results : [];
+        var nameCell = h('td', 'live-recent-match');
+        if (results.length) {
+          // The row takes the tap; the button is what a keyboard and a screen reader reach.
+          var toggle = h('button', 'live-recent-toggle', title);
+          toggle.type = 'button';
+          toggle.setAttribute('aria-expanded', 'false');
+          var chevron = h('span', 'live-recent-chevron', '▾');
+          chevron.setAttribute('aria-hidden', 'true');
+          toggle.appendChild(chevron);
+          nameCell.appendChild(toggle);
+          tr_.classList.add('live-recent-row');
+        } else {
+          nameCell.textContent = title;
+        }
+        tr_.appendChild(nameCell);
         tr_.appendChild(h('td', 'live-num',
           bySets ? num(r.sets_won_a) + ':' + num(r.sets_won_b) : num(r.points_a) + ':' + num(r.points_b)));
         var sets = Array.isArray(r.set_results) ? r.set_results.map(function (s) { return num(s && s.a) + ':' + num(s && s.b); }).join(', ') : '';
         tr_.appendChild(h('td', 'live-num live-muted live-hide-sm', sets || '—'));
         tr_.appendChild(h('td', 'live-num live-muted', r.finished_at ? formatDateTime(r.finished_at) : '—'));
         els.recentBody.appendChild(tr_);
+        if (results.length) {
+          var detail = recentDetail(results);
+          els.recentBody.appendChild(detail);
+          tr_.addEventListener('click', toggleDetail.bind(null, toggle, detail));
+        }
       });
       els.recent.hidden = rows.length === 0;
     }, function () { /* best-effort: no history → no section */ });
@@ -622,5 +684,6 @@
   // Parameterised strings ("Satz 3", "Aktualisiert 20:14") carry no data-i18n key,
   // so repaint on a language switch and on the engine's load-time pass.
   document.addEventListener('langChanged', render);
+  document.addEventListener('langChanged', loadHistory);
   document.addEventListener('i18nApplied', render);
 })();

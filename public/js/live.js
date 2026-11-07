@@ -9,8 +9,9 @@
  * spectators use. Keep the rendering in step with wiedisync's VolleyballBoard /
  * BasketballBoard / FinalSummary so the two pages never disagree about a match.
  *
- * ⚠ The row has no `games` foreign key: the board does not know which fixture it
- * is showing, so nothing here claims "your game is live".
+ * ⚠ A board's own row has no `games` foreign key: the board does not always know
+ * which fixture it is showing, so nothing here claims "your game is live". Only the
+ * referees line looks for the fixture, and it stays away when it cannot be sure.
  */
 (function () {
   'use strict';
@@ -24,6 +25,8 @@
   var POLL_MS = 3000;
   var TEAM_FOUL_LIMIT = 5; // FIBA: the 5th team foul puts the OPPONENT in the bonus
   var HISTORY_LIMIT = 8;
+  var MIRROR_STALE_MS = 20 * 60 * 1000; // wiedisync LIVE_STALE_MS
+  var GAME_TTL_MS = 10 * 60 * 1000;
 
   // ?channel=… picks another physical board; restricted to the characters a
   // channel id can contain, since it ends up in a query string.
@@ -37,6 +40,8 @@
     sport: document.getElementById('live-sport'),
     event: document.getElementById('live-event'),
     updated: document.getElementById('live-updated'),
+    referees: document.getElementById('live-referees'),
+    refereeNames: document.getElementById('live-referee-names'),
     recent: document.getElementById('live-recent'),
     recentBody: document.getElementById('live-recent-body'),
   };
@@ -95,15 +100,35 @@
     var status = row.status === 'live' || row.status === 'final' ? row.status : 'idle';
     if (status === 'idle') return { status: status, event: null, seq: num(row.ts), match: null };
     var sets = Array.isArray(row.set_results) ? row.set_results.map(function (r) { return { a: num(r && r.a), b: num(r && r.b) }; }) : [];
+    // A finished match has no next serve: the row keeps its last serving_team, but
+    // nobody is serving (or in possession) any more.
+    var serving = status === 'live' && (row.serving_team === 'left' || row.serving_team === 'right') ? row.serving_team : null;
     var m = {
       sport: normaliseSport(row.sport),
       period: num(row.period),
-      serving: row.serving_team === 'left' || row.serving_team === 'right' ? row.serving_team : null,
+      serving: serving,
       sets: sets,
     };
-    m.a = team(row, 'a', '#2563eb', row.serving_team === 'left', num(row.fouls_b) >= TEAM_FOUL_LIMIT);
-    m.b = team(row, 'b', '#ef4444', row.serving_team === 'right', num(row.fouls_a) >= TEAM_FOUL_LIMIT);
-    return { status: status, event: row.event || null, seq: num(row.ts), match: m };
+    m.a = team(row, 'a', '#2563eb', serving === 'left', num(row.fouls_b) >= TEAM_FOUL_LIMIT);
+    m.b = team(row, 'b', '#ef4444', serving === 'right', num(row.fouls_a) >= TEAM_FOUL_LIMIT);
+    return { status: status, event: row.event || null, seq: num(row.ts), match: m, upNext: isUpNext(row) };
+  }
+
+  // The board has no warm-up state of its own: from the moment the names go up it
+  // publishes 'live', and setup, warm-up and "warm-up finished" all read the same,
+  // nothing played yet. The first point (or a timeout) ends it. A row left like that
+  // from another day is not "next" any more; a row can sit unchanged through a whole
+  // warm-up, so it is the day that counts here, not MIRROR_STALE_MS.
+  function isUpNext(row) {
+    if (row.status !== 'live') return false;
+    var played = ['points_a', 'points_b', 'sets_won_a', 'sets_won_b', 'timeouts_a', 'timeouts_b', 'subs_a', 'subs_b', 'fouls_a', 'fouls_b']
+      .some(function (k) { return num(row[k]) > 0; });
+    if (played || (Array.isArray(row.set_results) && row.set_results.length > 0)) return false;
+    return !!row.date_updated && zurichDay(new Date(row.date_updated)) === zurichDay(new Date());
+  }
+
+  function zurichDay(d) {
+    return isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });
   }
 
   function team(row, side, fallbackColor, serving, inBonus) {
@@ -293,6 +318,22 @@
     return card;
   }
 
+  // The fixture's names when the game is known (home first, as typed by the league),
+  // else the board's. The time only for a game today: "(scheduled: 16:00)" says today.
+  function upNextCard(m) {
+    var game = fixture.game;
+    var card = h('div', 'live-next');
+    card.appendChild(setTr(h('p', 'live-mid-label'), 'liveUpNext', 'Als Nächstes'));
+    var line = h('p', 'live-next-match', (game && game.home_team || m.a.name) + ' – ' + (game && game.away_team || m.b.name));
+    var time = game && game.time && game.date === zurichDay(new Date()) ? String(game.time).slice(0, 5) : '';
+    if (time) {
+      line.appendChild(document.createTextNode(' '));
+      line.appendChild(h('span', 'live-next-time', tr('liveScheduledAt', '(geplant: {time})', { time: time })));
+    }
+    card.appendChild(line);
+    return card;
+  }
+
   function emptyState() {
     var card = h('div', 'live-empty');
     card.appendChild(setTr(h('p', 'live-empty-title'), 'liveNoMatch', 'Zurzeit kein Live-Spiel'));
@@ -319,11 +360,12 @@
   };
 
   var state = { snap: null, connection: 'connecting', lastSeq: -1, lastAt: null, key: '' };
+  var fixture = { key: '', at: 0, game: null };
 
   function renderStatus() {
     var tone;
     if (!state.snap || state.connection === 'reconnecting') tone = state.connection === 'reconnecting' ? 'reconnecting' : 'pending';
-    else tone = state.snap.status;
+    else tone = state.snap.upNext ? 'idle' : state.snap.status;
     var s = STATUS[tone];
     els.status.setAttribute('data-tone', tone === 'reconnecting' ? 'pending' : tone);
     setTr(els.statusLabel, s[0], s[1]);
@@ -338,7 +380,8 @@
     els.board.textContent = '';
     if (m) {
       if (snap.status === 'final') els.board.appendChild(finalSummary(m));
-      els.board.appendChild(m.sport === 'basketball' ? basketBoard(m) : volleyBoard(m));
+      if (snap.upNext) els.board.appendChild(upNextCard(m));
+      else els.board.appendChild(m.sport === 'basketball' ? basketBoard(m) : volleyBoard(m));
       setTr(els.sport, SPORT[m.sport][0], SPORT[m.sport][1]);
       els.sport.hidden = false;
     } else {
@@ -378,6 +421,7 @@
     // an identical DOM. The "updated" time still ticks via lastAt below.
     var key = JSON.stringify(row || null);
     state.lastAt = Date.now();
+    loadGame(row, snap);
     if (key !== state.key) {
       state.key = key;
       state.snap = snap;
@@ -424,6 +468,87 @@
       });
       els.recent.hidden = rows.length === 0;
     }, function () { /* best-effort: no history → no section */ });
+  }
+
+  /* ── The game on the board (mirrors wiedisync useLiveGame + liveGame) ── */
+
+  function normaliseTeamName(name) {
+    return String(name == null ? '' : name)
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  // Either order: the board's left side is not always the home team.
+  function sameTeams(a1, b1, a2, b2) {
+    var x1 = normaliseTeamName(a1), y1 = normaliseTeamName(b1);
+    var x2 = normaliseTeamName(a2), y2 = normaliseTeamName(b2);
+    if (!x1 || !y1) return false;
+    return (x1 === x2 && y1 === y2) || (x1 === y2 && y1 === x2);
+  }
+
+  function refereeNames(raw) {
+    var list = raw;
+    if (typeof list === 'string') {
+      try { list = JSON.parse(list); } catch (e) { return []; }
+    }
+    if (!Array.isArray(list)) return [];
+    return list
+      .map(function (r) { return r && typeof r === 'object' ? String(r.name == null ? '' : r.name).trim() : ''; })
+      .filter(Boolean);
+  }
+
+  // Which game, in order:
+  //  1. the row's own `game_id` (a `game-<id>` row);
+  //  2. for a board's own channel, the game row that board mirrors right now, but
+  //     only if it holds these two teams: the row of the previous match stays fresh
+  //     for a while after the next one is on the board;
+  //  3. today's one game with these two teams. Null when two match: a guess would
+  //     put the wrong referees on the page.
+  function findGame(row) {
+    var fields = 'fields=date,time,home_team,away_team,referees_json';
+    function byId(id) { return getJSON('/items/games/' + encodeURIComponent(id) + '?' + fields); }
+    if (row.game_id != null) return byId(row.game_id);
+
+    var mirror = '/items/live_scores?limit=1&sort=-date_updated&fields=game_id,team_a_name,team_b_name,date_updated'
+      + '&filter[source][_eq]=' + encodeURIComponent('board:' + channel);
+    return getJSON(mirror).then(function (rows) {
+      var m = rows[0];
+      var fresh = m && m.game_id != null && Date.now() - new Date(m.date_updated).getTime() <= MIRROR_STALE_MS;
+      if (fresh && sameTeams(row.team_a_name, row.team_b_name, m.team_a_name, m.team_b_name)) return byId(m.game_id);
+
+      var today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });
+      return getJSON('/items/games?limit=50&' + fields + '&filter[date][_eq]=' + today).then(function (games) {
+        var hits = games.filter(function (g) { return sameTeams(row.team_a_name, row.team_b_name, g.home_team, g.away_team); });
+        return hits.length === 1 ? hits[0] : null;
+      });
+    });
+  }
+
+  function showReferees(names) {
+    els.refereeNames.textContent = names.join(' · ');
+    els.referees.hidden = names.length === 0;
+  }
+
+  // Read once per match, not on every point; the re-read picks up a late sync.
+  function loadGame(row, snap) {
+    var key = snap.match ? [row.game_id, row.team_a_name, row.team_b_name].join('|') : '';
+    if (key === fixture.key && (!key || Date.now() - fixture.at < GAME_TTL_MS)) return;
+    if (key !== fixture.key) { // never the previous match's game
+      fixture.game = null;
+      showReferees([]);
+    }
+    fixture.key = key;
+    fixture.at = Date.now();
+    if (!key) return;
+    findGame(row).then(function (game) {
+      if (fixture.key !== key) return;
+      fixture.game = game;
+      showReferees(refereeNames(game && game.referees_json));
+      if (state.snap && state.snap.upNext) render();
+    }, function () { /* best-effort: no game → no referees, no scheduled time */ });
   }
 
   // Rule 2: await the dictionary before RENDERING, never before FETCHING.

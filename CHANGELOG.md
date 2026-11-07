@@ -2,6 +2,12 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.36.0] — 2026-11-07
+
+### Schiedsrichter und nächstes Spiel auf der Live-Seite
+- **Schiedsrichter**: Unter dem Spielstand stehen jetzt die Schiedsrichter des Spiels. Die Zeile erscheint nur, wenn das Spiel eindeutig gefunden wird.
+- **Als Nächstes**: Ist ein Spiel auf der Anzeigetafel eingerichtet, aber noch nicht angepfiffen, steht statt 0:0 und «Live» jetzt «Als Nächstes» mit den beiden Teams und der geplanten Zeit.
+
 ## [1.35.0] — 2026-11-07
 
 ### Teamfilter im Kalender

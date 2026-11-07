@@ -1141,6 +1141,8 @@
   "liveEventSwitch": "Seitenwechsel",
   "liveUpdatedAt": "Aktualisiert {time}",
   "liveReferees": "Schiedsrichter",
+  "liveUpNext": "Als Nächstes",
+  "liveScheduledAt": "(geplant: {time})",
   "liveRecentTitle": "Zuletzt auf der Anzeigetafel",
   "liveRecentMatch": "Spiel",
   "liveRecentResult": "Resultat",

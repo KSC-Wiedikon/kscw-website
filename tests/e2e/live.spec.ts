@@ -107,6 +107,73 @@ test.describe('/live referees', () => {
   });
 });
 
+test.describe('/live up next', () => {
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zurich' });
+  const READY = {
+    ...VOLLEY_LIVE, event: null, period: 1,
+    team_a_name: 'KSC WIEDIKON D1', team_b_name: 'VBC NORD D1',
+    points_a: 0, points_b: 0, sets_won_a: 0, sets_won_b: 0,
+    timeouts_a: 0, timeouts_b: 0, subs_a: 0, subs_b: 0, set_results: [],
+    date_updated: new Date().toISOString(),
+  };
+  const GAME = { ...D1_GAME, date: today, time: '16:00:00' };
+
+  test('a match set up but not started reads as up next, with the scheduled time', async ({ page }) => {
+    await stubLive(page, READY);
+    await stubGames(page, [GAME]);
+    await gotoWithLang(page, '/live', 'de');
+
+    const card = page.locator('.live-next');
+    await expect(card).toContainText('Als Nächstes');
+    await expect(card.locator('.live-next-match')).toHaveText('KSC Wiedikon D1 – VBC Nord D1 (geplant: 16:00)');
+    await expect(page.locator('#live-board .live-score')).toHaveCount(0);
+    await expect(page.locator('#live-status')).toHaveAttribute('data-tone', 'idle');
+    await expect(page.locator('#live-referee-names')).toHaveText('Dritte Pfeiferin');
+
+    await switchLangTo(page, 'en');
+    await expect(card).toContainText('Up next');
+    await expect(card.locator('.live-next-match')).toHaveText('KSC Wiedikon D1 – VBC Nord D1 (scheduled: 16:00)');
+  });
+
+  test('without a known game it names the board teams and no time', async ({ page }) => {
+    await stubLive(page, READY);
+    await stubGames(page, []);
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('.live-next-match')).toHaveText('KSC WIEDIKON D1 – VBC NORD D1');
+  });
+
+  test('a game on another day keeps its names but not its time', async ({ page }) => {
+    await stubLive(page, { ...READY, channel: 'game-437', game_id: 437 });
+    await stubGames(page, [{ ...GAME, date: '2020-01-01' }]);
+    await gotoWithLang(page, '/live?channel=game-437', 'de');
+    await expect(page.locator('.live-next-match')).toHaveText('KSC Wiedikon D1 – VBC Nord D1');
+  });
+
+  test('the first point turns it into the board', async ({ page }) => {
+    let row: object = READY;
+    await stubLive(page, READY);
+    await stubGames(page, [GAME]);
+    await page.route('**/items/live_scores**', (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({ data: [row] }),
+    }));
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('.live-next')).toBeVisible();
+
+    row = { ...READY, points_a: 1 };
+    await expect(page.locator('#live-board .live-score')).toHaveText(['1', '0']);
+    await expect(page.locator('.live-next')).toHaveCount(0);
+    await expect(page.locator('#live-status')).toHaveAttribute('data-tone', 'live');
+  });
+
+  test('a 0:0 row left over from another day is not up next', async ({ page }) => {
+    await stubLive(page, { ...READY, date_updated: '2026-09-23T16:37:51.154Z' });
+    await stubGames(page, []);
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-board .live-score')).toHaveText(['0', '0']);
+    await expect(page.locator('.live-next')).toHaveCount(0);
+  });
+});
+
 test.describe('/live', () => {
   test('renders a live volleyball board', async ({ page }) => {
     await stubLive(page, VOLLEY_LIVE, HISTORY);
@@ -150,6 +217,20 @@ test.describe('/live', () => {
     await expect(final).toContainText('gewinnt das Spiel');
     await expect(final.locator('.live-final-score')).toHaveText('3:1');
     await expect(page.locator('#live-status')).toHaveAttribute('data-tone', 'final');
+  });
+
+  test('a finished match shows no serve dot', async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, status: 'final', event: 'match-end', sets_won_a: 3, sets_won_b: 0, serving_team: 'left' });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('.live-final')).toBeVisible();
+    await expect(page.locator('.live-serve-dot')).toHaveCount(0);
+  });
+
+  test('a finished basketball game shows no possession arrow', async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, sport: 'basketball', status: 'final', event: 'match-end', points_a: 71, points_b: 64, serving_team: 'left' });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('.live-final')).toBeVisible();
+    await expect(page.locator('.live-possession')).toBeEmpty();
   });
 
   test('renders basketball with period, fouls and bonus', async ({ page }) => {

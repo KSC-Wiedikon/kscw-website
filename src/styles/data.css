@@ -2516,7 +2516,7 @@ tr.gt-row-stream > td { background: transparent; }
 .live-pill[data-tone="pending"] .live-dot { background: #f59e0b; animation: live-pulse 1.4s ease-in-out infinite; }
 @keyframes live-pulse { 50% { opacity: 0.35; } }
 
-.live-board-card, .live-final, .live-empty {
+.live-board-card, .live-final, .live-empty, .live-next {
   background: var(--data-surface); border: 1px solid var(--hairline);
   border-radius: var(--radius-2xl); box-shadow: var(--shadow-card);
 }
@@ -2583,6 +2583,10 @@ tr.gt-row-stream > td { background: transparent; }
 .live-empty { padding: var(--space-2xl) var(--space-lg); text-align: center; border-color: var(--border); border-style: dashed; box-shadow: none; }
 .live-empty-title { font-weight: 600; }
 .live-empty-hint { max-width: 24rem; margin: 0.25rem auto 0; font-size: var(--text-sm); color: var(--text-muted); }
+
+.live-next { padding: var(--space-xl) var(--space-lg); text-align: center; }
+.live-next-match { margin-top: var(--space-sm); font-size: var(--text-lg); font-weight: 600; overflow-wrap: anywhere; }
+.live-next-time { font-weight: 400; color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 .live-referees { margin-top: var(--space-sm); font-size: var(--text-xs); color: var(--text-muted); }
 .live-referees-label { font-weight: 500; color: var(--text-primary); }

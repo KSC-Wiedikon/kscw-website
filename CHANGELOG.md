@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.36.1] — 2026-11-07
+
+### Volle Teamnamen auf der Live-Seite
+- **Live-Seite**: Die Teams stehen überall mit dem vollen Namen statt mit dem Kürzel.
+
 ## [1.36.0] — 2026-11-07
 
 ### Schiedsrichter und nächstes Spiel auf der Live-Seite

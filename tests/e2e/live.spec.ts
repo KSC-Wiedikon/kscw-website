@@ -225,6 +225,47 @@ test.describe('/live', () => {
     await expect(tags).toHaveText(['Away', 'Home']);
   });
 
+  test('a finished match opens under its row: sets, times, totals', async ({ page }) => {
+    await stubLive(page, VOLLEY_LIVE, [{
+      id: 'h2', sport: 'volleyball', team_a_name: 'KSC WIEDIKON H1', team_a_short: 'KSCW H1', team_b_name: 'VBC WETZIKON H1', team_b_short: 'WETZI H1',
+      points_a: 25, points_b: 23, sets_won_a: 3, sets_won_b: 0, finished_at: '2026-11-07T13:46:12Z',
+      set_results: [{ a: 26, b: 24, dur: 1410 }, { a: 25, b: 23, dur: 1297 }, { a: 25, b: 23, dur: 1397 }],
+    }]);
+    await gotoWithLang(page, '/live', 'de');
+    const toggle = page.locator('.live-recent-toggle');
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    const detail = page.locator('.live-recent-detail');
+    await expect(detail).toBeHidden();
+
+    await page.locator('.live-recent-row td').nth(1).click();
+    await expect(detail).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(detail).toContainText('Satz 1');
+    await expect(detail).toContainText('26:24');
+    await expect(detail).toContainText('24 Min.');
+    await expect(detail).toContainText('76:70');
+    await expect(detail).toContainText('Spielzeit 1 Std. 8 Min.');
+
+    await toggle.click();
+    await expect(detail).toBeHidden();
+    await toggle.focus();
+    await page.keyboard.press('Enter');
+    await expect(detail).toBeVisible();
+  });
+
+  test('a match without sets, or a set the board did not time, stays honest', async ({ page }) => {
+    await stubLive(page, VOLLEY_LIVE, [
+      { id: 'h3', sport: 'volleyball', team_a_name: 'A', team_b_name: 'B', sets_won_a: 3, sets_won_b: 0, finished_at: '2026-11-07T13:46:12Z',
+        set_results: [{ a: 25, b: 20 }, { a: 25, b: 20, dur: 1200 }, { a: 25, b: 20, dur: 1200 }] },
+      ...HISTORY,
+    ]);
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('.live-recent-row')).toHaveCount(1);
+    await page.locator('.live-recent-toggle').click();
+    await expect(page.locator('.live-recent-detail')).toContainText('75:60');
+    await expect(page.locator('.live-recent-detail')).not.toContainText('Spielzeit');
+  });
+
   test('full names need no tag', async ({ page }) => {
     await stubLive(page, VOLLEY_LIVE);
     await gotoWithLang(page, '/live', 'de');

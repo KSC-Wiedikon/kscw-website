@@ -155,6 +155,14 @@ if (container) {
   let filterTeams = new Set<string>() // empty = all
   let showClosures = true // "Halle geschlossen" entries, toggleable in the toolbar
 
+  // In portrait a day cell is too narrow for a game chip: about 50px on a phone,
+  // where nothing fits, and about 105px on a tablet, where the team name is cut to
+  // one letter. A Saturday here can also hold 14 games. So in portrait the grid only
+  // says which days are busy (dots) and the tapped day is listed underneath it.
+  // Landscape keeps the chips, down to 640px wide; rotating just swaps layouts.
+  const portraitQuery = window.matchMedia('(max-width: 639px), (max-width: 1023px) and (orientation: portrait)')
+  let selectedDayKey = '' // the day listed under the grid in the portrait layout
+
   // Teams list
   let allTeams: DirectusTeam[] = []
 
@@ -1154,6 +1162,7 @@ if (container) {
     todayBtn.addEventListener('click', () => {
       currentMonth = new Date()
       currentMonth.setDate(1)
+      selectedDayKey = ''
       render()
     })
     titleEl.appendChild(todayBtn)
@@ -1171,35 +1180,75 @@ if (container) {
     container!.appendChild(dow)
 
     // Grid
-    const grid = el('div', 'cal-grid')
+    const portrait = portraitQuery.matches
+    const grid = el('div', portrait ? 'cal-grid cal-grid--portrait' : 'cal-grid')
+    const agenda = el('section', 'cal-agenda')
+
+    if (portrait && !selectedDayKey.startsWith(toDateKey(mStart).slice(0, 8))) {
+      // A newly shown month opens on its next busy day: from today in the current
+      // month, from the 1st in any other. Only a month with nothing left to show
+      // falls back to an empty day.
+      const from = isSameMonth(today, currentMonth) ? toDateKey(today) : toDateKey(mStart)
+      selectedDayKey = days.map(toDateKey).find((k) =>
+        k >= from && k.startsWith(from.slice(0, 8)) && (gamesByDate.has(k) || eventsByDate.has(k))
+      ) || from
+    }
 
     for (const date of days) {
       const key = toDateKey(date)
       const inMonth = isSameMonth(date, currentMonth)
       const isToday_ = isSameDay(date, today)
       const dayGames = gamesByDate.get(key) || []
-
-      const cell = el('div', 'cal-cell')
-      if (!inMonth) cell.classList.add('cal-cell--outside')
-      if (isToday_) cell.classList.add('cal-cell--today')
-
-      const num = el('div', 'cal-day-num', String(date.getDate()))
-      if (isToday_) num.classList.add('cal-day-num--today')
-      cell.appendChild(num)
-
       const dayEvents = eventsByDate.get(key) || []
       const dayClosures = closureGroupsForDay(key)
       const hasClosure = inMonth && dayClosures.length > 0
+
+      const dayButton = portrait && inMonth
+      const cell = el(dayButton ? 'button' : 'div', 'cal-cell')
+      if (!inMonth) cell.classList.add('cal-cell--outside')
+      if (isToday_) cell.classList.add('cal-cell--today')
       if (hasClosure) cell.classList.add('cal-cell--closed')
+
+      const num = el(dayButton ? 'span' : 'div', 'cal-day-num', String(date.getDate()))
+      if (isToday_) num.classList.add('cal-day-num--today')
+      cell.appendChild(num)
+
+      if (dayButton) {
+        const dayBtn = cell as HTMLButtonElement
+        dayBtn.type = 'button'
+        dayBtn.setAttribute('aria-label', dayCellLabel(date, dayGames, dayEvents, hasClosure))
+        if (isToday_) dayBtn.setAttribute('aria-current', 'date')
+        if (hasClosure) dayBtn.appendChild(closureIcon())
+        if (dayGames.length + dayEvents.length > 0) dayBtn.appendChild(dayDots(dayGames, dayEvents))
+
+        const isSelected = key === selectedDayKey
+        dayBtn.setAttribute('aria-pressed', String(isSelected))
+        if (isSelected) {
+          dayBtn.classList.add('cal-cell--selected')
+          fillAgenda(agenda, date, dayGames, dayEvents, dayClosures)
+        }
+        dayBtn.addEventListener('click', () => {
+          selectedDayKey = key
+          const previous = grid.querySelector('.cal-cell--selected')
+          previous?.classList.remove('cal-cell--selected')
+          previous?.setAttribute('aria-pressed', 'false')
+          dayBtn.classList.add('cal-cell--selected')
+          dayBtn.setAttribute('aria-pressed', 'true')
+          fillAgenda(agenda, date, dayGames, dayEvents, dayClosures)
+          revealAgenda(agenda)
+        })
+        grid.appendChild(cell)
+        continue
+      }
 
       // Closures fill the whole cell (red block below); only games + events are
       // capped chips. They still render on a closed day so away games etc. aren't
       // hidden by the closure of a KSCW hall.
       const chipEntries = dayGames.length + dayEvents.length
 
-      if (inMonth && chipEntries > 0) {
+      if (!portrait && inMonth && chipEntries > 0) {
         const entriesDiv = el('div', 'cal-entries')
-        const maxVisible = window.innerWidth < 640 ? 2 : 3
+        const maxVisible = 3
         let count = 0
 
         for (const g of dayGames) {
@@ -1238,6 +1287,179 @@ if (container) {
     }
 
     container!.appendChild(grid)
+    if (portrait) {
+      container!.appendChild(dotLegend())
+      container!.appendChild(agenda)
+    }
+  }
+
+  // -- Portrait layout: day dots --
+  // Three dots, then "+N". The dots take turns between volleyball, basketball and
+  // events, so three volleyball games early in the day can't hide that basketball
+  // is on too. Hue is the sport, hollow is away: the same meaning as everywhere
+  // else in the calendar.
+  function dayDots(dayGames: DirectusGame[], dayEvents: CalendarEvent[]): HTMLElement {
+    const gameDot = (g: DirectusGame) =>
+      `cal-dot--${getTeamSport(g) === 'basketball' ? 'bb' : 'vb'} cal-dot--${g.type}`
+    const queues = [
+      dayGames.filter((g) => getTeamSport(g) !== 'basketball').map(gameDot),
+      dayGames.filter((g) => getTeamSport(g) === 'basketball').map(gameDot),
+      dayEvents.map(() => 'cal-dot--event'),
+    ]
+    const maxDots = 3
+    const picked: string[] = []
+    for (let i = 0; picked.length < maxDots && queues.some((q) => q[i]); i++) {
+      for (const q of queues) {
+        if (q[i] && picked.length < maxDots) picked.push(q[i])
+      }
+    }
+
+    const dots = el('span', 'cal-dots')
+    for (const cls of picked) dots.appendChild(el('span', `cal-dot ${cls}`))
+    const overflow = dayGames.length + dayEvents.length - picked.length
+    if (overflow > 0) dots.appendChild(el('span', 'cal-dots-more', `+${overflow}`))
+    return dots
+  }
+
+  function gameCountLabel(n: number): string {
+    if (lang === 'de') return `${n} ${n === 1 ? 'Spiel' : 'Spiele'}`
+    return `${n} ${n === 1 ? 'game' : 'games'}`
+  }
+
+  function agendaDateLabel(date: Date): string {
+    return date.toLocaleDateString(longDateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })
+  }
+
+  // A screen reader reads this label instead of the button's content, so it has to
+  // say what the dots show.
+  function dayCellLabel(date: Date, dayGames: DirectusGame[], dayEvents: CalendarEvent[], closed: boolean): string {
+    const parts = [agendaDateLabel(date)]
+    if (dayGames.length) parts.push(gameCountLabel(dayGames.length))
+    if (dayEvents.length) parts.push(`${dayEvents.length} ${eventsLabel}`)
+    if (closed) parts.push(closuresLabel)
+    return parts.join(', ')
+  }
+
+  // A dot means nothing on its own (and hue alone is not enough), so the grid
+  // carries a one-line key.
+  function dotLegend(): HTMLElement {
+    const legend = el('div', 'cal-legend')
+    const item = (cls: string, label: string) => {
+      const entry = el('span', 'cal-legend-item')
+      entry.appendChild(el('span', `cal-dot ${cls}`))
+      entry.appendChild(document.createTextNode(label))
+      legend.appendChild(entry)
+    }
+    item('cal-dot--vb', 'Volleyball')
+    item('cal-dot--bb', 'Basketball')
+    item('cal-dot--event', eventsLabel)
+    item('cal-dot--neutral cal-dot--away', awayLabel)
+    return legend
+  }
+
+  // -- Portrait layout: the tapped day's list --
+  function agendaRow(rail: string, time: string, body: HTMLElement, onTap: () => void): HTMLElement {
+    const li = el('li')
+    const row = document.createElement('button')
+    row.type = 'button'
+    row.className = 'cal-agenda-row'
+    row.appendChild(el('span', 'cal-agenda-time', time))
+    const railEl = el('span', 'cal-agenda-rail')
+    railEl.style.background = rail
+    row.appendChild(railEl)
+    row.appendChild(body)
+    row.addEventListener('click', onTap)
+    li.appendChild(row)
+    return li
+  }
+
+  function agendaGameRow(g: DirectusGame): HTMLElement {
+    const isHome = g.type === 'home'
+    const sport = getTeamSport(g)
+    const teamColor = g.kscw_team?.color || (sport === 'basketball' ? '#d97706' : '#4A55A2')
+    const teamName = g.kscw_team?.name || (isHome ? g.home_team : g.away_team)
+
+    const body = el('span', 'cal-agenda-body')
+    const top = el('span', 'cal-agenda-top')
+    top.appendChild(sportBallIcon(sport))
+    top.appendChild(el('span', 'cal-agenda-team', teamName))
+    top.appendChild(el('span', `cal-tooltip-type cal-tooltip-type--${isHome ? 'home' : 'away'}`, isHome ? homeLabel : awayLabel))
+    if (g.status === 'completed' && (g.home_score || g.away_score)) {
+      top.appendChild(el('span', 'cal-agenda-score', `${g.home_score}:${g.away_score}`))
+    }
+    body.appendChild(top)
+
+    // Only the opponent: the line above already names our team and says home or
+    // away. The hall follows on the same line while it fits, so a usual row stays
+    // two lines tall and a 14-game Saturday stays scrollable.
+    const line = el('span', 'cal-agenda-line')
+    line.appendChild(el('span', 'cal-agenda-teams', `vs ${isHome ? g.away_team : g.home_team}`))
+    if (g.hall?.name) line.appendChild(el('span', 'cal-agenda-meta', g.hall.name))
+    body.appendChild(line)
+
+    return agendaRow(teamColor, g.time ? g.time.slice(0, 5) : '', body, () => showGameDetail(g))
+  }
+
+  function agendaEventRow(ev: CalendarEvent): HTMLElement {
+    const body = el('span', 'cal-agenda-body')
+    const top = el('span', 'cal-agenda-top')
+    top.appendChild(el('span', 'cal-tooltip-sport cal-tooltip-sport--event', eventCategoryLabel(ev.category)))
+    body.appendChild(top)
+    body.appendChild(el('span', 'cal-agenda-teams cal-agenda-teams--title', ev.title))
+    if (ev.location) body.appendChild(el('span', 'cal-agenda-meta', ev.location))
+    return agendaRow('#22c55e', ev.time ? ev.time.slice(0, 5) : '', body, () => showEventDetail(ev))
+  }
+
+  function agendaClosureRow(c: ClosureGroup): HTMLElement {
+    const body = el('span', 'cal-agenda-body')
+    const top = el('span', 'cal-agenda-top')
+    top.appendChild(el('span', 'cal-tooltip-sport cal-tooltip-sport--closure', closuresLabel))
+    body.appendChild(top)
+    body.appendChild(el('span', 'cal-agenda-teams cal-agenda-teams--title', c.label))
+    body.appendChild(el('span', 'cal-agenda-meta', closureHallsLabel(c)))
+    return agendaRow('var(--text-muted)', '', body, () => showClosureDetail(c))
+  }
+
+  // All-day things first, as in any calendar, then the games by time.
+  function fillAgenda(agenda: HTMLElement, date: Date, dayGames: DirectusGame[], dayEvents: CalendarEvent[], dayClosures: ClosureGroup[]): void {
+    // The heading is the live region (reading out every row on each tap would make
+    // the grid unusable with a screen reader), and a live region is only announced
+    // when it was already there before its text changed. So it survives the taps.
+    let title = agenda.querySelector('.cal-agenda-date')
+    if (!title) {
+      const head = el('div', 'cal-agenda-head')
+      title = el('h2', 'cal-agenda-date')
+      title.setAttribute('aria-live', 'polite')
+      head.appendChild(title)
+      head.appendChild(el('span', 'cal-agenda-count'))
+      agenda.appendChild(head)
+      agenda.appendChild(el('div', 'cal-agenda-content'))
+    }
+    title.textContent = agendaDateLabel(date)
+    agenda.querySelector('.cal-agenda-count')!.textContent = dayGames.length ? gameCountLabel(dayGames.length) : ''
+
+    const content = agenda.querySelector('.cal-agenda-content')!
+    content.textContent = ''
+    if (dayGames.length + dayEvents.length + dayClosures.length === 0) {
+      content.appendChild(el('p', 'cal-agenda-empty', lang === 'de' ? 'An diesem Tag ist nichts los.' : 'Nothing on this day.'))
+      return
+    }
+
+    const list = el('ul', 'cal-agenda-list')
+    for (const c of dayClosures) list.appendChild(agendaClosureRow(c))
+    for (const ev of dayEvents) list.appendChild(agendaEventRow(ev))
+    for (const g of dayGames) list.appendChild(agendaGameRow(g))
+    content.appendChild(list)
+  }
+
+  // The list sits under the grid. If a tap would change it out of sight, the tap
+  // looks dead, so bring its first rows up, moving the page no more than that.
+  function revealAgenda(agenda: HTMLElement): void {
+    const wantedOnScreen = 220
+    const offscreen = agenda.getBoundingClientRect().top + wantedOnScreen - window.innerHeight
+    if (offscreen <= 0) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollBy({ top: offscreen, behavior: reduce ? 'auto' : 'smooth' })
   }
 
   // -- Day overflow modal --
@@ -1508,6 +1730,9 @@ if (container) {
   // dataLoaded flag keeps it from refetching, and calEvents stays cached, so
   // this is a pure relabel + rebuild.
   document.addEventListener('langChanged', () => { render() })
+
+  // Rotating a device or resizing a window across the breakpoint swaps layouts.
+  portraitQuery.addEventListener('change', () => { render() })
 
   // Initial load. All THREE waits run concurrently: the dictionary, the teams list
   // and the games+closures dataset. This used to be strictly sequential —

@@ -22,6 +22,9 @@ const GAMES = [
   GAME('4', 'away', 'basketball'),
 ];
 
+// The day popup belongs to the wide layout; phones list the day under the grid.
+test.use({ viewport: { width: 1280, height: 720 } });
+
 test('home and away do not share a colour with the sports', async ({ page }) => {
   const json = (data: unknown) => ({
     status: 200, contentType: 'application/json', body: JSON.stringify({ data }),

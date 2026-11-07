@@ -2,6 +2,11 @@
 
 All notable changes to the KSC Wiedikon website. This file is the curated, user-facing release record (semver); the same notes appear on the site's feedback page (DE + EN). For commit-level detail see `git log`.
 
+## [1.38.1] — 2026-11-07
+
+### Beendet heisst beendet
+- **Live-Seite**: Ein beendetes Spiel bleibt beendet: Die Live-Seite und der «Live»-Hinweis nennen die Anzeigetafel erst wieder live, wenn ein neues Spiel wirklich begonnen hat. Der Hinweis erscheint ab dem ersten Punkt.
+
 ## [1.38.0] — 2026-11-07
 
 ### Details zu beendeten Spielen

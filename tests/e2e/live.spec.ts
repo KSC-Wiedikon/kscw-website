@@ -198,6 +198,21 @@ test.describe('/live', () => {
     await expect(page.locator('#live-recent-body')).toContainText('20.09.2026 21:45');
   });
 
+  test('shows full team names only, everywhere on the page', async ({ page }) => {
+    const history = [{ ...HISTORY[0], team_a_name: 'KSC Wiedikon H2', team_b_name: 'BC Winterthur H1' }];
+    await stubLive(page, VOLLEY_LIVE, history);
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-board .live-team-chip')).toHaveText(['KSC WIEDIKON H1', 'KSC WIEDIKON H3']);
+    await expect(page.locator('#live-recent-body')).toContainText('KSC Wiedikon H2 – BC Winterthur H1');
+    await expect(page.locator('#live-root')).not.toContainText('KSCW');
+  });
+
+  test('a board without full names still shows its short names', async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, team_a_name: '', team_b_name: null });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-board .live-team-chip')).toHaveText(['KSCW H1', 'KSCW H3']);
+  });
+
   test('switches the board text to English, including parameterised strings', async ({ page }) => {
     await stubLive(page, VOLLEY_LIVE);
     await gotoWithLang(page, '/live', 'de');
@@ -213,7 +228,7 @@ test.describe('/live', () => {
     await stubLive(page, { ...VOLLEY_LIVE, status: 'final', event: 'match-end', sets_won_a: 3, sets_won_b: 1 });
     await gotoWithLang(page, '/live', 'de');
     const final = page.locator('.live-final');
-    await expect(final).toContainText('KSCW H1');
+    await expect(final).toContainText('KSC WIEDIKON H1');
     await expect(final).toContainText('gewinnt das Spiel');
     await expect(final.locator('.live-final-score')).toHaveText('3:1');
     await expect(page.locator('#live-status')).toHaveAttribute('data-tone', 'final');

@@ -2529,18 +2529,19 @@ tr.gt-row-stream > td { background: transparent; }
 .live-team-chip {
   display: inline-flex; min-width: 0; align-items: center;
   padding: 0.25rem 0.5rem; border-radius: var(--radius-md);
-  font-size: var(--text-base); font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em;
+  font-size: var(--text-sm); line-height: 1.25; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
+.live-team-chip-name { min-width: 0; overflow-wrap: anywhere; }
 .live-team-chip--sm { font-size: var(--text-sm); padding: 0.125rem 0.5rem; }
-.live-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .live-block { display: block; }
-.live-team-name { margin-top: 0.125rem; font-size: var(--text-xs); line-height: 1.3; color: var(--text-muted); }
 .live-score {
   margin-top: 0.25rem; font-size: clamp(3.25rem, 14vw, 4.5rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1;
   font-variant-numeric: tabular-nums; transform-origin: left center;
 }
 .live-col--b .live-score { transform-origin: right center; }
+.live-score-row { display: flex; align-items: center; gap: var(--space-sm); }
+.live-col--b .live-score-row { flex-direction: row-reverse; }
 .live-bump { animation: live-bump 450ms ease-out; }
 @keyframes live-bump { 30% { transform: scale(1.12); } }
 .live-col-meta { margin-top: var(--space-sm); font-size: 0.6875rem; color: var(--text-muted); }
@@ -2617,7 +2618,7 @@ tr.gt-row-stream > td { background: transparent; }
 @media (min-width: 640px) {
   .live-board-card { padding: var(--space-lg); }
   .live-grid { gap: var(--space-md); }
-  .live-team-chip { font-size: var(--text-lg); }
+  .live-team-chip { font-size: var(--text-base); }
 }
 
 /* Site-wide pill → /live. Fixed so its arrival never shifts the page. */

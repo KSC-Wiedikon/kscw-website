@@ -16,7 +16,7 @@ const VOLLEY_LIVE = {
   points_a: 12, points_b: 9, sets_won_a: 1, sets_won_b: 1,
   timeouts_a: 1, timeouts_b: 2, subs_a: 3, subs_b: 0, fouls_a: 0, fouls_b: 0,
   serving_team: 'right', set_results: [{ a: 25, b: 21 }, { a: 22, b: 25 }],
-  date_updated: '2026-09-23T16:37:51.154Z',
+  date_updated: new Date().toISOString(),
 };
 
 const HISTORY = [{
@@ -213,6 +213,42 @@ test.describe('/live', () => {
     await expect(page.locator('#live-board .live-team-chip')).toHaveText(['KSCW H1', 'KSCW H3']);
   });
 
+  test('a row nobody writes any more is not live, and says since when', async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, date_updated: null, ts: String(Date.parse('2026-11-07T14:53:17Z')) });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-board .live-score')).toHaveText(['12', '9']);
+    await expect(page.locator('#live-status')).toHaveAttribute('data-tone', 'idle');
+    await expect(page.locator('#live-updated')).toHaveText('Keine neuen Daten seit 15:53');
+  });
+
+  test('turned sideways, a running match fills the phone screen', async ({ page }) => {
+    await stubLive(page, VOLLEY_LIVE, HISTORY);
+    await page.setViewportSize({ width: 844, height: 390 });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-board .live-score')).toHaveText(['12', '9']);
+    const box = await page.locator('#live-root').boundingBox();
+    expect(box).toEqual({ x: 0, y: 0, width: 844, height: 390 });
+    await expect(page.locator('#live-recent')).toBeHidden();
+    await expect(page.locator('.live-scope')).toBeHidden();
+    expect(await page.locator('.live-grid').boundingBox().then((b) => b!.y + b!.height)).toBeLessThanOrEqual(390);
+  });
+
+  test('sideways keeps the normal page when the match is over or not started', async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, status: 'final', event: 'match-end', sets_won_a: 3, sets_won_b: 1 });
+    await page.setViewportSize({ width: 844, height: 390 });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('.live-final')).toBeVisible();
+    await expect(page.locator('#live-root')).not.toHaveClass(/live-fullscreen/);
+  });
+
+  test('a tablet sideways keeps the normal page', async ({ page }) => {
+    await stubLive(page, VOLLEY_LIVE, HISTORY);
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-board .live-score')).toHaveText(['12', '9']);
+    await expect(page.locator('#live-recent')).toBeVisible();
+  });
+
   test('switches the board text to English, including parameterised strings', async ({ page }) => {
     await stubLive(page, VOLLEY_LIVE);
     await gotoWithLang(page, '/live', 'de');
@@ -280,6 +316,17 @@ test.describe('/live', () => {
 });
 
 test.describe('live-now pill', () => {
+  test("a game row stuck on a stray point does not hide the board's real match", async ({ page }) => {
+    await page.route('**/items/live_scores**', (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({ data: [
+        { ...VOLLEY_LIVE, channel: 'game-437', source: 'board:kscw', date_updated: null, ts: String(Date.now() - 40 * 60 * 1000) },
+        { ...VOLLEY_LIVE, channel: 'kscw', source: null },
+      ] }),
+    }));
+    await gotoWithLang(page, '/news', 'de');
+    await expect(page.locator('.live-now-pill')).toHaveAttribute('href', '/live');
+  });
+
   // The pill skips a row nobody wrote for 20 minutes (a board switched off mid-match),
   // so its live rows are stamped "just now"; VOLLEY_LIVE's fixed date would read as stale.
   const fresh = (row: object) => ({ ...row, date_updated: new Date().toISOString() });

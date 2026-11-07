@@ -2583,6 +2583,8 @@ tr.gt-row-stream > td { background: transparent; }
 
 .live-empty { padding: var(--space-2xl) var(--space-lg); text-align: center; border-color: var(--border); border-style: dashed; box-shadow: none; }
 .live-empty-title { font-weight: 600; }
+.live-to-board { display: inline-flex; align-items: center; min-height: 44px; margin-top: 0.25rem; color: var(--kscw-blue); font-weight: 600; text-decoration: underline; }
+:root:not(.light) .live-to-board { color: var(--kscw-gold); }
 .live-empty-hint { max-width: 24rem; margin: 0.25rem auto 0; font-size: var(--text-sm); color: var(--text-muted); }
 
 .live-next { padding: var(--space-xl) var(--space-lg); text-align: center; }

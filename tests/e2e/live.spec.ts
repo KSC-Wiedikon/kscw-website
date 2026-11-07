@@ -207,10 +207,40 @@ test.describe('/live', () => {
     await expect(page.locator('#live-root')).not.toContainText('KSCW');
   });
 
-  test('a board without full names still shows its short names', async ({ page }) => {
-    await stubLive(page, { ...VOLLEY_LIVE, team_a_name: '', team_b_name: null });
+  test('a board without full names shows Home and Away, following the change of ends', async ({ page }) => {
+    let row: object = { ...VOLLEY_LIVE, team_a_name: '', team_b_name: null, period: 3 };
+    await page.route('**/items/live_history**', (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }),
+    }));
+    await page.route('**/items/live_scores**', (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({ data: [row] }),
+    }));
     await gotoWithLang(page, '/live', 'de');
-    await expect(page.locator('#live-board .live-team-chip')).toHaveText(['KSCW H1', 'KSCW H3']);
+    const chips = page.locator('#live-board .live-team-chip');
+    await expect(chips).toHaveText(['Heim', 'Gast']);
+    await expect(page.locator('#live-root')).not.toContainText('KSCW');
+    row = { ...VOLLEY_LIVE, team_a_name: '', team_b_name: null, period: 4, ts: '1790181470999' };
+    await expect(chips).toHaveText(['Gast', 'Heim']);
+    await switchLangTo(page, 'en');
+    await expect(chips).toHaveText(['Away', 'Home']);
+  });
+
+  test("an empty game link points to the hall's scoreboard; the scoreboard itself does not", async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, channel: 'game-437', status: 'idle' });
+    await gotoWithLang(page, '/live?channel=game-437', 'de');
+    await expect(page.locator('.live-to-board')).toHaveAttribute('href', '/live');
+    await expect(page.locator('.live-to-board')).toHaveText('Zur Anzeigetafel');
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
+    await stubLive(page, { ...VOLLEY_LIVE, status: 'idle' });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('.live-empty')).toBeVisible();
+    await expect(page.locator('.live-to-board')).toHaveCount(0);
+  });
+
+  test('the fifth set changes Home and Away at 8', async ({ page }) => {
+    await stubLive(page, { ...VOLLEY_LIVE, team_a_name: '', team_b_name: '', period: 5, points_a: 8, points_b: 5 });
+    await gotoWithLang(page, '/live', 'de');
+    await expect(page.locator('#live-board .live-team-chip')).toHaveText(['Gast', 'Heim']);
   });
 
   test('a row nobody writes any more is not live, and says since when', async ({ page }) => {
@@ -219,6 +249,7 @@ test.describe('/live', () => {
     await expect(page.locator('#live-board .live-score')).toHaveText(['12', '9']);
     await expect(page.locator('#live-status')).toHaveAttribute('data-tone', 'idle');
     await expect(page.locator('#live-updated')).toHaveText('Keine neuen Daten seit 15:53');
+    await expect(page.locator('.live-serve-dot')).toHaveCount(0);
   });
 
   test('turned sideways, a running match fills the phone screen', async ({ page }) => {

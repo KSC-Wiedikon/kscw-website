@@ -164,28 +164,25 @@
     var chip = h('span', cls || 'live-team-chip');
     chip.style.backgroundColor = t.color;
     chip.style.color = readableOn(t.color);
-    chip.appendChild(h('span', 'live-truncate', t.short || tr('liveTeamFallback', 'Team')));
+    chip.appendChild(h('span', 'live-team-chip-name', t.name || t.short || tr('liveTeamFallback', 'Team')));
     return chip;
   }
 
-  function teamIdentity(t, sport, indicator) {
+  function teamIdentity(t, sport) {
     var wrap = h('div', 'live-team-identity');
     var top = h('div', 'live-team-top');
-    top.appendChild(teamChip(t));
-    if (indicator) top.appendChild(indicator);
-    wrap.appendChild(top);
-
+    var chip = teamChip(t);
     // Beach publishes the pair in one field ("Müller / Meier") — stack the players.
     var players = sport === 'beach'
       ? (t.name || '').split(/\s*[/&]\s*/).map(function (p) { return p.trim(); }).filter(Boolean)
       : [];
     if (players.length > 1) {
-      var p = h('p', 'live-team-name');
-      players.forEach(function (pl) { p.appendChild(h('span', 'live-truncate live-block', pl)); });
-      wrap.appendChild(p);
-    } else if (t.name && t.name !== t.short) {
-      wrap.appendChild(h('p', 'live-team-name live-truncate', t.name));
+      var names = chip.firstChild;
+      names.textContent = '';
+      players.forEach(function (pl) { names.appendChild(h('span', 'live-block', pl)); });
     }
+    top.appendChild(chip);
+    wrap.appendChild(top);
     return wrap;
   }
 
@@ -207,8 +204,12 @@
       dot.title = tr('liveServing', 'Aufschlag');
       dot.appendChild(h('span', 'sr-only', dot.title));
     }
-    col.appendChild(teamIdentity(t, sport, dot));
-    col.appendChild(scoreEl(t, side));
+    col.appendChild(teamIdentity(t, sport));
+    // Beside the score, not the name: a dot beside the chip split long names mid-word.
+    var scoreRow = h('div', 'live-score-row');
+    scoreRow.appendChild(scoreEl(t, side));
+    if (dot) scoreRow.appendChild(dot);
+    col.appendChild(scoreRow);
     // Beach has no substitutions — "Sub 0" forever would only be noise.
     var meta = tr('liveTimeoutsShort', 'AZ') + ' ' + t.timeouts;
     if (sport !== 'beach') meta += ' · ' + tr('liveSubsShort', 'W') + ' ' + t.subs;
@@ -258,7 +259,7 @@
 
   function basketColumn(t, side) {
     var col = h('div', 'live-col live-col--' + side);
-    col.appendChild(teamIdentity(t, 'basketball', null));
+    col.appendChild(teamIdentity(t, 'basketball'));
     col.appendChild(scoreEl(t, side));
     col.appendChild(h('p', 'live-col-meta',
       tr('liveFoulsShort', 'Fouls') + ' ' + t.fouls + ' · ' + tr('liveTimeoutsShort', 'AZ') + ' ' + t.timeouts));
@@ -284,7 +285,7 @@
     if (m.serving) {
       arrow.appendChild(h('span', '', m.serving === 'left' ? '◀' : '▶')).setAttribute('aria-hidden', 'true');
       arrow.appendChild(h('span', 'sr-only',
-        tr('livePossessionOf', 'Ballbesitz: {team}', { team: (m.serving === 'left' ? m.a : m.b).short })));
+        tr('livePossessionOf', 'Ballbesitz: {team}', { team: (m.serving === 'left' ? m.a : m.b).name || (m.serving === 'left' ? m.a : m.b).short })));
     }
     mid.appendChild(arrow);
     grid.appendChild(mid);
@@ -458,7 +459,7 @@
         var bySets = normaliseSport(r.sport) !== 'basketball';
         var tr_ = document.createElement('tr');
         tr_.appendChild(h('td', 'live-recent-match',
-          (r.team_a_short || r.team_a_name || '—') + ' – ' + (r.team_b_short || r.team_b_name || '—')));
+          (r.team_a_name || r.team_a_short || '—') + ' – ' + (r.team_b_name || r.team_b_short || '—')));
         tr_.appendChild(h('td', 'live-num',
           bySets ? num(r.sets_won_a) + ':' + num(r.sets_won_b) : num(r.points_a) + ':' + num(r.points_b)));
         var sets = Array.isArray(r.set_results) ? r.set_results.map(function (s) { return num(s && s.a) + ':' + num(s && s.b); }).join(', ') : '';

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang } from './helpers';
 
 test.describe('islands - theme toggle', () => {
@@ -137,6 +137,16 @@ test.describe('islands - sponsor carousel', () => {
 });
 
 test.describe('islands - calendar grid', () => {
+  // The grid paints only once teams, ALL games (limit=-1) and hall closures are in.
+  // Against the real dev Directus that often took longer than the 10 s wait under
+  // parallel workers. These tests check the grid's structure, not data: empty is enough.
+  test.beforeEach(async ({ page }) => {
+    const empty = { status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }) };
+    await page.route('**/items/games**', (route) => route.fulfill(empty));
+    await page.route('**/items/hall_closures**', (route) => route.fulfill(empty));
+    await page.route('**/items/teams**', (route) => route.fulfill(empty));
+  });
+
   test('calendar renders with day headers', async ({ page }) => {
     await gotoWithLang(page, '/weiteres/kalender');
     const grid = page.locator('#calendar-grid');

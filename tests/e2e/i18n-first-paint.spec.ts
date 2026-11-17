@@ -16,7 +16,7 @@
  * would be flaky on CI hardware. The one perceptual test below is deliberately
  * generous for the same reason.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang } from './helpers';
 
 interface Timings {

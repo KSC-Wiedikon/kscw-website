@@ -1,6 +1,7 @@
 // In portrait a day cell is too narrow for a chip, so the grid shows dots and the
 // tapped day is listed underneath it. A real Saturday here holds up to 14 games.
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import { type Page } from '@playwright/test';
 import { gotoWithLang } from './helpers';
 
 const now = new Date();

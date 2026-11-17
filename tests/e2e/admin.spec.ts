@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, muteErrorLog } from './fixtures';
+import { type Page } from '@playwright/test';
 
 const DIRECTUS_URL = process.env.DIRECTUS_URL ?? 'https://directus.kscw.ch';
 
@@ -59,6 +60,7 @@ test.describe('admin panel', () => {
 
   test.afterAll(async ({ browser }) => {
     const page = await browser.newPage();
+    await muteErrorLog(page);
     await adminLogin(page);
     await cleanupTestRecords(page);
     await page.close();

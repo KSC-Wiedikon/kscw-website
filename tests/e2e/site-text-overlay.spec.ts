@@ -10,7 +10,7 @@
  * matter just as much — the page must be complete and readable when the overlay
  * never arrives, which is the state every visitor is in today.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang, switchLangTo, waitForI18n } from './helpers';
 
 const PAGE = '/volleyball/spielplanung';

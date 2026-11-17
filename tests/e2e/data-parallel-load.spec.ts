@@ -22,7 +22,7 @@
  * Ordering is then a property of the code alone. Regress to `i18nReady.then(fetch)`
  * and these fail deterministically.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang, switchLangTo } from './helpers';
 
 /**

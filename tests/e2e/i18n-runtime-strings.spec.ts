@@ -42,6 +42,15 @@ test.describe('changelog heading', () => {
 });
 
 test.describe('homepage game tables', () => {
+  // The tables also wait for the hall-scoreboard history (pending-results.js). Left
+  // to the real dev Directus, a slow answer under parallel workers kept them on
+  // "Laden…" past the timeout: these two tests failed 1-3 times per run.
+  test.beforeEach(async ({ page }) => {
+    await page.route('**/items/live_history**', (route) => route.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify({ data: [] }),
+    }));
+  });
+
   test('the loading row is translated, not frozen in German', async ({ page }) => {
     // Hold the games endpoint open so the placeholder is what is on screen.
     await page.route('**/items/games*', async (route) => {

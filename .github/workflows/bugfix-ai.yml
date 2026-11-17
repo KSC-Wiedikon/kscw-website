@@ -50,6 +50,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 22
+          check-latest: true  # Astro 7 needs Node >= 22.23.4; a cached older 22.x would fail
           cache: npm
 
       - run: npm ci

@@ -23,9 +23,20 @@ export async function gotoWithLang(page: Page, path: string, lang: Lang = 'de') 
   // subsequent navigation, so it would silently overwrite a language the test
   // picked via the toggle and make "the choice is remembered" untestable.
   if (!page.url().startsWith('http')) await page.goto(path); // establish the origin
-  await page.evaluate((l) => {
-    try { localStorage.setItem('kscw-locale', l); } catch { /* private mode */ }
-  }, lang);
+  // A page that navigates by itself (/live?channel=… redirects to /live once the
+  // board has no game) can destroy the context under this write. That raced now and
+  // then under load ("Execution context was destroyed"); retry after it settles.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await page.evaluate((l) => {
+        try { localStorage.setItem('kscw-locale', l); } catch { /* private mode */ }
+      }, lang);
+      break;
+    } catch (err) {
+      if (attempt >= 3 || !/Execution context was destroyed/.test(String(err))) throw err;
+      await page.waitForLoadState();
+    }
+  }
   await page.goto(path);
   await waitForI18n(page);
 }

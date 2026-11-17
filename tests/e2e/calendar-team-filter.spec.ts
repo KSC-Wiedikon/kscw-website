@@ -214,10 +214,14 @@ test('select all and deselect all stay on screen while the list scrolls', async 
   await filterBtn(page, TEAM).click();
   await list(page).evaluate((el) => { el.scrollTop = el.scrollHeight; });
 
-  const box = (await dropdown(page).boundingBox())!;
-  const button = (await action(page, 'Deselect all').boundingBox())!;
-  expect(button.y).toBeGreaterThanOrEqual(box.y);
-  expect(button.y + button.height).toBeLessThanOrEqual(box.y + box.height);
+  // Polled, not measured once: right after opening and scrolling, the dropdown can
+  // still be settling, and a single read failed this now and then under load. A
+  // button that really scrolls out of the box still fails after the timeout.
+  await expect.poll(async () => {
+    const box = (await dropdown(page).boundingBox())!;
+    const button = (await action(page, 'Deselect all').boundingBox())!;
+    return button.y >= box.y && button.y + button.height <= box.y + box.height;
+  }).toBe(true);
 
   await action(page, 'Deselect all').click();
   await expect(rows(page)).toHaveCount(0);

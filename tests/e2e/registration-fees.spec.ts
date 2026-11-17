@@ -20,7 +20,8 @@
  * Directus and Turnstile are stubbed before navigation: the assertions are on
  * the form's arithmetic and filtering, not on the live data.
  */
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import { type Page } from '@playwright/test';
 import { gotoWithLang, switchLangTo } from './helpers';
 
 const PATH = '/weiteres/anmeldung';

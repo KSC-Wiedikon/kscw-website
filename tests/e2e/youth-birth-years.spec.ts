@@ -8,7 +8,7 @@
  * toggle, and that the volleyball hero — which is built in JS, not by the build —
  * gets one at all.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang, switchLangTo } from './helpers';
 
 /** What the build rendered, before/after the recompute — they must agree. */

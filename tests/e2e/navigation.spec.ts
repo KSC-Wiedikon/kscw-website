@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang, switchLangTo, type Lang } from './helpers';
 
 // Canonical single-URL paths, each exercised in the language it used to be

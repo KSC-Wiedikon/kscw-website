@@ -5,7 +5,8 @@
  * Directus is stubbed so the assertions are on the rendering, not on whatever the
  * hall scoreboard happens to be showing while CI runs.
  */
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import { type Page } from '@playwright/test';
 import { gotoWithLang, switchLangTo } from './helpers';
 
 const VOLLEY_LIVE = {

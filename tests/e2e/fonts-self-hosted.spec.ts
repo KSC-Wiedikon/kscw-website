@@ -11,7 +11,7 @@
  * and is a private tool where a font repaint costs nothing. The CSP still allows the
  * Google hosts for exactly that reason.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang } from './helpers';
 
 const PAGES = ['/', '/volleyball', '/basketball/teams/nachwuchs', '/club/feedback'];

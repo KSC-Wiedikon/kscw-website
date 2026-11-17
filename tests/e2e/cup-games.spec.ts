@@ -2,7 +2,8 @@
 // the league string ("Züri Cup — 1/8-Final, Spiel 4"). These drive the real
 // homepage tables with a stubbed games response to check the trophy lands on
 // exactly those rows.
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import { type Page } from '@playwright/test';
 import { gotoWithLang } from './helpers';
 
 const GAME = (id: string, league: string, date: string, extra: Record<string, unknown> = {}) => ({

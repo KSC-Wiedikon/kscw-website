@@ -13,7 +13,7 @@
  *  - The "no news" placeholders shipped visible, asserting something false until
  *    Directus answered.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang, switchLangTo } from './helpers';
 
 test.describe('changelog heading', () => {

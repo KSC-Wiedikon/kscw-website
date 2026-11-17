@@ -1,7 +1,7 @@
 // The homepage game tables bold our side of the matchup — the home name when we
 // host, the away name when we travel, both in a derby (one fixture stored as two
 // rows, merged into one by mergeDerbies).
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang } from './helpers';
 
 const GAME = (id: string, gameId: string, date: string, extra: Record<string, unknown>) => ({

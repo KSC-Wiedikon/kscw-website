@@ -1,6 +1,6 @@
 // Colour in the calendar means the sport. Home and away are solid vs outlined:
 // they used to reuse the sport pair, so "VB" looked like "Home" and "BB" like "Away".
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang } from './helpers';
 
 const now = new Date();

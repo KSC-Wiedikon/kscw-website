@@ -1,6 +1,7 @@
 // Drives the real built page with a stubbed Directus response to see what the
 // card actually renders on each side of the deadline.
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import { type Page } from '@playwright/test';
 import { gotoWithLang } from './helpers';
 
 const COURSE = (extra: Record<string, unknown>) => ({

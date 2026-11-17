@@ -20,7 +20,8 @@
  * report unobservable here — delivery on unload is sendBeacon's own contract,
  * the same one error-logger.js relies on.
  */
-import { test, expect, type BrowserContext, type Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import { type BrowserContext, type Page } from '@playwright/test';
 import { gotoWithLang } from './helpers';
 
 const PATH = '/weiteres/anmeldung';
@@ -29,6 +30,8 @@ type Report = { event?: string; level?: string; error?: string };
 
 async function stubBackend(context: BrowserContext): Promise<Report[]> {
   const reports: Report[] = [];
+  // error-logger.js stays silent under automation unless a page opts in (fixtures.ts).
+  await context.addInitScript(() => { (window as Window & { __kscwReportUnderAutomation?: boolean }).__kscwReportUnderAutomation = true; });
   await context.route(/^https:\/\/directus(-dev)?\.kscw\.ch\//, (route) => {
     if (new URL(route.request().url()).pathname === '/kscw/client-error') {
       try { reports.push(JSON.parse(route.request().postData() || '{}')); } catch { /* not JSON */ }

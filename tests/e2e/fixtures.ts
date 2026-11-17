@@ -13,6 +13,12 @@ import { test as base, expect, type BrowserContext, type Page } from '@playwrigh
  * Swallowed at the context level so a spec can still assert on a report: a
  * `page.route('**\/kscw/client-error', …)` takes precedence over this one
  * (registration-refusals.spec.ts does exactly that).
+ *
+ * The route alone cannot catch everything: a beacon sent by a document that is
+ * unloading (a test navigating away while a poll is in flight) is invisible to
+ * Playwright. error-logger.js therefore sends nothing under automation
+ * (navigator.webdriver) unless a page opts in with
+ * window.__kscwReportUnderAutomation, which registration-refusals does.
  */
 export async function muteErrorLog(target: BrowserContext | Page) {
   await target.route('**/kscw/client-error', (route) => route.fulfill({ status: 204 }));

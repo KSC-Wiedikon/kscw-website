@@ -10,7 +10,8 @@
  * The endpoint is stubbed so the assertion is on the rendering, not on whatever
  * Swiss Volley has published this week.
  */
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import { type Page } from '@playwright/test';
 import { gotoWithLang } from './helpers';
 
 const TEAM = {

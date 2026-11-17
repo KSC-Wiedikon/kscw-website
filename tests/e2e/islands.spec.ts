@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang } from './helpers';
 
 test.describe('islands - theme toggle', () => {

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang, type Lang } from './helpers';
 
 // Canonical single-URL paths; the home page is covered in both languages.

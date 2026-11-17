@@ -13,7 +13,7 @@
  * en.json diverge is the day this starts testing a real difference, with no
  * edit needed here.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { gotoWithLang, switchLangTo } from './helpers';

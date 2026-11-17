@@ -1,6 +1,7 @@
 // The team filter, mostly used on a phone: 29 teams in a small scrolling list, so
 // ticking several has to stay cheap.
-import { test, expect, type Locator, type Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import { type Locator, type Page } from '@playwright/test';
 import { gotoWithLang } from './helpers';
 
 const now = new Date();

@@ -20,7 +20,8 @@
  * report unobservable here — delivery on unload is sendBeacon's own contract,
  * the same one error-logger.js relies on.
  */
-import { test, expect, type BrowserContext, type Page } from '@playwright/test';
+import { test, expect } from './fixtures';
+import { type BrowserContext, type Page } from '@playwright/test';
 import { gotoWithLang } from './helpers';
 
 const PATH = '/weiteres/anmeldung';

@@ -12,7 +12,7 @@
  * TeamPhoto.astro, and team-page.js REPLACES the hero rather than appending to it.
  * After: 0.0019 / 0.092 / 0.002.
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures';
 import { gotoWithLang } from './helpers';
 
 const PAGES = ['/volleyball/h1', '/volleyball/hu20', '/basketball/h1'];

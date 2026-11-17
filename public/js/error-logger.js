@@ -21,6 +21,12 @@
 
   function send(entry) {
     if (sent >= MAX_PER_PAGE) return
+    // Automated browsers (Playwright locally and in CI, crawlers) report nothing:
+    // the e2e suite fakes failures on purpose and, on localhost, this would write
+    // them into the DEV error log. A route cannot stop all of it, because a beacon
+    // from a document that is unloading is invisible to Playwright. A test that
+    // asserts on a report sets window.__kscwReportUnderAutomation first.
+    if (navigator.webdriver && !window.__kscwReportUnderAutomation) return
     sent++
     try {
       entry.project = 'kscw-website'

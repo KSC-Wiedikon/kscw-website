@@ -19,7 +19,10 @@ export default defineConfig({
   // for reasons that have nothing to do with the site. Always start our own
   // preview of the production build instead.
   webServer: {
-    command: 'npx astro preview --port 4322',
+    // --ignore-lock: Astro 7 sends `preview` to the background when it detects an
+    // AI agent, the process exits at once and Playwright reports "exited early".
+    // The flag keeps it in the foreground, as it already is in CI.
+    command: 'npx astro preview --port 4322 --ignore-lock',
     url: 'http://localhost:4322',
     reuseExistingServer: false,
     timeout: 60_000,

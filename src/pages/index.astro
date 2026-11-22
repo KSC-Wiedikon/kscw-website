@@ -33,7 +33,7 @@ try {
 <BaseLayout
   title="KSC Wiedikon — Basketball & Volleyball"
   titleKey="indexMetaTitle"
-  description="KSC Wiedikon — Basketball und Volleyball seit 1982. Sportverein in Zürich-Wiedikon mit über 30 Teams."
+  description={t(locale, 'indexMetaDescription')}
   descriptionKey="indexMetaDescription"
   locale={locale}
 >
@@ -387,7 +387,7 @@ try {
           scoreSpan.appendChild(awayScoreEl);
           if (game.provisional) {
             scoreSpan.className += ' provisional';
-            scoreSpan.title = tr18n('gameScoreProvisional', 'Resultat der Hallen-Anzeigetafel — noch nicht offiziell');
+            scoreSpan.title = tr18n('gameScoreProvisional', 'Resultat der Hallen-Anzeigetafel, noch nicht offiziell');
           }
           tr.appendChild(makeCell(scoreSpan, 'gt-score'));
         } else {

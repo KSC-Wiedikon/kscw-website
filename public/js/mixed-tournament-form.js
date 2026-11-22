@@ -206,8 +206,8 @@
                       alreadySignedUp = true;
                       var msg = form.getAttribute('data-msg-already-wiedisync')
                         || (document.documentElement.lang === 'en'
-                          ? "You're already signed up for the Mixed Tournament via Wiedisync — no further sign-up needed!"
-                          : 'Du bist bereits via Wiedisync für das Mixed-Turnier angemeldet — keine weitere Anmeldung nötig!');
+                          ? "You're already signed up for the Mixed Tournament via Wiedisync, so you don't need to sign up again."
+                          : 'Du bist bereits via Wiedisync für das Mixed-Turnier angemeldet und musst dich nicht nochmals anmelden.');
                       showFeedback(msg, 'info');
                       if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '0.5'; }
                     }
@@ -417,8 +417,8 @@
     if (alreadySignedUp) {
       var msg = form.getAttribute('data-msg-already-wiedisync')
         || (document.documentElement.lang === 'en'
-          ? "You're already signed up for the Mixed Tournament via Wiedisync — no further sign-up needed!"
-          : 'Du bist bereits via Wiedisync für das Mixed-Turnier angemeldet — keine weitere Anmeldung nötig!');
+          ? "You're already signed up for the Mixed Tournament via Wiedisync, so you don't need to sign up again."
+          : 'Du bist bereits via Wiedisync für das Mixed-Turnier angemeldet und musst dich nicht nochmals anmelden.');
       showFeedback(msg, 'info');
       return null;
     }

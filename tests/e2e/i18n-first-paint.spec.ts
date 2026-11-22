@@ -16,8 +16,15 @@
  * would be flaky on CI hardware. The one perceptual test below is deliberately
  * generous for the same reason.
  */
+import { readFileSync } from 'node:fs';
 import { test, expect } from './fixtures';
 import { gotoWithLang } from './helpers';
+
+// Read from the dictionary, not pinned: copy edits must not break a test about
+// WHEN the swap happens (a pinned string failed the 22.11.2026 prod deploy).
+const EN = JSON.parse(
+  readFileSync(new URL('../../public/js/i18n/en.json', import.meta.url), 'utf8'),
+) as Record<string, string>;
 
 interface Timings {
   dictStart: number | null;
@@ -114,7 +121,7 @@ test.describe('i18n first paint', () => {
 
     // The whole point: the swap happened, and it happened everywhere.
     await expect(page.locator('[data-i18n="bbYouthSubtitle"]').first())
-      .toHaveText('All youth teams at a glance — from U8 to U18');
+      .toHaveText(EN.bbYouthSubtitle);
     await expect(page.locator('[data-i18n="navAbout"]').first()).toHaveText('About us');
     expect(await page.evaluate(() => document.documentElement.lang)).toBe('en');
   });

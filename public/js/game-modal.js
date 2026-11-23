@@ -379,8 +379,13 @@
     info.appendChild(infoRow(isDE ? 'Anpfiff' : 'Kickoff', game.time ? game.time.slice(0, 5) : '\u2013'));
     var gameIsHome = game.type === 'home' || game.isHome;
     info.appendChild(infoRow(isDE ? 'Typ' : 'Type', gameIsHome ? (isDE ? 'Heimspiel' : 'Home') : (isDE ? 'Ausw\u00e4rtsspiel' : 'Away')));
-    if (game.id) {
-      info.appendChild(infoRow(isDE ? 'Spielnr.' : 'Game #', String(game.id).replace(/^(vb_|bb_)/, '')));
+    // Official game number = the federation key without its vb_/bb_ prefix. The
+    // homepage passes the Directus row id as `id` and the federation key as
+    // `gameId`; team pages pass only the federation key, as `id`. Tournament
+    // (bpt_) and manual rows have no official number, so nothing is shown.
+    var gameNo = String(('gameId' in game ? game.gameId : game.id) || '').replace(/^(vb|bb)_/, '');
+    if (/^\d+$/.test(gameNo)) {
+      info.appendChild(infoRow(isDE ? 'Spielnr.' : 'Game #', gameNo));
     }
     if (game.season) {
       info.appendChild(infoRow(isDE ? 'Saison' : 'Season', game.season));
